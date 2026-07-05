@@ -15,6 +15,8 @@ import type {
   AutomationRun,
   DirListing,
   GitInfo,
+  McpServerInfo,
+  McpTransport,
   Project,
   ProjectsInfo,
   RunEntry,
@@ -292,6 +294,33 @@ export const api = {
     const qs = params.toString();
     return fetch(`/api/audit${qs ? `?${qs}` : ""}`).then((r) => json<AuditEntry[]>(r));
   },
+
+  // MCP servers (external tool providers for the agent)
+  listMcpServers: () => fetch("/api/mcp-servers").then((r) => json<McpServerInfo[]>(r)),
+  addMcpServer: (data: { name: string; transport: McpTransport }) =>
+    post<McpServerInfo>("/api/mcp-servers", data),
+  updateMcpServer: (
+    id: string,
+    patch: {
+      name?: string;
+      transport?: McpTransport;
+      enabled?: boolean;
+      disabledTools?: string[];
+    },
+  ) =>
+    fetch(`/api/mcp-servers/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    }).then((r) => json<McpServerInfo>(r)),
+  removeMcpServer: (id: string) =>
+    fetch(`/api/mcp-servers/${encodeURIComponent(id)}`, { method: "DELETE" }).then((r) =>
+      json<{ ok: true }>(r),
+    ),
+  restartMcpServer: (id: string) =>
+    post<McpServerInfo>(`/api/mcp-servers/${encodeURIComponent(id)}/restart`),
+  mcpServerLog: (id: string) =>
+    fetch(`/api/mcp-servers/${encodeURIComponent(id)}/log`).then((r) => json<{ log: string }>(r)),
 
   // Capability providers (default apps per contract)
   getCapabilityProviders: () =>

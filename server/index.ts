@@ -46,6 +46,10 @@ import { BridgeError, dispatchAppBridge, mintToken, resolveToken } from "./platf
 import { policyStore } from "./agent/policyStore.js";
 import { getProviders, setProvider } from "./capabilities/registry.js";
 import { CONTRACTS } from "../shared/capabilities/index.js";
+import { mcpServerStore } from "./mcp/serverStore.js";
+import { mcpSupervisor } from "./mcp/supervisor.js";
+import { mcpLogFile } from "./mcp/client.js";
+import "./mcp/tools.js"; // registers the MCP tool contributor with the agent registry
 import { bus } from "./bus.js";
 
 const execFileAsync = promisify(execFile);
@@ -557,6 +561,98 @@ app.get("/api/audit", requireCap("settings:write"), (c) => {
   return c.json(readAudit(limit, caller));
 });
 
+// ── MCP servers (external tool providers for the agent) ─────────────────────
+
+app.get("/api/mcp-servers", (c) => c.json(mcpSupervisor.list()));
+
+app.post("/api/mcp-servers", requireCap("settings:write"), async (c) => {
+  const body = (await c.req.json()) as { name?: string; transport?: unknown };
+  const transport = parseTransport(body.transport);
+  if (!body.name?.trim() || !transport) {
+    return c.json({ error: "name and a valid transport (stdio command or http/sse url) are required" }, 400);
+  }
+  const cfg = mcpServerStore.add({ name: body.name.trim(), transport });
+  await mcpSupervisor.sync(cfg.id);
+  return c.json(mcpSupervisor.list().find((s) => s.config.id === cfg.id));
+});
+
+app.patch("/api/mcp-servers/:id", requireCap("settings:write"), async (c) => {
+  const id = c.req.param("id");
+  const body = (await c.req.json()) as {
+    name?: string;
+    transport?: unknown;
+    enabled?: boolean;
+    disabledTools?: string[];
+  };
+  const patch: Parameters<typeof mcpServerStore.update>[1] = {};
+  if (typeof body.name === "string") patch.name = body.name.trim();
+  if (typeof body.enabled === "boolean") patch.enabled = body.enabled;
+  if (Array.isArray(body.disabledTools)) patch.disabledTools = body.disabledTools.map(String);
+  if (body.transport !== undefined) {
+    const transport = parseTransport(body.transport);
+    if (!transport) return c.json({ error: "Invalid transport" }, 400);
+    patch.transport = transport;
+  }
+  const cfg = mcpServerStore.update(id, patch);
+  if (!cfg) return c.json({ error: "Not found" }, 404);
+  // Connection-affecting edits need a reconnect; a disabledTools change
+  // only affects the next tool assembly.
+  if (patch.transport !== undefined || patch.enabled !== undefined) await mcpSupervisor.sync(id);
+  return c.json(mcpSupervisor.list().find((s) => s.config.id === id));
+});
+
+app.delete("/api/mcp-servers/:id", requireCap("settings:write"), async (c) => {
+  const id = c.req.param("id");
+  await mcpSupervisor.remove(id);
+  mcpServerStore.remove(id);
+  return c.json({ ok: true });
+});
+
+app.post("/api/mcp-servers/:id/restart", requireCap("settings:write"), async (c) => {
+  const id = c.req.param("id");
+  if (!mcpServerStore.get(id)) return c.json({ error: "Not found" }, 404);
+  await mcpSupervisor.restart(id);
+  return c.json(mcpSupervisor.list().find((s) => s.config.id === id));
+});
+
+app.get("/api/mcp-servers/:id/log", requireCap("settings:write"), async (c) => {
+  try {
+    const content = await fs.readFile(mcpLogFile(c.req.param("id")), "utf-8");
+    return c.json({ log: content.slice(-20_000) });
+  } catch {
+    return c.json({ log: "" });
+  }
+});
+
+/** Validate a client-supplied transport into the discriminated union. */
+function parseTransport(raw: unknown): import("../shared/types.js").McpTransport | null {
+  if (!raw || typeof raw !== "object") return null;
+  const t = raw as Record<string, unknown>;
+  if (t.kind === "stdio" && typeof t.command === "string" && t.command.trim()) {
+    return {
+      kind: "stdio",
+      command: t.command.trim(),
+      ...(Array.isArray(t.args) ? { args: t.args.map(String) } : {}),
+      ...(t.env && typeof t.env === "object" ? { env: t.env as Record<string, string> } : {}),
+    };
+  }
+  if ((t.kind === "http" || t.kind === "sse") && typeof t.url === "string" && t.url.trim()) {
+    try {
+      new URL(t.url);
+    } catch {
+      return null;
+    }
+    return {
+      kind: t.kind,
+      url: t.url.trim(),
+      ...(t.headers && typeof t.headers === "object"
+        ? { headers: t.headers as Record<string, string> }
+        : {}),
+    };
+  }
+  return null;
+}
+
 // ── Capability providers (default apps per contract) ────────────────────────
 
 app.get("/api/capability-providers", (c) => {
@@ -647,6 +743,9 @@ if (process.env.NODE_ENV === "production") {
 
 const port = Number(process.env.PORT ?? 4600);
 startScheduler();
+// Connect enabled MCP servers in the background — a slow or dead server
+// must not delay the shell from coming up.
+void mcpSupervisor.start();
 serve({ fetch: app.fetch, port }, () => {
   console.log(`[arco] server listening on http://localhost:${port}`);
   console.log(`[arco] data dir: ${dataDirs.root}`);

@@ -12,6 +12,7 @@ import { PasswordSection } from "./PasswordSection";
 import { UsersSection } from "./UsersSection";
 import { AppsSection } from "./AppsSection";
 import { AgentSection } from "./AgentSection";
+import { McpServersSection } from "./McpServersSection";
 import { ProvidersSection } from "./ProvidersSection";
 
 const PROVIDERS: { id: LlmProvider; label: string }[] = [
@@ -149,6 +150,8 @@ export function SettingsApp() {
       </section>
 
       <AppsSection />
+
+      <McpServersSection />
 
       {canWriteSettings && <AgentSection />}
 

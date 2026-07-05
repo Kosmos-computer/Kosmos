@@ -192,6 +192,47 @@ export interface AuditEntry {
   allowed: boolean;
 }
 
+// ── MCP servers (Model Context Protocol — external tool providers) ──────────
+//
+// The transport union deliberately mirrors ACP's `McpServer` schema (stdio |
+// http | sse) so the same records can later be forwarded verbatim to an ACP
+// agent subprocess — one config store drives both the native loop and
+// external agents.
+
+export type McpTransport =
+  | { kind: "stdio"; command: string; args?: string[]; env?: Record<string, string> }
+  | { kind: "http"; url: string; headers?: Record<string, string> }
+  | { kind: "sse"; url: string; headers?: Record<string, string> };
+
+export interface McpServerConfig {
+  /** Slug, unique, becomes the tool namespace: mcp__<id>__<tool>. */
+  id: string;
+  name: string;
+  transport: McpTransport;
+  enabled: boolean;
+  /** Per-tool opt-out (Joplin pattern): disabled tools are hidden from the model. */
+  disabledTools?: string[];
+  addedAt: string;
+}
+
+/** One tool as reported by a server's tools/list. */
+export interface McpToolInfo {
+  name: string;
+  description?: string;
+  /** From MCP readOnlyHint annotation — absent means "assume it writes". */
+  readOnly?: boolean;
+}
+
+export type McpServerStatus = "running" | "stopped" | "error" | "connecting";
+
+/** What the Settings panel renders: masked config + live status + tools. */
+export interface McpServerInfo {
+  config: McpServerConfig;
+  status: McpServerStatus;
+  error?: string;
+  tools: McpToolInfo[];
+}
+
 // ── Automations ──────────────────────────────────────────────────────────────
 
 export interface AutomationRun {

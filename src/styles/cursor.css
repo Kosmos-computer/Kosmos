@@ -1,0 +1,74 @@
+/*
+ * Agent cursor — the AI's virtual mouse overlay. Sits above every shell layer
+ * (windows, chrome, notifications) and never intercepts pointer input. The
+ * root element is positioned by inline transform from cursorStore; everything
+ * in here is presentation only.
+ */
+
+.arco-agent-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: calc(var(--arco-z-overlay) + 100);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--arco-dur-med) var(--arco-ease);
+  /* The transform positions the tip of the pointer glyph, not the box corner. */
+  will-change: transform;
+}
+
+.arco-agent-cursor--visible {
+  opacity: 1;
+}
+
+.arco-agent-cursor__pointer {
+  display: block;
+  color: var(--arco-accent-strong);
+  fill: var(--arco-accent);
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.4));
+  transition: transform var(--arco-dur-fast) var(--arco-ease);
+  transform-origin: 4px 2px; /* pivot near the pointer tip */
+}
+
+.arco-agent-cursor--pressed .arco-agent-cursor__pointer {
+  transform: scale(0.82);
+}
+
+/* Name tag — reads as a multiplayer presence cursor, not a hijacked mouse. */
+.arco-agent-cursor__tag {
+  position: absolute;
+  top: 18px;
+  left: 14px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--arco-accent-strong);
+  color: #fff;
+  font-family: var(--arco-font-ui);
+  font-size: var(--arco-text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: var(--arco-shadow-chrome);
+}
+
+/* Click ripple — remounted per click (React key), so the animation replays. */
+.arco-agent-cursor__ripple {
+  position: absolute;
+  top: -14px;
+  left: -14px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--arco-accent);
+  animation: arco-cursor-ripple 420ms var(--arco-ease) forwards;
+}
+
+@keyframes arco-cursor-ripple {
+  from {
+    transform: scale(0.3);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}

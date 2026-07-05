@@ -9,6 +9,7 @@ import "@openuidev/react-ui/index.css";
 import "./styles/tokens.css";
 import "./styles/base.css";
 import "./styles/os.css";
+import "./styles/cursor.css";
 import "./styles/apps.css";
 import "./styles/studio.css";
 import "./styles/adaptive.css";

@@ -79,6 +79,13 @@ export type AgentEvent =
   | { type: "tool_end"; callId: string; name: string; result: string }
   | { type: "os_ui"; action: OsUiAction }
   /**
+   * A cursor tool is parked server-side waiting for the shell to execute this
+   * command (move/click/type/snapshot) and answer via
+   * POST /api/client-requests/:requestId — the confirmations pattern
+   * generalized to arbitrary client-side work.
+   */
+  | { type: "cursor_request"; requestId: string; command: CursorCommand }
+  /**
    * Emitted by write_file with the file's prior content so the client can
    * render a real diff. Deliberately an event (not part of the tool result):
    * the LLM never sees the before-text, only the UI does.
@@ -94,6 +101,62 @@ export type AgentEvent =
   | { type: "automations_changed" }
   | { type: "done" }
   | { type: "error"; message: string };
+
+// ── Agent cursor (AI-driven virtual mouse) ──────────────────────────────────
+//
+// The agent "sees" the shell through a DOM snapshot (interactive elements with
+// stable ids) and acts through cursor commands the client executes visually:
+// an animated overlay cursor moves to the target, then dispatches real DOM
+// events. Element ids — not raw coordinates — are the addressing scheme, so
+// clicks still land when windows move between snapshot and action.
+
+/** One interactive element the agent can target, as seen at snapshot time. */
+export interface UiElement {
+  /** Stable handle stamped on the DOM node as data-arco-cid. */
+  id: string;
+  /** ARIA role or tag-derived kind: button, link, textbox, checkbox… */
+  role: string;
+  /** Accessible name — label text, aria-label, placeholder, or trimmed innerText. */
+  label: string;
+  /** Viewport-relative center + size; informational (the client re-resolves live). */
+  rect: { x: number; y: number; w: number; h: number };
+  /** True when the element is disabled or aria-disabled. */
+  disabled?: boolean;
+  /** Current value for inputs, so the agent knows field state. */
+  value?: string;
+}
+
+/** A window's worth of targets, grouped so the agent reads screen structure. */
+export interface UiWindowSnapshot {
+  title: string;
+  focused: boolean;
+  elements: UiElement[];
+}
+
+/** The whole visible shell: windows plus global chrome (dock, menu bar). */
+export interface UiSnapshot {
+  screen: { w: number; h: number };
+  windows: UiWindowSnapshot[];
+  /** Dock / menu-bar targets that live outside any window. */
+  shell: UiElement[];
+  /** Embedded surfaces the cursor cannot reach (iframes, canvas editors). */
+  opaqueRegions: string[];
+}
+
+/** Commands the server-side cursor tools ask the shell to perform. */
+export type CursorCommand =
+  | { kind: "snapshot" }
+  | { kind: "click"; targetId?: string; x?: number; y?: number }
+  | { kind: "type"; targetId: string; text: string; submit?: boolean };
+
+/** Shell → server answer for a cursor request. */
+export interface CursorResult {
+  ok: boolean;
+  /** Human-readable outcome ("clicked button 'Save' in 'Settings'"). */
+  outcome?: string;
+  error?: string;
+  snapshot?: UiSnapshot;
+}
 
 // ── Automations ──────────────────────────────────────────────────────────────
 
@@ -119,9 +182,90 @@ export interface Automation {
   runs: AutomationRun[];
 }
 
+// ── Auth: users, roles, capabilities ─────────────────────────────────────────
+//
+// Permissions are two-layered: users hold a *role* (what kind of account this
+// is) and roles expand to *capabilities* (what API surface they may touch).
+// Routes check capabilities, never roles, so adding a role or per-user
+// overrides later doesn't require touching route guards.
+
+export type Role = "owner" | "admin" | "member" | "viewer";
+
+export type Capability =
+  | "chat" // run agent turns + answer confirmations
+  | "apps:manage" // delete/restore generated apps, register web apps
+  | "automations:manage"
+  | "files:read"
+  | "files:write" // also gates project add/remove/switch (changes agent root)
+  | "exec" // raw terminal + dev-server runs
+  | "git:write" // commit/push/pull (reads are open to any authenticated user)
+  | "settings:write"
+  | "users:manage";
+
+/**
+ * Role → capability expansion. Owner is the machine operator; admin is a
+ * trusted co-user without account control; member can build but not touch the
+ * terminal or settings; viewer can only look around.
+ */
+export const ROLE_CAPABILITIES: Record<Role, Capability[]> = {
+  owner: [
+    "chat",
+    "apps:manage",
+    "automations:manage",
+    "files:read",
+    "files:write",
+    "exec",
+    "git:write",
+    "settings:write",
+    "users:manage",
+  ],
+  admin: [
+    "chat",
+    "apps:manage",
+    "automations:manage",
+    "files:read",
+    "files:write",
+    "exec",
+    "git:write",
+    "settings:write",
+  ],
+  member: ["chat", "apps:manage", "automations:manage", "files:read", "files:write", "git:write"],
+  viewer: ["files:read"],
+};
+
+/** Public user shape — everything the client may know. Never carries hashes. */
+export interface AuthUser {
+  id: string;
+  username: string;
+  displayName: string;
+  role: Role;
+  capabilities: Capability[];
+}
+
+/** Listing shape for the user-management panel. */
+export interface UserSummary {
+  id: string;
+  username: string;
+  displayName: string;
+  role: Role;
+  createdAt: string;
+}
+
+/**
+ * Boot-time auth snapshot. `needsSetup` means no accounts exist yet (first
+ * run); `locked` means the session is valid but requires the password to
+ * resume — the server rejects all non-auth API calls while locked.
+ */
+export interface AuthStatus {
+  needsSetup: boolean;
+  authenticated: boolean;
+  locked: boolean;
+  user?: AuthUser;
+}
+
 // ── Settings ─────────────────────────────────────────────────────────────────
 
-export type LlmProvider = "openai" | "anthropic" | "openrouter" | "ollama" | "custom" | "mock";
+export type LlmProvider = "openai" | "anthropic" | "openrouter" | "ollama" | "local" | "custom" | "mock";
 
 export interface Settings {
   provider: LlmProvider;
@@ -138,6 +282,8 @@ export const PROVIDER_PRESETS: Record<Exclude<LlmProvider, "custom" | "mock">, {
   anthropic: { baseUrl: "https://api.anthropic.com/v1", model: "claude-sonnet-4-5" },
   openrouter: { baseUrl: "https://openrouter.ai/api/v1", model: "anthropic/claude-sonnet-4.5" },
   ollama: { baseUrl: "http://localhost:11434/v1", model: "qwen3:32b" },
+  /** Arco Models desktop app — llama-server router managed in model-manager/. */
+  local: { baseUrl: "http://127.0.0.1:4650/v1", model: "Qwen3-1.7B-Q4_K_M" },
 };
 
 // ── Files ────────────────────────────────────────────────────────────────────

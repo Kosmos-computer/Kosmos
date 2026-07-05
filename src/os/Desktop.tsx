@@ -3,16 +3,18 @@
  * A deliberate contrast to matrix-os's 2k-line Desktop.tsx — every concern
  * lives in its own module and this file just composes them.
  */
-import { useEffect } from "react";
+import { useEffect, type CSSProperties } from "react";
 import { Bell } from "lucide-react";
 import { useOsStore } from "./osStore";
 import { useWindowStore } from "./windowStore";
 import { MenuBar } from "./MenuBar";
+import { NavRail } from "./NavRail";
 import { Dock } from "./Dock";
 import { WindowFrame } from "./WindowFrame";
 import { systemApp } from "./systemApps";
 import { AppSurface } from "../apps/appview/AppSurface";
 import { WebAppSurface } from "../apps/appview/WebAppSurface";
+import { AgentCursor } from "./cursor/AgentCursor";
 
 function Notifications() {
   const notifications = useOsStore((s) => s.notifications);
@@ -48,6 +50,7 @@ function WindowContent({ winId }: { winId: string }) {
 
 export function Desktop() {
   const wallpaper = useOsStore((s) => s.wallpaper);
+  const navExpanded = useOsStore((s) => s.navExpanded);
   const refreshApps = useOsStore((s) => s.refreshApps);
   const windows = useWindowStore((s) => s.windows);
   const open = useWindowStore((s) => s.open);
@@ -68,8 +71,13 @@ export function Desktop() {
   const focusedId = [...windows.filter((w) => !w.minimized)].sort((a, b) => b.z - a.z)[0]?.id;
 
   return (
-    <div className={`arco-desktop arco-wallpaper-${wallpaper}`}>
+    <div
+      className={`arco-desktop arco-wallpaper-${wallpaper}`}
+      // Maximized windows read this to sit flush against the rail edge.
+      style={{ "--arco-nav-width": navExpanded ? "200px" : "56px" } as CSSProperties}
+    >
       <MenuBar />
+      <NavRail />
       {windows.map((win) => (
         <WindowFrame key={win.id} win={win} focused={win.id === focusedId}>
           <WindowContent winId={win.id} />
@@ -77,6 +85,7 @@ export function Desktop() {
       ))}
       <Dock />
       <Notifications />
+      <AgentCursor />
     </div>
   );
 }

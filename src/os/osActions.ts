@@ -4,9 +4,11 @@
  * stores. Chat streams route their AgentEvents through here.
  */
 import type { AgentEvent } from "@shared/types";
+import { api } from "../lib/api";
 import { useOsStore } from "./osStore";
 import { useWindowStore } from "./windowStore";
 import { SYSTEM_APPS } from "./systemApps";
+import { executeCursorCommand } from "./cursor/uiDriver";
 import { useStudioStore } from "../apps/studio/studioStore";
 import { STUDIO_TITLE } from "../apps/studio/studioMeta";
 
@@ -26,6 +28,15 @@ export function handleShellEvent(event: AgentEvent): void {
 
     case "automations_changed":
       // The Automations app polls; nothing shell-global to do.
+      break;
+
+    case "cursor_request":
+      // The server parked a tool mid-turn waiting for this. Execute the
+      // cursor command (animation included) and answer; the driver never
+      // throws, so a reply is guaranteed before the server-side timeout.
+      void executeCursorCommand(event.command).then((result) =>
+        api.answerClientRequest(event.requestId, result),
+      );
       break;
 
     case "os_ui": {

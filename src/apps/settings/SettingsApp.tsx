@@ -14,6 +14,7 @@ const PROVIDERS: { id: LlmProvider; label: string }[] = [
   { id: "anthropic", label: "Anthropic" },
   { id: "openrouter", label: "OpenRouter" },
   { id: "ollama", label: "Ollama (local)" },
+  { id: "local", label: "Arco Models (local)" },
   { id: "custom", label: "Custom endpoint" },
 ];
 

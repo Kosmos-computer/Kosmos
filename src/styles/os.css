@@ -78,6 +78,219 @@
   color: var(--arco-text-primary);
 }
 
+/* ── Nav rail ─────────────────────────────────────────────────────────────── */
+/* Left column for app switching (ported from UI Experiments NavRail).
+   Collapsed: 56px icon strip. Expanded: icon + label rows. The desktop sets
+   --arco-nav-width so maximized windows can offset around it. */
+
+.arco-navrail {
+  position: absolute;
+  top: 34px; /* below the menu bar */
+  left: 0;
+  bottom: 0;
+  width: var(--arco-nav-width, 56px);
+  display: flex;
+  flex-direction: column;
+  padding: var(--arco-space-m) var(--arco-space-s);
+  background: var(--arco-bg-chrome);
+  backdrop-filter: var(--arco-backdrop-blur);
+  -webkit-backdrop-filter: var(--arco-backdrop-blur);
+  border-right: 1px solid var(--arco-border);
+  z-index: var(--arco-z-chrome);
+  transition: width var(--arco-dur-med) var(--arco-ease);
+  /* Visible so collapsed-state tooltips can escape the 56px column. */
+  overflow: visible;
+}
+
+.arco-navrail__brand-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--arco-space-xs);
+  margin-bottom: var(--arco-space-l);
+  flex-shrink: 0;
+}
+
+.arco-navrail__brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--arco-radius-s);
+  background: var(--arco-accent);
+  color: var(--arco-text-inverted);
+  font-weight: 700;
+  font-size: var(--arco-text-md);
+  flex-shrink: 0;
+  transition: opacity var(--arco-dur-fast);
+}
+
+.arco-navrail__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--arco-radius-s);
+  color: var(--arco-text-secondary);
+  flex-shrink: 0;
+}
+.arco-navrail__toggle:hover {
+  background: var(--arco-bg-hover);
+  color: var(--arco-text-primary);
+}
+
+/* Collapsed: the toggle hides behind the brand mark and appears on hover. */
+.arco-navrail:not(.arco-navrail--expanded) .arco-navrail__toggle {
+  position: absolute;
+  inset: 0 auto 0 4px;
+  margin: auto 0;
+  opacity: 0;
+}
+.arco-navrail:not(.arco-navrail--expanded) .arco-navrail__brand-row:hover .arco-navrail__brand,
+.arco-navrail:not(.arco-navrail--expanded) .arco-navrail__brand-row:focus-within .arco-navrail__brand {
+  opacity: 0;
+}
+.arco-navrail:not(.arco-navrail--expanded) .arco-navrail__brand-row:hover .arco-navrail__toggle,
+.arco-navrail:not(.arco-navrail--expanded) .arco-navrail__toggle:focus-visible {
+  opacity: 1;
+  background: var(--arco-bg-hover);
+  color: var(--arco-text-primary);
+}
+
+.arco-navrail__items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-2xs);
+  flex: 1;
+  min-height: 0;
+  /* Collapsed: visible so tooltips escape the 56px column (dock pattern). */
+  overflow: visible;
+}
+.arco-navrail--expanded .arco-navrail__items {
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.arco-navrail--expanded .arco-navrail__items::-webkit-scrollbar {
+  display: none;
+}
+
+.arco-navrail__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-2xs);
+}
+
+.arco-navrail__separator {
+  height: 1px;
+  margin: var(--arco-space-xs) var(--arco-space-xs);
+  background: var(--arco-border-strong);
+  flex-shrink: 0;
+}
+
+.arco-navrail__item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  width: 100%;
+  height: 36px;
+  padding: 0;
+  justify-content: center;
+  border-radius: var(--arco-radius-s);
+  color: var(--arco-text-secondary);
+  white-space: nowrap;
+  transition: background var(--arco-dur-fast), color var(--arco-dur-fast);
+}
+.arco-navrail--expanded .arco-navrail__item {
+  height: 34px;
+  padding: 0 var(--arco-space-s);
+  justify-content: flex-start;
+}
+.arco-navrail__item:hover {
+  background: var(--arco-bg-hover);
+  color: var(--arco-text-primary);
+}
+.arco-navrail__item--active {
+  background: var(--arco-bg-active);
+  color: var(--arco-text-primary);
+}
+.arco-navrail__item--generated {
+  color: var(--arco-accent);
+}
+.arco-navrail__item--generated:hover,
+.arco-navrail__item--generated.arco-navrail__item--active {
+  color: var(--arco-accent);
+}
+
+/* Accent bar on the left edge of the active item, like the source rail. */
+.arco-navrail:not(.arco-navrail--expanded) .arco-navrail__item--active::before {
+  content: "";
+  position: absolute;
+  left: -8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 16px;
+  border-radius: 2px;
+  background: var(--arco-accent);
+}
+
+.arco-navrail__item-icon {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+}
+
+.arco-navrail__item-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+  font-size: var(--arco-text-sm);
+}
+
+/* Open-window dot: below the icon when collapsed, trailing when expanded. */
+.arco-navrail__indicator {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--arco-text-secondary);
+}
+.arco-navrail__indicator--inline {
+  position: static;
+  transform: none;
+  flex-shrink: 0;
+}
+
+.arco-navrail__tooltip {
+  position: absolute;
+  left: 52px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 4px 10px;
+  border-radius: var(--arco-radius-s);
+  background: var(--arco-bg-elevated);
+  border: 1px solid var(--arco-border);
+  box-shadow: var(--arco-shadow-chrome);
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-primary);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--arco-dur-fast);
+  z-index: 1;
+}
+.arco-navrail__item:hover .arco-navrail__tooltip {
+  opacity: 1;
+}
+
 /* ── Dock ─────────────────────────────────────────────────────────────────── */
 
 .arco-dock {

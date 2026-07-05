@@ -89,11 +89,13 @@ export function WindowFrame({ win, focused, children }: Props) {
     resizeState.current = null;
   }, []);
 
+  // Maximized windows fill the area right of the nav rail (--arco-nav-width
+  // is set by Desktop) and below the menu bar.
   const style = win.maximized
     ? {
-        left: 0,
+        left: "var(--arco-nav-width, 0px)",
         top: MENUBAR_HEIGHT,
-        width: "100vw",
+        width: "calc(100vw - var(--arco-nav-width, 0px))",
         height: `calc(100vh - ${MENUBAR_HEIGHT}px)`,
         borderRadius: 0,
         zIndex: win.z,

@@ -5,6 +5,10 @@
 import type {
   AgentEvent,
   AppSummary,
+  AuthStatus,
+  AuthUser,
+  Role,
+  UserSummary,
   Automation,
   AutomationRun,
   DirListing,
@@ -21,15 +25,65 @@ import type {
   WorkspaceEntry,
 } from "@shared/types";
 
+/**
+ * Session-expiry broadcast: any 401 outside the auth endpoints means the
+ * cookie died or the session was locked from elsewhere. Rather than have
+ * every caller handle it, we emit one window event the auth store listens
+ * for, flipping the shell back to the login or lock screen.
+ */
+export type AuthFailureCode = "unauthenticated" | "locked";
+
+function broadcastAuthFailure(body: string): void {
+  let code: AuthFailureCode = "unauthenticated";
+  try {
+    const parsed = JSON.parse(body) as { code?: string };
+    if (parsed.code === "locked") code = "locked";
+  } catch {
+    // Non-JSON body — treat as a plain expired session.
+  }
+  window.dispatchEvent(new CustomEvent<AuthFailureCode>("arco:auth-failure", { detail: code }));
+}
+
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) {
     const body = await res.text().catch(() => "");
+    if (res.status === 401 && !res.url.includes("/api/auth/")) broadcastAuthFailure(body);
     throw new Error(`${res.status} ${res.statusText}${body ? `: ${body.slice(0, 200)}` : ""}`);
   }
   return res.json() as Promise<T>;
 }
 
+/** POST JSON helper — the auth routes are all small JSON round-trips. */
+function post<T>(url: string, body?: unknown): Promise<T> {
+  return fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+  }).then((r) => json<T>(r));
+}
+
 export const api = {
+  // Auth
+  authStatus: () => fetch("/api/auth/status").then((r) => json<AuthStatus>(r)),
+  authSetup: (data: { username: string; displayName?: string; password: string }) =>
+    post<{ user: AuthUser }>("/api/auth/setup", data),
+  authLogin: (username: string, password: string) =>
+    post<{ user: AuthUser }>("/api/auth/login", { username, password }),
+  authLogout: () => post<{ ok: true }>("/api/auth/logout"),
+  authLock: () => post<{ ok: true }>("/api/auth/lock"),
+  authUnlock: (password: string) => post<{ user: AuthUser }>("/api/auth/unlock", { password }),
+  listUsers: () => fetch("/api/auth/users").then((r) => json<UserSummary[]>(r)),
+  createUser: (data: { username: string; displayName?: string; password: string; role: Role }) =>
+    post<AuthUser>("/api/auth/users", data),
+  updateUser: (id: string, patch: { role?: Role; password?: string }) =>
+    fetch(`/api/auth/users/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    }).then((r) => json<{ ok: true }>(r)),
+  deleteUser: (id: string) =>
+    fetch(`/api/auth/users/${id}`, { method: "DELETE" }).then((r) => json<{ ok: true }>(r)),
+
   // Apps
   listApps: () => fetch("/api/apps").then((r) => json<AppSummary[]>(r)),
   getApp: (id: string) => fetch(`/api/apps/${id}`).then((r) => json<StoredApp>(r)),
@@ -173,6 +227,14 @@ export const api = {
       body: JSON.stringify({ approved }),
     }).then((r) => json<{ ok: boolean }>(r)),
 
+  // Client requests (agent cursor — shell-executed tool work)
+  answerClientRequest: (id: string, result: unknown) =>
+    fetch(`/api/client-requests/${id}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(result),
+    }).then((r) => json<{ ok: boolean }>(r)),
+
   // Settings
   getSettings: () => fetch("/api/settings").then((r) => json<Settings>(r)),
   saveSettings: (patch: Partial<Settings>) =>
@@ -201,6 +263,7 @@ export async function streamChat(
   });
   if (!res.ok || !res.body) {
     const body = await res.text().catch(() => "");
+    if (res.status === 401) broadcastAuthFailure(body);
     throw new Error(`Chat failed: ${res.status}${body ? ` ${body.slice(0, 200)}` : ""}`);
   }
 

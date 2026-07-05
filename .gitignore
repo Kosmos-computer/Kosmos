@@ -4,3 +4,7 @@ data/
 .env
 *.log
 .DS_Store
+
+# Tauri (model-manager)
+model-manager/src-tauri/target/
+model-manager/src-tauri/gen/

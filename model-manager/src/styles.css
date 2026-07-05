@@ -1,0 +1,363 @@
+/*
+ * Arco Models styles — tokens lifted from Arco OS (src/styles/tokens.css) so
+ * the manager feels native to the rest of the product. Dark theme default.
+ */
+
+:root {
+  --arco-font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --arco-font-mono: "SF Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --arco-text-xs: 11px;
+  --arco-text-sm: 12.5px;
+  --arco-text-md: 14px;
+  --arco-text-lg: 16px;
+  --arco-text-xl: 20px;
+
+  --arco-space-2xs: 2px;
+  --arco-space-xs: 4px;
+  --arco-space-s: 8px;
+  --arco-space-m: 12px;
+  --arco-space-l: 16px;
+  --arco-space-xl: 24px;
+
+  --arco-radius-s: 6px;
+  --arco-radius-m: 10px;
+  --arco-radius-l: 14px;
+
+  --arco-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --arco-dur-fast: 140ms;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --arco-bg-desktop: #0b0d12;
+  --arco-bg-surface: rgba(24, 27, 34, 0.92);
+  --arco-bg-surface-solid: #181b22;
+  --arco-bg-sunk: rgba(12, 14, 18, 0.75);
+  --arco-bg-elevated: rgba(38, 42, 52, 0.95);
+  --arco-bg-hover: rgba(255, 255, 255, 0.06);
+  --arco-bg-active: rgba(255, 255, 255, 0.1);
+
+  --arco-text-primary: #eef1f6;
+  --arco-text-secondary: #a8b0bf;
+  --arco-text-tertiary: #6d7585;
+  --arco-text-inverted: #10131a;
+
+  --arco-accent: #7c9dff;
+  --arco-accent-strong: #5b82ff;
+  --arco-accent-soft: rgba(124, 157, 255, 0.16);
+  --arco-success: #58c98b;
+  --arco-warning: #e5b567;
+  --arco-danger: #e5737d;
+  --arco-danger-soft: rgba(229, 115, 125, 0.14);
+
+  --arco-border: rgba(255, 255, 255, 0.09);
+  --arco-border-strong: rgba(255, 255, 255, 0.16);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+body {
+  font-family: var(--arco-font-ui);
+  font-size: var(--arco-text-md);
+  color: var(--arco-text-primary);
+  background:
+    radial-gradient(120% 90% at 15% 10%, rgba(94, 130, 255, 0.18), transparent 55%),
+    radial-gradient(100% 80% at 85% 20%, rgba(140, 90, 220, 0.14), transparent 55%),
+    var(--arco-bg-desktop);
+  height: 100vh;
+  overflow: hidden;
+  user-select: none;
+}
+
+#root {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+input,
+textarea {
+  font: inherit;
+}
+
+/* ── Layout ──────────────────────────────────────────────────────────────── */
+
+.mm-titlebar {
+  height: 44px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-secondary);
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
+.mm-shell {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(420px, 1.2fr) minmax(340px, 1fr);
+  gap: var(--arco-space-l);
+  padding: 0 var(--arco-space-l) var(--arco-space-l);
+}
+
+.mm-col {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-m);
+}
+
+.mm-scroll {
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* ── Cards & rows ────────────────────────────────────────────────────────── */
+
+.mm-card {
+  background: var(--arco-bg-surface);
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-l);
+  padding: var(--arco-space-m);
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-s);
+}
+
+.mm-card__title {
+  font-size: var(--arco-text-sm);
+  font-weight: 600;
+  color: var(--arco-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  justify-content: space-between;
+}
+
+.mm-model {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-xs);
+  padding: var(--arco-space-m);
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-m);
+  background: var(--arco-bg-sunk);
+}
+.mm-model--running {
+  border-color: var(--arco-success);
+}
+
+.mm-model__head {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+}
+.mm-model__name {
+  font-weight: 600;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mm-model__desc {
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+  line-height: 1.45;
+}
+.mm-model__meta {
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-secondary);
+  font-family: var(--arco-font-mono);
+}
+.mm-model__actions {
+  display: flex;
+  gap: var(--arco-space-s);
+  margin-top: var(--arco-space-xs);
+  align-items: center;
+}
+
+/* ── Badges ──────────────────────────────────────────────────────────────── */
+
+.mm-badge {
+  font-size: var(--arco-text-xs);
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--arco-border-strong);
+  color: var(--arco-text-secondary);
+  white-space: nowrap;
+}
+.mm-badge--running {
+  color: var(--arco-success);
+  border-color: var(--arco-success);
+}
+.mm-badge--accent {
+  color: var(--arco-accent);
+  border-color: var(--arco-accent);
+}
+.mm-badge--warn {
+  color: var(--arco-warning);
+  border-color: var(--arco-warning);
+}
+.mm-badge--danger {
+  color: var(--arco-danger);
+  border-color: var(--arco-danger);
+}
+
+/* ── Buttons & inputs ────────────────────────────────────────────────────── */
+
+.mm-btn {
+  font-size: var(--arco-text-sm);
+  padding: 5px 12px;
+  border-radius: var(--arco-radius-s);
+  border: 1px solid var(--arco-border-strong);
+  background: var(--arco-bg-elevated);
+  transition: background var(--arco-dur-fast) var(--arco-ease);
+}
+.mm-btn:hover:not(:disabled) {
+  background: var(--arco-bg-hover);
+}
+.mm-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.mm-btn--primary {
+  background: var(--arco-accent-strong);
+  border-color: transparent;
+  color: #fff;
+}
+.mm-btn--primary:hover:not(:disabled) {
+  background: var(--arco-accent);
+}
+.mm-btn--danger {
+  color: var(--arco-danger);
+}
+.mm-btn--ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--arco-text-secondary);
+}
+
+.mm-input {
+  background: var(--arco-bg-sunk);
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-s);
+  color: var(--arco-text-primary);
+  padding: 7px 10px;
+  font-size: var(--arco-text-sm);
+  outline: none;
+  width: 100%;
+  user-select: text;
+}
+.mm-input:focus {
+  border-color: var(--arco-accent);
+}
+
+/* ── Progress ────────────────────────────────────────────────────────────── */
+
+.mm-progress {
+  height: 6px;
+  background: var(--arco-bg-elevated);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.mm-progress__fill {
+  height: 100%;
+  background: var(--arco-accent);
+  border-radius: 999px;
+  transition: width 300ms var(--arco-ease);
+}
+
+/* ── Logs ────────────────────────────────────────────────────────────────── */
+
+.mm-logs {
+  font-family: var(--arco-font-mono);
+  font-size: var(--arco-text-xs);
+  line-height: 1.55;
+  color: var(--arco-text-secondary);
+  background: var(--arco-bg-sunk);
+  border-radius: var(--arco-radius-s);
+  padding: var(--arco-space-s);
+  overflow-y: auto;
+  flex: 1;
+  min-height: 80px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  user-select: text;
+}
+
+/* ── Test bench ──────────────────────────────────────────────────────────── */
+
+.mm-bench__result {
+  background: var(--arco-bg-sunk);
+  border-radius: var(--arco-radius-s);
+  padding: var(--arco-space-s) var(--arco-space-m);
+  font-size: var(--arco-text-sm);
+  line-height: 1.5;
+  max-height: 220px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  user-select: text;
+}
+.mm-bench__stats {
+  display: flex;
+  gap: var(--arco-space-l);
+  flex-wrap: wrap;
+}
+.mm-stat {
+  display: flex;
+  flex-direction: column;
+}
+.mm-stat__value {
+  font-family: var(--arco-font-mono);
+  font-size: var(--arco-text-lg);
+  font-weight: 600;
+  color: var(--arco-accent);
+}
+.mm-stat__label {
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+}
+
+.mm-error {
+  background: var(--arco-danger-soft);
+  border: 1px solid var(--arco-danger);
+  color: var(--arco-danger);
+  border-radius: var(--arco-radius-s);
+  padding: var(--arco-space-s) var(--arco-space-m);
+  font-size: var(--arco-text-sm);
+  display: flex;
+  justify-content: space-between;
+  gap: var(--arco-space-s);
+  user-select: text;
+}
+
+.mm-hint {
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+  line-height: 1.5;
+}
+
+.mm-code {
+  font-family: var(--arco-font-mono);
+  font-size: var(--arco-text-xs);
+  background: var(--arco-bg-sunk);
+  padding: 2px 6px;
+  border-radius: 4px;
+  user-select: text;
+}

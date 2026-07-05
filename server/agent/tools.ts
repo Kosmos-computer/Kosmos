@@ -15,13 +15,21 @@ import { promisify } from "node:util";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { mergeStatements } from "@openuidev/lang-core";
-import type { AgentEvent, OsUiAction, WorkspaceEntry } from "../../shared/types.js";
+import type {
+  AgentEvent,
+  CursorCommand,
+  CursorResult,
+  OsUiAction,
+  UiSnapshot,
+  WorkspaceEntry,
+} from "../../shared/types.js";
 import { lintOpenUICode, type LintReport } from "../lint/lint-openui.js";
 import { appStore } from "../stores/appStore.js";
 import { automationStore } from "../stores/automationStore.js";
 import { getActiveRoot, resolveProjectPath } from "../stores/projectStore.js";
 import { dbExecute, dbQuery } from "../stores/db.js";
 import { bus } from "../bus.js";
+import { requestClientAction } from "./clientRequests.js";
 import { isRiskyCommand, requestConfirmation } from "./confirmations.js";
 import type { LlmToolDef } from "./llm.js";
 
@@ -84,6 +92,53 @@ export async function runExec(command: string): Promise<{
       exitCode: typeof e.code === "number" ? e.code : 1,
     };
   }
+}
+
+// ── Agent cursor helpers ──────────────────────────────────────────────────────
+//
+// Cursor tools can't run headless: they emit a cursor_request event over the
+// live SSE stream, park on the clientRequests promise, and return whatever the
+// shell answered. The snapshot is re-compacted here into terse text lines —
+// tool results are truncated for the LLM, and a busy desktop's raw JSON
+// (rects, nesting) would blow that budget for no targeting benefit.
+
+/** One element as the LLM sees it: `e12 button "Save" @420,310 [disabled]`. */
+function formatElement(el: UiSnapshot["shell"][number]): string {
+  const flags = [el.disabled ? "disabled" : "", el.value ? `value="${el.value}"` : ""]
+    .filter(Boolean)
+    .join(", ");
+  return `${el.id} ${el.role} "${el.label}" @${el.rect.x},${el.rect.y}${flags ? ` [${flags}]` : ""}`;
+}
+
+function formatSnapshot(snap: UiSnapshot): Record<string, unknown> {
+  return {
+    screen: `${snap.screen.w}x${snap.screen.h}`,
+    windows: snap.windows.map((w) => ({
+      title: w.title,
+      focused: w.focused || undefined,
+      elements: w.elements.map(formatElement),
+    })),
+    shell: snap.shell.map(formatElement),
+    ...(snap.opaqueRegions.length > 0 ? { notReachable: snap.opaqueRegions } : {}),
+  };
+}
+
+/** Round-trip one cursor command through the attached shell. */
+async function runCursorCommand(
+  command: CursorCommand,
+  ctx: ToolContext,
+): Promise<Record<string, unknown>> {
+  if (!ctx.interactive) {
+    return { error: "Cursor tools need a user watching the desktop — unavailable in headless runs." };
+  }
+  const { requestId, result } = requestClientAction<CursorResult>();
+  ctx.emit({ type: "cursor_request", requestId, command });
+  const res = await result;
+  if (!res.ok) return { error: res.error ?? "Cursor command failed" };
+  return {
+    ...(res.outcome ? { outcome: res.outcome } : {}),
+    ...(res.snapshot ? { screenAfter: formatSnapshot(res.snapshot) } : {}),
+  };
 }
 
 export const agentTools: AgentTool[] = [
@@ -465,6 +520,62 @@ export const agentTools: AgentTool[] = [
       ctx.emit({ type: "os_ui", action });
       return { ok: true };
     },
+  },
+
+  // ── Agent cursor (virtual mouse over the live desktop) ─────────────────────
+  {
+    name: "ui_snapshot",
+    description:
+      "See the user's desktop: returns every visible window and its interactive elements (buttons, inputs, links) with stable element ids. Call this before mouse_click/type_text, and again whenever the UI may have changed. Element ids stay valid until the element unmounts.",
+    parameters: { type: "object", properties: {} },
+    execute: async (_args, ctx) => runCursorCommand({ kind: "snapshot" }, ctx),
+  },
+  {
+    name: "mouse_click",
+    description:
+      "Move the visible AI cursor to an element and click it, like a human demonstrating the UI. Target by element id from ui_snapshot (preferred — survives window moves) or raw x/y screen coordinates. Returns what was clicked plus a fresh snapshot of the screen after the click.",
+    parameters: {
+      type: "object",
+      properties: {
+        targetId: { type: "string", description: "Element id from ui_snapshot, e.g. 'e12'" },
+        x: { type: "number", description: "Screen x (only when no targetId fits)" },
+        y: { type: "number", description: "Screen y (only when no targetId fits)" },
+      },
+    },
+    execute: async (args, ctx) =>
+      runCursorCommand(
+        {
+          kind: "click",
+          ...(typeof args.targetId === "string" ? { targetId: args.targetId } : {}),
+          ...(typeof args.x === "number" ? { x: args.x } : {}),
+          ...(typeof args.y === "number" ? { y: args.y } : {}),
+        },
+        ctx,
+      ),
+  },
+  {
+    name: "type_text",
+    description:
+      "Click into a text input/textarea (by element id from ui_snapshot) and type text character-by-character with the visible AI cursor. Set submit=true to press Enter afterwards. Replaces the field's existing content.",
+    parameters: {
+      type: "object",
+      properties: {
+        targetId: { type: "string", description: "Element id of the input, e.g. 'e7'" },
+        text: { type: "string", description: "The text to type" },
+        submit: { type: "boolean", description: "Press Enter after typing" },
+      },
+      required: ["targetId", "text"],
+    },
+    execute: async (args, ctx) =>
+      runCursorCommand(
+        {
+          kind: "type",
+          targetId: String(args.targetId ?? ""),
+          text: String(args.text ?? ""),
+          ...(args.submit === true ? { submit: true } : {}),
+        },
+        ctx,
+      ),
   },
 ];
 

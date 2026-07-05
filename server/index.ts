@@ -23,8 +23,11 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
 import type { AgentEvent, DirListing, Settings } from "../shared/types.js";
+import { requireAuth, requireCap, type AuthEnv } from "./auth/middleware.js";
+import { authRoutes } from "./auth/routes.js";
 import { runAgentTurn } from "./agent/loop.js";
 import { invokeRuntimeTool, runExec } from "./agent/tools.js";
+import { resolveClientRequest } from "./agent/clientRequests.js";
 import { resolveConfirmation } from "./agent/confirmations.js";
 import { runAutomationNow, startScheduler } from "./automations/scheduler.js";
 import { dataDirs, ensureDataDirs, loadSettings, maskSettings, saveSettings } from "./env.js";
@@ -41,11 +44,20 @@ const execFileAsync = promisify(execFile);
 
 ensureDataDirs();
 
-const app = new Hono();
+const app = new Hono<AuthEnv>();
+
+// ── Auth ─────────────────────────────────────────────────────────────────────
+//
+// /api/auth/* is the only unauthenticated API surface; everything else under
+// /api requires a live, unlocked session. Capability guards (requireCap) then
+// gate the sensitive routes per role — see ROLE_CAPABILITIES in shared/types.
+
+app.route("/api/auth", authRoutes);
+app.use("/api/*", requireAuth);
 
 // ── Chat ─────────────────────────────────────────────────────────────────────
 
-app.post("/api/chat", async (c) => {
+app.post("/api/chat", requireCap("chat"), async (c) => {
   const body = (await c.req.json()) as { sessionId?: string; message: string };
   const message = (body.message ?? "").trim();
   if (!message) return c.json({ error: "message is required" }, 400);
@@ -87,7 +99,7 @@ app.get("/api/sessions/:id", async (c) => {
   return c.json(session);
 });
 
-app.delete("/api/sessions/:id", async (c) => {
+app.delete("/api/sessions/:id", requireCap("chat"), async (c) => {
   await sessionStore.delete(c.req.param("id"));
   return c.json({ ok: true });
 });
@@ -102,12 +114,12 @@ app.get("/api/apps/:id", async (c) => {
   return c.json(record);
 });
 
-app.delete("/api/apps/:id", async (c) => {
+app.delete("/api/apps/:id", requireCap("apps:manage"), async (c) => {
   await appStore.delete(c.req.param("id"));
   return c.json({ ok: true });
 });
 
-app.post("/api/apps/:id/restore", async (c) => {
+app.post("/api/apps/:id/restore", requireCap("apps:manage"), async (c) => {
   const body = (await c.req.json()) as { versionIndex: number };
   const record = await appStore.restore(c.req.param("id"), body.versionIndex);
   return c.json(record);
@@ -115,7 +127,7 @@ app.post("/api/apps/:id/restore", async (c) => {
 
 // ── App runtime tool bridge (Query/Mutation — no LLM in the loop) ───────────
 
-app.post("/api/tools/invoke", async (c) => {
+app.post("/api/tools/invoke", requireCap("chat"), async (c) => {
   const body = (await c.req.json()) as { tool: string; params?: Record<string, unknown> };
   try {
     const result = await invokeRuntimeTool(body.tool, body.params ?? {});
@@ -129,14 +141,14 @@ app.post("/api/tools/invoke", async (c) => {
 
 app.get("/api/automations", async (c) => c.json(await automationStore.list()));
 
-app.post("/api/automations", async (c) => {
+app.post("/api/automations", requireCap("automations:manage"), async (c) => {
   const body = (await c.req.json()) as { name: string; schedule: string; prompt: string };
   const automation = await automationStore.create(body);
   bus.emit("automations_changed");
   return c.json(automation);
 });
 
-app.patch("/api/automations/:id", async (c) => {
+app.patch("/api/automations/:id", requireCap("automations:manage"), async (c) => {
   const body = (await c.req.json()) as Partial<{
     name: string;
     schedule: string;
@@ -148,20 +160,20 @@ app.patch("/api/automations/:id", async (c) => {
   return c.json(automation);
 });
 
-app.delete("/api/automations/:id", async (c) => {
+app.delete("/api/automations/:id", requireCap("automations:manage"), async (c) => {
   await automationStore.delete(c.req.param("id"));
   bus.emit("automations_changed");
   return c.json({ ok: true });
 });
 
-app.post("/api/automations/:id/run", async (c) => {
+app.post("/api/automations/:id/run", requireCap("automations:manage"), async (c) => {
   const run = await runAutomationNow(c.req.param("id"));
   return c.json(run);
 });
 
 // ── Workspace files (rooted at the active project) ──────────────────────────
 
-app.get("/api/files", async (c) => {
+app.get("/api/files", requireCap("files:read"), async (c) => {
   const rel = c.req.query("path") ?? ".";
   const abs = resolveProjectPath(rel);
   const entries = await fs.readdir(abs, { withFileTypes: true });
@@ -185,14 +197,14 @@ app.get("/api/files", async (c) => {
   return c.json(out);
 });
 
-app.get("/api/files/content", async (c) => {
+app.get("/api/files/content", requireCap("files:read"), async (c) => {
   const rel = c.req.query("path");
   if (!rel) return c.json({ error: "path is required" }, 400);
   const content = await fs.readFile(resolveProjectPath(rel), "utf-8");
   return c.json({ path: rel, content });
 });
 
-app.put("/api/files/content", async (c) => {
+app.put("/api/files/content", requireCap("files:write"), async (c) => {
   const body = (await c.req.json()) as { path: string; content: string };
   const abs = resolveProjectPath(body.path);
   await fs.mkdir(path.dirname(abs), { recursive: true });
@@ -204,7 +216,7 @@ app.put("/api/files/content", async (c) => {
 
 app.get("/api/projects", (c) => c.json(projectStore.list()));
 
-app.post("/api/projects", async (c) => {
+app.post("/api/projects", requireCap("files:write"), async (c) => {
   const body = (await c.req.json()) as { path: string };
   try {
     const project = projectStore.add(body.path);
@@ -214,7 +226,7 @@ app.post("/api/projects", async (c) => {
   }
 });
 
-app.post("/api/projects/active", async (c) => {
+app.post("/api/projects/active", requireCap("files:write"), async (c) => {
   const body = (await c.req.json()) as { id: string | null };
   try {
     projectStore.setActive(body.id);
@@ -224,7 +236,7 @@ app.post("/api/projects/active", async (c) => {
   }
 });
 
-app.delete("/api/projects/:id", (c) => {
+app.delete("/api/projects/:id", requireCap("files:write"), (c) => {
   projectStore.remove(c.req.param("id"));
   return c.json(projectStore.list());
 });
@@ -234,7 +246,7 @@ app.delete("/api/projects/:id", (c) => {
  * at a time, starting from the home directory. Flags git repos so the picker
  * can badge them.
  */
-app.get("/api/fs/browse", async (c) => {
+app.get("/api/fs/browse", requireCap("files:read"), async (c) => {
   const requested = c.req.query("path") || os.homedir();
   const abs = path.resolve(requested);
   let entries;
@@ -282,7 +294,7 @@ app.get("/api/git/diff", async (c) => {
   return c.json(await gitFileDiff(rel));
 });
 
-app.post("/api/git/commit", async (c) => {
+app.post("/api/git/commit", requireCap("git:write"), async (c) => {
   const body = (await c.req.json()) as { message: string; paths?: string[] };
   if (!body.message?.trim()) return c.json({ error: "Commit message is required" }, 400);
   try {
@@ -292,7 +304,7 @@ app.post("/api/git/commit", async (c) => {
   }
 });
 
-app.post("/api/git/push", async (c) => {
+app.post("/api/git/push", requireCap("git:write"), async (c) => {
   try {
     return c.json(await gitPush());
   } catch (err) {
@@ -300,7 +312,7 @@ app.post("/api/git/push", async (c) => {
   }
 });
 
-app.post("/api/git/pull", async (c) => {
+app.post("/api/git/pull", requireCap("git:write"), async (c) => {
   try {
     return c.json(await gitPull());
   } catch (err) {
@@ -312,7 +324,7 @@ app.post("/api/git/pull", async (c) => {
 
 app.get("/api/webapps", (c) => c.json(webAppStore.list()));
 
-app.post("/api/webapps", async (c) => {
+app.post("/api/webapps", requireCap("apps:manage"), async (c) => {
   const body = (await c.req.json()) as {
     name: string;
     url: string;
@@ -321,6 +333,11 @@ app.post("/api/webapps", async (c) => {
   };
   if (!body.name?.trim() || !body.url?.trim()) {
     return c.json({ error: "name and url are required" }, 400);
+  }
+  // A launch command runs arbitrary shell on the host — registering one is
+  // an exec-level act even though managing plain URLs is not.
+  if (body.command?.trim() && !c.get("user").capabilities.includes("exec")) {
+    return c.json({ error: "Missing permission: exec (required to register launch commands)" }, 403);
   }
   return c.json(
     webAppStore.add({
@@ -332,7 +349,7 @@ app.post("/api/webapps", async (c) => {
   );
 });
 
-app.delete("/api/webapps/:id", (c) => {
+app.delete("/api/webapps/:id", requireCap("apps:manage"), (c) => {
   webAppStore.remove(c.req.param("id"));
   return c.json({ ok: true });
 });
@@ -366,15 +383,15 @@ app.post("/api/webapps/:id/launch", async (c) => {
 
 app.get("/api/runs", (c) => c.json(listRuns()));
 
-app.post("/api/runs", async (c) => {
+app.post("/api/runs", requireCap("exec"), async (c) => {
   const body = (await c.req.json()) as { command: string };
   if (!body.command?.trim()) return c.json({ error: "command is required" }, 400);
   return c.json(startRun(body.command.trim()));
 });
 
-app.get("/api/runs/:id/log", (c) => c.json({ log: runLog(c.req.param("id")) }));
+app.get("/api/runs/:id/log", requireCap("exec"), (c) => c.json({ log: runLog(c.req.param("id")) }));
 
-app.delete("/api/runs/:id", (c) => c.json({ ok: stopRun(c.req.param("id")) }));
+app.delete("/api/runs/:id", requireCap("exec"), (c) => c.json({ ok: stopRun(c.req.param("id")) }));
 
 // ── macOS integration ────────────────────────────────────────────────────────
 //
@@ -383,7 +400,7 @@ app.delete("/api/runs/:id", (c) => c.json({ ok: stopRun(c.req.param("id")) }));
 // user-intent weight with TCC and triggers consent prompts), and deep-links
 // into the Privacy & Security pane when access was already denied.
 
-app.post("/api/system/native-pick", async (c) => {
+app.post("/api/system/native-pick", requireCap("files:write"), async (c) => {
   try {
     const { stdout } = await execFileAsync(
       "osascript",
@@ -398,7 +415,7 @@ app.post("/api/system/native-pick", async (c) => {
   }
 });
 
-app.post("/api/system/open-privacy-settings", async (c) => {
+app.post("/api/system/open-privacy-settings", requireCap("settings:write"), async (c) => {
   await execFileAsync("open", [
     "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles",
   ]);
@@ -407,15 +424,23 @@ app.post("/api/system/open-privacy-settings", async (c) => {
 
 // ── Exec confirmations ───────────────────────────────────────────────────────
 
-app.post("/api/confirmations/:id", async (c) => {
+app.post("/api/confirmations/:id", requireCap("chat"), async (c) => {
   const body = (await c.req.json()) as { approved: boolean };
   const known = resolveConfirmation(c.req.param("id"), Boolean(body.approved));
   return c.json({ ok: known });
 });
 
+// ── Client requests (agent cursor & other shell-executed tool work) ─────────
+
+app.post("/api/client-requests/:id", requireCap("chat"), async (c) => {
+  const result = (await c.req.json()) as unknown;
+  const known = resolveClientRequest(c.req.param("id"), result);
+  return c.json({ ok: known });
+});
+
 // ── Terminal ─────────────────────────────────────────────────────────────────
 
-app.post("/api/exec", async (c) => {
+app.post("/api/exec", requireCap("exec"), async (c) => {
   const body = (await c.req.json()) as { command: string };
   return c.json(await runExec(body.command ?? ""));
 });
@@ -424,7 +449,7 @@ app.post("/api/exec", async (c) => {
 
 app.get("/api/settings", (c) => c.json(maskSettings(loadSettings())));
 
-app.put("/api/settings", async (c) => {
+app.put("/api/settings", requireCap("settings:write"), async (c) => {
   const patch = (await c.req.json()) as Partial<Settings>;
   // A masked key echoed back from the client must not clobber the real one.
   if (patch.apiKey && patch.apiKey.startsWith("••••")) delete patch.apiKey;

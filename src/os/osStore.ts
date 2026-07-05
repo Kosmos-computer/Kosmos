@@ -21,6 +21,8 @@ interface OsStore {
   apps: AppSummary[];
   webApps: WebApp[];
   agentBusy: boolean;
+  /** Left nav rail: collapsed icon rail (false) vs expanded icon+label list (true). */
+  navExpanded: boolean;
 
   setTheme: (theme: Theme) => void;
   setWallpaper: (wallpaper: string) => void;
@@ -28,6 +30,7 @@ interface OsStore {
   dismissNotification: (id: string) => void;
   refreshApps: () => Promise<void>;
   setAgentBusy: (busy: boolean) => void;
+  setNavExpanded: (expanded: boolean) => void;
 }
 
 export const useOsStore = create<OsStore>((set) => ({
@@ -37,6 +40,7 @@ export const useOsStore = create<OsStore>((set) => ({
   apps: [],
   webApps: [],
   agentBusy: false,
+  navExpanded: localStorage.getItem("arco:nav-expanded") === "true",
 
   setTheme: (theme) => {
     localStorage.setItem("arco:theme", theme);
@@ -74,4 +78,9 @@ export const useOsStore = create<OsStore>((set) => ({
   },
 
   setAgentBusy: (busy) => set({ agentBusy: busy }),
+
+  setNavExpanded: (expanded) => {
+    localStorage.setItem("arco:nav-expanded", String(expanded));
+    set({ navExpanded: expanded });
+  },
 }));

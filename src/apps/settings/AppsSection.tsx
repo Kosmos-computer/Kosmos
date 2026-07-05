@@ -154,6 +154,13 @@ export function AppsSection() {
               ))}
             </div>
           )}
+          {(app.manifest.tools?.length ?? 0) > 0 && (
+            <span style={{ color: "var(--arco-text-tertiary)", fontSize: "var(--arco-text-xs)" }}>
+              Contributes agent tools:{" "}
+              {app.manifest.tools!.map((t) => t.name).join(", ")} — calls run under this app's
+              permissions above.
+            </span>
+          )}
         </div>
       ))}
 

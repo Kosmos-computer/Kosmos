@@ -14,6 +14,7 @@ import { dbExecute, dbQuery } from "../stores/db.js";
 import { invokeIntent } from "../capabilities/registry.js";
 import { appendAudit, grantStore } from "./grantStore.js";
 import { installedAppStore } from "./installedAppStore.js";
+import { bus } from "../bus.js";
 
 // ── Window tokens ─────────────────────────────────────────────────────────────
 
@@ -39,8 +40,9 @@ export function resolveToken(token: string): string | undefined {
 
 // ── Dispatch ──────────────────────────────────────────────────────────────────
 
-/** Per-app private SQLite namespace, e.g. "app_core-calendar". */
-function storageNamespace(appId: string): string {
+/** Per-app private SQLite namespace, e.g. "app_core-calendar". Shared with
+ *  the app-tool compiler, which runs storage-query bindings in it. */
+export function storageNamespace(appId: string): string {
   return `app_${appId.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
 }
 
@@ -93,6 +95,26 @@ export async function dispatchAppBridge(
       if (method === "storage.query") return dbQuery(sql, bind, ns);
       const result = dbExecute(sql, bind, ns);
       return { ...result, lastInsertRowid: Number(result.lastInsertRowid) };
+    }
+
+    case "events.emit": {
+      // Manifest-gated topics: an app may only announce what it declared.
+      // The topic republishes on the process bus as app-event:<topic> —
+      // system services and future subscribers pick it up there.
+      const topic = String(params.topic ?? "");
+      const declared = app.manifest.events?.emits ?? [];
+      appendAudit({
+        caller: { kind: "app", appId },
+        method: `events.emit:${topic}`,
+        allowed: declared.includes(topic),
+      });
+      if (!declared.includes(topic)) {
+        throw new BridgeError(
+          `App ${app.manifest.name} does not declare event topic "${topic}" in its manifest`,
+        );
+      }
+      bus.emit(`app-event:${topic}`, { appId, payload: params.payload });
+      return { emitted: true };
     }
 
     default:

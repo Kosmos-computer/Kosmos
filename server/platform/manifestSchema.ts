@@ -29,6 +29,23 @@ const permissionSchema = z.discriminatedUnion("kind", [
   }),
 ]);
 
+const toolContributionSchema = z.object({
+  // Local tool name — the compiler namespaces it, so only the charset the
+  // LLM tool-name grammar allows.
+  name: z.string().regex(/^[a-z0-9_]{1,40}$/, "tool name must be snake_case"),
+  description: z.string().min(1).max(500),
+  parameters: z.record(z.string(), z.unknown()),
+  binding: z.discriminatedUnion("kind", [
+    z.object({ kind: z.literal("intent"), intent: z.string().min(1) }),
+    z.object({
+      kind: z.literal("storage-query"),
+      // Reads only — a contributed tool may look at the app's own data but
+      // never mutate through this binding (writes go through intents).
+      sql: z.string().regex(/^\s*select\b/i, "storage-query bindings must be a SELECT"),
+    }),
+  ]),
+});
+
 export const manifestSchema = z.object({
   id: z
     .string()
@@ -41,6 +58,13 @@ export const manifestSchema = z.object({
   entry: entrySchema,
   implements: z.array(z.string()).optional(),
   permissions: z.array(permissionSchema),
+  tools: z.array(toolContributionSchema).max(20).optional(),
+  events: z
+    .object({
+      emits: z.array(z.string()).optional(),
+      subscribes: z.array(z.string()).optional(),
+    })
+    .optional(),
 });
 
 export function parseManifest(raw: unknown): { manifest?: AppManifest; error?: string } {

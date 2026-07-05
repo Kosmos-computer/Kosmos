@@ -13,6 +13,16 @@ import crypto from "node:crypto";
 import Database from "better-sqlite3";
 import type { CalendarEvent, CalendarEventInput } from "../../shared/capabilities/calendar.js";
 import { dataDirs } from "../env.js";
+import { bus } from "../bus.js";
+
+/**
+ * Pilot event topic: every write announces "calendar.changed" on the bus so
+ * subscribers (open calendar windows, future widgets/automations) can react
+ * to agent- or app-made changes without polling.
+ */
+function announceChange(): void {
+  bus.emit("app-event:calendar.changed", { appId: "system" });
+}
 
 let db: Database.Database | null = null;
 
@@ -112,6 +122,7 @@ export const calendarService = {
          VALUES ($id, $title, $start, $end, $allDay, $location, $notes, $createdAt, $updatedAt)`,
       )
       .run({ ...event, allDay: event.allDay ? 1 : 0 });
+    announceChange();
     return event;
   },
 
@@ -136,10 +147,13 @@ export const calendarService = {
          location=$location, notes=$notes, updatedAt=$updatedAt WHERE id=$id`,
       )
       .run({ ...next, allDay: next.allDay ? 1 : 0 });
+    announceChange();
     return next;
   },
 
   delete(id: string): boolean {
-    return getDb().prepare("DELETE FROM events WHERE id = ?").run(id).changes > 0;
+    const deleted = getDb().prepare("DELETE FROM events WHERE id = ?").run(id).changes > 0;
+    if (deleted) announceChange();
+    return deleted;
   },
 };

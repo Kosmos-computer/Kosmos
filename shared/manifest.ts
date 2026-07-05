@@ -42,6 +42,27 @@ export type PermissionRequest =
   /** Client-side shell affordances, checked in the AppHost. */
   | { kind: "shell"; features: ShellFeature[] };
 
+/**
+ * A tool an app contributes to the user's agent. Bindings are deliberately
+ * declarative: dispatch is deterministic code (an intent through the
+ * capability registry, or a parameterized read of the app's own storage) —
+ * no app code runs to serve a tool call, and the app's own grant sheet is
+ * enforced on every dispatch, so an app can't hand the agent more power
+ * than the user gave the app.
+ */
+export interface ToolContribution {
+  /** Local name, e.g. "create_task" — namespaced app__<id>__<name> for the LLM. */
+  name: string;
+  description: string;
+  /** JSON Schema for the arguments (same shape as any LLM tool def). */
+  parameters: Record<string, unknown>;
+  binding:
+    /** Route the arguments through the capability registry as this intent. */
+    | { kind: "intent"; intent: string }
+    /** Run a fixed, parameterized SELECT on the app's own storage namespace. */
+    | { kind: "storage-query"; sql: string };
+}
+
 export interface AppManifest {
   /** Reverse-DNS identity. Core apps use "core.*", e.g. "core.calendar". */
   id: string;
@@ -57,6 +78,10 @@ export interface AppManifest {
   implements?: string[];
   /** Capabilities this app consumes. */
   permissions: PermissionRequest[];
+  /** Tools this app adds to the user's agent (disclosed at install time). */
+  tools?: ToolContribution[];
+  /** Event topics this app announces and listens for (bridge-gated). */
+  events?: { emits?: string[]; subscribes?: string[] };
 }
 
 // ── Installation & grants ────────────────────────────────────────────────────
@@ -126,7 +151,7 @@ export function describePermissionKey(key: string): string {
 // window's token (header: x-app-token). The app never claims its own
 // identity.
 
-export type BridgeMethod = "intent.invoke" | "storage.query" | "storage.execute";
+export type BridgeMethod = "intent.invoke" | "storage.query" | "storage.execute" | "events.emit";
 
 export interface BridgeRequest {
   method: BridgeMethod;

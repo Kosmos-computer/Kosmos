@@ -50,6 +50,7 @@ import { mcpServerStore } from "./mcp/serverStore.js";
 import { mcpSupervisor } from "./mcp/supervisor.js";
 import { mcpLogFile } from "./mcp/client.js";
 import "./mcp/tools.js"; // registers the MCP tool contributor with the agent registry
+import "./platform/appTools.js"; // registers installed apps' tool contributions
 import { skillStore } from "./skills/skillStore.js";
 import { bus } from "./bus.js";
 

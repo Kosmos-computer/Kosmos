@@ -38,11 +38,16 @@ import { automationStore } from "./stores/automationStore.js";
 import { getActiveRoot, projectStore, resolveProjectPath } from "./stores/projectStore.js";
 import { sessionStore } from "./stores/sessionStore.js";
 import { webAppStore } from "./stores/webAppStore.js";
+import { installedAppStore, APPS_DIR } from "./platform/installedAppStore.js";
+import { grantStore } from "./platform/grantStore.js";
+import { parseManifest } from "./platform/manifestSchema.js";
+import { BridgeError, dispatchAppBridge, mintToken, resolveToken } from "./platform/bridge.js";
 import { bus } from "./bus.js";
 
 const execFileAsync = promisify(execFile);
 
 ensureDataDirs();
+installedAppStore.ensureSeeds();
 
 const app = new Hono<AuthEnv>();
 
@@ -379,6 +384,84 @@ app.post("/api/webapps/:id/launch", async (c) => {
   return c.json({ running: false, starting: startingApps.has(webApp.id) });
 });
 
+// ── Installed apps (manifest-based platform apps) ────────────────────────────
+
+app.get("/api/installed-apps", (c) =>
+  c.json(
+    installedAppStore.list().map((a) => ({
+      ...a,
+      grants: grantStore.grants(a.manifest.id),
+    })),
+  ),
+);
+
+/** Install from a manifest URL or a raw manifest object. Same id = upgrade. */
+app.post("/api/installed-apps", requireCap("apps:manage"), async (c) => {
+  const body = (await c.req.json()) as { url?: string; manifest?: unknown };
+  let raw = body.manifest;
+  if (!raw && body.url?.trim()) {
+    try {
+      const res = await fetch(body.url.trim(), { signal: AbortSignal.timeout(10_000) });
+      if (!res.ok) return c.json({ error: `Manifest fetch failed: ${res.status}` }, 400);
+      raw = await res.json();
+    } catch (err) {
+      return c.json({ error: err instanceof Error ? err.message : "Manifest fetch failed" }, 400);
+    }
+  }
+  if (!raw) return c.json({ error: "Provide a manifest or a manifest url" }, 400);
+  const { manifest, error } = parseManifest(raw);
+  if (!manifest) return c.json({ error }, 400);
+  const record = installedAppStore.install(manifest, body.url ? "url" : "manifest");
+  return c.json({ ...record, grants: grantStore.grants(manifest.id) });
+});
+
+app.patch("/api/installed-apps/:id", requireCap("apps:manage"), async (c) => {
+  const body = (await c.req.json()) as { enabled?: boolean };
+  const record = installedAppStore.setEnabled(c.req.param("id"), body.enabled !== false);
+  if (!record) return c.json({ error: "Not found" }, 404);
+  return c.json({ ...record, grants: grantStore.grants(record.manifest.id) });
+});
+
+app.delete("/api/installed-apps/:id", requireCap("apps:manage"), (c) => {
+  installedAppStore.uninstall(c.req.param("id"));
+  return c.json({ ok: true });
+});
+
+app.put("/api/installed-apps/:id/grants", requireCap("apps:manage"), async (c) => {
+  const body = (await c.req.json()) as { key: string; state: "granted" | "denied" | "ask" };
+  if (!body.key || !["granted", "denied", "ask"].includes(body.state)) {
+    return c.json({ error: "key and state (granted|denied|ask) are required" }, 400);
+  }
+  grantStore.set(c.req.param("id"), body.key, body.state);
+  return c.json({ grants: grantStore.grants(c.req.param("id")) });
+});
+
+/**
+ * Mint a per-window bridge token. The AppHost attaches it to every forwarded
+ * bridge call — app identity comes from this token, never from the app.
+ */
+app.post("/api/installed-apps/:id/token", (c) => {
+  const record = installedAppStore.get(c.req.param("id"));
+  if (!record || !record.enabled) return c.json({ error: "App not installed or disabled" }, 404);
+  return c.json({ token: mintToken(record.manifest.id) });
+});
+
+// ── Bridge (the single choke point for app calls) ────────────────────────────
+
+app.post("/api/bridge", async (c) => {
+  const token = c.req.header("x-app-token") ?? "";
+  const appId = resolveToken(token);
+  if (!appId) return c.json({ error: "Invalid or expired bridge token" }, 403);
+  const body = (await c.req.json()) as { method?: string; params?: Record<string, unknown> };
+  try {
+    const result = await dispatchAppBridge(appId, String(body.method ?? ""), body.params ?? {});
+    return c.json({ result });
+  } catch (err) {
+    if (err instanceof BridgeError) return c.json({ error: err.message }, 403);
+    return c.json({ error: err instanceof Error ? err.message : "Bridge call failed" }, 400);
+  }
+});
+
 // ── Dev-server runs (Browser tab) ────────────────────────────────────────────
 
 app.get("/api/runs", (c) => c.json(listRuns()));
@@ -455,6 +538,30 @@ app.put("/api/settings", requireCap("settings:write"), async (c) => {
   if (patch.apiKey && patch.apiKey.startsWith("••••")) delete patch.apiKey;
   return c.json(maskSettings(saveSettings(patch)));
 });
+
+// ── App static assets (unauthenticated, like the shell itself) ──────────────
+//
+// Bundled core apps are served from ./apps/<name>/ at /apps/<name>/, and the
+// app SDK at /app-sdk.js so bundle apps can import it without a build step.
+// Privileged calls still require the bridge token + session.
+
+app.get("/app-sdk.js", async (c) => {
+  const sdkPath = path.resolve(process.cwd(), "packages/app-sdk/sdk.js");
+  try {
+    const source = await fs.readFile(sdkPath, "utf-8");
+    return c.body(source, 200, { "Content-Type": "text/javascript; charset=utf-8" });
+  } catch {
+    return c.json({ error: "SDK not found" }, 404);
+  }
+});
+
+app.use(
+  "/apps/*",
+  serveStatic({
+    root: path.relative(process.cwd(), APPS_DIR) || ".",
+    rewriteRequestPath: (p) => p.replace(/^\/apps/, ""),
+  }),
+);
 
 // ── Static shell (production) ────────────────────────────────────────────────
 

@@ -42,11 +42,20 @@ export function handleShellEvent(event: AgentEvent): void {
     case "os_ui": {
       const action = event.action;
       if (action.action === "open_app") {
-        // The app may have been created milliseconds ago — refresh, then open
-        // with the fresh title.
+        // One id space for the agent: generated apps first, then installed
+        // platform apps. Refresh first — the app may have been created (or
+        // installed) milliseconds ago.
         void os.refreshApps().then(() => {
-          const app = useOsStore.getState().apps.find((a) => a.id === action.appId);
-          wm.open({ type: "app", appId: action.appId }, app?.title ?? "App");
+          const state = useOsStore.getState();
+          const generated = state.apps.find((a) => a.id === action.appId);
+          if (generated) {
+            wm.open({ type: "generated", appId: generated.id }, generated.title);
+            return;
+          }
+          const installed = state.installedApps.find((a) => a.manifest.id === action.appId);
+          if (installed?.enabled) {
+            wm.open({ type: "installed", appId: installed.manifest.id }, installed.manifest.name);
+          }
         });
       } else if (action.action === "open_system") {
         // Look up lazily: resolving SYSTEM_APPS at module scope creates a

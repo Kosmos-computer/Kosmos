@@ -4,6 +4,7 @@
  */
 import { create } from "zustand";
 import type { AppSummary, WebApp } from "@shared/types";
+import type { InstalledAppInfo } from "@shared/manifest";
 import { api } from "../lib/api";
 
 export type Theme = "dark" | "light";
@@ -20,6 +21,7 @@ interface OsStore {
   notifications: OsNotification[];
   apps: AppSummary[];
   webApps: WebApp[];
+  installedApps: InstalledAppInfo[];
   agentBusy: boolean;
   /** Left nav rail: collapsed icon rail (false) vs expanded icon+label list (true). */
   navExpanded: boolean;
@@ -39,6 +41,7 @@ export const useOsStore = create<OsStore>((set) => ({
   notifications: [],
   apps: [],
   webApps: [],
+  installedApps: [],
   agentBusy: false,
   navExpanded: localStorage.getItem("arco:nav-expanded") === "true",
 
@@ -66,12 +69,16 @@ export const useOsStore = create<OsStore>((set) => ({
     set((s) => ({ notifications: s.notifications.filter((n) => n.id !== id) }));
   },
 
-  // One refresh covers both dock sections — every call site that knows about
-  // generated apps changing also wants web-app registry changes.
+  // One refresh covers all dock sections — every call site that knows about
+  // generated apps changing also wants web-app and installed-app changes.
   refreshApps: async () => {
     try {
-      const [apps, webApps] = await Promise.all([api.listApps(), api.listWebApps()]);
-      set({ apps, webApps });
+      const [apps, webApps, installedApps] = await Promise.all([
+        api.listApps(),
+        api.listWebApps(),
+        api.listInstalledApps(),
+      ]);
+      set({ apps, webApps, installedApps });
     } catch {
       // Server unreachable — keep the stale lists.
     }

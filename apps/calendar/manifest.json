@@ -1,0 +1,15 @@
+{
+  "id": "core.calendar",
+  "name": "Calendar",
+  "version": "0.1.0",
+  "description": "Core calendar — a view over the OS calendar service (os.calendar@1). Swap it for any app implementing the same contract; your events stay.",
+  "icon": "calendar-days",
+  "tier": "code",
+  "entry": { "kind": "bundle", "path": "calendar" },
+  "implements": ["os.calendar@1"],
+  "permissions": [
+    { "kind": "contract", "id": "os.calendar@1", "access": "read" },
+    { "kind": "contract", "id": "os.calendar@1", "access": "write" },
+    { "kind": "shell", "features": ["notify"] }
+  ]
+}

@@ -148,13 +148,13 @@ export function ToolCard({ item }: { item: ToolItem }) {
             onClick={(e) => {
               e.stopPropagation();
               const app = apps.find((a) => a.id === createdAppId);
-              openWindow({ type: "app", appId: createdAppId }, app?.title ?? "App");
+              openWindow({ type: "generated", appId: createdAppId }, app?.title ?? "App");
             }}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 e.stopPropagation();
                 const app = apps.find((a) => a.id === createdAppId);
-                openWindow({ type: "app", appId: createdAppId }, app?.title ?? "App");
+                openWindow({ type: "generated", appId: createdAppId }, app?.title ?? "App");
               }
             }}
           >

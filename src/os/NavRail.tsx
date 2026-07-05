@@ -93,10 +93,10 @@ export function NavRail() {
       generated: false,
     })),
     apps.map((app) => ({
-      key: windowKey({ type: "app", appId: app.id }),
+      key: windowKey({ type: "generated", appId: app.id }),
       title: app.title,
       icon: Sparkles,
-      kind: { type: "app", appId: app.id } as WindowKind,
+      kind: { type: "generated", appId: app.id } as WindowKind,
       generated: true,
     })),
     webApps.map((app) => ({

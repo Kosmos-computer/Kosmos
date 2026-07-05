@@ -1,0 +1,9 @@
+{
+  "name": "app-sdk",
+  "version": "0.1.0",
+  "description": "Client SDK for platform apps — typed postMessage bridge to the OS shell (intents, storage, shell, theme).",
+  "type": "module",
+  "main": "sdk.js",
+  "types": "index.d.ts",
+  "files": ["sdk.js", "index.d.ts"]
+}

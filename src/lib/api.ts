@@ -24,6 +24,7 @@ import type {
   WebAppLaunchStatus,
   WorkspaceEntry,
 } from "@shared/types";
+import type { InstalledAppInfo, GrantState } from "@shared/manifest";
 
 /**
  * Session-expiry broadcast: any 401 outside the auth endpoints means the
@@ -188,6 +189,40 @@ export const api = {
     fetch(`/api/webapps/${id}`, { method: "DELETE" }).then((r) => json<{ ok: true }>(r)),
   launchWebApp: (id: string) =>
     fetch(`/api/webapps/${id}/launch`, { method: "POST" }).then((r) => json<WebAppLaunchStatus>(r)),
+
+  // Installed apps (manifest-based platform apps)
+  listInstalledApps: () => fetch("/api/installed-apps").then((r) => json<InstalledAppInfo[]>(r)),
+  installApp: (payload: { url?: string; manifest?: unknown }) =>
+    post<InstalledAppInfo>("/api/installed-apps", payload),
+  uninstallApp: (id: string) =>
+    fetch(`/api/installed-apps/${encodeURIComponent(id)}`, { method: "DELETE" }).then((r) =>
+      json<{ ok: true }>(r),
+    ),
+  setAppEnabled: (id: string, enabled: boolean) =>
+    fetch(`/api/installed-apps/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled }),
+    }).then((r) => json<InstalledAppInfo>(r)),
+  setAppGrant: (id: string, key: string, state: GrantState) =>
+    fetch(`/api/installed-apps/${encodeURIComponent(id)}/grants`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key, state }),
+    }).then((r) => json<{ grants: Record<string, GrantState> }>(r)),
+  mintAppToken: (id: string) =>
+    post<{ token: string }>(`/api/installed-apps/${encodeURIComponent(id)}/token`),
+  /** Forward one bridge call on behalf of an app window (AppHost only). */
+  bridgeInvoke: (token: string, method: string, params: Record<string, unknown>) =>
+    fetch("/api/bridge", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-app-token": token },
+      body: JSON.stringify({ method, params }),
+    }).then(async (res) => {
+      const data = (await res.json()) as { result?: unknown; error?: string };
+      if (!res.ok || data.error) throw new Error(data.error ?? "Bridge call failed");
+      return data.result;
+    }),
 
   // Dev-server runs
   listRuns: () => fetch("/api/runs").then((r) => json<RunEntry[]>(r)),

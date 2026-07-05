@@ -26,6 +26,9 @@ import type {
 import { lintOpenUICode, type LintReport } from "../lint/lint-openui.js";
 import { appStore } from "../stores/appStore.js";
 import { automationStore } from "../stores/automationStore.js";
+import { invokeIntent } from "../capabilities/registry.js";
+import { appendAudit } from "../platform/grantStore.js";
+import { intentMeta } from "../../shared/capabilities/index.js";
 import { getActiveRoot, resolveProjectPath } from "../stores/projectStore.js";
 import { dbExecute, dbQuery } from "../stores/db.js";
 import { bus } from "../bus.js";
@@ -139,6 +142,39 @@ async function runCursorCommand(
     ...(res.outcome ? { outcome: res.outcome } : {}),
     ...(res.snapshot ? { screenAfter: formatSnapshot(res.snapshot) } : {}),
   };
+}
+
+/**
+ * Invoke a capability intent as the agent, applying the agent-side policy:
+ * reads run automatically, writes pause for user confirmation (headless runs
+ * deny writes — the same semantics as risky exec commands). Every invocation
+ * lands in the audit log with the agent's session identity, so app calls and
+ * agent calls share one trail.
+ */
+async function agentInvokeIntent(
+  intentId: string,
+  params: Record<string, unknown>,
+  description: string,
+  ctx: ToolContext,
+): Promise<unknown> {
+  const caller = { kind: "agent" as const, sessionId: ctx.sessionId };
+  const isWrite = intentMeta(intentId)?.access === "write";
+  if (isWrite) {
+    if (!ctx.interactive) {
+      appendAudit({ caller, method: `intent.invoke:${intentId}`, detail: description, allowed: false });
+      return { error: "This action requires user approval and no user is attached. Skipped." };
+    }
+    const { confirmId, verdict } = requestConfirmation();
+    ctx.emit({ type: "confirm_required", confirmId, command: description });
+    const approved = await verdict;
+    ctx.emit({ type: "confirm_resolved", confirmId, approved });
+    if (!approved) {
+      appendAudit({ caller, method: `intent.invoke:${intentId}`, detail: description, allowed: false });
+      return { error: "User denied this action. Do not retry it; ask what they'd like instead." };
+    }
+  }
+  appendAudit({ caller, method: `intent.invoke:${intentId}`, detail: description, allowed: true });
+  return invokeIntent(intentId, params);
 }
 
 export const agentTools: AgentTool[] = [
@@ -470,11 +506,103 @@ export const agentTools: AgentTool[] = [
     },
   },
 
+  // ── System calendar (os.calendar@1 — contract-level, provider-agnostic) ──
+  //
+  // These go through the capability registry, not any particular calendar
+  // app, so they keep working if the user swaps calendar implementations.
+  {
+    name: "calendar_list_events",
+    description:
+      "List calendar events, optionally within a date range. Returns events from the system calendar (whatever calendar app the user has installed reads the same store).",
+    parameters: {
+      type: "object",
+      properties: {
+        from: { type: "string", description: "ISO date-time — only events ending at/after this" },
+        to: { type: "string", description: "ISO date-time — only events starting at/before this" },
+      },
+    },
+    execute: async (args, ctx) =>
+      agentInvokeIntent(
+        "calendar.events.list",
+        {
+          ...(typeof args.from === "string" ? { from: args.from } : {}),
+          ...(typeof args.to === "string" ? { to: args.to } : {}),
+        },
+        "List calendar events",
+        ctx,
+      ),
+  },
+  {
+    name: "calendar_create_event",
+    description:
+      "Create a calendar event. Pauses for user approval before writing. Times are ISO 8601; for all-day events pass allDay=true with midnight boundaries.",
+    parameters: {
+      type: "object",
+      properties: {
+        title: { type: "string" },
+        start: { type: "string", description: "ISO 8601 start, e.g. 2026-07-10T12:00:00" },
+        end: { type: "string", description: "ISO 8601 end" },
+        allDay: { type: "boolean" },
+        location: { type: "string" },
+        notes: { type: "string" },
+      },
+      required: ["title", "start", "end"],
+    },
+    execute: async (args, ctx) =>
+      agentInvokeIntent(
+        "calendar.event.create",
+        args,
+        `Create calendar event "${String(args.title ?? "")}" (${String(args.start ?? "")} → ${String(args.end ?? "")})`,
+        ctx,
+      ),
+  },
+  {
+    name: "calendar_update_event",
+    description:
+      "Update fields of an existing calendar event by id (get ids from calendar_list_events). Pauses for user approval.",
+    parameters: {
+      type: "object",
+      properties: {
+        id: { type: "string" },
+        title: { type: "string" },
+        start: { type: "string" },
+        end: { type: "string" },
+        allDay: { type: "boolean" },
+        location: { type: "string" },
+        notes: { type: "string" },
+      },
+      required: ["id"],
+    },
+    execute: async (args, ctx) =>
+      agentInvokeIntent(
+        "calendar.event.update",
+        args,
+        `Update calendar event ${String(args.id ?? "")}${typeof args.title === "string" ? ` → "${args.title}"` : ""}`,
+        ctx,
+      ),
+  },
+  {
+    name: "calendar_delete_event",
+    description: "Delete a calendar event by id. Pauses for user approval.",
+    parameters: {
+      type: "object",
+      properties: { id: { type: "string" } },
+      required: ["id"],
+    },
+    execute: async (args, ctx) =>
+      agentInvokeIntent(
+        "calendar.event.delete",
+        args,
+        `Delete calendar event ${String(args.id ?? "")}`,
+        ctx,
+      ),
+  },
+
   // ── Shell navigation (agent-canvas canvas_ui pattern) ──────────────────────
   {
     name: "os_ui",
     description:
-      "Drive the Arco desktop: open a generated app window (action=open_app + appId), open a system app (action=open_system + app one of: chat, apps, automations, files, terminal, settings, studio), show a notification (action=notify + message), or focus a Studio drawer tab (action=open_workspace_tab + tab one of: files, diffs, terminal, preview, browser; optional path — a file to select, or a URL when tab=browser, e.g. after starting a dev server).",
+      "Drive the Arco desktop: open an app window (action=open_app + appId — a generated app id or an installed app id like core.calendar), open a system app (action=open_system + app one of: chat, apps, automations, files, terminal, settings, studio), show a notification (action=notify + message), or focus a Studio drawer tab (action=open_workspace_tab + tab one of: files, diffs, terminal, preview, browser; optional path — a file to select, or a URL when tab=browser, e.g. after starting a dev server).",
     parameters: {
       type: "object",
       properties: {
@@ -482,7 +610,10 @@ export const agentTools: AgentTool[] = [
           type: "string",
           enum: ["open_app", "open_system", "notify", "open_workspace_tab"],
         },
-        appId: { type: "string", description: "Generated app id (for open_app)" },
+        appId: {
+          type: "string",
+          description: "App id (for open_app): a generated app id or an installed app id like core.calendar",
+        },
         app: { type: "string", description: "System app id (for open_system)" },
         message: { type: "string", description: "Notification text (for notify)" },
         tab: {

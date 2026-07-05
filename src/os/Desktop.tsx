@@ -14,6 +14,7 @@ import { WindowFrame } from "./WindowFrame";
 import { systemApp } from "./systemApps";
 import { AppSurface } from "../apps/appview/AppSurface";
 import { WebAppSurface } from "../apps/appview/WebAppSurface";
+import { AppHost } from "../apps/appview/AppHost";
 import { AgentCursor } from "./cursor/AgentCursor";
 
 function Notifications() {
@@ -44,6 +45,9 @@ function WindowContent({ winId }: { winId: string }) {
   }
   if (win.kind.type === "web") {
     return <WebAppSurface webAppId={win.kind.webAppId} />;
+  }
+  if (win.kind.type === "installed") {
+    return <AppHost appId={win.kind.appId} />;
   }
   return <AppSurface appId={win.kind.appId} />;
 }

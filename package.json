@@ -5,7 +5,8 @@
   "type": "module",
   "description": "Arco OS — a generative AI operating system prototype. Desktop shell + agent that builds adaptive live apps.",
   "workspaces": [
-    "model-manager"
+    "model-manager",
+    "packages/app-sdk"
   ],
   "scripts": {
     "models": "npm run dev -w model-manager",

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Calendar</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="cal-header">
+        <div class="cal-header__nav">
+          <button id="prev" class="cal-btn cal-btn--icon" aria-label="Previous month">‹</button>
+          <button id="today" class="cal-btn">Today</button>
+          <button id="next" class="cal-btn cal-btn--icon" aria-label="Next month">›</button>
+        </div>
+        <h1 id="month-title" class="cal-header__title"></h1>
+        <button id="new-event" class="cal-btn cal-btn--primary">New event</button>
+      </header>
+      <div class="cal-weekdays" id="weekdays"></div>
+      <div class="cal-grid" id="grid"></div>
+      <div class="cal-error" id="error" hidden></div>
+    </div>
+
+    <dialog id="event-dialog" class="cal-dialog">
+      <form id="event-form" method="dialog">
+        <h2 id="dialog-title">New event</h2>
+        <label>Title <input name="title" required maxlength="120" autocomplete="off" /></label>
+        <label class="cal-check"><input type="checkbox" name="allDay" /> All day</label>
+        <div class="cal-row">
+          <label>Start <input name="startDate" type="date" required /></label>
+          <label class="cal-time">Time <input name="startTime" type="time" /></label>
+        </div>
+        <div class="cal-row">
+          <label>End <input name="endDate" type="date" required /></label>
+          <label class="cal-time">Time <input name="endTime" type="time" /></label>
+        </div>
+        <label>Location <input name="location" maxlength="200" autocomplete="off" /></label>
+        <label>Notes <textarea name="notes" rows="3" maxlength="2000"></textarea></label>
+        <div class="cal-dialog__actions">
+          <button type="button" id="delete-event" class="cal-btn cal-btn--danger" hidden>Delete</button>
+          <span style="flex: 1"></span>
+          <button type="button" id="cancel-dialog" class="cal-btn">Cancel</button>
+          <button type="submit" class="cal-btn cal-btn--primary">Save</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

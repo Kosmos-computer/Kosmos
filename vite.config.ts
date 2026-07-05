@@ -16,6 +16,15 @@ export default defineConfig({
         target: "http://localhost:4600",
         changeOrigin: true,
       },
+      // Installed-app bundles + the app SDK are served by the Arco server.
+      "/apps": {
+        target: "http://localhost:4600",
+        changeOrigin: true,
+      },
+      "/app-sdk.js": {
+        target: "http://localhost:4600",
+        changeOrigin: true,
+      },
     },
   },
   build: {

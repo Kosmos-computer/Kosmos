@@ -12,10 +12,13 @@ import { useWindowStore } from "./windowStore";
 import { SYSTEM_APPS, systemApp } from "./systemApps";
 import { AppSurface } from "../apps/appview/AppSurface";
 import { WebAppSurface } from "../apps/appview/WebAppSurface";
+import { AppHost } from "../apps/appview/AppHost";
+import { appIcon } from "../apps/appview/appIcon";
 
 export function MobileShell() {
   const apps = useOsStore((s) => s.apps);
   const webApps = useOsStore((s) => s.webApps);
+  const installedApps = useOsStore((s) => s.installedApps.filter((e) => e.enabled));
   const refreshApps = useOsStore((s) => s.refreshApps);
   const notifications = useOsStore((s) => s.notifications);
   const dismiss = useOsStore((s) => s.dismissNotification);
@@ -49,6 +52,8 @@ export function MobileShell() {
                 })()
               ) : active.kind.type === "web" ? (
                 <WebAppSurface webAppId={active.kind.webAppId} />
+              ) : active.kind.type === "installed" ? (
+                <AppHost appId={active.kind.appId} />
               ) : (
                 <AppSurface appId={active.kind.appId} />
               )}
@@ -71,11 +76,28 @@ export function MobileShell() {
                 </button>
               );
             })}
+            {installedApps.map((entry) => {
+              const Icon = appIcon(entry.manifest.icon);
+              return (
+                <button
+                  key={entry.manifest.id}
+                  className="arco-mobile-home__icon"
+                  onClick={() =>
+                    open({ type: "installed", appId: entry.manifest.id }, entry.manifest.name)
+                  }
+                >
+                  <span className="arco-mobile-home__glyph">
+                    <Icon size={26} strokeWidth={1.7} />
+                  </span>
+                  {entry.manifest.name}
+                </button>
+              );
+            })}
             {apps.map((app) => (
               <button
                 key={app.id}
                 className="arco-mobile-home__icon"
-                onClick={() => open({ type: "app", appId: app.id }, app.title)}
+                onClick={() => open({ type: "generated", appId: app.id }, app.title)}
               >
                 <span className="arco-mobile-home__glyph" style={{ color: "var(--arco-accent)" }}>
                   <Sparkles size={26} strokeWidth={1.7} />
@@ -103,7 +125,13 @@ export function MobileShell() {
         {windows.map((w) => {
           const def =
             w.kind.type === "system" ? SYSTEM_APPS.find((a) => w.kind.type === "system" && a.id === w.kind.app) : null;
-          const Icon = def?.icon ?? (w.kind.type === "web" ? Globe : Sparkles);
+          const installed =
+            w.kind.type === "installed"
+              ? installedApps.find((e) => w.kind.type === "installed" && e.manifest.id === w.kind.appId)
+              : null;
+          const Icon =
+            def?.icon ??
+            (installed ? appIcon(installed.manifest.icon) : w.kind.type === "web" ? Globe : Sparkles);
           const isActive = active?.id === w.id;
           return (
             <button

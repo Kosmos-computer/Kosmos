@@ -17,9 +17,12 @@ export type SystemAppId =
 
 export type WindowKind =
   | { type: "system"; app: SystemAppId }
-  | { type: "app"; appId: string }
+  /** An AI-generated OpenUI app from the library. */
+  | { type: "generated"; appId: string }
   /** A registered user project embedded by URL (dock "web apps" section). */
-  | { type: "web"; webAppId: string };
+  | { type: "web"; webAppId: string }
+  /** An installed platform app (manifest + bridge — see AppHost). */
+  | { type: "installed"; appId: string };
 
 export interface WindowRect {
   x: number;
@@ -42,10 +45,12 @@ export function windowKey(kind: WindowKind): string {
   switch (kind.type) {
     case "system":
       return `system:${kind.app}`;
-    case "app":
-      return `app:${kind.appId}`;
+    case "generated":
+      return `generated:${kind.appId}`;
     case "web":
       return `web:${kind.webAppId}`;
+    case "installed":
+      return `installed:${kind.appId}`;
   }
 }
 
@@ -57,10 +62,39 @@ interface PersistedLayout {
 
 const STORAGE_KEY = "arco:layout:v1";
 
+/**
+ * Layouts persisted before the app-ontology rename used kind types
+ * "app"/"ext" and key prefixes "app:"/"ext:". Map them forward so open
+ * windows and remembered geometry survive the upgrade.
+ */
+function migrateLayout(layout: PersistedLayout): PersistedLayout {
+  const migrateKind = (kind: WindowKind | { type: "app"; appId: string } | { type: "ext"; extId: string }): WindowKind => {
+    if (kind.type === "app") return { type: "generated", appId: kind.appId };
+    if (kind.type === "ext") return { type: "installed", appId: kind.extId };
+    return kind;
+  };
+  const migrateKey = (key: string): string =>
+    key.startsWith("app:")
+      ? `generated:${key.slice(4)}`
+      : key.startsWith("ext:")
+        ? `installed:${key.slice(4)}`
+        : key;
+  return {
+    ...layout,
+    windows: (layout.windows ?? []).map((w) => {
+      const kind = migrateKind(w.kind as never);
+      return { ...w, kind, id: windowKey(kind) };
+    }),
+    closedGeometry: Object.fromEntries(
+      Object.entries(layout.closedGeometry ?? {}).map(([k, v]) => [migrateKey(k), v]),
+    ),
+  };
+}
+
 function loadLayout(): PersistedLayout {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as PersistedLayout;
+    if (raw) return migrateLayout(JSON.parse(raw) as PersistedLayout);
   } catch {
     // Corrupt layout — start fresh.
   }
@@ -97,7 +131,12 @@ const DEFAULT_SIZES: Record<string, { w: number; h: number }> = {
 
 function defaultRect(key: string, index: number): WindowRect {
   // Web apps are full projects — give them a workbench-sized window.
-  const fallback = key.startsWith("web:") ? { w: 1000, h: 700 } : { w: 720, h: 560 };
+  // Installed apps get a roomy default too; they're real apps, not widgets.
+  const fallback = key.startsWith("web:")
+    ? { w: 1000, h: 700 }
+    : key.startsWith("installed:")
+      ? { w: 960, h: 660 }
+      : { w: 720, h: 560 };
   const size = DEFAULT_SIZES[key] ?? fallback;
   const vw = typeof window !== "undefined" ? window.innerWidth : 1440;
   const vh = typeof window !== "undefined" ? window.innerHeight : 900;

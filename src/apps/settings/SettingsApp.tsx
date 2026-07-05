@@ -10,6 +10,7 @@ import { useCan } from "../../os/auth/authStore";
 import { useOsStore } from "../../os/osStore";
 import { PasswordSection } from "./PasswordSection";
 import { UsersSection } from "./UsersSection";
+import { AppsSection } from "./AppsSection";
 
 const PROVIDERS: { id: LlmProvider; label: string }[] = [
   { id: "mock", label: "Mock (no key needed)" },
@@ -143,6 +144,8 @@ export function SettingsApp() {
           ))}
         </div>
       </section>
+
+      <AppsSection />
 
       <PasswordSection />
 

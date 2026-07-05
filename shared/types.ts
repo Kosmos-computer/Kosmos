@@ -67,6 +67,7 @@ export type WorkspaceTab = "files" | "diffs" | "terminal" | "preview" | "browser
 
 /** Shell actions the agent can drive through the `os_ui` tool. */
 export type OsUiAction =
+  /** appId is a generated-app id or an installed-app manifest id (e.g. "core.calendar"). */
   | { action: "open_app"; appId: string }
   | { action: "open_system"; app: string }
   | { action: "notify"; message: string }

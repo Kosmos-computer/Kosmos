@@ -24,7 +24,7 @@ export function AppsLibrary() {
   }, [refreshApps]);
 
   const openApp = useCallback(
-    (id: string, title: string) => openWindow({ type: "app", appId: id }, title),
+    (id: string, title: string) => openWindow({ type: "generated", appId: id }, title),
     [openWindow],
   );
 

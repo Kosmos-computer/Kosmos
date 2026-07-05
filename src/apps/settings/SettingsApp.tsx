@@ -11,6 +11,8 @@ import { useOsStore } from "../../os/osStore";
 import { PasswordSection } from "./PasswordSection";
 import { UsersSection } from "./UsersSection";
 import { AppsSection } from "./AppsSection";
+import { AgentSection } from "./AgentSection";
+import { ProvidersSection } from "./ProvidersSection";
 
 const PROVIDERS: { id: LlmProvider; label: string }[] = [
   { id: "mock", label: "Mock (no key needed)" },
@@ -27,6 +29,7 @@ const WALLPAPERS = ["aurora", "dusk", "graphite", "forest"];
 export function SettingsApp() {
   const { theme, setTheme, wallpaper, setWallpaper } = useOsStore();
   const canManageUsers = useCan("users:manage");
+  const canWriteSettings = useCan("settings:write");
   const [settings, setSettings] = useState<Settings | null>(null);
   const [saved, setSaved] = useState(false);
 
@@ -146,6 +149,10 @@ export function SettingsApp() {
       </section>
 
       <AppsSection />
+
+      {canWriteSettings && <AgentSection />}
+
+      <ProvidersSection />
 
       <PasswordSection />
 

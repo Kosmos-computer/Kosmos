@@ -32,20 +32,31 @@ export function isRiskyCommand(command: string): boolean {
 
 const TIMEOUT_MS = 120_000;
 
+/**
+ * The user's answer. `remember` carries the scope of an extended choice from
+ * the policy confirm card: "session" allows this tool for the rest of the
+ * chat session, "always" persists a policy rule. Plain exec confirmations
+ * ignore it — a risky command is approved per invocation, never blanket.
+ */
+export interface ConfirmAnswer {
+  approved: boolean;
+  remember?: "session" | "always";
+}
+
 interface PendingConfirmation {
-  resolve: (approved: boolean) => void;
+  resolve: (answer: ConfirmAnswer) => void;
   timer: ReturnType<typeof setTimeout>;
 }
 
 const pending = new Map<string, PendingConfirmation>();
 
 /** Park until the user answers (or the timeout denies). Returns the verdict. */
-export function requestConfirmation(): { confirmId: string; verdict: Promise<boolean> } {
+export function requestConfirmation(): { confirmId: string; verdict: Promise<ConfirmAnswer> } {
   const confirmId = crypto.randomUUID();
-  const verdict = new Promise<boolean>((resolve) => {
+  const verdict = new Promise<ConfirmAnswer>((resolve) => {
     const timer = setTimeout(() => {
       pending.delete(confirmId);
-      resolve(false);
+      resolve({ approved: false });
     }, TIMEOUT_MS);
     pending.set(confirmId, { resolve, timer });
   });
@@ -53,11 +64,11 @@ export function requestConfirmation(): { confirmId: string; verdict: Promise<boo
 }
 
 /** Answer a pending confirmation. Returns false for unknown/expired ids. */
-export function resolveConfirmation(confirmId: string, approved: boolean): boolean {
+export function resolveConfirmation(confirmId: string, answer: ConfirmAnswer): boolean {
   const entry = pending.get(confirmId);
   if (!entry) return false;
   clearTimeout(entry.timer);
   pending.delete(confirmId);
-  entry.resolve(approved);
+  entry.resolve(answer);
   return true;
 }

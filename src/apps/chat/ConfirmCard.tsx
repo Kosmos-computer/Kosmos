@@ -1,8 +1,11 @@
 /**
- * ConfirmCard — inline Allow/Deny prompt for a risky exec command the server
- * has paused. Answering POSTs the verdict; the card then reflects the
- * resolution streamed back via confirm_resolved (or times out server-side
- * to deny after two minutes).
+ * ConfirmCard — inline approval prompt for a paused server-side action.
+ * Two flavors share this card:
+ *   - risky exec commands: plain Allow / Deny, decided per invocation
+ *   - policy-gated tools (MCP/app tools): extended choices — allow once,
+ *     allow for this session, always allow (persists a policy rule), deny
+ * Answering POSTs the verdict; the card then reflects the resolution
+ * streamed back via confirm_resolved (or times out server-side to deny).
  */
 import { useState } from "react";
 import { ShieldAlert } from "lucide-react";
@@ -14,11 +17,12 @@ type ConfirmItem = Extract<ChatItem, { kind: "confirm" }>;
 export function ConfirmCard({ item }: { item: ConfirmItem }) {
   const [answering, setAnswering] = useState(false);
   const pending = item.approved === undefined;
+  const extended = (item.options?.length ?? 0) > 0;
 
-  const answer = async (approved: boolean) => {
+  const answer = async (approved: boolean, remember?: "session" | "always") => {
     setAnswering(true);
     try {
-      await api.answerConfirmation(item.confirmId, approved);
+      await api.answerConfirmation(item.confirmId, approved, remember);
     } finally {
       setAnswering(false);
     }
@@ -29,11 +33,17 @@ export function ConfirmCard({ item }: { item: ConfirmItem }) {
       <div className="arco-confirm__row">
         <ShieldAlert size={14} className="arco-confirm__icon" />
         <span className="arco-confirm__label">
-          {pending ? "The agent wants to run:" : item.approved ? "Approved:" : "Denied:"}
+          {pending
+            ? extended
+              ? "The agent wants to use a tool:"
+              : "The agent wants to run:"
+            : item.approved
+              ? "Approved:"
+              : "Denied:"}
         </span>
       </div>
       <code className="arco-confirm__command">{item.command}</code>
-      {pending && (
+      {pending && !extended && (
         <div className="arco-confirm__actions">
           <button
             className="arco-btn arco-btn--primary"
@@ -41,6 +51,34 @@ export function ConfirmCard({ item }: { item: ConfirmItem }) {
             onClick={() => void answer(true)}
           >
             Allow
+          </button>
+          <button className="arco-btn" disabled={answering} onClick={() => void answer(false)}>
+            Deny
+          </button>
+        </div>
+      )}
+      {pending && extended && (
+        <div className="arco-confirm__actions">
+          <button
+            className="arco-btn arco-btn--primary"
+            disabled={answering}
+            onClick={() => void answer(true)}
+          >
+            Allow once
+          </button>
+          <button
+            className="arco-btn"
+            disabled={answering}
+            onClick={() => void answer(true, "session")}
+          >
+            Allow this session
+          </button>
+          <button
+            className="arco-btn"
+            disabled={answering}
+            onClick={() => void answer(true, "always")}
+          >
+            Always allow
           </button>
           <button className="arco-btn" disabled={answering} onClick={() => void answer(false)}>
             Deny

@@ -73,6 +73,9 @@ export type OsUiAction =
   | { action: "notify"; message: string }
   | { action: "open_workspace_tab"; tab: WorkspaceTab; path?: string };
 
+/** Choices a policy confirm card can offer beyond plain allow/deny. */
+export type ConfirmOption = "once" | "session" | "always" | "deny";
+
 export type AgentEvent =
   | { type: "session"; sessionId: string }
   | { type: "text_delta"; delta: string }
@@ -93,10 +96,18 @@ export type AgentEvent =
    */
   | { type: "file_changed"; path: string; before: string | null; after: string }
   /**
-   * A risky exec command is paused server-side until the user answers via
-   * POST /api/confirmations/:id (or the request times out to "deny").
+   * A risky exec command or policy-gated tool call is paused server-side
+   * until the user answers via POST /api/confirmations/:id (or the request
+   * times out to "deny"). When `options` is present the client offers the
+   * extended choices (allow once / this session / always / deny); otherwise
+   * it's a plain Allow/Deny.
    */
-  | { type: "confirm_required"; confirmId: string; command: string }
+  | {
+      type: "confirm_required";
+      confirmId: string;
+      command: string;
+      options?: ConfirmOption[];
+    }
   | { type: "confirm_resolved"; confirmId: string; approved: boolean }
   | { type: "apps_changed" }
   | { type: "automations_changed" }
@@ -157,6 +168,28 @@ export interface CursorResult {
   outcome?: string;
   error?: string;
   snapshot?: UiSnapshot;
+}
+
+// ── Agent policy + audit ─────────────────────────────────────────────────────
+//
+// Policy rules answer "may the agent call this tool, and does it need the
+// user first?" — keyed by tool source ("system", "mcp:<serverId>",
+// "app:<appId>") optionally narrowed with "#<toolName>". The audit log is the
+// shared record of every privileged call, whether an app or the agent made it.
+
+export type AgentPolicyDecision = "auto" | "confirm" | "deny";
+
+/** One privileged call as recorded in audit.jsonl. */
+export interface AuditEntry {
+  ts: string;
+  caller:
+    | { kind: "app"; appId: string }
+    | { kind: "agent"; sessionId: string }
+    /** External callers reaching in through the outward MCP endpoint. */
+    | { kind: "external"; clientId: string };
+  method: string;
+  detail?: string;
+  allowed: boolean;
 }
 
 // ── Automations ──────────────────────────────────────────────────────────────

@@ -4,7 +4,9 @@
  */
 import type {
   AgentEvent,
+  AgentPolicyDecision,
   AppSummary,
+  AuditEntry,
   AuthStatus,
   AuthUser,
   Role,
@@ -25,6 +27,13 @@ import type {
   WorkspaceEntry,
 } from "@shared/types";
 import type { InstalledAppInfo, GrantState } from "@shared/manifest";
+
+/** One contract's provider assignment + who could provide it. */
+export interface CapabilityProviderInfo {
+  contractId: string;
+  provider: string;
+  options: { id: string; name: string }[];
+}
 
 /**
  * Session-expiry broadcast: any 401 outside the auth endpoints means the
@@ -256,13 +265,43 @@ export const api = {
   gitPush: () => fetch("/api/git/push", { method: "POST" }).then((r) => json<{ ok: true; output: string }>(r)),
   gitPull: () => fetch("/api/git/pull", { method: "POST" }).then((r) => json<{ ok: true; output: string }>(r)),
 
-  // Exec confirmations
-  answerConfirmation: (id: string, approved: boolean) =>
+  // Exec / policy confirmations — `remember` scopes an extended answer
+  // ("session" allows for the rest of the chat, "always" persists a rule).
+  answerConfirmation: (id: string, approved: boolean, remember?: "session" | "always") =>
     fetch(`/api/confirmations/${id}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ approved }),
+      body: JSON.stringify({ approved, ...(remember ? { remember } : {}) }),
     }).then((r) => json<{ ok: boolean }>(r)),
+
+  // Agent policy (which tools the agent may use, and how)
+  getAgentPolicy: () =>
+    fetch("/api/agent-policy").then((r) => json<{ rules: Record<string, AgentPolicyDecision> }>(r)),
+  setAgentPolicyRule: (key: string, decision: AgentPolicyDecision | null) =>
+    fetch("/api/agent-policy", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key, decision }),
+    }).then((r) => json<{ rules: Record<string, AgentPolicyDecision> }>(r)),
+
+  // Audit log
+  getAudit: (opts?: { limit?: number; caller?: string }) => {
+    const params = new URLSearchParams();
+    if (opts?.limit) params.set("limit", String(opts.limit));
+    if (opts?.caller) params.set("caller", opts.caller);
+    const qs = params.toString();
+    return fetch(`/api/audit${qs ? `?${qs}` : ""}`).then((r) => json<AuditEntry[]>(r));
+  },
+
+  // Capability providers (default apps per contract)
+  getCapabilityProviders: () =>
+    fetch("/api/capability-providers").then((r) => json<CapabilityProviderInfo[]>(r)),
+  setCapabilityProvider: (contractId: string, providerId: string) =>
+    fetch("/api/capability-providers", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contractId, providerId }),
+    }).then((r) => json<{ ok: true }>(r)),
 
   // Client requests (agent cursor — shell-executed tool work)
   answerClientRequest: (id: string, result: unknown) =>

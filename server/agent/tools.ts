@@ -166,7 +166,7 @@ async function agentInvokeIntent(
     }
     const { confirmId, verdict } = requestConfirmation();
     ctx.emit({ type: "confirm_required", confirmId, command: description });
-    const approved = await verdict;
+    const { approved } = await verdict;
     ctx.emit({ type: "confirm_resolved", confirmId, approved });
     if (!approved) {
       appendAudit({ caller, method: `intent.invoke:${intentId}`, detail: description, allowed: false });
@@ -275,7 +275,7 @@ export const agentTools: AgentTool[] = [
         }
         const { confirmId, verdict } = requestConfirmation();
         ctx.emit({ type: "confirm_required", confirmId, command });
-        const approved = await verdict;
+        const { approved } = await verdict;
         ctx.emit({ type: "confirm_resolved", confirmId, approved });
         if (!approved) {
           return { error: "User denied this command. Do not retry it; ask what they'd like instead." };

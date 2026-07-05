@@ -26,6 +26,7 @@ import type { AgentEvent, DirListing, Settings } from "../shared/types.js";
 import { requireAuth, requireCap, type AuthEnv } from "./auth/middleware.js";
 import { authRoutes } from "./auth/routes.js";
 import { runAgentTurn } from "./agent/loop.js";
+import { openaiCompatRoutes } from "./agent/openaiCompat.js";
 import { invokeRuntimeTool, runExec } from "./agent/tools.js";
 import { resolveClientRequest } from "./agent/clientRequests.js";
 import { resolveConfirmation } from "./agent/confirmations.js";
@@ -39,9 +40,12 @@ import { getActiveRoot, projectStore, resolveProjectPath } from "./stores/projec
 import { sessionStore } from "./stores/sessionStore.js";
 import { webAppStore } from "./stores/webAppStore.js";
 import { installedAppStore, APPS_DIR } from "./platform/installedAppStore.js";
-import { grantStore } from "./platform/grantStore.js";
+import { grantStore, readAudit } from "./platform/grantStore.js";
 import { parseManifest } from "./platform/manifestSchema.js";
 import { BridgeError, dispatchAppBridge, mintToken, resolveToken } from "./platform/bridge.js";
+import { policyStore } from "./agent/policyStore.js";
+import { getProviders, setProvider } from "./capabilities/registry.js";
+import { CONTRACTS } from "../shared/capabilities/index.js";
 import { bus } from "./bus.js";
 
 const execFileAsync = promisify(execFile);
@@ -59,6 +63,13 @@ const app = new Hono<AuthEnv>();
 
 app.route("/api/auth", authRoutes);
 app.use("/api/*", requireAuth);
+
+// ── OpenAI-compatible agent endpoint ─────────────────────────────────────────
+//
+// Loopback-only /v1/chat/completions exposing the agent to local OpenAI
+// clients — notably the voice server's brain slot (voice-server/README.md).
+
+app.route("/v1", openaiCompatRoutes);
 
 // ── Chat ─────────────────────────────────────────────────────────────────────
 
@@ -505,12 +516,76 @@ app.post("/api/system/open-privacy-settings", requireCap("settings:write"), asyn
   return c.json({ ok: true });
 });
 
-// ── Exec confirmations ───────────────────────────────────────────────────────
+// ── Exec / policy confirmations ──────────────────────────────────────────────
 
 app.post("/api/confirmations/:id", requireCap("chat"), async (c) => {
-  const body = (await c.req.json()) as { approved: boolean };
-  const known = resolveConfirmation(c.req.param("id"), Boolean(body.approved));
+  const body = (await c.req.json()) as { approved: boolean; remember?: string };
+  const remember =
+    body.remember === "session" || body.remember === "always" ? body.remember : undefined;
+  const known = resolveConfirmation(c.req.param("id"), {
+    approved: Boolean(body.approved),
+    ...(remember ? { remember } : {}),
+  });
   return c.json({ ok: known });
+});
+
+// ── Agent policy (which tools the agent may use, and how) ───────────────────
+
+app.get("/api/agent-policy", requireCap("settings:write"), (c) =>
+  c.json({ rules: policyStore.rules() }),
+);
+
+app.put("/api/agent-policy", requireCap("settings:write"), async (c) => {
+  const body = (await c.req.json()) as { key?: string; decision?: string | null };
+  const key = body.key?.trim();
+  if (!key) return c.json({ error: "key is required" }, 400);
+  if (body.decision === null) {
+    policyStore.remove(key);
+  } else if (body.decision === "auto" || body.decision === "confirm" || body.decision === "deny") {
+    policyStore.set(key, body.decision);
+  } else {
+    return c.json({ error: "decision must be auto|confirm|deny|null" }, 400);
+  }
+  return c.json({ rules: policyStore.rules() });
+});
+
+// ── Audit log (read side — writes happen in the bridge and tool layer) ──────
+
+app.get("/api/audit", requireCap("settings:write"), (c) => {
+  const limit = Math.min(Math.max(Number(c.req.query("limit") ?? 100), 1), 500);
+  const caller = c.req.query("caller") || undefined;
+  return c.json(readAudit(limit, caller));
+});
+
+// ── Capability providers (default apps per contract) ────────────────────────
+
+app.get("/api/capability-providers", (c) => {
+  const providers = getProviders();
+  const installed = installedAppStore.list();
+  return c.json(
+    Object.keys(CONTRACTS).map((contractId) => ({
+      contractId,
+      provider: providers[contractId] ?? "system",
+      // Who could provide this contract: the system service plus any enabled
+      // installed app that declares `implements: [contractId]`.
+      options: [
+        { id: "system", name: "System" },
+        ...installed
+          .filter((a) => a.enabled && a.manifest.implements?.includes(contractId))
+          .map((a) => ({ id: a.manifest.id, name: a.manifest.name })),
+      ],
+    })),
+  );
+});
+
+app.put("/api/capability-providers", requireCap("settings:write"), async (c) => {
+  const body = (await c.req.json()) as { contractId?: string; providerId?: string };
+  if (!body.contractId || !CONTRACTS[body.contractId]) {
+    return c.json({ error: "Unknown contractId" }, 400);
+  }
+  if (!body.providerId) return c.json({ error: "providerId is required" }, 400);
+  setProvider(body.contractId, body.providerId);
+  return c.json({ ok: true });
 });
 
 // ── Client requests (agent cursor & other shell-executed tool work) ─────────

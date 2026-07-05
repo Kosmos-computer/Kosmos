@@ -4,7 +4,7 @@
  * apps_changed) to the OS stores while the stream is live.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { AgentEvent, Session, SessionSummary } from "@shared/types";
+import type { AgentEvent, ConfirmOption, Session, SessionSummary } from "@shared/types";
 import { api, streamChat } from "../../lib/api";
 import { handleShellEvent } from "../../os/osActions";
 import { useOsStore } from "../../os/osStore";
@@ -20,8 +20,16 @@ export type ChatItem =
       args: Record<string, unknown>;
       result?: string;
     }
-  /** A risky command paused server-side; approved is undefined while pending. */
-  | { kind: "confirm"; id: string; confirmId: string; command: string; approved?: boolean }
+  /** A paused action; approved is undefined while pending. `options` present
+   *  means the extended policy card (allow once/session/always/deny). */
+  | {
+      kind: "confirm";
+      id: string;
+      confirmId: string;
+      command: string;
+      approved?: boolean;
+      options?: ConfirmOption[];
+    }
   | { kind: "error"; id: string; text: string };
 
 let itemCounter = 0;
@@ -166,7 +174,13 @@ export function useChat() {
           case "confirm_required":
             setItems((prev) => [
               ...prev,
-              { kind: "confirm", id: nextId(), confirmId: event.confirmId, command: event.command },
+              {
+                kind: "confirm",
+                id: nextId(),
+                confirmId: event.confirmId,
+                command: event.command,
+                ...(event.options ? { options: event.options } : {}),
+              },
             ]);
             break;
           case "confirm_resolved":

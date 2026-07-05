@@ -11,7 +11,8 @@ import { loadSettings } from "../env.js";
 import { sessionStore } from "../stores/sessionStore.js";
 import { streamTurn, type LlmMessage } from "./llm.js";
 import { buildSystemPrompt } from "./systemPrompt.js";
-import { findTool, toolDefs, type ToolContext } from "./tools.js";
+import { applyPolicy, assembleTools, toLlmDefs } from "./toolRegistry.js";
+import type { ToolContext } from "./tools.js";
 
 const MAX_ITERATIONS = 12;
 /** Tool results beyond this are truncated for the LLM (full result goes to the UI). */
@@ -72,6 +73,12 @@ export async function runAgentTurn(opts: RunTurnOptions): Promise<string> {
   };
   let finalText = "";
 
+  // Assembled once per turn, not per iteration: MCP/app tool sets don't
+  // change mid-turn, and re-listing remote servers on every loop pass would
+  // add latency for nothing.
+  const tools = await assembleTools(ctx);
+  const toolDefs = toLlmDefs(tools);
+
   for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
     const current = await sessionStore.get(session.id);
     if (!current) break;
@@ -115,17 +122,25 @@ export async function runAgentTurn(opts: RunTurnOptions): Promise<string> {
       opts.emit({ type: "tool_start", callId: call.id, name: call.name, args });
 
       let resultString: string;
-      const tool = findTool(call.name);
+      const tool = tools.find((t) => t.name === call.name);
       if (!tool) {
         resultString = JSON.stringify({ error: `Unknown tool: ${call.name}` });
       } else {
-        try {
-          const result = await tool.execute(args, ctx);
-          resultString = JSON.stringify(result ?? null);
-        } catch (err) {
-          resultString = JSON.stringify({
-            error: err instanceof Error ? err.message : "Tool execution failed",
-          });
+        // Policy gate: (source, tool) rules may deny outright or park on a
+        // user confirmation before the tool runs. System tools pass through
+        // unless an explicit rule says otherwise.
+        const blocked = await applyPolicy(tool, args, ctx);
+        if (blocked) {
+          resultString = JSON.stringify({ error: blocked });
+        } else {
+          try {
+            const result = await tool.execute(args, ctx);
+            resultString = JSON.stringify(result ?? null);
+          } catch (err) {
+            resultString = JSON.stringify({
+              error: err instanceof Error ? err.message : "Tool execution failed",
+            });
+          }
         }
       }
 

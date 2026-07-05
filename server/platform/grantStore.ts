@@ -99,15 +99,11 @@ export const grantStore = {
 //
 // Append-only JSONL: one line per privileged call, app and agent alike. This
 // is the "why did you move my meeting?" answerability layer — cheap now,
-// queryable later.
+// queryable later. The entry shape lives in shared/types.ts because the
+// Settings app renders it.
 
-export interface AuditEntry {
-  ts: string;
-  caller: { kind: "app"; appId: string } | { kind: "agent"; sessionId: string };
-  method: string;
-  detail?: string;
-  allowed: boolean;
-}
+export type { AuditEntry } from "../../shared/types.js";
+import type { AuditEntry } from "../../shared/types.js";
 
 export function appendAudit(entry: Omit<AuditEntry, "ts">): void {
   const line = JSON.stringify({ ts: new Date().toISOString(), ...entry });
@@ -116,4 +112,29 @@ export function appendAudit(entry: Omit<AuditEntry, "ts">): void {
   } catch {
     // Audit failures must never block the call itself.
   }
+}
+
+/**
+ * Read the newest audit entries (most recent first). A full read-and-parse
+ * is fine at prototype scale; if the file ever matters at size, swap in a
+ * tail-reader without touching callers.
+ */
+export function readAudit(limit = 100, callerKind?: string): AuditEntry[] {
+  let raw: string;
+  try {
+    raw = fs.readFileSync(AUDIT_FILE, "utf-8");
+  } catch {
+    return [];
+  }
+  const entries: AuditEntry[] = [];
+  for (const line of raw.split("\n")) {
+    if (!line.trim()) continue;
+    try {
+      entries.push(JSON.parse(line) as AuditEntry);
+    } catch {
+      // Skip torn lines (e.g. a write interrupted by a crash).
+    }
+  }
+  const filtered = callerKind ? entries.filter((e) => e.caller.kind === callerKind) : entries;
+  return filtered.slice(-limit).reverse();
 }

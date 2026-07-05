@@ -1,0 +1,139 @@
+/* CssFaceEngine — the default Arco face. Fully token-themed; scale by
+   setting font-size on .arco-face-widget (all dimensions are em-based). */
+
+.arco-face-widget {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px; /* 1em grid unit — the widget is ~4.8em wide */
+}
+
+.arco-face {
+  --face-mouth-open: 0;
+  display: inline-block;
+}
+
+.arco-face__head {
+  position: relative;
+  width: 4.8em;
+  height: 4.8em;
+  border-radius: 38%;
+  background: var(--arco-accent);
+  transition: background 200ms ease;
+}
+
+.arco-face[data-speaking="idle"] .arco-face__head {
+  background: var(--arco-text-tertiary);
+}
+
+/* Eyes */
+
+.arco-face__eye {
+  position: absolute;
+  top: 32%;
+  width: 0.9em;
+  height: 1.1em;
+  border-radius: 50%;
+  background: var(--arco-text-inverted);
+  overflow: hidden;
+  animation: arco-face-blink 4.6s infinite;
+}
+
+.arco-face__eye--left {
+  left: 24%;
+}
+
+.arco-face__eye--right {
+  right: 24%;
+}
+
+.arco-face__pupil {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0.45em;
+  height: 0.45em;
+  margin: -0.225em 0 0 -0.225em;
+  border-radius: 50%;
+  background: var(--arco-bg-desktop);
+  transition: transform 300ms ease;
+}
+
+/* Thinking: pupils drift up, eyes narrow slightly. */
+.arco-face[data-expression="thinking"] .arco-face__pupil {
+  transform: translate(0.12em, -0.3em);
+}
+
+.arco-face[data-expression="thinking"] .arco-face__eye {
+  height: 0.85em;
+}
+
+/* Attentive: eyes open a touch wider. */
+.arco-face[data-expression="attentive"] .arco-face__eye {
+  height: 1.25em;
+}
+
+/* Mouth — openness rides --face-mouth-open via transform only. */
+
+.arco-face__mouth {
+  position: absolute;
+  left: 50%;
+  bottom: 22%;
+  width: 1.6em;
+  height: 1.1em;
+  margin-left: -0.8em;
+  border-radius: 0.35em 0.35em 0.8em 0.8em;
+  background: var(--arco-text-inverted);
+  transform-origin: center top;
+  transform: scaleY(calc(0.12 + var(--face-mouth-open) * 0.88));
+  transition: transform 40ms linear;
+}
+
+/* Closed smile while listening/idle instead of a slack mouth. */
+.arco-face:not([data-speaking="speaking"]) .arco-face__mouth {
+  height: 0.5em;
+  border-radius: 0 0 0.8em 0.8em;
+  transform: scaleY(0.55);
+}
+
+.arco-face[data-expression="happy"] .arco-face__mouth {
+  border-radius: 0.2em 0.2em 1em 1em;
+}
+
+/* User speaking: subtle attentive tilt. */
+.arco-face[data-speaking="userSpeaking"] .arco-face__head {
+  transform: rotate(-3deg);
+}
+
+/* Thinking: gentle pulse borrowed from the chat "Working…" rhythm. */
+.arco-face[data-speaking="thinking"] .arco-face__head {
+  animation: arco-face-ponder 1.4s ease-in-out infinite;
+}
+
+@keyframes arco-face-blink {
+  0%,
+  94%,
+  100% {
+    transform: scaleY(1);
+  }
+  96% {
+    transform: scaleY(0.08);
+  }
+}
+
+@keyframes arco-face-ponder {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-0.15em);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arco-face__eye,
+  .arco-face[data-speaking="thinking"] .arco-face__head {
+    animation: none;
+  }
+}

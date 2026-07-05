@@ -4,15 +4,18 @@
  * from fenced openui-lang via the chat component library.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import { History, Plus, Send, Square, Trash2 } from "lucide-react";
+import { History, Mic, MicOff, Plus, Send, Square, Trash2 } from "lucide-react";
 import { useChat } from "./useChat";
 import { AssistantBlock } from "./AssistantBlock";
 import { ToolCard } from "./ToolCard";
 import { ConfirmCard } from "./ConfirmCard";
 import { onPrimeComposer } from "./composerBus";
+import { VoiceBar } from "./VoiceBar";
+import { useVoice } from "../../voice";
 
 export function ChatApp() {
   const chat = useChat();
+  const voice = useVoice();
   const [draft, setDraft] = useState("");
   const [showSessions, setShowSessions] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -140,7 +143,25 @@ export function ChatApp() {
         </div>
       </div>
 
+      {voice.active && <VoiceBar voice={voice} />}
+
       <div className="arco-chat__composer">
+        <button
+          className={`arco-btn ${voice.active ? "arco-btn--primary" : ""}`}
+          onClick={() => void voice.toggle().catch(() => {})}
+          disabled={!voice.available && !voice.active}
+          title={
+            voice.available || voice.active
+              ? voice.active
+                ? "End voice conversation"
+                : "Start voice conversation"
+              : "Voice server offline — see voice-server/README.md"
+          }
+          aria-label={voice.active ? "End voice conversation" : "Start voice conversation"}
+          aria-pressed={voice.active}
+        >
+          {voice.active ? <MicOff size={13} /> : <Mic size={13} />}
+        </button>
         <textarea
           ref={inputRef}
           className="arco-chat__input"

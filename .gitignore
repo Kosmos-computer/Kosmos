@@ -11,3 +11,7 @@ docs/saas-plan.md
 # Tauri (model-manager)
 model-manager/src-tauri/target/
 model-manager/src-tauri/gen/
+
+# Voice server (Python)
+voice-server/.venv/
+__pycache__/

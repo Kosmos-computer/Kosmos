@@ -1,0 +1,11 @@
+# Arco voice server — Pipecat pipeline with fully-local engines.
+#
+# Extras map to the engines named in voice.config.json:
+#   silero           — VAD (voice activity detection)
+#   local-smart-turn — Smart Turn v3 end-of-turn classifier (ONNX)
+#   whisper          — faster-whisper STT (cross-platform fallback)
+#   mlx-whisper      — Whisper on Apple Silicon (default STT on macOS)
+#   kokoro           — Kokoro ONNX TTS (default)
+#   piper            — Piper TTS client (fallback engine)
+#   webrtc, runner   — SmallWebRTC transport + FastAPI dev runner
+pipecat-ai[silero,local-smart-turn,whisper,mlx-whisper,kokoro,piper,webrtc,runner]>=1.5

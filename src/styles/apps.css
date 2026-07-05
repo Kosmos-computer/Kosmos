@@ -289,6 +289,36 @@
   animation: arco-pulse 1.4s ease-in-out infinite;
 }
 
+.arco-voicebar {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-m);
+  padding: var(--arco-space-s) var(--arco-space-m);
+  border-top: 1px solid var(--arco-border);
+  background: var(--arco-bg-sunk);
+  flex-shrink: 0;
+}
+
+.arco-voicebar__body {
+  min-width: 0;
+  flex: 1;
+}
+
+.arco-voicebar__state {
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.arco-voicebar__transcript {
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .arco-chat__composer {
   display: flex;
   align-items: flex-end;

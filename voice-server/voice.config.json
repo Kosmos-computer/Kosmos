@@ -1,0 +1,25 @@
+{
+  "stt": {
+    "engine": "whisper-mlx",
+    "model": "large-v3-turbo",
+    "language": "en"
+  },
+  "tts": {
+    "engine": "kokoro",
+    "voice": "af_heart",
+    "piperBaseUrl": "http://localhost:5000"
+  },
+  "brain": {
+    "baseUrl": "http://localhost:11434/v1",
+    "model": "qwen2.5:7b",
+    "apiKey": "",
+    "useArcoSettings": true
+  },
+  "vad": {
+    "startSecs": 0.12,
+    "stopSecs": 0.2
+  },
+  "turn": {
+    "smartTurn": true
+  }
+}

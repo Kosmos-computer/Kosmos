@@ -12,6 +12,7 @@ import "./styles/auth.css";
 import "./styles/os.css";
 import "./styles/cursor.css";
 import "./styles/apps.css";
+import "./styles/composer.css";
 import "./styles/studio.css";
 import "./styles/adaptive.css";
 

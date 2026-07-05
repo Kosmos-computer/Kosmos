@@ -5,6 +5,9 @@ data/
 *.log
 .DS_Store
 
+# Private planning notes — keep local, never push
+docs/saas-plan.md
+
 # Tauri (model-manager)
 model-manager/src-tauri/target/
 model-manager/src-tauri/gen/

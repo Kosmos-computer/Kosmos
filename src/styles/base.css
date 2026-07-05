@@ -82,6 +82,109 @@ select {
   opacity: 0.5;
   cursor: default;
 }
+/* Ghost: borderless, transparent-at-rest — for dense chrome like the
+   composer's control row where a full button per icon would be noisy. */
+.arco-btn--ghost {
+  background: transparent;
+  border-color: transparent;
+}
+.arco-btn--ghost:hover {
+  background: var(--arco-bg-hover);
+}
+.arco-btn--ghost[aria-expanded="true"],
+.arco-btn--ghost[aria-pressed="true"] {
+  background: var(--arco-bg-active);
+  color: var(--arco-text-primary);
+}
+
+/* ── Dropdown menu primitive (src/components/Menu.tsx) ────────────────────
+   Panels anchor absolutely inside the trigger wrapper; side/align modifiers
+   pick the edge. Popover-style components (emoji picker, usage popover)
+   reuse the same panel/item classes. */
+.arco-menu {
+  position: relative;
+  display: inline-flex;
+}
+
+.arco-menu__panel {
+  position: absolute;
+  min-width: 180px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  background: var(--arco-bg-elevated);
+  border: 1px solid var(--arco-border-strong);
+  border-radius: var(--arco-radius-m);
+  box-shadow: var(--arco-shadow-chrome);
+  z-index: var(--arco-z-overlay);
+}
+.arco-menu__panel--bottom { top: calc(100% + 4px); }
+.arco-menu__panel--top { bottom: calc(100% + 4px); }
+.arco-menu__panel--start { left: 0; }
+.arco-menu__panel--end { right: 0; }
+
+.arco-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  width: 100%;
+  padding: 7px 10px;
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-secondary);
+  text-align: left;
+  border-radius: var(--arco-radius-s);
+}
+.arco-menu__item:hover,
+.arco-menu__item:focus-visible {
+  background: var(--arco-bg-hover);
+  color: var(--arco-text-primary);
+}
+.arco-menu__item:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.arco-menu__item--danger,
+.arco-menu__item--danger:hover {
+  color: var(--arco-danger);
+}
+
+.arco-menu__icon {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--arco-text-tertiary);
+}
+.arco-menu__item:hover .arco-menu__icon {
+  color: inherit;
+}
+
+.arco-menu__itemlabel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arco-menu__check {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--arco-accent);
+}
+
+.arco-menu__separator {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--arco-border);
+}
+
+.arco-menu__sectionlabel {
+  padding: 4px 10px 2px;
+  font-size: var(--arco-text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--arco-text-tertiary);
+}
 
 .arco-input {
   width: 100%;

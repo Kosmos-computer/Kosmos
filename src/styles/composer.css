@@ -1,0 +1,526 @@
+/*
+ * Rich composer suite (src/components/composer/): input card, formatting
+ * toolbar, controls row with overflow, attach/emoji popovers, docked notice,
+ * and the usage status bar. All values come from tokens.css; popover panels
+ * share the .arco-menu classes from base.css.
+ */
+
+/* ── Stack + card ─────────────────────────────────────────────────────────── */
+
+.arco-composer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-xs);
+  min-width: 0;
+}
+
+/* Dock wrapper used by app layouts to float the card over the thread edge. */
+.arco-composer-dock {
+  flex-shrink: 0;
+  padding: 0 var(--arco-space-l) var(--arco-space-m);
+}
+
+.arco-composer__card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-s);
+  min-width: 0;
+  padding: var(--arco-space-m);
+  background: var(--arco-bg-surface-solid);
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-l);
+  transition: border-color var(--arco-dur-fast);
+}
+.arco-composer__card:focus-within {
+  border-color: var(--arco-border-strong);
+}
+
+/* The card paints above the notice strip tucked underneath it. */
+.arco-composer__card--docked {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Formatting toolbar ───────────────────────────────────────────────────── */
+
+.arco-composer__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  /* Bleed to the card edges so the divider spans the full width. */
+  margin: calc(-1 * var(--arco-space-m)) calc(-1 * var(--arco-space-m)) 0;
+  padding: var(--arco-space-xs) var(--arco-space-s);
+  border-bottom: 1px solid var(--arco-border);
+}
+
+/* ── Textarea ─────────────────────────────────────────────────────────────── */
+
+.arco-composer__textarea {
+  width: 100%;
+  padding: 0 var(--arco-space-xs);
+  border: none;
+  background: transparent;
+  resize: none;
+  outline: none;
+  font-size: var(--arco-text-md);
+  line-height: 1.45;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--arco-border-strong) transparent;
+}
+.arco-composer__textarea::placeholder {
+  color: var(--arco-text-tertiary);
+}
+
+/* ── Controls row ─────────────────────────────────────────────────────────── */
+
+.arco-composer__controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--arco-space-s);
+  min-width: 0;
+}
+
+/* No overflow clipping here: popover panels anchor inside this cluster, and
+   the measurement logic already collapses controls that would not fit. */
+.arco-composer__controlsleft {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.arco-composer__track {
+  /* Positioned so overflow-hidden controls (absolute) stay contained. */
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-xs);
+  min-width: 0;
+}
+
+.arco-composer__control {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+/* Overflowed controls stay mounted (their popovers may be open and their
+   widths are still measured) but drop out of layout and interaction. */
+.arco-composer__control--hidden {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.arco-composer__overflowdock {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  padding-left: var(--arco-space-xs);
+}
+
+.arco-composer__controlsright {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--arco-space-xs);
+}
+
+/* Mode / model pickers — quiet text triggers with a chevron. */
+.arco-composer__pickertrigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--arco-space-xs);
+  height: 26px;
+  max-width: 180px;
+  padding: 0 var(--arco-space-s);
+  border-radius: var(--arco-radius-s);
+  color: var(--arco-text-tertiary);
+  font-size: var(--arco-text-sm);
+  transition: background var(--arco-dur-fast), color var(--arco-dur-fast);
+}
+.arco-composer__pickertrigger:hover,
+.arco-composer__pickertrigger[aria-expanded="true"] {
+  background: var(--arco-bg-hover);
+  color: var(--arco-text-secondary);
+}
+
+.arco-composer__pickerlabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Attach menu extras ───────────────────────────────────────────────────── */
+
+.arco-attach__panel {
+  width: 230px;
+}
+
+.arco-attach__togglerow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--arco-space-m);
+  min-height: 32px;
+  padding: 4px 10px;
+  border-radius: var(--arco-radius-s);
+  cursor: pointer;
+}
+.arco-attach__togglerow:hover {
+  background: var(--arco-bg-hover);
+}
+
+.arco-attach__togglelabel {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-primary);
+}
+
+/* ── Emoji picker ─────────────────────────────────────────────────────────── */
+
+.arco-emoji__trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 27px;
+  height: 27px;
+  border: 1px solid transparent;
+  border-radius: var(--arco-radius-s);
+  font-size: 15px;
+  line-height: 1;
+  transition: background var(--arco-dur-fast);
+}
+.arco-emoji__trigger:hover {
+  background: var(--arco-bg-hover);
+}
+.arco-emoji__trigger[aria-expanded="true"] {
+  background: var(--arco-bg-active);
+  border-color: var(--arco-border);
+}
+.arco-emoji__trigger:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.arco-emoji__panel {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  width: min(320px, 74vw);
+  max-height: min(340px, 60vh);
+  background: var(--arco-bg-elevated);
+  border: 1px solid var(--arco-border-strong);
+  border-radius: var(--arco-radius-m);
+  box-shadow: var(--arco-shadow-chrome);
+  overflow: hidden;
+  z-index: var(--arco-z-overlay);
+}
+
+.arco-emoji__searchrow {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-xs);
+  flex-shrink: 0;
+  padding: var(--arco-space-s);
+  border-bottom: 1px solid var(--arco-border);
+}
+
+.arco-emoji__searchicon {
+  flex-shrink: 0;
+  color: var(--arco-text-tertiary);
+}
+
+.arco-emoji__searchinput {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: var(--arco-text-sm);
+}
+.arco-emoji__searchinput::placeholder {
+  color: var(--arco-text-tertiary);
+}
+
+.arco-emoji__categories {
+  display: flex;
+  gap: var(--arco-space-xs);
+  flex-shrink: 0;
+  padding: var(--arco-space-s) var(--arco-space-s) 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.arco-emoji__categories::-webkit-scrollbar {
+  display: none;
+}
+
+.arco-emoji__category {
+  flex-shrink: 0;
+  height: 24px;
+  padding: 0 var(--arco-space-s);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--arco-text-secondary);
+  font-size: var(--arco-text-xs);
+  transition: background var(--arco-dur-fast), color var(--arco-dur-fast);
+}
+.arco-emoji__category:hover {
+  background: var(--arco-bg-hover);
+  color: var(--arco-text-primary);
+}
+.arco-emoji__category--active {
+  background: var(--arco-bg-active);
+  border-color: var(--arco-border);
+  color: var(--arco-text-primary);
+}
+
+.arco-emoji__scroll {
+  flex: 1;
+  min-height: 0;
+  padding: 0 var(--arco-space-s) var(--arco-space-s);
+}
+
+.arco-emoji__section:not(:last-child) {
+  padding-bottom: var(--arco-space-m);
+}
+
+.arco-emoji__sectionheader {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0 0 var(--arco-space-xs);
+  padding: var(--arco-space-s) 0 var(--arco-space-xs);
+  background: var(--arco-bg-elevated);
+  color: var(--arco-text-tertiary);
+  font-size: var(--arco-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.arco-emoji__grid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 2px;
+}
+
+.arco-emoji__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: var(--arco-radius-s);
+  font-size: 18px;
+  line-height: 1;
+}
+.arco-emoji__button:hover,
+.arco-emoji__button:focus-visible {
+  background: var(--arco-bg-hover);
+}
+
+.arco-emoji__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 110px;
+  color: var(--arco-text-tertiary);
+  font-size: var(--arco-text-sm);
+}
+
+/* ── Notice banner (docked under the card) ────────────────────────────────── */
+
+.arco-composer__noticeslot {
+  /* Slide the strip up behind the card by one corner radius. */
+  margin-top: calc(-1 * (var(--arco-space-xs) + var(--arco-radius-l)));
+  min-width: 0;
+}
+
+.arco-composer__notice {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  min-width: 0;
+  min-height: 32px;
+  padding: var(--arco-space-xs) var(--arco-space-m);
+  padding-top: calc(var(--arco-space-xs) + var(--arco-radius-l));
+  background: var(--arco-bg-sunk);
+  border: 1px solid var(--arco-border);
+  border-top: none;
+  border-radius: 0 0 var(--arco-radius-l) var(--arco-radius-l);
+  color: var(--arco-text-secondary);
+  font-size: var(--arco-text-sm);
+}
+.arco-composer__notice--info {
+  background: var(--arco-accent-soft);
+  color: var(--arco-text-primary);
+}
+.arco-composer__notice--warning {
+  color: var(--arco-warning);
+}
+.arco-composer__notice--danger {
+  background: var(--arco-danger-soft);
+  color: var(--arco-danger);
+}
+
+.arco-composer__noticeicon {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.arco-composer__noticemsg {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arco-composer__noticeaction {
+  flex-shrink: 0;
+  padding: 0 var(--arco-space-xs);
+  color: var(--arco-accent);
+  font-size: var(--arco-text-sm);
+  font-weight: 500;
+}
+.arco-composer__noticeaction:hover {
+  text-decoration: underline;
+}
+.arco-composer__notice--warning .arco-composer__noticeaction,
+.arco-composer__notice--danger .arco-composer__noticeaction {
+  color: inherit;
+}
+
+.arco-composer__noticedismiss {
+  display: inline-flex;
+  flex-shrink: 0;
+  padding: 2px;
+  border-radius: var(--arco-radius-s);
+  color: var(--arco-text-tertiary);
+}
+.arco-composer__noticedismiss:hover {
+  color: var(--arco-text-primary);
+}
+
+/* ── Status bar + usage popover ───────────────────────────────────────────── */
+
+.arco-composer__statusbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 var(--arco-space-xs);
+}
+
+.arco-usage__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  min-height: 20px;
+  padding: 0 var(--arco-space-xs);
+  border-radius: var(--arco-radius-s);
+}
+.arco-usage__trigger:hover .arco-usage__label--normal {
+  color: var(--arco-text-secondary);
+}
+
+.arco-usage__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--arco-accent);
+}
+.arco-usage__dot--warning { background: var(--arco-warning); }
+.arco-usage__dot--danger { background: var(--arco-danger); }
+
+.arco-usage__label {
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+  white-space: nowrap;
+}
+.arco-usage__label--warning { color: var(--arco-warning); }
+.arco-usage__label--danger { color: var(--arco-danger); }
+
+.arco-usage__panel {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  width: 270px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-m);
+  padding: var(--arco-space-m);
+  background: var(--arco-bg-elevated);
+  border: 1px solid var(--arco-border-strong);
+  border-radius: var(--arco-radius-m);
+  box-shadow: var(--arco-shadow-chrome);
+  z-index: var(--arco-z-overlay);
+}
+
+.arco-usage__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-s);
+}
+
+.arco-usage__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--arco-space-s);
+}
+
+.arco-usage__rowlabel {
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-secondary);
+}
+
+.arco-usage__rowvalue {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-primary);
+}
+
+.arco-usage__rowmuted {
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-tertiary);
+}
+
+.arco-usage__track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--arco-bg-active);
+  overflow: hidden;
+}
+
+.arco-usage__fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--arco-accent);
+  transition: width var(--arco-dur-med);
+}
+.arco-usage__fill--over {
+  background: var(--arco-danger);
+}
+
+.arco-usage__planbutton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+.arco-usage__planbutton:hover .arco-usage__rowlabel {
+  color: var(--arco-text-primary);
+}
+
+.arco-usage__planicon {
+  color: var(--arco-text-tertiary);
+}

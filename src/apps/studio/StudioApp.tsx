@@ -1,14 +1,14 @@
 /**
- * Agent Studio — Arco's workbench surface (agent-canvas layout): a session
- * rail on the left, the chat thread in the middle, and a resizable context
- * drawer on the right whose tabs (Files / Diffs / Terminal / Preview) update
- * live as the agent works.
+ * Agent Studio — Arco's workbench surface (agent-canvas layout): a
+ * conversation sidebar on the left, the chat thread + rich composer in the
+ * middle, and a resizable context drawer on the right whose tabs
+ * (Files / Diffs / Terminal / Preview) update live as the agent works.
  *
  * Chat state reuses the same useChat hook as the Chat app; workspace state
  * comes from the global studio store, which handleShellEvent feeds for every
  * agent turn regardless of which surface ran it.
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AppWindow,
   FileDiff,
@@ -17,10 +17,7 @@ import {
   PanelLeft,
   PanelRight,
   Plus,
-  Send,
-  Square,
   SquareTerminal,
-  Trash2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { WorkspaceTab } from "@shared/types";
@@ -28,9 +25,14 @@ import { useChat } from "../chat/useChat";
 import { AssistantBlock } from "../chat/AssistantBlock";
 import { ToolCard } from "../chat/ToolCard";
 import { ConfirmCard } from "../chat/ConfirmCard";
+import { Composer } from "../../components/composer/Composer";
+import { ComposerNotice } from "../../components/composer/ComposerNotice";
+import { contextPercent, type UsageStats } from "../../components/composer/UsagePopover";
 import { useStudioStore } from "./studioStore";
 import { useResizableSplit } from "./useResizableSplit";
+import { useModelSelection } from "./useModelSelection";
 import { ProjectPicker } from "./ProjectPicker";
+import { StudioSidebar } from "./StudioSidebar";
 import { FilesTab } from "./tabs/FilesTab";
 import { GitTab } from "./tabs/GitTab";
 import { TerminalTab } from "./tabs/TerminalTab";
@@ -49,12 +51,51 @@ const DRAWER_TABS: { id: WorkspaceTab; label: string; icon: LucideIcon }[] = [
   { id: "preview", label: "Preview", icon: AppWindow },
 ];
 
+/** Composer mode switch — Agent acts on the workspace, Ask just answers. */
+const COMPOSER_MODES = [
+  { id: "agent", label: "Agent" },
+  { id: "ask", label: "Ask" },
+];
+
+// ---------------------------------------------------------------------------
+// Context usage estimate
+//
+// There is no server-side token accounting yet, so the meter estimates from
+// the visible thread at ~4 chars/token against the local-model window. Plan
+// percentages are placeholders until a usage API exists.
+// ---------------------------------------------------------------------------
+
+const CONTEXT_LIMIT_K = 128;
+
+function estimateUsage(items: ReturnType<typeof useChat>["items"]): UsageStats {
+  let chars = 0;
+  for (const item of items) {
+    if (item.kind === "user" || item.kind === "assistant" || item.kind === "error") {
+      chars += item.text.length;
+    } else if (item.kind === "tool") {
+      chars += JSON.stringify(item.args).length + (item.result?.length ?? 0);
+    }
+  }
+  const usedK = chars / 4 / 1000;
+  const percent = Math.round((usedK / CONTEXT_LIMIT_K) * 100);
+  return {
+    contextUsedK: usedK,
+    contextLimitK: CONTEXT_LIMIT_K,
+    fiveHourPercent: Math.min(100, percent),
+    weeklyPercent: Math.min(100, Math.round(percent / 2)),
+  };
+}
+
 export function StudioApp() {
   const chat = useChat();
   const [draft, setDraft] = useState("");
+  const [mode, setMode] = useState("agent");
+  /** Session key whose near-limit notice the user dismissed. */
+  const [noticeDismissedFor, setNoticeDismissedFor] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { onDividerPointerDown } = useResizableSplit(containerRef);
+  const { modelLabel, modelItems } = useModelSelection();
 
   const navOpen = useStudioStore((s) => s.navOpen);
   const setNavOpen = useStudioStore((s) => s.setNavOpen);
@@ -86,6 +127,38 @@ export function StudioApp() {
     [draft, chat],
   );
 
+  // ── Composer wiring ───────────────────────────────────────────────────────
+
+  // The "+" menu's panel switches drive the single workspace drawer: turning
+  // a panel on selects its tab and opens the drawer; off closes the drawer.
+  const panelToggles = useMemo(
+    () =>
+      DRAWER_TABS.map((tab) => ({
+        id: tab.id,
+        label: tab.label,
+        visible: drawerOpen && activeTab === tab.id,
+        onVisibleChange: (visible: boolean) => {
+          if (visible) {
+            setActiveTab(tab.id);
+            setDrawerOpen(true);
+          } else {
+            setDrawerOpen(false);
+          }
+        },
+      })),
+    [drawerOpen, activeTab, setActiveTab, setDrawerOpen],
+  );
+
+  const openFilesPanel = useCallback(() => {
+    setActiveTab("files");
+    setDrawerOpen(true);
+  }, [setActiveTab, setDrawerOpen]);
+
+  const usage = useMemo(() => estimateUsage(chat.items), [chat.items]);
+  const usagePercent = contextPercent(usage);
+  const noticeKey = chat.sessionId ?? "new";
+  const showLimitNotice = usagePercent >= 90 && noticeDismissedFor !== noticeKey;
+
   return (
     <div className="arco-studio">
       {/* ── Top bar: rail + drawer toggles ─────────────────────────────── */}
@@ -114,32 +187,15 @@ export function StudioApp() {
       </div>
 
       <div className="arco-studio__body" ref={containerRef}>
-        {/* ── Left rail: sessions ──────────────────────────────────────── */}
+        {/* ── Left: conversations sidebar ──────────────────────────────── */}
         {navOpen && (
-          <aside className="arco-studio__rail arco-scroll" aria-label="Sessions">
-            {chat.sessions.length === 0 && <div className="arco-empty">No sessions yet</div>}
-            {chat.sessions.map((s) => (
-              <div
-                key={s.id}
-                className={`arco-chat__session ${s.id === chat.sessionId ? "arco-chat__session--active" : ""}`}
-              >
-                <button
-                  className="arco-chat__session-title"
-                  onClick={() => void chat.loadSession(s.id)}
-                >
-                  {s.kind === "automation" ? "⚙ " : ""}
-                  {s.title}
-                </button>
-                <button
-                  aria-label={`Delete session ${s.title}`}
-                  className="arco-chat__session-delete"
-                  onClick={() => void chat.removeSession(s.id)}
-                >
-                  <Trash2 size={12} />
-                </button>
-              </div>
-            ))}
-          </aside>
+          <StudioSidebar
+            sessions={chat.sessions}
+            activeSessionId={chat.sessionId}
+            onSelect={(id) => void chat.loadSession(id)}
+            onDelete={(id) => void chat.removeSession(id)}
+            onNewChat={chat.newChat}
+          />
         )}
 
         {/* ── Center: chat thread + composer ───────────────────────────── */}
@@ -188,34 +244,37 @@ export function StudioApp() {
             {chat.streaming && <div className="arco-chat__working">Working…</div>}
           </div>
 
-          <div className="arco-chat__composer">
-            <textarea
-              className="arco-chat__input"
-              placeholder="Ask the agent to build, script, or automate…"
+          <div className="arco-composer-dock">
+            <Composer
               value={draft}
-              rows={1}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  submit();
-                }
-              }}
+              onChange={setDraft}
+              onSubmit={() => submit()}
+              streaming={chat.streaming}
+              onStop={chat.stop}
+              placeholder="Ask the agent to build, script, or automate…"
+              modes={COMPOSER_MODES}
+              activeModeId={mode}
+              onModeChange={setMode}
+              model={modelLabel}
+              modelItems={modelItems}
+              onAddFile={openFilesPanel}
+              panelToggles={panelToggles}
+              usage={usage}
+              notice={
+                showLimitNotice ? (
+                  <ComposerNotice
+                    tone={usagePercent >= 100 ? "danger" : "warning"}
+                    actionLabel="New session"
+                    onAction={chat.newChat}
+                    onDismiss={() => setNoticeDismissedFor(noticeKey)}
+                  >
+                    {usagePercent >= 100
+                      ? "Context is over the limit — start a new session to keep responses sharp"
+                      : "This session is close to the context limit"}
+                  </ComposerNotice>
+                ) : undefined
+              }
             />
-            {chat.streaming ? (
-              <button className="arco-btn arco-btn--danger" onClick={chat.stop} aria-label="Stop">
-                <Square size={13} />
-              </button>
-            ) : (
-              <button
-                className="arco-btn arco-btn--primary"
-                onClick={() => submit()}
-                disabled={!draft.trim()}
-                aria-label="Send"
-              >
-                <Send size={13} />
-              </button>
-            )}
           </div>
         </section>
 

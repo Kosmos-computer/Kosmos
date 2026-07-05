@@ -14,6 +14,7 @@ import { AppsSection } from "./AppsSection";
 import { AgentSection } from "./AgentSection";
 import { McpServersSection } from "./McpServersSection";
 import { ProvidersSection } from "./ProvidersSection";
+import { SkillsSection } from "./SkillsSection";
 
 const PROVIDERS: { id: LlmProvider; label: string }[] = [
   { id: "mock", label: "Mock (no key needed)" },
@@ -152,6 +153,8 @@ export function SettingsApp() {
       <AppsSection />
 
       <McpServersSection />
+
+      <SkillsSection />
 
       {canWriteSettings && <AgentSection />}
 

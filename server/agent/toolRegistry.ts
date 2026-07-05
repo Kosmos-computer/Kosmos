@@ -20,6 +20,7 @@ import { appendAudit } from "../platform/grantStore.js";
 import { requestConfirmation } from "./confirmations.js";
 import type { LlmToolDef } from "./llm.js";
 import { decide, policyStore, sourceKey, type ToolSource } from "./policyStore.js";
+import { skillStore } from "../skills/skillStore.js";
 import { agentTools, type AgentTool, type ToolContext } from "./tools.js";
 
 export interface RegisteredTool extends AgentTool {
@@ -69,6 +70,36 @@ function systemTools(): RegisteredTool[] {
   }));
 }
 
+/**
+ * Skill gating — a skill can list tools that refuse to run until the skill
+ * has been read this session. The instructional error is the point: the
+ * model reads the skill and retries in one iteration, so heavyweight
+ * authoring guides stay out of the base prompt without losing their teeth.
+ */
+function applySkillGates(tools: RegisteredTool[], ctx: ToolContext): RegisteredTool[] {
+  const unread = skillStore.gatingSkillsUnread(ctx.sessionId);
+  if (unread.length === 0) return tools;
+  return tools.map((tool) => {
+    const gate = unread.find((s) => s.gates.includes(tool.name));
+    if (!gate) return tool;
+    return {
+      ...tool,
+      // Re-check at execution time, not assembly time: read_skill earlier in
+      // the same turn must unlock the tool for the calls that follow it.
+      execute: async (args, execCtx) => {
+        if (!skillStore.wasRead(execCtx.sessionId, gate.id)) {
+          return {
+            error:
+              `Read skill "${gate.id}" first (read_skill) — it documents how to use ` +
+              `${tool.name} correctly. Then retry this call.`,
+          };
+        }
+        return tool.execute(args, execCtx);
+      },
+    };
+  });
+}
+
 /** Build the full tool list for one agent turn. */
 export async function assembleTools(ctx: ToolContext): Promise<RegisteredTool[]> {
   const contributed = await Promise.all(
@@ -86,11 +117,12 @@ export async function assembleTools(ctx: ToolContext): Promise<RegisteredTool[]>
   // contributors. Contributors are expected to namespace (mcp__server__tool),
   // so a collision here is a bug being contained, not a feature.
   const seen = new Set<string>();
-  return tools.filter((t) => {
+  const deduped = tools.filter((t) => {
     if (seen.has(t.name)) return false;
     seen.add(t.name);
     return true;
   });
+  return applySkillGates(deduped, ctx);
 }
 
 export function toLlmDefs(tools: RegisteredTool[]): LlmToolDef[] {

@@ -50,12 +50,23 @@ import { mcpServerStore } from "./mcp/serverStore.js";
 import { mcpSupervisor } from "./mcp/supervisor.js";
 import { mcpLogFile } from "./mcp/client.js";
 import "./mcp/tools.js"; // registers the MCP tool contributor with the agent registry
+import { skillStore } from "./skills/skillStore.js";
 import { bus } from "./bus.js";
 
 const execFileAsync = promisify(execFile);
 
 ensureDataDirs();
 installedAppStore.ensureSeeds();
+// Skills: static seeds from ./skills, plus the generated OpenUI app-authoring
+// guide as a gating skill (it left the always-on system prompt in Phase C).
+skillStore.ensureSeeds(path.resolve("skills"));
+skillStore.ensureGeneratedSeed(
+  "openui-app-authoring",
+  "OpenUI app authoring",
+  "REQUIRED before app_create or app_update. The complete durable-app surface: components, reactivity, data bindings, adaptive layout rules.",
+  ["app_create", "app_update"],
+  path.resolve("server/generated/app-prompt.md"),
+);
 
 const app = new Hono<AuthEnv>();
 
@@ -559,6 +570,61 @@ app.get("/api/audit", requireCap("settings:write"), (c) => {
   const limit = Math.min(Math.max(Number(c.req.query("limit") ?? 100), 1), 500);
   const caller = c.req.query("caller") || undefined;
   return c.json(readAudit(limit, caller));
+});
+
+// ── Skills (reusable instruction bundles for the agent) ─────────────────────
+
+app.get("/api/skills", (c) => c.json(skillStore.list()));
+
+app.get("/api/skills/:id", (c) => {
+  const skill = skillStore.get(c.req.param("id"));
+  if (!skill) return c.json({ error: "Not found" }, 404);
+  return c.json(skill);
+});
+
+app.post("/api/skills", requireCap("settings:write"), async (c) => {
+  const body = (await c.req.json()) as {
+    name?: string;
+    description?: string;
+    body?: string;
+    gates?: string[];
+  };
+  if (!body.name?.trim() || !body.description?.trim() || !body.body?.trim()) {
+    return c.json({ error: "name, description, and body are required" }, 400);
+  }
+  return c.json(
+    skillStore.create({
+      name: body.name.trim(),
+      description: body.description.trim(),
+      body: body.body,
+      ...(Array.isArray(body.gates) ? { gates: body.gates.map(String) } : {}),
+      source: "user",
+    }),
+  );
+});
+
+app.patch("/api/skills/:id", requireCap("settings:write"), async (c) => {
+  const body = (await c.req.json()) as {
+    name?: string;
+    description?: string;
+    body?: string;
+    gates?: string[];
+    enabled?: boolean;
+  };
+  const patch: Parameters<typeof skillStore.update>[1] = {};
+  if (typeof body.name === "string") patch.name = body.name.trim();
+  if (typeof body.description === "string") patch.description = body.description.trim();
+  if (typeof body.body === "string") patch.body = body.body;
+  if (Array.isArray(body.gates)) patch.gates = body.gates.map(String);
+  if (typeof body.enabled === "boolean") patch.enabled = body.enabled;
+  const skill = skillStore.update(c.req.param("id"), patch);
+  if (!skill) return c.json({ error: "Not found" }, 404);
+  return c.json(skill);
+});
+
+app.delete("/api/skills/:id", requireCap("settings:write"), (c) => {
+  if (!skillStore.remove(c.req.param("id"))) return c.json({ error: "Not found" }, 404);
+  return c.json({ ok: true });
 });
 
 // ── MCP servers (external tool providers for the agent) ─────────────────────

@@ -192,6 +192,33 @@ export interface AuditEntry {
   allowed: boolean;
 }
 
+// ── Skills (reusable instruction bundles, progressively disclosed) ──────────
+//
+// The agent sees an index (id + description) in its system prompt and reads
+// full bodies on demand with read_skill — demand-paged knowledge. A skill
+// can "gate" tools: those tools refuse to run in a session until the skill
+// has been read, which is how large authoring guides stay out of every turn
+// without losing their teeth.
+
+export type SkillSource = "seed" | "user" | `app:${string}`;
+
+export interface SkillMeta {
+  id: string;
+  name: string;
+  /** Shown in the prompt index — written to tell the model when to read it. */
+  description: string;
+  /** Tool names blocked until this skill is read in the session. */
+  gates: string[];
+  enabled: boolean;
+  source: SkillSource;
+  updatedAt: string;
+}
+
+export interface Skill extends SkillMeta {
+  /** Markdown body (frontmatter stripped). */
+  body: string;
+}
+
 // ── MCP servers (Model Context Protocol — external tool providers) ──────────
 //
 // The transport union deliberately mirrors ACP's `McpServer` schema (stdio |

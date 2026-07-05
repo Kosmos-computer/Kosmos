@@ -23,6 +23,8 @@ import type {
   Session,
   SessionSummary,
   Settings,
+  Skill,
+  SkillMeta,
   StoredApp,
   WebApp,
   WebAppLaunchStatus,
@@ -294,6 +296,32 @@ export const api = {
     const qs = params.toString();
     return fetch(`/api/audit${qs ? `?${qs}` : ""}`).then((r) => json<AuditEntry[]>(r));
   },
+
+  // Skills (reusable instruction bundles for the agent)
+  listSkills: () => fetch("/api/skills").then((r) => json<SkillMeta[]>(r)),
+  getSkill: (id: string) =>
+    fetch(`/api/skills/${encodeURIComponent(id)}`).then((r) => json<Skill>(r)),
+  createSkill: (data: { name: string; description: string; body: string; gates?: string[] }) =>
+    post<Skill>("/api/skills", data),
+  updateSkill: (
+    id: string,
+    patch: {
+      name?: string;
+      description?: string;
+      body?: string;
+      gates?: string[];
+      enabled?: boolean;
+    },
+  ) =>
+    fetch(`/api/skills/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    }).then((r) => json<Skill>(r)),
+  deleteSkill: (id: string) =>
+    fetch(`/api/skills/${encodeURIComponent(id)}`, { method: "DELETE" }).then((r) =>
+      json<{ ok: true }>(r),
+    ),
 
   // MCP servers (external tool providers for the agent)
   listMcpServers: () => fetch("/api/mcp-servers").then((r) => json<McpServerInfo[]>(r)),

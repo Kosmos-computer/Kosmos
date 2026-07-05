@@ -31,6 +31,7 @@ import { appendAudit } from "../platform/grantStore.js";
 import { intentMeta } from "../../shared/capabilities/index.js";
 import { getActiveRoot, resolveProjectPath } from "../stores/projectStore.js";
 import { dbExecute, dbQuery } from "../stores/db.js";
+import { skillStore } from "../skills/skillStore.js";
 import { bus } from "../bus.js";
 import { requestClientAction } from "./clientRequests.js";
 import { isRiskyCommand, requestConfirmation } from "./confirmations.js";
@@ -596,6 +597,67 @@ export const agentTools: AgentTool[] = [
         `Delete calendar event ${String(args.id ?? "")}`,
         ctx,
       ),
+  },
+
+  // ── Skills (demand-paged knowledge) ─────────────────────────────────────────
+  {
+    name: "read_skill",
+    description:
+      "Read a skill's full instructions by id (ids are in the Skills index of your system prompt). Required before using any tool the skill gates. Read a skill once per session; its guidance then applies for the rest of the conversation.",
+    parameters: {
+      type: "object",
+      properties: { id: { type: "string", description: "Skill id, e.g. meeting-notes" } },
+      required: ["id"],
+    },
+    execute: async (args, ctx) => {
+      const skill = skillStore.get(String(args.id ?? ""));
+      if (!skill || !skill.enabled) {
+        return { error: `Unknown or disabled skill: ${String(args.id)}. Check the Skills index.` };
+      }
+      // Reading disarms this skill's tool gates for the session (persisted,
+      // so a server restart doesn't force a re-read mid-conversation).
+      skillStore.markRead(ctx.sessionId, skill.id);
+      return { id: skill.id, name: skill.name, instructions: skill.body };
+    },
+  },
+  {
+    name: "save_skill",
+    description:
+      "Save a reusable skill — distill a lesson, preference, or procedure from this conversation into standing instructions for future sessions. Pauses for user approval. Write the description so a future agent knows WHEN to read the skill.",
+    parameters: {
+      type: "object",
+      properties: {
+        name: { type: "string", description: "Short display name, e.g. 'Weekly report format'" },
+        description: {
+          type: "string",
+          description: "One or two sentences: when should a future session read this skill?",
+        },
+        body: { type: "string", description: "The full instructions, markdown" },
+      },
+      required: ["name", "description", "body"],
+    },
+    execute: async (args, ctx) => {
+      const name = String(args.name ?? "").trim();
+      const description = String(args.description ?? "").trim();
+      const body = String(args.body ?? "").trim();
+      if (!name || !description || !body) {
+        return { error: "name, description, and body are all required" };
+      }
+      // Additions to the user's standing instructions need their sign-off —
+      // same internal gate as calendar writes and risky exec commands.
+      if (!ctx.interactive) {
+        return { error: "Saving a skill requires user approval and no user is attached. Skipped." };
+      }
+      const { confirmId, verdict } = requestConfirmation();
+      ctx.emit({ type: "confirm_required", confirmId, command: `Save skill "${name}" — ${description}` });
+      const { approved } = await verdict;
+      ctx.emit({ type: "confirm_resolved", confirmId, approved });
+      if (!approved) {
+        return { error: "User declined to save this skill. Do not retry; ask what they'd like instead." };
+      }
+      const skill = skillStore.create({ name, description, body, source: "user" });
+      return { id: skill.id, name: skill.name, saved: true };
+    },
   },
 
   // ── Shell navigation (agent-canvas canvas_ui pattern) ──────────────────────

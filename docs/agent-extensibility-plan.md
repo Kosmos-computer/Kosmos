@@ -726,6 +726,13 @@ agent is the subprocess.
 
 ### 9.2 Arco as ACP client — pluggable Studio agents
 
+> **Status: built.** `server/acp/acpAgent.ts` + Settings → Agent chips.
+> One warm subprocess per chat session; enabled MCP servers forward into
+> `session/new`; permission requests ride the existing confirm card; fs
+> read/write is confined to the active project root and emits
+> `file_changed` diffs. `scripts/acp-test-agent.mts` is a scripted ACP
+> agent used to smoke-test the full protocol round trip.
+
 - Settings → Model provider grows an **Agent** choice: `built-in` (today's
   loop) or `acp` with a command preset (Claude Code / Codex / Gemini /
   custom — agent-canvas's preset table transfers directly, including

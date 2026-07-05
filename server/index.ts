@@ -27,6 +27,7 @@ import type { AgentEvent, DirListing, Settings } from "../shared/types.js";
 import { requireAuth, requireCap, type AuthEnv } from "./auth/middleware.js";
 import { authRoutes } from "./auth/routes.js";
 import { runAgentTurn } from "./agent/loop.js";
+import { runAcpTurn, stopAllAcpRuns } from "./acp/acpAgent.js";
 import { openaiCompatRoutes } from "./agent/openaiCompat.js";
 import { invokeRuntimeTool, runExec } from "./agent/tools.js";
 import { resolveClientRequest } from "./agent/clientRequests.js";
@@ -109,7 +110,11 @@ app.post("/api/chat", requireCap("chat"), async (c) => {
     };
     emit({ type: "session", sessionId: session.id });
     try {
-      await runAgentTurn({
+      // Interactive chat routes to whichever brain Settings selects; the
+      // built-in loop stays the only agent for automations (headless ACP
+      // has unresolved lifecycle semantics — see the extensibility plan).
+      const turnRunner = loadSettings().agent === "acp" ? runAcpTurn : runAgentTurn;
+      await turnRunner({
         sessionId: session.id,
         userMessage: message,
         emit,
@@ -831,6 +836,10 @@ app.put("/api/settings", requireCap("settings:write"), async (c) => {
   const patch = (await c.req.json()) as Partial<Settings>;
   // A masked key echoed back from the client must not clobber the real one.
   if (patch.apiKey && patch.apiKey.startsWith("••••")) delete patch.apiKey;
+  // Agent config changes tear down live ACP subprocesses so the next turn
+  // respawns with the new command; running turns fail fast rather than
+  // continuing on stale settings.
+  if (patch.agent !== undefined || patch.acpCommand !== undefined) stopAllAcpRuns();
   return c.json(maskSettings(saveSettings(patch)));
 });
 

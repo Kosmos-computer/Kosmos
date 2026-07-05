@@ -41,6 +41,8 @@ const DEFAULT_SETTINGS: Settings = {
   apiKey: process.env.LLM_API_KEY ?? "",
   model: process.env.LLM_MODEL ?? "gpt-5.5",
   wallpaper: "aurora",
+  agent: "builtin",
+  acpCommand: "",
 };
 
 export function loadSettings(): Settings {

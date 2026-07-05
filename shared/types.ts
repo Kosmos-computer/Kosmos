@@ -393,6 +393,14 @@ export interface AuthStatus {
 
 export type LlmProvider = "openai" | "anthropic" | "openrouter" | "ollama" | "local" | "custom" | "mock";
 
+/**
+ * Which brain answers chat turns: the built-in tool loop, or an external
+ * coding agent driven over ACP (Agent Client Protocol — Zed's editor↔agent
+ * standard). ACP agents manage their own LLM and tools; Arco relays turns
+ * and renders what comes back. Automations always use the built-in loop.
+ */
+export type AgentKind = "builtin" | "acp";
+
 export interface Settings {
   provider: LlmProvider;
   baseUrl: string;
@@ -400,7 +408,22 @@ export interface Settings {
   apiKey: string;
   model: string;
   wallpaper: string;
+  agent: AgentKind;
+  /** Spawn command line for the ACP agent subprocess (when agent="acp"). */
+  acpCommand: string;
 }
+
+/**
+ * ACP agent presets — the commands that spawn each provider's ACP adapter.
+ * Any stdio ACP server works via "custom"; these are the curated three.
+ * Authentication rides the provider CLI's own login (Claude/ChatGPT/Google
+ * subscription sessions are auto-detected), or an API key from Settings.
+ */
+export const ACP_PRESETS: { id: string; label: string; command: string }[] = [
+  { id: "claude-code", label: "Claude Code", command: "npx -y @zed-industries/claude-code-acp" },
+  { id: "codex", label: "Codex", command: "npx -y @zed-industries/codex-acp" },
+  { id: "gemini", label: "Gemini CLI", command: "npx -y @google/gemini-cli --experimental-acp" },
+];
 
 /** Provider presets shown in the Settings app. */
 export const PROVIDER_PRESETS: Record<Exclude<LlmProvider, "custom" | "mock">, { baseUrl: string; model: string }> = {

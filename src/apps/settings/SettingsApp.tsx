@@ -4,7 +4,7 @@
  */
 import { useEffect, useState } from "react";
 import type { LlmProvider, Settings } from "@shared/types";
-import { PROVIDER_PRESETS } from "@shared/types";
+import { ACP_PRESETS, PROVIDER_PRESETS } from "@shared/types";
 import { api } from "../../lib/api";
 import { useCan } from "../../os/auth/authStore";
 import { useOsStore } from "../../os/osStore";
@@ -62,8 +62,68 @@ export function SettingsApp() {
     setSaved(true);
   };
 
+  // Which agent chip is lit: builtin, a matching preset, or custom.
+  const activeAgentChip =
+    settings.agent !== "acp"
+      ? "builtin"
+      : (ACP_PRESETS.find((p) => p.command === settings.acpCommand)?.id ?? "custom");
+
+  const pickAgent = (chip: string) => {
+    if (chip === "builtin") {
+      update({ agent: "builtin" });
+    } else if (chip === "custom") {
+      update({ agent: "acp" });
+    } else {
+      const preset = ACP_PRESETS.find((p) => p.id === chip);
+      update({ agent: "acp", acpCommand: preset?.command ?? settings.acpCommand });
+    }
+  };
+
   return (
     <div className="arco-panel arco-scroll" style={{ gap: 16 }}>
+      <section className="arco-form">
+        <strong>Agent</strong>
+        <div className="arco-chip-row">
+          {[{ id: "builtin", label: "Built-in" }, ...ACP_PRESETS, { id: "custom", label: "Custom (ACP)" }].map(
+            (a) => (
+              <button
+                key={a.id}
+                className={`arco-chip ${activeAgentChip === a.id ? "arco-chip--active" : ""}`}
+                onClick={() => pickAgent(a.id)}
+                aria-pressed={activeAgentChip === a.id}
+              >
+                {a.label}
+              </button>
+            ),
+          )}
+        </div>
+        {settings.agent === "acp" && (
+          <>
+            <label className="arco-label" htmlFor="set-acp-command">
+              Spawn command (stdio ACP server)
+            </label>
+            <input
+              id="set-acp-command"
+              className="arco-input"
+              value={settings.acpCommand}
+              placeholder="npx -y @zed-industries/claude-code-acp"
+              onChange={(e) => update({ acpCommand: e.target.value })}
+            />
+            <p style={{ color: "var(--arco-text-dim)", fontSize: "var(--arco-text-sm)", margin: 0 }}>
+              The external agent brings its own model and tools; the provider settings below only apply
+              to the built-in agent (and automations, which always use it). Sign in with the provider's
+              own CLI, or set a matching API key below. Enabled MCP servers are forwarded automatically.
+            </p>
+          </>
+        )}
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <button className="arco-btn arco-btn--primary" onClick={() => void save()}>
+            Save
+          </button>
+          {saved && <span style={{ color: "var(--arco-success)", fontSize: "var(--arco-text-sm)" }}>Saved</span>}
+        </div>
+      </section>
+
       <section className="arco-form">
         <strong>Model provider</strong>
         <div className="arco-chip-row">

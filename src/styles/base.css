@@ -1,0 +1,127 @@
+/* Base reset + app-wide element defaults. All values come from tokens.css. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--arco-font-ui);
+  font-size: var(--arco-text-md);
+  color: var(--arco-text-primary);
+  background: var(--arco-bg-desktop);
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+input,
+textarea,
+select {
+  font: inherit;
+  color: var(--arco-text-primary);
+}
+
+::selection {
+  background: var(--arco-accent-soft);
+}
+
+/* Shared control styles */
+.arco-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--arco-space-xs);
+  padding: 6px 12px;
+  border-radius: var(--arco-radius-s);
+  font-size: var(--arco-text-sm);
+  font-weight: 500;
+  color: var(--arco-text-secondary);
+  background: var(--arco-bg-hover);
+  border: 1px solid var(--arco-border);
+  transition: background var(--arco-dur-fast), color var(--arco-dur-fast);
+}
+.arco-btn:hover {
+  background: var(--arco-bg-active);
+  color: var(--arco-text-primary);
+}
+.arco-btn--primary {
+  background: var(--arco-accent);
+  border-color: transparent;
+  color: var(--arco-text-inverted);
+}
+.arco-btn--primary:hover {
+  background: var(--arco-accent-strong);
+  color: var(--arco-text-inverted);
+}
+.arco-btn--danger {
+  background: var(--arco-danger-soft);
+  border-color: transparent;
+  color: var(--arco-danger);
+}
+.arco-btn--danger:hover {
+  background: var(--arco-danger);
+  color: var(--arco-text-inverted);
+}
+.arco-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.arco-input {
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: var(--arco-radius-s);
+  border: 1px solid var(--arco-border);
+  background: var(--arco-bg-sunk);
+  font-size: var(--arco-text-sm);
+  outline: none;
+  transition: border-color var(--arco-dur-fast);
+}
+.arco-input:focus {
+  border-color: var(--arco-accent);
+}
+
+.arco-label {
+  display: block;
+  font-size: var(--arco-text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--arco-text-tertiary);
+  margin-bottom: var(--arco-space-xs);
+}
+
+.arco-scroll {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--arco-border-strong) transparent;
+}
+
+.arco-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--arco-space-s);
+  height: 100%;
+  color: var(--arco-text-tertiary);
+  font-size: var(--arco-text-sm);
+  text-align: center;
+  padding: var(--arco-space-xl);
+}

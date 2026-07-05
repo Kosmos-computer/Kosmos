@@ -1,0 +1,50 @@
+{
+  "name": "arco-os",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Arco OS — a generative AI operating system prototype. Desktop shell + agent that builds adaptive live apps.",
+  "scripts": {
+    "generate": "tsx scripts/generate-prompts.ts",
+    "dev": "concurrently -n server,web -c yellow,cyan \"npm run dev:server\" \"npm run dev:web\"",
+    "dev:server": "tsx watch server/index.ts",
+    "dev:web": "vite",
+    "build": "vite build",
+    "start": "NODE_ENV=production tsx server/index.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.server.json"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.14.0",
+    "@monaco-editor/react": "^4.7.0",
+    "@openuidev/lang-core": "^0.2.7",
+    "@openuidev/react-headless": "^0.9.1",
+    "@openuidev/react-lang": "^0.2.8",
+    "@openuidev/react-ui": "^0.12.1",
+    "better-sqlite3": "^12.0.0",
+    "hono": "^4.12.0",
+    "lucide-react": "^0.575.0",
+    "monaco-editor": "^0.55.1",
+    "node-cron": "^4.5.0",
+    "openai": "^6.22.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "zod": "^4.0.0",
+    "zustand": "^4.5.5"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.15.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@vitejs/plugin-react": "^4.5.0",
+    "concurrently": "^9.2.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.8.0",
+    "vite": "^6.3.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

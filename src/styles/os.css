@@ -1,0 +1,352 @@
+/* Desktop shell chrome: desktop, menu bar, dock, windows, notifications. */
+
+.arco-desktop {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* ── Menu bar ─────────────────────────────────────────────────────────────── */
+
+.arco-menubar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-l);
+  padding: 0 var(--arco-space-l);
+  background: var(--arco-bg-chrome);
+  backdrop-filter: var(--arco-backdrop-blur);
+  -webkit-backdrop-filter: var(--arco-backdrop-blur);
+  border-bottom: 1px solid var(--arco-border);
+  z-index: var(--arco-z-chrome);
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-secondary);
+  user-select: none;
+}
+
+.arco-menubar__brand {
+  font-weight: 700;
+  color: var(--arco-text-primary);
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.arco-menubar__brand-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--arco-accent);
+  transition: background var(--arco-dur-med);
+}
+.arco-menubar__brand-dot--busy {
+  background: var(--arco-success);
+  animation: arco-pulse 1.2s ease-in-out infinite;
+}
+@keyframes arco-pulse {
+  50% { opacity: 0.35; }
+}
+
+.arco-menubar__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.arco-menubar__right {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-m);
+  margin-left: auto;
+}
+
+.arco-menubar__icon-btn {
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: var(--arco-radius-s);
+  color: var(--arco-text-secondary);
+}
+.arco-menubar__icon-btn:hover {
+  background: var(--arco-bg-hover);
+  color: var(--arco-text-primary);
+}
+
+/* ── Dock ─────────────────────────────────────────────────────────────────── */
+
+.arco-dock {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-xs);
+  padding: 7px 10px;
+  border-radius: 18px;
+  background: var(--arco-bg-chrome);
+  backdrop-filter: var(--arco-backdrop-blur);
+  -webkit-backdrop-filter: var(--arco-backdrop-blur);
+  border: 1px solid var(--arco-border);
+  box-shadow: var(--arco-shadow-chrome);
+  z-index: var(--arco-z-chrome);
+  max-width: calc(100vw - 24px);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.arco-dock__item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  color: var(--arco-text-secondary);
+  transition: transform var(--arco-dur-fast) var(--arco-ease), background var(--arco-dur-fast);
+  flex-shrink: 0;
+}
+.arco-dock__item:hover {
+  transform: translateY(-4px) scale(1.08);
+  background: var(--arco-bg-hover);
+  color: var(--arco-text-primary);
+}
+
+.arco-dock__item--generated {
+  color: var(--arco-accent);
+}
+
+.arco-dock__indicator {
+  position: absolute;
+  bottom: 2px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--arco-text-secondary);
+}
+
+.arco-dock__separator {
+  width: 1px;
+  align-self: stretch;
+  margin: 6px 4px;
+  background: var(--arco-border-strong);
+  flex-shrink: 0;
+}
+
+.arco-dock__tooltip {
+  position: absolute;
+  bottom: 56px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 10px;
+  border-radius: var(--arco-radius-s);
+  background: var(--arco-bg-elevated);
+  border: 1px solid var(--arco-border);
+  box-shadow: var(--arco-shadow-chrome);
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-primary);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--arco-dur-fast);
+}
+.arco-dock__item:hover .arco-dock__tooltip {
+  opacity: 1;
+}
+
+/* ── Windows ──────────────────────────────────────────────────────────────── */
+
+.arco-window {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--arco-radius-window);
+  background: var(--arco-bg-surface);
+  backdrop-filter: var(--arco-backdrop-blur);
+  -webkit-backdrop-filter: var(--arco-backdrop-blur);
+  border: 1px solid var(--arco-border);
+  box-shadow: var(--arco-shadow-window);
+  overflow: hidden;
+  min-width: 320px;
+  min-height: 220px;
+}
+
+.arco-window--focused {
+  border-color: var(--arco-border-strong);
+}
+
+.arco-window__titlebar {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  height: 38px;
+  padding: 0 var(--arco-space-m);
+  border-bottom: 1px solid var(--arco-border);
+  user-select: none;
+  cursor: default;
+  flex-shrink: 0;
+}
+
+.arco-window__dots {
+  display: flex;
+  gap: 7px;
+}
+
+.arco-window__dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+}
+.arco-window__dot:hover {
+  color: rgba(0, 0, 0, 0.55);
+}
+.arco-window__dot svg {
+  width: 8px;
+  height: 8px;
+}
+.arco-window__dot--close { background: #ff5f57; }
+.arco-window__dot--min { background: #febc2e; }
+.arco-window__dot--max { background: #28c840; }
+
+.arco-window__title {
+  flex: 1;
+  text-align: center;
+  font-size: var(--arco-text-sm);
+  font-weight: 600;
+  color: var(--arco-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  /* Balance the traffic dots so the title optically centers */
+  margin-right: 50px;
+}
+
+.arco-window__content {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Resize handles */
+.arco-window__resize {
+  position: absolute;
+  z-index: 5;
+}
+.arco-window__resize--e { right: -3px; top: 12px; bottom: 12px; width: 7px; cursor: ew-resize; }
+.arco-window__resize--s { bottom: -3px; left: 12px; right: 12px; height: 7px; cursor: ns-resize; }
+.arco-window__resize--se { right: -4px; bottom: -4px; width: 16px; height: 16px; cursor: nwse-resize; }
+
+/* ── Notifications ────────────────────────────────────────────────────────── */
+
+.arco-notifications {
+  position: absolute;
+  top: 44px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-s);
+  z-index: var(--arco-z-overlay);
+  width: 320px;
+  max-width: calc(100vw - 24px);
+}
+
+.arco-notification {
+  display: flex;
+  gap: var(--arco-space-s);
+  align-items: flex-start;
+  padding: var(--arco-space-m);
+  border-radius: var(--arco-radius-m);
+  background: var(--arco-bg-elevated);
+  border: 1px solid var(--arco-border);
+  box-shadow: var(--arco-shadow-chrome);
+  font-size: var(--arco-text-sm);
+  animation: arco-slide-in var(--arco-dur-med) var(--arco-ease);
+}
+
+@keyframes arco-slide-in {
+  from { transform: translateX(24px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+/* ── Mobile shell ─────────────────────────────────────────────────────────── */
+
+.arco-mobile-shell {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.arco-mobile-shell__surface {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--arco-bg-surface-solid);
+}
+
+.arco-mobile-shell__header {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  height: 44px;
+  padding: 0 var(--arco-space-m);
+  border-bottom: 1px solid var(--arco-border);
+  flex-shrink: 0;
+}
+
+.arco-mobile-shell__dock {
+  display: flex;
+  justify-content: space-around;
+  padding: 8px 4px calc(8px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--arco-border);
+  background: var(--arco-bg-chrome);
+  backdrop-filter: var(--arco-backdrop-blur);
+  overflow-x: auto;
+}
+
+.arco-mobile-home {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: var(--arco-space-l);
+  align-content: start;
+  padding: var(--arco-space-xl);
+  overflow-y: auto;
+}
+
+.arco-mobile-home__icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--arco-space-s);
+  color: var(--arco-text-secondary);
+  font-size: var(--arco-text-xs);
+}
+
+.arco-mobile-home__glyph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: var(--arco-bg-surface);
+  border: 1px solid var(--arco-border);
+}

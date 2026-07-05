@@ -1,0 +1,70 @@
+/*
+ * Adaptive reflow — the runtime half of "apps adapt to any size".
+ *
+ * AdaptiveSurface stamps data-arco-size = compact | medium | expanded from a
+ * per-container ResizeObserver (never the viewport — a narrow window on a big
+ * display gets the compact treatment, per the AndroidX adaptive model).
+ *
+ * The generated OpenUI Stack component emits inline flex styles, so reflow
+ * targets [style*="flex-direction:row"] with !important — the one sanctioned
+ * place we override the component library, keeping generated apps free of
+ * any per-size markup.
+ */
+
+.arco-adaptive {
+  container-type: inline-size;
+}
+
+/* ── Compact: row layouts stack vertically ────────────────────────────────── */
+
+/* Rows of Cards (KPI strips, side-by-side panels) become a column. */
+.arco-adaptive[data-arco-size="compact"] div[style*="flex-direction:row"]:has(> .openui-card) {
+  flex-direction: column !important;
+  align-items: stretch !important;
+}
+
+/* Any card takes the full width of a compact container. */
+.arco-adaptive[data-arco-size="compact"] .openui-card-standard {
+  width: 100% !important;
+}
+
+/* Control rows (input + button) may wrap instead of overflowing. */
+.arco-adaptive[data-arco-size="compact"] div[style*="flex-direction:row"] {
+  flex-wrap: wrap;
+}
+
+/* Tables scroll horizontally instead of crushing columns. */
+.arco-adaptive[data-arco-size="compact"] .openui-table-container {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+/* Keep charts inside the container. */
+.arco-adaptive[data-arco-size="compact"] .openui-chart-container {
+  max-width: 100%;
+}
+
+/* ── Medium: rows of 3+ cards may wrap into a 2-up grid ───────────────────── */
+
+.arco-adaptive[data-arco-size="medium"] div[style*="flex-direction:row"]:has(> .openui-card:nth-child(3)) {
+  flex-wrap: wrap !important;
+}
+.arco-adaptive[data-arco-size="medium"]
+  div[style*="flex-direction:row"]:has(> .openui-card:nth-child(3))
+  > .openui-card {
+  flex: 1 1 calc(50% - var(--arco-space-m)) !important;
+  min-width: 220px;
+}
+
+/* ── All sizes: generated content never overflows its window ──────────────── */
+
+.arco-adaptive .openui-card,
+.arco-adaptive .openui-markdown-renderer {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.arco-adaptive img {
+  max-width: 100%;
+  height: auto;
+}

@@ -1,0 +1,131 @@
+/*
+ * Arco design tokens — every shell style references these variables, so the
+ * whole OS is themeable from one place. Light/dark palettes switch on the
+ * html[data-theme] attribute (hydrated pre-paint in index.html).
+ */
+
+:root {
+  /* Typography */
+  --arco-font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --arco-font-mono: "SF Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --arco-text-xs: 11px;
+  --arco-text-sm: 12.5px;
+  --arco-text-md: 14px;
+  --arco-text-lg: 16px;
+  --arco-text-xl: 20px;
+
+  /* Spacing scale */
+  --arco-space-2xs: 2px;
+  --arco-space-xs: 4px;
+  --arco-space-s: 8px;
+  --arco-space-m: 12px;
+  --arco-space-l: 16px;
+  --arco-space-xl: 24px;
+  --arco-space-2xl: 32px;
+
+  /* Radii */
+  --arco-radius-s: 6px;
+  --arco-radius-m: 10px;
+  --arco-radius-l: 14px;
+  --arco-radius-window: 12px;
+
+  /* Motion */
+  --arco-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --arco-dur-fast: 140ms;
+  --arco-dur-med: 240ms;
+
+  /* Z layers */
+  --arco-z-windows: 10;
+  --arco-z-chrome: 1000;
+  --arco-z-overlay: 2000;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+
+  --arco-bg-desktop: #0b0d12;
+  --arco-bg-surface: rgba(24, 27, 34, 0.92);
+  --arco-bg-surface-solid: #181b22;
+  --arco-bg-sunk: rgba(12, 14, 18, 0.75);
+  --arco-bg-elevated: rgba(38, 42, 52, 0.95);
+  --arco-bg-hover: rgba(255, 255, 255, 0.06);
+  --arco-bg-active: rgba(255, 255, 255, 0.1);
+  --arco-bg-chrome: rgba(16, 18, 24, 0.78);
+
+  --arco-text-primary: #eef1f6;
+  --arco-text-secondary: #a8b0bf;
+  --arco-text-tertiary: #6d7585;
+  --arco-text-inverted: #10131a;
+
+  --arco-accent: #7c9dff;
+  --arco-accent-strong: #5b82ff;
+  --arco-accent-soft: rgba(124, 157, 255, 0.16);
+  --arco-success: #58c98b;
+  --arco-warning: #e5b567;
+  --arco-danger: #e5737d;
+  --arco-danger-soft: rgba(229, 115, 125, 0.14);
+
+  --arco-border: rgba(255, 255, 255, 0.09);
+  --arco-border-strong: rgba(255, 255, 255, 0.16);
+  --arco-shadow-window: 0 24px 64px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.35);
+  --arco-shadow-chrome: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --arco-backdrop-blur: saturate(160%) blur(22px);
+}
+
+html[data-theme="light"] {
+  color-scheme: light;
+
+  --arco-bg-desktop: #dfe4ec;
+  --arco-bg-surface: rgba(252, 253, 255, 0.92);
+  --arco-bg-surface-solid: #fcfdff;
+  --arco-bg-sunk: rgba(232, 236, 243, 0.8);
+  --arco-bg-elevated: rgba(255, 255, 255, 0.98);
+  --arco-bg-hover: rgba(0, 0, 0, 0.05);
+  --arco-bg-active: rgba(0, 0, 0, 0.09);
+  --arco-bg-chrome: rgba(248, 250, 253, 0.8);
+
+  --arco-text-primary: #171b23;
+  --arco-text-secondary: #4e5665;
+  --arco-text-tertiary: #8a92a3;
+  --arco-text-inverted: #ffffff;
+
+  --arco-accent: #3b64e0;
+  --arco-accent-strong: #2b51c7;
+  --arco-accent-soft: rgba(59, 100, 224, 0.12);
+  --arco-success: #23985e;
+  --arco-warning: #b57f24;
+  --arco-danger: #cc4450;
+  --arco-danger-soft: rgba(204, 68, 80, 0.1);
+
+  --arco-border: rgba(15, 20, 30, 0.1);
+  --arco-border-strong: rgba(15, 20, 30, 0.18);
+  --arco-shadow-window: 0 24px 64px rgba(30, 40, 60, 0.28), 0 2px 8px rgba(30, 40, 60, 0.14);
+  --arco-shadow-chrome: 0 8px 32px rgba(30, 40, 60, 0.18);
+  --arco-backdrop-blur: saturate(160%) blur(22px);
+}
+
+/* Wallpapers — gradient presets selectable in Settings */
+.arco-wallpaper-aurora {
+  background:
+    radial-gradient(120% 90% at 15% 10%, rgba(94, 130, 255, 0.35), transparent 55%),
+    radial-gradient(100% 80% at 85% 20%, rgba(140, 90, 220, 0.3), transparent 55%),
+    radial-gradient(120% 100% at 50% 100%, rgba(40, 170, 140, 0.22), transparent 60%),
+    var(--arco-bg-desktop);
+}
+.arco-wallpaper-dusk {
+  background:
+    radial-gradient(110% 90% at 80% 0%, rgba(230, 120, 90, 0.32), transparent 55%),
+    radial-gradient(120% 90% at 10% 90%, rgba(120, 60, 160, 0.32), transparent 60%),
+    var(--arco-bg-desktop);
+}
+.arco-wallpaper-graphite {
+  background:
+    radial-gradient(120% 100% at 50% 0%, rgba(120, 130, 150, 0.18), transparent 60%),
+    var(--arco-bg-desktop);
+}
+.arco-wallpaper-forest {
+  background:
+    radial-gradient(110% 90% at 20% 15%, rgba(60, 180, 120, 0.28), transparent 55%),
+    radial-gradient(110% 90% at 85% 85%, rgba(30, 120, 160, 0.26), transparent 60%),
+    var(--arco-bg-desktop);
+}

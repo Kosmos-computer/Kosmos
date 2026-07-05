@@ -1,0 +1,243 @@
+/**
+ * Window manager — the matrix-os pattern in a small Zustand store:
+ * open/close/focus/minimize/maximize with monotonic z-ordering, plus layout
+ * persistence that ALSO remembers closed-window geometry so relaunching an
+ * app restores where the user left it.
+ */
+import { create } from "zustand";
+
+export type SystemAppId =
+  | "chat"
+  | "studio"
+  | "apps"
+  | "automations"
+  | "files"
+  | "terminal"
+  | "settings";
+
+export type WindowKind =
+  | { type: "system"; app: SystemAppId }
+  | { type: "app"; appId: string }
+  /** A registered user project embedded by URL (dock "web apps" section). */
+  | { type: "web"; webAppId: string };
+
+export interface WindowRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+export interface OsWindow extends WindowRect {
+  id: string;
+  kind: WindowKind;
+  title: string;
+  minimized: boolean;
+  maximized: boolean;
+  z: number;
+}
+
+/** Stable identity: one window per system app / per generated app. */
+export function windowKey(kind: WindowKind): string {
+  switch (kind.type) {
+    case "system":
+      return `system:${kind.app}`;
+    case "app":
+      return `app:${kind.appId}`;
+    case "web":
+      return `web:${kind.webAppId}`;
+  }
+}
+
+interface PersistedLayout {
+  windows: OsWindow[];
+  closedGeometry: Record<string, WindowRect>;
+  nextZ: number;
+}
+
+const STORAGE_KEY = "arco:layout:v1";
+
+function loadLayout(): PersistedLayout {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw) as PersistedLayout;
+  } catch {
+    // Corrupt layout — start fresh.
+  }
+  return { windows: [], closedGeometry: {}, nextZ: 10 };
+}
+
+let saveTimer: ReturnType<typeof setTimeout> | null = null;
+function persist(state: WindowStore): void {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    const payload: PersistedLayout = {
+      windows: state.windows,
+      closedGeometry: state.closedGeometry,
+      nextZ: state.nextZ,
+    };
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    } catch {
+      // Quota errors are non-fatal.
+    }
+  }, 400);
+}
+
+const DEFAULT_SIZES: Record<string, { w: number; h: number }> = {
+  "system:chat": { w: 560, h: 680 },
+  // Studio is a workbench — it wants most of the screen by default.
+  "system:studio": { w: 1180, h: 760 },
+  "system:apps": { w: 760, h: 560 },
+  "system:automations": { w: 720, h: 560 },
+  "system:files": { w: 680, h: 520 },
+  "system:terminal": { w: 640, h: 440 },
+  "system:settings": { w: 560, h: 620 },
+};
+
+function defaultRect(key: string, index: number): WindowRect {
+  // Web apps are full projects — give them a workbench-sized window.
+  const fallback = key.startsWith("web:") ? { w: 1000, h: 700 } : { w: 720, h: 560 };
+  const size = DEFAULT_SIZES[key] ?? fallback;
+  const vw = typeof window !== "undefined" ? window.innerWidth : 1440;
+  const vh = typeof window !== "undefined" ? window.innerHeight : 900;
+  const offset = (index % 6) * 32;
+  return {
+    x: Math.max(12, Math.round(vw / 2 - size.w / 2) + offset),
+    y: Math.max(44, Math.round(vh / 2 - size.h / 2 - 40) + offset),
+    w: Math.min(size.w, vw - 24),
+    h: Math.min(size.h, vh - 100),
+  };
+}
+
+interface WindowStore {
+  windows: OsWindow[];
+  closedGeometry: Record<string, WindowRect>;
+  nextZ: number;
+
+  open: (kind: WindowKind, title: string) => void;
+  close: (id: string) => void;
+  focus: (id: string) => void;
+  toggleMinimize: (id: string) => void;
+  toggleMaximize: (id: string) => void;
+  setRect: (id: string, rect: Partial<WindowRect>) => void;
+  setTitle: (id: string, title: string) => void;
+  focusedId: () => string | null;
+}
+
+export const useWindowStore = create<WindowStore>((set, get) => ({
+  ...loadLayout(),
+
+  open: (kind, title) => {
+    const id = windowKey(kind);
+    set((state) => {
+      const existing = state.windows.find((w) => w.id === id);
+      let next: WindowStore;
+      if (existing) {
+        next = {
+          ...state,
+          windows: state.windows.map((w) =>
+            w.id === id ? { ...w, minimized: false, title, z: state.nextZ } : w,
+          ),
+          nextZ: state.nextZ + 1,
+        } as WindowStore;
+      } else {
+        const rect = state.closedGeometry[id] ?? defaultRect(id, state.windows.length);
+        const win: OsWindow = {
+          id,
+          kind,
+          title,
+          ...rect,
+          minimized: false,
+          maximized: false,
+          z: state.nextZ,
+        };
+        next = {
+          ...state,
+          windows: [...state.windows, win],
+          nextZ: state.nextZ + 1,
+        } as WindowStore;
+      }
+      persist(next);
+      return next;
+    });
+  },
+
+  close: (id) => {
+    set((state) => {
+      const win = state.windows.find((w) => w.id === id);
+      const next = {
+        ...state,
+        windows: state.windows.filter((w) => w.id !== id),
+        closedGeometry: win
+          ? { ...state.closedGeometry, [id]: { x: win.x, y: win.y, w: win.w, h: win.h } }
+          : state.closedGeometry,
+      } as WindowStore;
+      persist(next);
+      return next;
+    });
+  },
+
+  focus: (id) => {
+    set((state) => {
+      const top = [...state.windows].sort((a, b) => b.z - a.z)[0];
+      if (top?.id === id && !top.minimized) return state;
+      const next = {
+        ...state,
+        windows: state.windows.map((w) => (w.id === id ? { ...w, z: state.nextZ, minimized: false } : w)),
+        nextZ: state.nextZ + 1,
+      } as WindowStore;
+      persist(next);
+      return next;
+    });
+  },
+
+  toggleMinimize: (id) => {
+    set((state) => {
+      const next = {
+        ...state,
+        windows: state.windows.map((w) => (w.id === id ? { ...w, minimized: !w.minimized } : w)),
+      } as WindowStore;
+      persist(next);
+      return next;
+    });
+  },
+
+  toggleMaximize: (id) => {
+    set((state) => {
+      const next = {
+        ...state,
+        windows: state.windows.map((w) =>
+          w.id === id ? { ...w, maximized: !w.maximized, z: state.nextZ } : w,
+        ),
+        nextZ: state.nextZ + 1,
+      } as WindowStore;
+      persist(next);
+      return next;
+    });
+  },
+
+  setRect: (id, rect) => {
+    set((state) => {
+      const next = {
+        ...state,
+        windows: state.windows.map((w) => (w.id === id ? { ...w, ...rect } : w)),
+      } as WindowStore;
+      persist(next);
+      return next;
+    });
+  },
+
+  setTitle: (id, title) => {
+    set((state) => ({
+      ...state,
+      windows: state.windows.map((w) => (w.id === id ? { ...w, title } : w)),
+    }));
+  },
+
+  focusedId: () => {
+    const visible = get().windows.filter((w) => !w.minimized);
+    if (visible.length === 0) return null;
+    return [...visible].sort((a, b) => b.z - a.z)[0].id;
+  },
+}));

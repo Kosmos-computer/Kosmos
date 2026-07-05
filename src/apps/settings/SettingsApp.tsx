@@ -12,6 +12,7 @@ import { PasswordSection } from "./PasswordSection";
 import { UsersSection } from "./UsersSection";
 import { AppsSection } from "./AppsSection";
 import { AgentSection } from "./AgentSection";
+import { ExternalAccessSection } from "./ExternalAccessSection";
 import { McpServersSection } from "./McpServersSection";
 import { ProvidersSection } from "./ProvidersSection";
 import { SkillsSection } from "./SkillsSection";
@@ -159,6 +160,8 @@ export function SettingsApp() {
       {canWriteSettings && <AgentSection />}
 
       <ProvidersSection />
+
+      <ExternalAccessSection />
 
       <PasswordSection />
 

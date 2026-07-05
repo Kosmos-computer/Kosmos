@@ -260,6 +260,30 @@ export interface McpServerInfo {
   tools: McpToolInfo[];
 }
 
+// ── External access (Arco as an outward MCP server) ─────────────────────────
+//
+// External agents (Claude Desktop, other MCP hosts) can drive Arco's
+// capability intents through POST /mcp with a scoped bearer token minted in
+// Settings. Master toggle defaults off; tokens default to read-only.
+
+export type ExternalClientScope = "read" | "readwrite";
+
+/** Listing shape — the token itself is only ever returned once, at mint. */
+export interface ExternalClientInfo {
+  id: string;
+  name: string;
+  scope: ExternalClientScope;
+  enabled: boolean;
+  createdAt: string;
+  /** Last 4 characters, for recognition in the list. */
+  tokenPreview: string;
+}
+
+export interface ExternalAccessInfo {
+  enabled: boolean;
+  clients: ExternalClientInfo[];
+}
+
 // ── Automations ──────────────────────────────────────────────────────────────
 
 export interface AutomationRun {

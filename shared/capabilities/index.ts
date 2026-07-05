@@ -4,7 +4,7 @@
  * an app implements, what the default-provider registry points at); intents
  * are the caller-side units (what gets granted, confirmed, and audited).
  */
-import { CALENDAR_CONTRACT_ID, CALENDAR_INTENTS } from "./calendar.js";
+import { CALENDAR_CONTRACT_ID, CALENDAR_INTENTS, CALENDAR_INTENT_SCHEMAS } from "./calendar.js";
 
 export type IntentAccess = "read" | "write";
 
@@ -12,6 +12,15 @@ export type IntentAccess = "read" | "write";
 export const CONTRACTS: Record<string, Record<string, IntentAccess>> = {
   [CALENDAR_CONTRACT_ID]: CALENDAR_INTENTS,
 };
+
+/** intentId → JSON Schema for its params (for tool-shaped exposure). */
+export const INTENT_SCHEMAS: Record<string, Record<string, unknown>> = {
+  ...CALENDAR_INTENT_SCHEMAS,
+};
+
+export function intentSchema(intentId: string): Record<string, unknown> {
+  return INTENT_SCHEMAS[intentId] ?? { type: "object", properties: {} };
+}
 
 export interface IntentMeta {
   contractId: string;

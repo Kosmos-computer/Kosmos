@@ -45,3 +45,53 @@ export const CALENDAR_INTENTS = {
 } as const;
 
 export type CalendarIntentId = keyof typeof CALENDAR_INTENTS;
+
+/**
+ * JSON Schemas per intent — the machine-readable face of the contract.
+ * Consumed wherever an intent is exposed as a callable tool (the outward
+ * MCP endpoint today; a discovery API later).
+ */
+export const CALENDAR_INTENT_SCHEMAS: Record<CalendarIntentId, Record<string, unknown>> = {
+  "calendar.events.list": {
+    type: "object",
+    properties: {
+      from: { type: "string", description: "ISO date-time — only events ending at/after this" },
+      to: { type: "string", description: "ISO date-time — only events starting at/before this" },
+    },
+  },
+  "calendar.event.get": {
+    type: "object",
+    properties: { id: { type: "string" } },
+    required: ["id"],
+  },
+  "calendar.event.create": {
+    type: "object",
+    properties: {
+      title: { type: "string" },
+      start: { type: "string", description: "ISO 8601 start" },
+      end: { type: "string", description: "ISO 8601 end" },
+      allDay: { type: "boolean" },
+      location: { type: "string" },
+      notes: { type: "string" },
+    },
+    required: ["title", "start", "end"],
+  },
+  "calendar.event.update": {
+    type: "object",
+    properties: {
+      id: { type: "string" },
+      title: { type: "string" },
+      start: { type: "string" },
+      end: { type: "string" },
+      allDay: { type: "boolean" },
+      location: { type: "string" },
+      notes: { type: "string" },
+    },
+    required: ["id"],
+  },
+  "calendar.event.delete": {
+    type: "object",
+    properties: { id: { type: "string" } },
+    required: ["id"],
+  },
+};

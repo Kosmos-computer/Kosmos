@@ -14,6 +14,8 @@ import type {
   Automation,
   AutomationRun,
   DirListing,
+  ExternalAccessInfo,
+  ExternalClientScope,
   GitInfo,
   McpServerInfo,
   McpTransport,
@@ -349,6 +351,28 @@ export const api = {
     post<McpServerInfo>(`/api/mcp-servers/${encodeURIComponent(id)}/restart`),
   mcpServerLog: (id: string) =>
     fetch(`/api/mcp-servers/${encodeURIComponent(id)}/log`).then((r) => json<{ log: string }>(r)),
+
+  // External access (Arco as an outward MCP server)
+  getExternalAccess: () =>
+    fetch("/api/external-access").then((r) => json<ExternalAccessInfo>(r)),
+  setExternalAccessEnabled: (enabled: boolean) =>
+    fetch("/api/external-access", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled }),
+    }).then((r) => json<ExternalAccessInfo>(r)),
+  mintExternalClient: (name: string, scope: ExternalClientScope) =>
+    post<{ id: string; token: string }>("/api/external-access/clients", { name, scope }),
+  updateExternalClient: (id: string, patch: { enabled?: boolean; scope?: ExternalClientScope }) =>
+    fetch(`/api/external-access/clients/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    }).then((r) => json<ExternalAccessInfo>(r)),
+  revokeExternalClient: (id: string) =>
+    fetch(`/api/external-access/clients/${encodeURIComponent(id)}`, { method: "DELETE" }).then(
+      (r) => json<ExternalAccessInfo>(r),
+    ),
 
   // Capability providers (default apps per contract)
   getCapabilityProviders: () =>

@@ -15,8 +15,9 @@
  */
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { serve } from "@hono/node-server";
+import { serve, type HttpBindings } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
+import { RESPONSE_ALREADY_SENT } from "@hono/node-server/utils/response";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import fs from "node:fs/promises";
@@ -51,6 +52,8 @@ import { mcpSupervisor } from "./mcp/supervisor.js";
 import { mcpLogFile } from "./mcp/client.js";
 import "./mcp/tools.js"; // registers the MCP tool contributor with the agent registry
 import "./platform/appTools.js"; // registers installed apps' tool contributions
+import { handleOutwardMcp } from "./mcp/outward.js";
+import { externalClients } from "./platform/externalClients.js";
 import { skillStore } from "./skills/skillStore.js";
 import { bus } from "./bus.js";
 
@@ -719,6 +722,60 @@ function parseTransport(raw: unknown): import("../shared/types.js").McpTransport
   }
   return null;
 }
+
+// ── Outward MCP (external agents drive Arco's intents) ──────────────────────
+//
+// /mcp sits OUTSIDE /api on purpose: it authenticates with scoped bearer
+// tokens (externalClients), never with a user session cookie. Stateless
+// JSON mode — each POST is a complete MCP exchange.
+
+app.post("/mcp", async (c) => {
+  const bearer = (c.req.header("authorization") ?? "").replace(/^Bearer\s+/i, "");
+  const body = await c.req.json().catch(() => undefined);
+  const { incoming, outgoing } = c.env as unknown as HttpBindings;
+  await handleOutwardMcp(incoming, outgoing, body, bearer);
+  return RESPONSE_ALREADY_SENT;
+});
+
+app.get("/mcp", (c) =>
+  c.json({ error: "This MCP endpoint is stateless — use POST with JSON-RPC" }, 405),
+);
+
+// ── External access management (Settings → External access) ─────────────────
+
+app.get("/api/external-access", requireCap("settings:write"), (c) =>
+  c.json(externalClients.info()),
+);
+
+app.put("/api/external-access", requireCap("settings:write"), async (c) => {
+  const body = (await c.req.json()) as { enabled?: boolean };
+  externalClients.setEnabled(body.enabled === true);
+  return c.json(externalClients.info());
+});
+
+app.post("/api/external-access/clients", requireCap("settings:write"), async (c) => {
+  const body = (await c.req.json()) as { name?: string; scope?: string };
+  if (!body.name?.trim()) return c.json({ error: "name is required" }, 400);
+  const scope = body.scope === "readwrite" ? "readwrite" : "read";
+  // The token appears in this response and nowhere else — the store only
+  // ever lists previews afterwards.
+  return c.json(externalClients.mint(body.name.trim(), scope));
+});
+
+app.patch("/api/external-access/clients/:id", requireCap("settings:write"), async (c) => {
+  const body = (await c.req.json()) as { enabled?: boolean; scope?: string };
+  const ok = externalClients.update(c.req.param("id"), {
+    ...(typeof body.enabled === "boolean" ? { enabled: body.enabled } : {}),
+    ...(body.scope === "read" || body.scope === "readwrite" ? { scope: body.scope } : {}),
+  });
+  if (!ok) return c.json({ error: "Not found" }, 404);
+  return c.json(externalClients.info());
+});
+
+app.delete("/api/external-access/clients/:id", requireCap("settings:write"), (c) => {
+  externalClients.revoke(c.req.param("id"));
+  return c.json(externalClients.info());
+});
 
 // ── Capability providers (default apps per contract) ────────────────────────
 

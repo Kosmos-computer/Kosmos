@@ -144,6 +144,29 @@ authRoutes.post("/unlock", async (c) => {
   return c.json({ user });
 });
 
+/**
+ * Self-service password change — any signed-in, unlocked user, gated on the
+ * current password (a walked-away-unlocked machine can't silently rekey the
+ * account). All existing sessions die with the old password; a fresh cookie
+ * keeps this one signed in.
+ */
+authRoutes.post("/password", async (c) => {
+  const { session, user } = resolveSession(c);
+  if (!session || session.locked || !user) return c.json({ error: "Not signed in" }, 401);
+  const body = (await c.req.json()) as { currentPassword: string; newPassword: string };
+  if (!userStore.verify(user.id, body.currentPassword ?? "")) {
+    return c.json({ error: "Current password is incorrect" }, 401);
+  }
+  try {
+    userStore.setPassword(user.id, body.newPassword ?? "");
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Update failed" }, 400);
+  }
+  authSessionStore.revokeAllForUser(user.id);
+  setCookie(c, AUTH_COOKIE, authSessionStore.create(user.id), COOKIE_OPTS);
+  return c.json({ ok: true });
+});
+
 // ---------------------------------------------------------------------------
 // User management (owner/admin territory via users:manage)
 //

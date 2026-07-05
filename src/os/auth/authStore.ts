@@ -47,7 +47,7 @@ function readableError(err: unknown): string {
   return raw;
 }
 
-export const useAuthStore = create<AuthStore>((set, get) => ({
+export const useAuthStore = create<AuthStore>((set) => ({
   phase: "booting",
   user: null,
   error: null,

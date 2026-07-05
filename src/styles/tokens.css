@@ -33,6 +33,9 @@
   --arco-ease: cubic-bezier(0.32, 0.72, 0, 1);
   --arco-dur-fast: 140ms;
   --arco-dur-med: 240ms;
+  /* Full-screen cross-fades (boot → login → desktop). Keep in sync with
+     XFADE_MS in AuthGate.tsx. */
+  --arco-dur-xfade: 600ms;
 
   /* Z layers */
   --arco-z-windows: 10;

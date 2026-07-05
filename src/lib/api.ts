@@ -72,6 +72,8 @@ export const api = {
   authLogout: () => post<{ ok: true }>("/api/auth/logout"),
   authLock: () => post<{ ok: true }>("/api/auth/lock"),
   authUnlock: (password: string) => post<{ user: AuthUser }>("/api/auth/unlock", { password }),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    post<{ ok: true }>("/api/auth/password", { currentPassword, newPassword }),
   listUsers: () => fetch("/api/auth/users").then((r) => json<UserSummary[]>(r)),
   createUser: (data: { username: string; displayName?: string; password: string; role: Role }) =>
     post<AuthUser>("/api/auth/users", data),

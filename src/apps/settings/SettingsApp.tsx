@@ -6,7 +6,10 @@ import { useEffect, useState } from "react";
 import type { LlmProvider, Settings } from "@shared/types";
 import { PROVIDER_PRESETS } from "@shared/types";
 import { api } from "../../lib/api";
+import { useCan } from "../../os/auth/authStore";
 import { useOsStore } from "../../os/osStore";
+import { PasswordSection } from "./PasswordSection";
+import { UsersSection } from "./UsersSection";
 
 const PROVIDERS: { id: LlmProvider; label: string }[] = [
   { id: "mock", label: "Mock (no key needed)" },
@@ -22,6 +25,7 @@ const WALLPAPERS = ["aurora", "dusk", "graphite", "forest"];
 
 export function SettingsApp() {
   const { theme, setTheme, wallpaper, setWallpaper } = useOsStore();
+  const canManageUsers = useCan("users:manage");
   const [settings, setSettings] = useState<Settings | null>(null);
   const [saved, setSaved] = useState(false);
 
@@ -139,6 +143,10 @@ export function SettingsApp() {
           ))}
         </div>
       </section>
+
+      <PasswordSection />
+
+      {canManageUsers && <UsersSection />}
     </div>
   );
 }

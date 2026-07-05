@@ -8,6 +8,7 @@ import "@openuidev/react-ui/index.css";
 // Arco shell styles.
 import "./styles/tokens.css";
 import "./styles/base.css";
+import "./styles/auth.css";
 import "./styles/os.css";
 import "./styles/cursor.css";
 import "./styles/apps.css";

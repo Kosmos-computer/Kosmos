@@ -1,6 +1,7 @@
-/** Top chrome: brand + agent status dot, focused window title, clock, theme toggle. */
+/** Top chrome: brand + agent status dot, focused window title, clock, theme toggle, lock. */
 import { useEffect, useState } from "react";
-import { Moon, Sun } from "lucide-react";
+import { Lock, Moon, Sun } from "lucide-react";
+import { useAuthStore } from "./auth/authStore";
 import { useOsStore } from "./osStore";
 import { useWindowStore } from "./windowStore";
 
@@ -21,6 +22,8 @@ function useClock(): string {
 
 export function MenuBar() {
   const { theme, setTheme, agentBusy } = useOsStore();
+  const user = useAuthStore((s) => s.user);
+  const lock = useAuthStore((s) => s.lock);
   const windows = useWindowStore((s) => s.windows);
   const clock = useClock();
 
@@ -39,6 +42,15 @@ export function MenuBar() {
       </span>
       <span className="arco-menubar__title">{focused?.title ?? ""}</span>
       <div className="arco-menubar__right">
+        {user && <span title={`Signed in as ${user.username} (${user.role})`}>{user.displayName}</span>}
+        <button
+          className="arco-menubar__icon-btn"
+          onClick={() => void lock()}
+          aria-label="Lock Arco"
+          title="Lock"
+        >
+          <Lock size={14} />
+        </button>
         <button
           className="arco-menubar__icon-btn"
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}

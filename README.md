@@ -13,6 +13,7 @@ A generative AI operating system prototype. A desktop shell in the browser where
 - **Coding tools** — sandboxed workspace with `exec`, file read/write/list, and an in-OS Terminal and Files app.
 - **Databases** — namespaced SQLite databases usable by both the agent and generated apps.
 - **Automations** — cron-scheduled agent runs with prompts, run history, and an Automations manager app.
+- **Accounts & locking** — boot splash → login flow, session auth on every API route, role-based permissions (owner/admin/member/viewer), manual + idle lock screen, and in-app account management.
 
 ## Quick start
 
@@ -25,6 +26,26 @@ npm run dev        # starts API server (:4600) + Vite dev server (:4610)
 ```
 
 Open http://localhost:4610.
+
+### First run: create the owner account
+
+On first load Arco shows a boot splash, then a **setup screen**: pick a username and password (8+ characters) to create the **owner** account for this instance. There's no email — accounts are local to your Arco data dir. To start over, stop the server and delete `data/users.json` and `data/auth-sessions.json`.
+
+### Accounts, roles, and locking
+
+- **Sign in** — password login sets an HttpOnly session cookie (30-day sliding expiry). Passwords are scrypt-hashed; the server stores only session-token digests.
+- **Lock** — the lock icon in the menu bar (or 15 minutes of inactivity) locks the session: the API refuses everything until you re-enter your password. Your windows and state survive the lock.
+- **Roles** — routes are guarded by capabilities expanded from a role (see `shared/types.ts`):
+
+  | Role | Can |
+  | --- | --- |
+  | **Owner** | Everything, including managing accounts |
+  | **Admin** | Everything except managing accounts |
+  | **Member** | Chat, build apps, files, git — no terminal, settings, or accounts |
+  | **Viewer** | Read-only file access |
+
+- **Manage accounts** — Settings → Accounts (owners only): add users, change roles, reset passwords, delete. The last owner can't be deleted or demoted. Everyone can change their own password under Settings → Password.
+- **Hosting caution** — the agent executes shell commands with the server's authority, so treat any account with chat access as trusted. Before exposing Arco beyond localhost: serve over HTTPS and set `ARCO_SECURE_COOKIES=1`, and run the server in a container/VM. Per-user capability enforcement inside the agent loop is not implemented yet.
 
 ### Configuring the LLM
 
@@ -42,6 +63,7 @@ scripts/generate-prompts.ts   Generates chat/app prompts + OpenUI schema from @o
 shared/types.ts               Types shared by client and server
 server/
   index.ts                    Hono API server + SSE chat streaming
+  auth/                       Accounts (scrypt), sessions, capability middleware, auth routes
   agent/loop.ts               Multi-turn agent loop (LLM → tools → LLM …)
   agent/tools.ts              All agent tools (apps, files, exec, db, automations, os_ui)
   agent/llm.ts                OpenAI-compatible streaming client + mock provider
@@ -50,6 +72,7 @@ server/
   automations/scheduler.ts    node-cron scheduling of headless agent runs
 src/
   os/                         Desktop shell: window manager, dock, menu bar, mobile shell
+  os/auth/                    Boot splash, login/setup/lock screens, auth store + gate
   apps/chat/                  Chat app: streaming, tool cards, inline generative UI
   apps/appview/               Generated-app renderer + AdaptiveSurface (container sizing)
   apps/…                      Apps library, Automations, Files, Terminal, Settings

@@ -1,0 +1,196 @@
+/*
+ * Boot, login, and lock screens — full-viewport layers that sit above the
+ * shell and cross-fade into each other. Everything derives from tokens.css;
+ * the wallpaper classes come from tokens.css so these screens match the
+ * user's desktop backdrop.
+ */
+
+/* ── Cross-fade layer host ─────────────────────────────────────────────────
+   AuthGate stacks the outgoing and incoming screens absolutely; the old
+   layer fades out while the new fades in, then the old unmounts. */
+.arco-authgate {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+}
+
+.arco-fade {
+  position: absolute;
+  inset: 0;
+}
+
+.arco-fade--in {
+  animation: arco-fade-in var(--arco-dur-xfade, 600ms) var(--arco-ease) both;
+}
+
+.arco-fade--out {
+  animation: arco-fade-out var(--arco-dur-xfade, 600ms) var(--arco-ease) both;
+  pointer-events: none;
+}
+
+@keyframes arco-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes arco-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* ── Boot screen ───────────────────────────────────────────────────────── */
+
+.arco-boot {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--arco-space-2xl);
+  background: var(--arco-bg-desktop);
+  color: var(--arco-text-primary);
+}
+
+.arco-boot__logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--arco-space-l);
+  animation: arco-boot-rise 900ms var(--arco-ease) both;
+}
+
+/* The brand mark: the menu bar's status dot, grown up. */
+.arco-boot__mark {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 30%, var(--arco-accent) 0%, var(--arco-accent-strong) 65%, transparent 100%);
+  box-shadow: 0 0 48px var(--arco-accent-soft), 0 0 96px var(--arco-accent-soft);
+}
+
+.arco-boot__name {
+  font-size: var(--arco-text-xl);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--arco-text-secondary);
+}
+
+@keyframes arco-boot-rise {
+  from { opacity: 0; transform: translateY(10px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Determinate-feeling fill timed to the minimum boot duration, so the bar
+   completes right as the gate cross-fades away. */
+.arco-boot__bar {
+  width: min(280px, 60vw);
+  height: 4px;
+  border-radius: 999px;
+  background: var(--arco-bg-hover);
+  overflow: hidden;
+}
+
+.arco-boot__bar-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--arco-accent), var(--arco-accent-strong));
+  animation: arco-boot-fill 2s var(--arco-ease) forwards;
+}
+
+@keyframes arco-boot-fill {
+  0% { width: 0; }
+  55% { width: 62%; }
+  80% { width: 84%; }
+  100% { width: 100%; }
+}
+
+/* ── Auth screens (login / setup / lock) ───────────────────────────────── */
+
+.arco-authscreen {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--arco-space-xl);
+}
+
+.arco-authscreen__card {
+  width: min(360px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-l);
+  padding: var(--arco-space-2xl);
+  border-radius: var(--arco-radius-l);
+  background: var(--arco-bg-surface);
+  border: 1px solid var(--arco-border);
+  box-shadow: var(--arco-shadow-window);
+  backdrop-filter: var(--arco-backdrop-blur);
+  animation: arco-boot-rise 500ms var(--arco-ease) both;
+}
+
+.arco-authscreen__header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--arco-space-s);
+  text-align: center;
+}
+
+.arco-authscreen__mark {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 30%, var(--arco-accent) 0%, var(--arco-accent-strong) 65%, transparent 100%);
+  box-shadow: 0 0 24px var(--arco-accent-soft);
+}
+
+.arco-authscreen__title {
+  font-size: var(--arco-text-lg);
+  font-weight: 600;
+}
+
+.arco-authscreen__subtitle {
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-tertiary);
+}
+
+/* Lock screen identity: initial-in-a-circle avatar, macOS style. */
+.arco-authscreen__avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--arco-text-xl);
+  font-weight: 600;
+  color: var(--arco-text-inverted);
+  background: linear-gradient(135deg, var(--arco-accent), var(--arco-accent-strong));
+}
+
+.arco-authscreen__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-m);
+}
+
+.arco-authscreen__error {
+  font-size: var(--arco-text-sm);
+  color: var(--arco-danger);
+  text-align: center;
+}
+
+.arco-authscreen__footer {
+  display: flex;
+  justify-content: center;
+}
+
+.arco-authscreen__link {
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-tertiary);
+  transition: color var(--arco-dur-fast);
+}
+
+.arco-authscreen__link:hover {
+  color: var(--arco-text-primary);
+}

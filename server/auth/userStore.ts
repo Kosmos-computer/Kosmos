@@ -37,9 +37,12 @@ interface UserRecord {
 
 const SCRYPT = { N: 2 ** 15, r: 8, p: 1, keyLen: 64 };
 
+/** Node caps scrypt at 32MB by default; N=2^15, r=8 needs 128·N·r = exactly 32MB. */
+const SCRYPT_MAXMEM = 64 * 1024 * 1024;
+
 export function hashPassword(password: string): string {
   const salt = crypto.randomBytes(16);
-  const hash = crypto.scryptSync(password, salt, SCRYPT.keyLen, SCRYPT);
+  const hash = crypto.scryptSync(password, salt, SCRYPT.keyLen, { ...SCRYPT, maxmem: SCRYPT_MAXMEM });
   return `scrypt$${SCRYPT.N}$${SCRYPT.r}$${SCRYPT.p}$${salt.toString("hex")}$${hash.toString("hex")}`;
 }
 
@@ -51,6 +54,7 @@ export function verifyPassword(password: string, stored: string): boolean {
     N: Number(n),
     r: Number(r),
     p: Number(p),
+    maxmem: SCRYPT_MAXMEM,
   });
   return crypto.timingSafeEqual(actual, expected);
 }

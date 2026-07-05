@@ -114,7 +114,7 @@ export function useChat() {
   );
 
   const send = useCallback(
-    async (text: string) => {
+    async (text: string, opts?: { mode?: "agent" | "ask" }) => {
       const trimmed = text.trim();
       if (!trimmed || streaming) return;
 
@@ -202,7 +202,7 @@ export function useChat() {
       };
 
       try {
-        await streamChat(trimmed, sessionId, onEvent, abort.signal);
+        await streamChat(trimmed, sessionId, onEvent, abort.signal, opts?.mode);
       } catch (err) {
         if (!abort.signal.aborted) {
           setItems((prev) => [

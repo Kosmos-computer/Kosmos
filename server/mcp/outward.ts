@@ -88,7 +88,7 @@ function buildServer(client: ExternalIdentity): Server {
       allowed: true,
     });
     try {
-      const result = invokeIntent(
+      const result = await invokeIntent(
         entry.intentId,
         (request.params.arguments ?? {}) as Record<string, unknown>,
       );

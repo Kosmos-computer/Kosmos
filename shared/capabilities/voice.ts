@@ -50,3 +50,14 @@ export const VOICE_INTENTS = {
 } as const;
 
 export type VoiceIntentId = keyof typeof VOICE_INTENTS;
+
+/**
+ * JSON Schemas per intent — the machine-readable face of the contract,
+ * mirroring os.calendar@1. All three intents take no parameters: a desktop
+ * owns exactly one voice session, so there is nothing to address.
+ */
+export const VOICE_INTENT_SCHEMAS: Record<VoiceIntentId, Record<string, unknown>> = {
+  "voice.start": { type: "object", properties: {} },
+  "voice.stop": { type: "object", properties: {} },
+  "voice.status": { type: "object", properties: {} },
+};

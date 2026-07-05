@@ -130,9 +130,10 @@ export function StudioApp() {
       if (!value) return;
       setDraft("");
       followRef.current = true;
-      void chat.send(value);
+      // Ask mode runs the turn answer-only: the server strips write tools.
+      void chat.send(value, mode === "ask" ? { mode: "ask" } : undefined);
     },
-    [draft, chat],
+    [draft, chat, mode],
   );
 
   // ── Composer wiring ───────────────────────────────────────────────────────

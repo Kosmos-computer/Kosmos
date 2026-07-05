@@ -5,17 +5,20 @@
  * are the caller-side units (what gets granted, confirmed, and audited).
  */
 import { CALENDAR_CONTRACT_ID, CALENDAR_INTENTS, CALENDAR_INTENT_SCHEMAS } from "./calendar.js";
+import { VOICE_CONTRACT_ID, VOICE_INTENTS, VOICE_INTENT_SCHEMAS } from "./voice.js";
 
 export type IntentAccess = "read" | "write";
 
 /** contractId → (intentId → access class) */
 export const CONTRACTS: Record<string, Record<string, IntentAccess>> = {
   [CALENDAR_CONTRACT_ID]: CALENDAR_INTENTS,
+  [VOICE_CONTRACT_ID]: VOICE_INTENTS,
 };
 
 /** intentId → JSON Schema for its params (for tool-shaped exposure). */
 export const INTENT_SCHEMAS: Record<string, Record<string, unknown>> = {
   ...CALENDAR_INTENT_SCHEMAS,
+  ...VOICE_INTENT_SCHEMAS,
 };
 
 export function intentSchema(intentId: string): Record<string, unknown> {

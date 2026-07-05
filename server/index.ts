@@ -99,7 +99,12 @@ app.route("/v1", openaiCompatRoutes);
 // ── Chat ─────────────────────────────────────────────────────────────────────
 
 app.post("/api/chat", requireCap("chat"), async (c) => {
-  const body = (await c.req.json()) as { sessionId?: string; message: string };
+  const body = (await c.req.json()) as {
+    sessionId?: string;
+    message: string;
+    /** "ask" runs the turn with write tools removed (answer-only). */
+    mode?: "agent" | "ask";
+  };
   const message = (body.message ?? "").trim();
   if (!message) return c.json({ error: "message is required" }, 400);
 
@@ -125,6 +130,7 @@ app.post("/api/chat", requireCap("chat"), async (c) => {
         emit,
         signal: c.req.raw.signal,
         interactive: true,
+        readOnly: body.mode === "ask",
       });
       emit({ type: "done" });
     } catch (err) {

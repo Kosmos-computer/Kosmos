@@ -454,11 +454,12 @@ export async function streamChat(
   sessionId: string | undefined,
   onEvent: (event: AgentEvent) => void,
   signal?: AbortSignal,
+  mode?: "agent" | "ask",
 ): Promise<void> {
   const res = await fetch("/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, sessionId }),
+    body: JSON.stringify({ message, sessionId, ...(mode ? { mode } : {}) }),
     signal,
   });
   if (!res.ok || !res.body) {

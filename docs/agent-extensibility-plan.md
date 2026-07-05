@@ -1,5 +1,12 @@
 # Agent Extensibility — Complete System Design
 
+> **Status: SHIPPED (Jul 2026).** All five phases landed — Phase A (tool
+> registry + policy + audit API), Phase B (MCP client + supervisor +
+> Settings), Phase C (skills + gating), Phase D (app tool contributions +
+> events), Phase E (outward MCP server + ACP client). The "current state"
+> audit in §1 below describes the world *before* this work and is kept for
+> historical context only. For live status see `docs/roadmap.md`.
+
 MCP servers, skills, dynamic tools, agent permissions, and protocol edges
 (ACP, outward MCP) for Arco.
 

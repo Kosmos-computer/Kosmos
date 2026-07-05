@@ -54,7 +54,20 @@ export interface RunTurnOptions {
   interactive?: boolean;
   /** Extra system guidance appended for this caller (e.g. voice speakability). */
   extraSystem?: string;
+  /**
+   * Ask mode: answer-only turns. Write-class tools are removed from the
+   * model's schema entirely (Joplin posture — invisible, not rejected), so
+   * the agent can read, search, and explain but never mutate. Ignored by
+   * ACP agents, which manage their own tools.
+   */
+  readOnly?: boolean;
 }
+
+const ASK_MODE_SYSTEM =
+  "This turn is in Ask mode: answer questions and explain — do not attempt to " +
+  "create, modify, or execute anything. Write tools are unavailable this turn; " +
+  "if the user asks for changes, describe what you would do and suggest " +
+  "switching to Agent mode.";
 
 /**
  * Append the user message, run the loop to completion, persist every step.
@@ -79,8 +92,12 @@ export async function runAgentTurn(opts: RunTurnOptions): Promise<string> {
   // Assembled once per turn, not per iteration: MCP/app tool sets don't
   // change mid-turn, and re-listing remote servers on every loop pass would
   // add latency for nothing.
-  const tools = await assembleTools(ctx);
+  const assembled = await assembleTools(ctx);
+  const tools = opts.readOnly ? assembled.filter((t) => t.access === "read") : assembled;
   const toolDefs = toLlmDefs(tools);
+  const extraSystem = opts.readOnly
+    ? [opts.extraSystem, ASK_MODE_SYSTEM].filter(Boolean).join("\n\n")
+    : opts.extraSystem;
 
   for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
     const current = await sessionStore.get(session.id);
@@ -88,7 +105,7 @@ export async function runAgentTurn(opts: RunTurnOptions): Promise<string> {
 
     const turn = await streamTurn({
       settings,
-      messages: toLlmMessages(current, opts.extraSystem),
+      messages: toLlmMessages(current, extraSystem),
       tools: toolDefs,
       onTextDelta: (delta) => opts.emit({ type: "text_delta", delta }),
       signal: opts.signal,

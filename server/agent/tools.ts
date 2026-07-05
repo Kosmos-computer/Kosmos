@@ -25,6 +25,7 @@ import type {
 } from "../../shared/types.js";
 import { lintOpenUICode, type LintReport } from "../lint/lint-openui.js";
 import { appStore } from "../stores/appStore.js";
+import { installedAppStore } from "../platform/installedAppStore.js";
 import { automationStore } from "../stores/automationStore.js";
 import { invokeIntent } from "../capabilities/registry.js";
 import { appendAudit } from "../platform/grantStore.js";
@@ -176,6 +177,113 @@ async function agentInvokeIntent(
   }
   appendAudit({ caller, method: `intent.invoke:${intentId}`, detail: description, allowed: true });
   return invokeIntent(intentId, params);
+}
+
+// ── Web search (keyless — DuckDuckGo HTML endpoint) ──────────────────────────
+
+/** Minimal HTML-entity decode + tag strip for scraped titles/snippets. */
+function cleanHtmlText(html: string): string {
+  return html
+    .replace(/<[^>]+>/g, "")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#x?\d+;|&#39;|&#x27;/g, "'")
+    .replace(/&nbsp;/g, " ")
+    .trim();
+}
+
+interface SearchResult {
+  title: string;
+  url: string;
+  snippet: string;
+}
+
+/**
+ * Scrape DuckDuckGo's no-JS HTML endpoint — the pragmatic keyless option.
+ * Result links are redirect-wrapped (/l/?uddg=<encoded-url>), so unwrap
+ * before returning. If DDG blocks or changes markup this degrades to an
+ * empty list, which the tool reports as "no results".
+ */
+async function duckDuckGoSearch(query: string, max: number): Promise<SearchResult[]> {
+  const res = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`, {
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
+    },
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!res.ok) throw new Error(`Search request failed with status ${res.status}`);
+  const html = await res.text();
+
+  const results: SearchResult[] = [];
+  const linkRe = /<a[^>]*class="result__a"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g;
+  const snippetRe = /<a[^>]*class="result__snippet"[^>]*>([\s\S]*?)<\/a>/g;
+  const snippets = [...html.matchAll(snippetRe)].map((m) => cleanHtmlText(m[1]));
+
+  let match: RegExpExecArray | null;
+  while ((match = linkRe.exec(html)) !== null && results.length < max) {
+    let url = match[1];
+    const uddg = /[?&]uddg=([^&]+)/.exec(url);
+    if (uddg) url = decodeURIComponent(uddg[1]);
+    if (url.startsWith("//")) url = `https:${url}`;
+    // DDG interleaves ad slots that link back to duckduckgo.com — skip them.
+    if (url.includes("duckduckgo.com/y.js")) continue;
+    results.push({
+      title: cleanHtmlText(match[2]),
+      url,
+      snippet: snippets[results.length] ?? "",
+    });
+  }
+  return results;
+}
+
+// ── App id resolution for os_ui ──────────────────────────────────────────────
+
+const SYSTEM_APP_IDS = ["chat", "studio", "apps", "automations", "files", "terminal", "settings"];
+
+/**
+ * Map whatever the model called the app — an exact id, a system id (possibly
+ * qualified like "core.settings"), or a display title ("Tasks") — onto a real
+ * app id. A miss returns the full catalog so the model self-corrects in one
+ * iteration instead of reporting phantom success.
+ */
+async function resolveAppId(
+  raw: string,
+): Promise<{ appId: string } | { error: string; availableApps: { id: string; title: string }[] }> {
+  const wanted = raw.trim();
+  const lower = wanted.toLowerCase();
+  if (SYSTEM_APP_IDS.includes(lower)) return { appId: lower };
+  const tail = lower.split(".").pop() ?? lower;
+  if (SYSTEM_APP_IDS.includes(tail)) return { appId: tail };
+
+  const generated = await appStore.list();
+  const installed = installedAppStore.list().filter((a) => a.enabled);
+  if (
+    generated.some((a) => a.id === wanted) ||
+    installed.some((a) => a.manifest.id === wanted)
+  ) {
+    return { appId: wanted };
+  }
+
+  const byTitle =
+    generated.find((a) => a.title.toLowerCase() === lower) ??
+    generated.find((a) => a.title.toLowerCase().includes(lower));
+  if (byTitle) return { appId: byTitle.id };
+  const byName =
+    installed.find((a) => a.manifest.name.toLowerCase() === lower) ??
+    installed.find((a) => a.manifest.name.toLowerCase().includes(lower));
+  if (byName) return { appId: byName.manifest.id };
+
+  return {
+    error: `No app matches "${raw}". Pick an id from availableApps, or build it with app_create.`,
+    availableApps: [
+      ...SYSTEM_APP_IDS.map((id) => ({ id, title: `${id} (system app)` })),
+      ...installed.map((a) => ({ id: a.manifest.id, title: a.manifest.name })),
+      ...generated.map((a) => ({ id: a.id, title: a.title })),
+    ],
+  };
 }
 
 export const agentTools: AgentTool[] = [
@@ -347,6 +455,29 @@ export const agentTools: AgentTool[] = [
         });
       }
       return out;
+    },
+  },
+  {
+    name: "web_search",
+    description:
+      "Search the web and get back the top results (title, url, snippet). Use for current events, looking things up, or finding pages to read. Follow up with http_fetch on a result URL to read the full page.",
+    parameters: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "The search query" },
+        maxResults: { type: "number", description: "Max results to return (default 6, max 10)" },
+      },
+      required: ["query"],
+    },
+    execute: async (args) => {
+      const query = String(args.query ?? "").trim();
+      if (!query) return { error: "query is required" };
+      const max = Math.min(Math.max(Number(args.maxResults) || 6, 1), 10);
+      const results = await duckDuckGoSearch(query, max);
+      if (results.length === 0) {
+        return { results: [], note: "No results — try different keywords." };
+      }
+      return { results };
     },
   },
   {
@@ -664,43 +795,57 @@ export const agentTools: AgentTool[] = [
   {
     name: "os_ui",
     description:
-      "Drive the Arco desktop: open an app window (action=open_app + appId — a generated app id or an installed app id like core.calendar), open a system app (action=open_system + app one of: chat, apps, automations, files, terminal, settings, studio), show a notification (action=notify + message), or focus a Studio drawer tab (action=open_workspace_tab + tab one of: files, diffs, terminal, preview, browser; optional path — a file to select, or a URL when tab=browser, e.g. after starting a dev server).",
+      "Drive the Arco desktop: open an app window (action=open_app + appId — an app id or the app's display title, e.g. \"Tasks\"), open a system app (action=open_system + app one of: chat, apps, automations, files, terminal, settings, studio), close an app's window (action=close_app + appId — id or title), show a notification (action=notify + message), or focus a Studio drawer tab (action=open_workspace_tab + tab one of: files, diffs, terminal, preview, browser; optional path — a file to select, or a URL when tab=browser, e.g. after starting a dev server). If the app isn't found the result lists every available app.",
     parameters: {
       type: "object",
       properties: {
         action: {
           type: "string",
-          enum: ["open_app", "open_system", "notify", "open_workspace_tab"],
+          enum: ["open_app", "open_system", "close_app", "notify", "open_workspace_tab"],
         },
         appId: {
           type: "string",
-          description: "App id (for open_app): a generated app id or an installed app id like core.calendar",
+          description:
+            "App id (for open_app / close_app): a generated app id, an installed app id like core.calendar, or a system app id like settings",
         },
         app: { type: "string", description: "System app id (for open_system)" },
         message: { type: "string", description: "Notification text (for notify)" },
         tab: {
           type: "string",
-          enum: ["files", "diffs", "terminal", "preview"],
+          enum: ["files", "diffs", "terminal", "preview", "browser"],
           description: "Studio drawer tab (for open_workspace_tab)",
         },
         path: {
           type: "string",
-          description: "Workspace file to select in the tab (for open_workspace_tab)",
+          description:
+            "Workspace file to select in the tab, or URL when tab=browser (for open_workspace_tab)",
         },
       },
       required: ["action"],
     },
     execute: async (args, ctx) => {
       let action: OsUiAction;
-      if (args.action === "open_app" && typeof args.appId === "string") {
-        action = { action: "open_app", appId: args.appId };
+      if (
+        (args.action === "open_app" || args.action === "close_app") &&
+        typeof args.appId === "string"
+      ) {
+        // Resolve before emitting: a made-up id would no-op silently in the
+        // shell while the model reports success. Exact id first, then a
+        // case-insensitive title match ("Tasks" → the Tasks app's id).
+        const resolved = await resolveAppId(args.appId);
+        if ("error" in resolved) return resolved;
+        action = { action: args.action, appId: resolved.appId };
       } else if (args.action === "open_system" && typeof args.app === "string") {
         action = { action: "open_system", app: args.app };
       } else if (args.action === "notify" && typeof args.message === "string") {
         action = { action: "notify", message: args.message };
       } else if (
         args.action === "open_workspace_tab" &&
-        (args.tab === "files" || args.tab === "diffs" || args.tab === "terminal" || args.tab === "preview")
+        (args.tab === "files" ||
+          args.tab === "diffs" ||
+          args.tab === "terminal" ||
+          args.tab === "preview" ||
+          args.tab === "browser")
       ) {
         action = {
           action: "open_workspace_tab",

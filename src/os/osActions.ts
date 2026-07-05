@@ -42,9 +42,14 @@ export function handleShellEvent(event: AgentEvent): void {
     case "os_ui": {
       const action = event.action;
       if (action.action === "open_app") {
-        // One id space for the agent: generated apps first, then installed
-        // platform apps. Refresh first — the app may have been created (or
-        // installed) milliseconds ago.
+        // One id space for the agent: system apps, generated apps, then
+        // installed platform apps. Refresh first — the app may have been
+        // created (or installed) milliseconds ago.
+        const sys = SYSTEM_APPS.find((a) => a.id === action.appId);
+        if (sys) {
+          wm.open({ type: "system", app: sys.id }, sys.title);
+          break;
+        }
         void os.refreshApps().then(() => {
           const state = useOsStore.getState();
           const generated = state.apps.find((a) => a.id === action.appId);
@@ -64,6 +69,22 @@ export function handleShellEvent(event: AgentEvent): void {
         if (def) {
           wm.open({ type: "system", app: def.id }, def.title);
         }
+      } else if (action.action === "close_app") {
+        // The agent addresses apps by id, not window key — try every kind.
+        // wm.close on a key with no open window is a no-op.
+        const keys = [
+          `system:${action.appId}`,
+          `generated:${action.appId}`,
+          `installed:${action.appId}`,
+          `web:${action.appId}`,
+        ];
+        // Models sometimes qualify system ids ("core.settings") — fall back
+        // to the last dot-segment when it names a system app.
+        const tail = action.appId.split(".").pop();
+        if (tail && tail !== action.appId && SYSTEM_APPS.some((a) => a.id === tail)) {
+          keys.push(`system:${tail}`);
+        }
+        for (const key of keys) wm.close(key);
       } else if (action.action === "notify") {
         os.notify(action.message);
       } else if (action.action === "open_workspace_tab") {

@@ -12,10 +12,12 @@ import { NavRail } from "./NavRail";
 import { Dock } from "./Dock";
 import { WindowFrame } from "./WindowFrame";
 import { systemApp } from "./systemApps";
+import { connectShellEvents } from "./shellEvents";
 import { AppSurface } from "../apps/appview/AppSurface";
 import { WebAppSurface } from "../apps/appview/WebAppSurface";
 import { AppHost } from "../apps/appview/AppHost";
 import { AgentCursor } from "./cursor/AgentCursor";
+import { ConfirmCard } from "../apps/chat/ConfirmCard";
 
 function Notifications() {
   const notifications = useOsStore((s) => s.notifications);
@@ -31,6 +33,34 @@ function Notifications() {
             ×
           </button>
         </div>
+      ))}
+    </div>
+  );
+}
+
+/** Approval cards for agent turns without a chat stream (voice) — same
+ *  ConfirmCard as the chat thread, floated above the desktop. */
+function ShellConfirms() {
+  const confirms = useOsStore((s) => s.shellConfirms);
+  if (confirms.length === 0) return null;
+  return (
+    <div
+      role="alertdialog"
+      aria-label="Agent approval requests"
+      style={{
+        position: "fixed",
+        top: 48,
+        left: "50%",
+        transform: "translateX(-50%)",
+        zIndex: 10_000,
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
+        width: "min(480px, calc(100vw - 32px))",
+      }}
+    >
+      {confirms.map((c) => (
+        <ConfirmCard key={c.confirmId} item={c} />
       ))}
     </div>
   );
@@ -65,11 +95,17 @@ export function Desktop() {
     if (useWindowStore.getState().windows.length === 0) {
       open({ type: "system", app: "chat" }, "Chat");
     }
+    // Agent turns that run outside a chat stream (voice) drive the desktop
+    // through the shell-events channel.
+    const disconnect = connectShellEvents();
     // Re-sync app list when the tab regains focus (apps may have been created
     // by an automation while unfocused).
     const onFocus = () => void refreshApps();
     window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      disconnect();
+    };
   }, [refreshApps, open]);
 
   const focusedId = [...windows.filter((w) => !w.minimized)].sort((a, b) => b.z - a.z)[0]?.id;
@@ -89,6 +125,7 @@ export function Desktop() {
       ))}
       <Dock />
       <Notifications />
+      <ShellConfirms />
       <AgentCursor />
     </div>
   );

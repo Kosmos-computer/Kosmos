@@ -26,6 +26,9 @@ class VoiceClient {
   private listeners = new Set<VoiceListener>();
   private trackListeners = new Set<TrackListener>();
   private botTrack: MediaStreamTrack | null = null;
+  /** Audible playback of the bot's voice. The transport only delivers the
+   *  WebRTC track; actually hearing it requires an HTMLAudioElement. */
+  private audioEl: HTMLAudioElement | null = null;
 
   getState(): VoiceState {
     return this.state;
@@ -88,8 +91,11 @@ class VoiceClient {
           }),
         onRemoteAudioLevel: (level) => this.emit({ type: "audioLevel", level }),
         onTrackStarted: (track, participant) => {
-          if (track.kind === "audio" && participant && !participant.local) {
+          // SmallWebRTC may omit participant metadata for the bot's track —
+          // treat anything not explicitly local as the bot.
+          if (track.kind === "audio" && !participant?.local) {
             this.botTrack = track;
+            this.playBotAudio(track);
             this.trackListeners.forEach((l) => l(track));
           }
         },
@@ -120,9 +126,28 @@ class VoiceClient {
     }
   }
 
+  private playBotAudio(track: MediaStreamTrack): void {
+    if (!this.audioEl) {
+      const el = document.createElement("audio");
+      el.autoplay = true;
+      el.style.display = "none";
+      document.body.appendChild(el);
+      this.audioEl = el;
+    }
+    this.audioEl.srcObject = new MediaStream([track]);
+    // start() runs from a user gesture, so autoplay policy allows this.
+    void this.audioEl.play().catch(() => {});
+  }
+
   private teardown(): void {
     this.client = null;
     this.botTrack = null;
+    if (this.audioEl) {
+      this.audioEl.pause();
+      this.audioEl.srcObject = null;
+      this.audioEl.remove();
+      this.audioEl = null;
+    }
     this.trackListeners.forEach((l) => l(null));
     this.setState("idle");
   }
@@ -140,3 +165,11 @@ class VoiceClient {
 
 /** The one voice session for this desktop. */
 export const voiceClient = new VoiceClient();
+
+// Debug handle for the console (single-user local shell; nothing sensitive).
+declare global {
+  interface Window {
+    __arcoVoice?: VoiceClient;
+  }
+}
+if (typeof window !== "undefined") window.__arcoVoice = voiceClient;

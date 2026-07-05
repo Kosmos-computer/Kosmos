@@ -42,6 +42,7 @@ export class VoiceFaceDriver {
   private unsubscribeTrack: (() => void) | null = null;
   private audioContext: AudioContext | null = null;
   private analyser: AnalyserNode | null = null;
+  private keepAlive: HTMLAudioElement | null = null;
   private rafId = 0;
   private level = 0;
   private speaking = false;
@@ -77,16 +78,35 @@ export class VoiceFaceDriver {
   private attachAnalyser(track: MediaStreamTrack | null): void {
     this.detachAnalyser();
     if (!track) return;
+    const stream = new MediaStream([track]);
+
+    // Chrome quirk: a remote WebRTC track feeds no samples into WebAudio
+    // unless the stream is also attached to a media element. Muted so the
+    // audible playback stays with the voice client's own output element.
+    const keepAlive = new Audio();
+    keepAlive.srcObject = stream;
+    keepAlive.muted = true;
+    void keepAlive.play().catch(() => {});
+
     const audioContext = new AudioContext();
-    const source = audioContext.createMediaStreamSource(new MediaStream([track]));
+    // The context is created well after the user's click (track arrives
+    // async), so Chrome may start it suspended — resume explicitly.
+    void audioContext.resume().catch(() => {});
+    const source = audioContext.createMediaStreamSource(stream);
     const analyser = audioContext.createAnalyser();
     analyser.fftSize = 512;
     source.connect(analyser);
     this.audioContext = audioContext;
     this.analyser = analyser;
+    this.keepAlive = keepAlive;
   }
 
   private detachAnalyser(): void {
+    if (this.keepAlive) {
+      this.keepAlive.pause();
+      this.keepAlive.srcObject = null;
+      this.keepAlive = null;
+    }
     void this.audioContext?.close().catch(() => {});
     this.audioContext = null;
     this.analyser = null;

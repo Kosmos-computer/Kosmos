@@ -46,6 +46,7 @@ import { grantStore, readAudit } from "./platform/grantStore.js";
 import { parseManifest } from "./platform/manifestSchema.js";
 import { BridgeError, dispatchAppBridge, mintToken, resolveToken } from "./platform/bridge.js";
 import { policyStore } from "./agent/policyStore.js";
+import { describeSystemTools } from "./agent/toolRegistry.js";
 import { getProviders, setProvider } from "./capabilities/registry.js";
 import { CONTRACTS } from "../shared/capabilities/index.js";
 import { mcpServerStore } from "./mcp/serverStore.js";
@@ -53,10 +54,14 @@ import { mcpSupervisor } from "./mcp/supervisor.js";
 import { mcpLogFile } from "./mcp/client.js";
 import "./mcp/tools.js"; // registers the MCP tool contributor with the agent registry
 import "./platform/appTools.js"; // registers installed apps' tool contributions
+import "./channels/tools.js"; // registers channel_send with the agent registry
+import { channelStore } from "./channels/channelStore.js";
+import { channelGateway } from "./channels/gateway.js";
 import { handleOutwardMcp } from "./mcp/outward.js";
 import { externalClients } from "./platform/externalClients.js";
 import { skillStore } from "./skills/skillStore.js";
 import { bus } from "./bus.js";
+import { shellClientConnected } from "./shellChannel.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -129,6 +134,32 @@ app.post("/api/chat", requireCap("chat"), async (c) => {
   });
 });
 
+// ── Shell events (out-of-band agent → desktop channel) ──────────────────────
+//
+// Chat turns stream their AgentEvents over the /api/chat SSE response, but
+// turns started elsewhere (the voice server via /v1, future headless callers)
+// have no client stream. Those callers put shell-relevant events on the bus
+// ("shell_event"), and every connected desktop receives them here.
+
+app.get("/api/shell-events", (c) =>
+  streamSSE(c, async (stream) => {
+    const forward = (event: AgentEvent) => {
+      void stream.writeSSE({ data: JSON.stringify(event) });
+    };
+    bus.on("shell_event", forward);
+    const disconnect = shellClientConnected();
+    // Keep-alive comments defeat proxy idle timeouts (vite dev proxy included).
+    const keepAlive = setInterval(() => void stream.writeSSE({ data: '{"type":"ping"}' }), 25_000);
+    const closed = new Promise<void>((resolve) => {
+      stream.onAbort(() => resolve());
+    });
+    await closed;
+    clearInterval(keepAlive);
+    bus.off("shell_event", forward);
+    disconnect();
+  }),
+);
+
 // ── Sessions ─────────────────────────────────────────────────────────────────
 
 app.get("/api/sessions", async (c) => c.json(await sessionStore.list()));
@@ -181,9 +212,30 @@ app.post("/api/tools/invoke", requireCap("chat"), async (c) => {
 
 app.get("/api/automations", async (c) => c.json(await automationStore.list()));
 
+/** Validate a client-supplied delivery target (or null to clear it). */
+function parseDeliver(raw: unknown): import("../shared/types.js").DeliveryTarget | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const d = raw as Record<string, unknown>;
+  if (typeof d.channelId === "string" && d.channelId && typeof d.chatId === "string" && d.chatId) {
+    return { channelId: d.channelId, chatId: d.chatId };
+  }
+  return undefined;
+}
+
 app.post("/api/automations", requireCap("automations:manage"), async (c) => {
-  const body = (await c.req.json()) as { name: string; schedule: string; prompt: string };
-  const automation = await automationStore.create(body);
+  const body = (await c.req.json()) as {
+    name: string;
+    schedule: string;
+    prompt: string;
+    deliver?: unknown;
+  };
+  const deliver = parseDeliver(body.deliver);
+  const automation = await automationStore.create({
+    name: body.name,
+    schedule: body.schedule,
+    prompt: body.prompt,
+    ...(deliver ? { deliver } : {}),
+  });
   bus.emit("automations_changed");
   return c.json(automation);
 });
@@ -194,8 +246,16 @@ app.patch("/api/automations/:id", requireCap("automations:manage"), async (c) =>
     schedule: string;
     prompt: string;
     enabled: boolean;
+    deliver: unknown;
   }>;
-  const automation = await automationStore.update(c.req.param("id"), body);
+  const patch: Parameters<typeof automationStore.update>[1] = {};
+  if (typeof body.name === "string") patch.name = body.name;
+  if (typeof body.schedule === "string") patch.schedule = body.schedule;
+  if (typeof body.prompt === "string") patch.prompt = body.prompt;
+  if (typeof body.enabled === "boolean") patch.enabled = body.enabled;
+  // deliver: null clears the target, an object sets it, absence leaves it.
+  if ("deliver" in body) patch.deliver = parseDeliver(body.deliver);
+  const automation = await automationStore.update(c.req.param("id"), patch);
   bus.emit("automations_changed");
   return c.json(automation);
 });
@@ -573,6 +633,10 @@ app.put("/api/agent-policy", requireCap("settings:write"), async (c) => {
   return c.json({ rules: policyStore.rules() });
 });
 
+// ── Agent tools (built-in tool catalog + per-tool enable state) ─────────────
+
+app.get("/api/agent-tools", (c) => c.json(describeSystemTools()));
+
 // ── Audit log (read side — writes happen in the bridge and tool layer) ──────
 
 app.get("/api/audit", requireCap("settings:write"), (c) => {
@@ -728,6 +792,74 @@ function parseTransport(raw: unknown): import("../shared/types.js").McpTransport
   return null;
 }
 
+// ── Channels (external messaging: Telegram, …) ──────────────────────────────
+//
+// Config mutations require settings:write (like MCP servers); the gateway
+// reconciles the live adapter after every connection-affecting change.
+// Pairing approval is deliberately here — in the authenticated Settings
+// surface — never on the channel itself.
+
+app.get("/api/channels", (c) => c.json(channelGateway.list()));
+
+app.post("/api/channels", requireCap("settings:write"), async (c) => {
+  const body = (await c.req.json()) as { kind?: string; name?: string; token?: string };
+  if (body.kind !== "telegram") return c.json({ error: "kind must be \"telegram\"" }, 400);
+  if (!body.name?.trim() || !body.token?.trim()) {
+    return c.json({ error: "name and token are required" }, 400);
+  }
+  const cfg = channelStore.add({ kind: "telegram", name: body.name.trim(), token: body.token.trim() });
+  await channelGateway.sync(cfg.id);
+  return c.json(channelGateway.list().find((ch) => ch.config.id === cfg.id));
+});
+
+app.patch("/api/channels/:id", requireCap("settings:write"), async (c) => {
+  const id = c.req.param("id");
+  const body = (await c.req.json()) as { name?: string; token?: string; enabled?: boolean };
+  const patch: Parameters<typeof channelStore.update>[1] = {};
+  if (typeof body.name === "string") patch.name = body.name.trim();
+  if (typeof body.token === "string" && body.token.trim()) patch.token = body.token.trim();
+  if (typeof body.enabled === "boolean") patch.enabled = body.enabled;
+  const cfg = channelStore.update(id, patch);
+  if (!cfg) return c.json({ error: "Not found" }, 404);
+  // Token and enabled changes affect the live connection; a rename doesn't.
+  if (patch.token !== undefined || patch.enabled !== undefined) await channelGateway.sync(id);
+  return c.json(channelGateway.list().find((ch) => ch.config.id === id));
+});
+
+app.delete("/api/channels/:id", requireCap("settings:write"), (c) => {
+  const id = c.req.param("id");
+  channelGateway.remove(id);
+  channelStore.remove(id);
+  return c.json({ ok: true });
+});
+
+app.post("/api/channels/:id/restart", requireCap("settings:write"), async (c) => {
+  const id = c.req.param("id");
+  if (!channelStore.get(id)) return c.json({ error: "Not found" }, 404);
+  await channelGateway.restart(id);
+  return c.json(channelGateway.list().find((ch) => ch.config.id === id));
+});
+
+app.post("/api/channels/:id/pairings/:code", requireCap("settings:write"), async (c) => {
+  const id = c.req.param("id");
+  const body = (await c.req.json()) as { approve?: boolean };
+  const peer = channelStore.resolvePairing(id, c.req.param("code"), body.approve === true);
+  if (body.approve && !peer) return c.json({ error: "Pairing not found" }, 404);
+  // Tell the waiting sender they're in — best-effort, the approval stands
+  // even if the channel is momentarily down.
+  if (peer) {
+    await channelGateway
+      .send(id, peer.chatId, "You're paired. Say hello!")
+      .catch(() => {});
+  }
+  return c.json(channelGateway.list().find((ch) => ch.config.id === id));
+});
+
+app.delete("/api/channels/:id/peers/:chatId", requireCap("settings:write"), (c) => {
+  channelStore.removePeer(c.req.param("id"), c.req.param("chatId"));
+  return c.json(channelGateway.list().find((ch) => ch.config.id === c.req.param("id")));
+});
+
 // ── Outward MCP (external agents drive Arco's intents) ──────────────────────
 //
 // /mcp sits OUTSIDE /api on purpose: it authenticates with scoped bearer
@@ -879,6 +1011,9 @@ startScheduler();
 // Connect enabled MCP servers in the background — a slow or dead server
 // must not delay the shell from coming up.
 void mcpSupervisor.start();
+// Same posture for messaging channels: connect in the background, isolate
+// failures per channel.
+void channelGateway.start();
 serve({ fetch: app.fetch, port }, () => {
   console.log(`[arco] server listening on http://localhost:${port}`);
   console.log(`[arco] data dir: ${dataDirs.root}`);

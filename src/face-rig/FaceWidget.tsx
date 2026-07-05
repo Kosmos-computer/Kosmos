@@ -8,7 +8,13 @@ import { CssFaceEngine } from "./CssFaceEngine";
 import { VoiceFaceDriver } from "./VoiceFaceDriver";
 import type { FaceRigEngine } from "./types";
 
-export function FaceWidget({ createEngine }: { createEngine?: () => FaceRigEngine }) {
+export function FaceWidget({
+  createEngine,
+  className,
+}: {
+  createEngine?: () => FaceRigEngine;
+  className?: string;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const createEngineRef = useRef(createEngine);
   createEngineRef.current = createEngine;
@@ -26,5 +32,7 @@ export function FaceWidget({ createEngine }: { createEngine?: () => FaceRigEngin
     };
   }, []);
 
-  return <div ref={containerRef} className="arco-face-widget" />;
+  return (
+    <div ref={containerRef} className={`arco-face-widget ${className ?? ""}`.trimEnd()} />
+  );
 }

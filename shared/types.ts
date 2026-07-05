@@ -51,8 +51,12 @@ export type ChatMessage =
 export interface Session {
   id: string;
   title: string;
-  /** "chat" for user threads, "automation" for headless scheduled runs. */
-  kind: "chat" | "automation";
+  /**
+   * "chat" for user threads, "automation" for headless scheduled runs,
+   * "channel" for conversations arriving through an external messaging
+   * channel (one session per chat, resumed across messages).
+   */
+  kind: "chat" | "automation" | "channel";
   messages: ChatMessage[];
   createdAt: string;
   updatedAt: string;
@@ -70,6 +74,8 @@ export type OsUiAction =
   /** appId is a generated-app id or an installed-app manifest id (e.g. "core.calendar"). */
   | { action: "open_app"; appId: string }
   | { action: "open_system"; app: string }
+  /** Close a window by app id — any kind (system, generated, installed, web). */
+  | { action: "close_app"; appId: string }
   | { action: "notify"; message: string }
   | { action: "open_workspace_tab"; tab: WorkspaceTab; path?: string };
 
@@ -296,6 +302,16 @@ export interface AutomationRun {
   sessionId: string;
 }
 
+/**
+ * Where an automation's final text goes after a successful run. Without a
+ * target the result only lives in the run's session transcript — a delivery
+ * target is what makes a cron job feel like a proactive assistant.
+ */
+export interface DeliveryTarget {
+  channelId: string;
+  chatId: string;
+}
+
 export interface Automation {
   id: string;
   name: string;
@@ -306,6 +322,59 @@ export interface Automation {
   createdAt: string;
   lastRun?: string;
   runs: AutomationRun[];
+  /** Optional outbound delivery of the run result to a channel chat. */
+  deliver?: DeliveryTarget;
+}
+
+// ── Channels (external messaging: the agent where the user already chats) ───
+//
+// A channel is a bot identity on a messaging platform (Telegram first). The
+// gateway routes inbound messages to per-chat agent sessions and sends the
+// reply back. Unknown senders are NOT processed: they receive a pairing code
+// the user approves in Settings — OpenClaw's DM-pairing posture.
+
+export type ChannelKind = "telegram";
+
+export interface ChannelConfig {
+  /** Slug, unique — also keys the chat→session map. */
+  id: string;
+  kind: ChannelKind;
+  name: string;
+  /** Bot API token — never returned in full by the API (masked like keys). */
+  token: string;
+  enabled: boolean;
+  addedAt: string;
+}
+
+/** An approved conversation the agent may read from and send to. */
+export interface ChannelPeer {
+  /** Platform-native chat id (Telegram numeric id as a string). */
+  chatId: string;
+  /** Human-readable identity captured at pairing time ("Paul (@paul)"). */
+  label: string;
+  addedAt: string;
+}
+
+/** An unapproved sender waiting for the user's decision in Settings. */
+export interface PendingPairing {
+  /** Short code echoed to the sender so the user can match the request. */
+  code: string;
+  chatId: string;
+  label: string;
+  requestedAt: string;
+}
+
+export type ChannelStatus = "running" | "stopped" | "error" | "connecting";
+
+/** What Settings renders: masked config + live status + peers + pairings. */
+export interface ChannelInfo {
+  config: ChannelConfig;
+  status: ChannelStatus;
+  error?: string;
+  /** Bot identity reported by the platform at connect time ("@arco_bot"). */
+  botName?: string;
+  peers: ChannelPeer[];
+  pairings: PendingPairing[];
 }
 
 // ── Auth: users, roles, capabilities ─────────────────────────────────────────
@@ -411,6 +480,20 @@ export interface Settings {
   agent: AgentKind;
   /** Spawn command line for the ACP agent subprocess (when agent="acp"). */
   acpCommand: string;
+  /**
+   * Built-in agent tools hidden from the model (Settings → Agent tools).
+   * Mirrors McpServerConfig.disabledTools: the tool is removed from the
+   * LLM's schema entirely, not just blocked at execution time.
+   */
+  disabledTools?: string[];
+}
+
+/** One built-in agent tool as listed by GET /api/agent-tools. */
+export interface AgentToolInfo {
+  name: string;
+  description: string;
+  access: "read" | "write";
+  enabled: boolean;
 }
 
 /**

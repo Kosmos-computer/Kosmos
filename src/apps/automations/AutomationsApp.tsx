@@ -4,22 +4,46 @@
  * form. The agent can also manage these via its automation tools.
  */
 import { useCallback, useEffect, useState } from "react";
-import { CalendarClock, Play, Plus, Trash2 } from "lucide-react";
-import type { Automation } from "@shared/types";
+import { CalendarClock, Play, Plus, Send, Trash2 } from "lucide-react";
+import type { Automation, ChannelInfo, DeliveryTarget } from "@shared/types";
 import { api } from "../../lib/api";
 import { useWindowStore } from "../../os/windowStore";
 import { primeComposer } from "../chat/composerBus";
 
+/**
+ * Delivery destinations flattened for a <select>: every approved chat of
+ * every enabled channel, encoded as "channelId:chatId" option values.
+ */
+function deliveryOptions(channels: ChannelInfo[]): { value: string; label: string }[] {
+  return channels
+    .filter((ch) => ch.config.enabled)
+    .flatMap((ch) =>
+      ch.peers.map((p) => ({
+        value: `${ch.config.id}:${p.chatId}`,
+        label: `${ch.config.name} · ${p.label}`,
+      })),
+    );
+}
+
+/** "channelId:chatId" ⇄ DeliveryTarget. Chat ids never contain ":". */
+function parseTarget(value: string): DeliveryTarget | undefined {
+  const idx = value.indexOf(":");
+  if (idx <= 0) return undefined;
+  return { channelId: value.slice(0, idx), chatId: value.slice(idx + 1) };
+}
+
 export function AutomationsApp() {
   const [automations, setAutomations] = useState<Automation[]>([]);
+  const [channels, setChannels] = useState<ChannelInfo[]>([]);
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({ name: "", schedule: "0 9 * * *", prompt: "" });
+  const [form, setForm] = useState({ name: "", schedule: "0 9 * * *", prompt: "", deliver: "" });
   const [runningId, setRunningId] = useState<string | null>(null);
   const openWindow = useWindowStore((s) => s.open);
 
   const refresh = useCallback(async () => {
     try {
       setAutomations(await api.listAutomations());
+      setChannels(await api.listChannels());
     } catch {
       // Server unreachable — keep stale list.
     }
@@ -33,8 +57,14 @@ export function AutomationsApp() {
 
   const create = useCallback(async () => {
     if (!form.name.trim() || !form.prompt.trim()) return;
-    await api.createAutomation(form);
-    setForm({ name: "", schedule: "0 9 * * *", prompt: "" });
+    const deliver = parseTarget(form.deliver);
+    await api.createAutomation({
+      name: form.name,
+      schedule: form.schedule,
+      prompt: form.prompt,
+      ...(deliver ? { deliver } : {}),
+    });
+    setForm({ name: "", schedule: "0 9 * * *", prompt: "", deliver: "" });
     setCreating(false);
     void refresh();
   }, [form, refresh]);
@@ -94,6 +124,26 @@ export function AutomationsApp() {
             onChange={(e) => setForm((f) => ({ ...f, prompt: e.target.value }))}
             placeholder="Update app <id> with today's weather for Berlin…"
           />
+          {deliveryOptions(channels).length > 0 && (
+            <>
+              <label className="arco-label" htmlFor="auto-deliver">
+                Deliver result to
+              </label>
+              <select
+                id="auto-deliver"
+                className="arco-input"
+                value={form.deliver}
+                onChange={(e) => setForm((f) => ({ ...f, deliver: e.target.value }))}
+              >
+                <option value="">In Arco only</option>
+                {deliveryOptions(channels).map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
           <div style={{ display: "flex", gap: 8 }}>
             <button className="arco-btn arco-btn--primary" onClick={() => void create()}>
               Create
@@ -133,6 +183,15 @@ export function AutomationsApp() {
               <div className="arco-listrow__sub">
                 <code>{a.schedule}</code>
                 {a.lastRun ? ` · last run ${new Date(a.lastRun).toLocaleString()}` : " · never run"}
+                {a.deliver && (
+                  <span title={`Delivers to ${a.deliver.channelId}`}>
+                    {" · "}
+                    <Send size={10} style={{ verticalAlign: "-1px" }} />{" "}
+                    {deliveryOptions(channels).find(
+                      (o) => o.value === `${a.deliver?.channelId}:${a.deliver?.chatId}`,
+                    )?.label ?? a.deliver.channelId}
+                  </span>
+                )}
               </div>
             </div>
             <button

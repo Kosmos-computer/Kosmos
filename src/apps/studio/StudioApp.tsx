@@ -25,6 +25,9 @@ import { useChat } from "../chat/useChat";
 import { AssistantBlock } from "../chat/AssistantBlock";
 import { ToolCard } from "../chat/ToolCard";
 import { ConfirmCard } from "../chat/ConfirmCard";
+import { VoiceBar } from "../chat/VoiceBar";
+import { useVoice, voiceClient } from "../../voice";
+import { FaceWidget } from "../../face-rig";
 import { Composer } from "../../components/composer/Composer";
 import { ComposerNotice } from "../../components/composer/ComposerNotice";
 import { contextPercent, type UsageStats } from "../../components/composer/UsagePopover";
@@ -88,6 +91,7 @@ function estimateUsage(items: ReturnType<typeof useChat>["items"]): UsageStats {
 
 export function StudioApp() {
   const chat = useChat();
+  const voice = useVoice();
   const [draft, setDraft] = useState("");
   const [mode, setMode] = useState("agent");
   /** Session key whose near-limit notice the user dismissed. */
@@ -115,6 +119,10 @@ export function StudioApp() {
     const el = scrollRef.current;
     if (el && followRef.current) el.scrollTop = el.scrollHeight;
   }, [chat.items]);
+
+  // Voice conversations land in the thread like typed ones (same as ChatApp):
+  // final transcripts as user items, bot speech as streaming assistant text.
+  useEffect(() => voiceClient.subscribe(chat.applyVoiceEvent), [chat.applyVoiceEvent]);
 
   const submit = useCallback(
     (text?: string) => {
@@ -213,6 +221,7 @@ export function StudioApp() {
           >
             {chat.items.length === 0 && (
               <div className="arco-empty">
+                <FaceWidget className="arco-studio__emptyface" />
                 <strong style={{ color: "var(--arco-text-secondary)", fontSize: "var(--arco-text-md)" }}>
                   Build with the agent
                 </strong>
@@ -244,6 +253,8 @@ export function StudioApp() {
             {chat.streaming && <div className="arco-chat__working">Working…</div>}
           </div>
 
+          {voice.active && <VoiceBar voice={voice} />}
+
           <div className="arco-composer-dock">
             <Composer
               value={draft}
@@ -259,6 +270,9 @@ export function StudioApp() {
               modelItems={modelItems}
               onAddFile={openFilesPanel}
               panelToggles={panelToggles}
+              voiceActive={voice.active}
+              voiceAvailable={voice.available}
+              onVoiceToggle={() => void voice.toggle().catch(() => {})}
               usage={usage}
               notice={
                 showLimitNotice ? (

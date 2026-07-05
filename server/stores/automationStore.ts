@@ -35,7 +35,9 @@ export class AutomationStore {
     return (await readAll()).find((a) => a.id === id) ?? null;
   }
 
-  async create(data: Pick<Automation, "name" | "schedule" | "prompt">): Promise<Automation> {
+  async create(
+    data: Pick<Automation, "name" | "schedule" | "prompt"> & Partial<Pick<Automation, "deliver">>,
+  ): Promise<Automation> {
     const automation: Automation = {
       id: crypto.randomUUID(),
       ...data,
@@ -51,12 +53,14 @@ export class AutomationStore {
 
   async update(
     id: string,
-    patch: Partial<Pick<Automation, "name" | "schedule" | "prompt" | "enabled">>,
+    patch: Partial<Pick<Automation, "name" | "schedule" | "prompt" | "enabled" | "deliver">>,
   ): Promise<Automation> {
     const all = await readAll();
     const idx = all.findIndex((a) => a.id === id);
     if (idx === -1) throw new Error(`Automation not found: ${id}`);
     all[idx] = { ...all[idx], ...patch };
+    // Explicit null-ish deliver in the patch means "remove delivery".
+    if ("deliver" in patch && !patch.deliver) delete all[idx].deliver;
     await writeAll(all);
     return all[idx];
   }

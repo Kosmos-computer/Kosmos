@@ -80,6 +80,24 @@ src/
 data/                         Runtime state (gitignored): apps, sessions, dbs, workspace
 ```
 
+### Voice (os.voice@1)
+
+A fully-local, full-duplex voice pipeline lives in `voice-server/` (Python +
+Pipecat): Silero VAD + Smart Turn v3 for turn-taking and barge-in, Whisper
+(MLX) for STT, Kokoro for TTS. The browser side (`src/voice/`) owns a single
+echo-cancelled WebRTC session; the swappable face rig (`src/face-rig/`)
+animates from the live audio. The mic button in Chat lights up when the voice
+server is running.
+
+Setup (once): `cd voice-server && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt`
+(Python 3.11+; first run downloads ~1–2 GB of models). Then `npm run voice`
+— or `npm run dev:all` to launch server, web, and voice together.
+
+Every pipeline stage (STT, TTS, turn-taking, and the "brain" — any
+OpenAI-compatible endpoint, including the Arco agent itself via
+`POST /v1/chat/completions`) is a config slot; see `voice-server/README.md`
+for engine swapping.
+
 ### How adaptive apps work
 
 1. `AdaptiveSurface` measures each app container with a `ResizeObserver` and sets `data-arco-size="compact" | "medium" | "expanded"`.
@@ -91,6 +109,8 @@ data/                         Runtime state (gitignored): apps, sessions, dbs, w
 | Command | Description |
 | --- | --- |
 | `npm run dev` | Server + web dev servers with hot reload |
+| `npm run dev:all` | Server + web + voice server together |
+| `npm run voice` | Voice server only (see `voice-server/README.md` for setup) |
 | `npm run build` | Production client build to `dist/` |
 | `npm start` | Serve the production build + API from one process |
 | `npm run typecheck` | Typecheck client and server configs |

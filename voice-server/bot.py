@@ -109,11 +109,25 @@ def build_stt(config: dict[str, Any]):
     language = parse_language(stt_cfg.get("language", "en"))
 
     if engine == "whisper-mlx":
-        from pipecat.services.whisper.stt import WhisperSTTServiceMLX
+        from pipecat.services.whisper.stt import MLXModel, WhisperSTTServiceMLX
+
+        # Config uses short names ("large-v3-turbo"); MLX needs the full HF
+        # repo id ("mlx-community/whisper-large-v3-turbo"). Full ids (anything
+        # containing "/") pass through untouched.
+        raw_model = stt_cfg.get("model", "large-v3-turbo")
+        if "/" in raw_model:
+            model = raw_model
+        else:
+            try:
+                model = MLXModel[raw_model.upper().replace("-", "_")].value
+            except KeyError:
+                valid = ", ".join(m.name.lower().replace("_", "-") for m in MLXModel)
+                raise ValueError(f"Unknown MLX Whisper model {raw_model!r} (expected {valid})")
+        logger.info(f"STT: whisper-mlx model {model}")
 
         return WhisperSTTServiceMLX(
             settings=WhisperSTTServiceMLX.Settings(
-                model=stt_cfg.get("model", "large-v3-turbo"),
+                model=model,
                 language=language,
             ),
         )

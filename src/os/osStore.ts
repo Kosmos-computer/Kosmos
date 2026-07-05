@@ -3,7 +3,7 @@
  * list shared by the dock, the Apps library, and os_ui handling.
  */
 import { create } from "zustand";
-import type { AppSummary, WebApp } from "@shared/types";
+import type { AppSummary, ConfirmOption, WebApp } from "@shared/types";
 import type { InstalledAppInfo } from "@shared/manifest";
 import { api } from "../lib/api";
 
@@ -13,6 +13,17 @@ export interface OsNotification {
   id: string;
   message: string;
   createdAt: number;
+}
+
+/**
+ * An approval request from an agent turn with no chat stream attached
+ * (voice conversations) — rendered as a desktop-level card instead of an
+ * inline chat item. Cleared by the confirm_resolved shell event.
+ */
+export interface ShellConfirm {
+  confirmId: string;
+  command: string;
+  options?: ConfirmOption[];
 }
 
 interface OsStore {
@@ -25,6 +36,7 @@ interface OsStore {
   agentBusy: boolean;
   /** Left nav rail: collapsed icon rail (false) vs expanded icon+label list (true). */
   navExpanded: boolean;
+  shellConfirms: ShellConfirm[];
 
   setTheme: (theme: Theme) => void;
   setWallpaper: (wallpaper: string) => void;
@@ -33,6 +45,8 @@ interface OsStore {
   refreshApps: () => Promise<void>;
   setAgentBusy: (busy: boolean) => void;
   setNavExpanded: (expanded: boolean) => void;
+  addShellConfirm: (confirm: ShellConfirm) => void;
+  removeShellConfirm: (confirmId: string) => void;
 }
 
 export const useOsStore = create<OsStore>((set) => ({
@@ -44,6 +58,7 @@ export const useOsStore = create<OsStore>((set) => ({
   installedApps: [],
   agentBusy: false,
   navExpanded: localStorage.getItem("arco:nav-expanded") === "true",
+  shellConfirms: [],
 
   setTheme: (theme) => {
     localStorage.setItem("arco:theme", theme);
@@ -85,6 +100,16 @@ export const useOsStore = create<OsStore>((set) => ({
   },
 
   setAgentBusy: (busy) => set({ agentBusy: busy }),
+
+  addShellConfirm: (confirm) =>
+    set((s) =>
+      s.shellConfirms.some((c) => c.confirmId === confirm.confirmId)
+        ? s
+        : { shellConfirms: [...s.shellConfirms, confirm] },
+    ),
+
+  removeShellConfirm: (confirmId) =>
+    set((s) => ({ shellConfirms: s.shellConfirms.filter((c) => c.confirmId !== confirmId) })),
 
   setNavExpanded: (expanded) => {
     localStorage.setItem("arco:nav-expanded", String(expanded));

@@ -266,6 +266,12 @@
 
 /* ── Center: chat ─────────────────────────────────────────────────────────── */
 
+/* Empty-state avatar — the face rig scales via font-size (em-based grid). */
+.arco-face-widget.arco-studio__emptyface {
+  font-size: 14px;
+  margin-bottom: var(--arco-space-s);
+}
+
 .arco-studio__chat {
   flex: 1;
   min-width: 0;

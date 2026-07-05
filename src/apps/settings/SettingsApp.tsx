@@ -12,10 +12,12 @@ import { PasswordSection } from "./PasswordSection";
 import { UsersSection } from "./UsersSection";
 import { AppsSection } from "./AppsSection";
 import { AgentSection } from "./AgentSection";
+import { ChannelsSection } from "./ChannelsSection";
 import { ExternalAccessSection } from "./ExternalAccessSection";
 import { McpServersSection } from "./McpServersSection";
 import { ProvidersSection } from "./ProvidersSection";
 import { SkillsSection } from "./SkillsSection";
+import { ToolsSection } from "./ToolsSection";
 
 const PROVIDERS: { id: LlmProvider; label: string }[] = [
   { id: "mock", label: "Mock (no key needed)" },
@@ -213,9 +215,13 @@ export function SettingsApp() {
 
       <AppsSection />
 
+      <ToolsSection />
+
       <McpServersSection />
 
       <SkillsSection />
+
+      <ChannelsSection />
 
       {canWriteSettings && <AgentSection />}
 

@@ -9,6 +9,7 @@ import crypto from "node:crypto";
 import type { AutomationRun } from "../../shared/types.js";
 import { bus } from "../bus.js";
 import { runAgentTurn } from "../agent/loop.js";
+import { channelGateway } from "../channels/gateway.js";
 import { automationStore } from "../stores/automationStore.js";
 import { sessionStore } from "../stores/sessionStore.js";
 
@@ -36,6 +37,22 @@ export async function runAutomationNow(id: string): Promise<AutomationRun> {
     });
     run.status = "ok";
     run.summary = finalText.slice(0, 500);
+
+    // Proactive delivery: push the result to the configured channel chat so
+    // the automation lands where the user actually looks. A failed delivery
+    // is noted in the summary but doesn't fail an otherwise-good run.
+    if (automation.deliver && finalText.trim()) {
+      try {
+        await channelGateway.send(
+          automation.deliver.channelId,
+          automation.deliver.chatId,
+          finalText,
+        );
+      } catch (err) {
+        const reason = err instanceof Error ? err.message : "delivery failed";
+        run.summary = `[delivery failed: ${reason}] ${run.summary}`.slice(0, 500);
+      }
+    }
   } catch (err) {
     run.status = "error";
     run.summary = err instanceof Error ? err.message : "Automation run failed";

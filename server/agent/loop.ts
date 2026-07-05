@@ -18,8 +18,9 @@ const MAX_ITERATIONS = 12;
 /** Tool results beyond this are truncated for the LLM (full result goes to the UI). */
 const MAX_TOOL_RESULT_CHARS = 6_000;
 
-function toLlmMessages(session: Session): LlmMessage[] {
-  const messages: LlmMessage[] = [{ role: "system", content: buildSystemPrompt() }];
+function toLlmMessages(session: Session, extraSystem?: string): LlmMessage[] {
+  const system = extraSystem ? `${buildSystemPrompt()}\n\n${extraSystem}` : buildSystemPrompt();
+  const messages: LlmMessage[] = [{ role: "system", content: system }];
   for (const m of session.messages) {
     if (m.role === "user") {
       messages.push({ role: "user", content: m.content });
@@ -51,6 +52,8 @@ export interface RunTurnOptions {
   signal?: AbortSignal;
   /** True when a client is streaming and can answer exec confirmations. */
   interactive?: boolean;
+  /** Extra system guidance appended for this caller (e.g. voice speakability). */
+  extraSystem?: string;
 }
 
 /**
@@ -85,7 +88,7 @@ export async function runAgentTurn(opts: RunTurnOptions): Promise<string> {
 
     const turn = await streamTurn({
       settings,
-      messages: toLlmMessages(current),
+      messages: toLlmMessages(current, opts.extraSystem),
       tools: toolDefs,
       onTextDelta: (delta) => opts.emit({ type: "text_delta", delta }),
       signal: opts.signal,

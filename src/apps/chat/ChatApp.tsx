@@ -11,7 +11,7 @@ import { ToolCard } from "./ToolCard";
 import { ConfirmCard } from "./ConfirmCard";
 import { onPrimeComposer } from "./composerBus";
 import { VoiceBar } from "./VoiceBar";
-import { useVoice } from "../../voice";
+import { useVoice, voiceClient } from "../../voice";
 
 export function ChatApp() {
   const chat = useChat();
@@ -38,6 +38,10 @@ export function ChatApp() {
     },
     [draft, chat],
   );
+
+  // Voice conversations appear in the thread like typed ones: your final
+  // transcripts as user messages, the bot's speech as assistant text.
+  useEffect(() => voiceClient.subscribe(chat.applyVoiceEvent), [chat.applyVoiceEvent]);
 
   // primeComposer events from apps (Refine, follow-ups, library).
   useEffect(

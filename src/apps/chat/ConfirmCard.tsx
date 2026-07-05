@@ -9,12 +9,19 @@
  */
 import { useState } from "react";
 import { ShieldAlert } from "lucide-react";
-import type { ChatItem } from "./useChat";
+import type { ConfirmOption } from "@shared/types";
 import { api } from "../../lib/api";
 
-type ConfirmItem = Extract<ChatItem, { kind: "confirm" }>;
+/** The subset of a confirm chat item this card needs — also satisfied by
+ *  desktop-level ShellConfirm cards (voice-turn approvals). */
+export interface ConfirmCardData {
+  confirmId: string;
+  command: string;
+  approved?: boolean;
+  options?: ConfirmOption[];
+}
 
-export function ConfirmCard({ item }: { item: ConfirmItem }) {
+export function ConfirmCard({ item }: { item: ConfirmCardData }) {
   const [answering, setAnswering] = useState(false);
   const pending = item.approved === undefined;
   const extended = (item.options?.length ?? 0) > 0;

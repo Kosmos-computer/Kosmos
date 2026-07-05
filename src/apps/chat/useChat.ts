@@ -4,6 +4,7 @@
  * apps_changed) to the OS stores while the stream is live.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { VoiceEvent } from "@shared/capabilities/voice";
 import type { AgentEvent, ConfirmOption, Session, SessionSummary } from "@shared/types";
 import { api, streamChat } from "../../lib/api";
 import { handleShellEvent } from "../../os/osActions";
@@ -232,6 +233,46 @@ export function useChat() {
     abortRef.current?.abort();
   }, []);
 
+  /** Mirror a voice conversation into the thread: final user transcripts
+   *  become user items, bot utterances stream into an assistant item that
+   *  seals when the bot finishes its turn. Display-only — the voice server
+   *  owns the actual conversation context. */
+  const applyVoiceEvent = useCallback((event: VoiceEvent) => {
+    switch (event.type) {
+      case "userTranscript": {
+        const text = event.transcript.text.trim();
+        if (event.transcript.final && text) {
+          setItems((prev) => [...prev, { kind: "user", id: nextId(), text }]);
+        }
+        break;
+      }
+      case "botTranscript": {
+        const text = event.transcript.text.trim();
+        if (!text) break;
+        setItems((prev) => {
+          const last = prev[prev.length - 1];
+          if (last?.kind === "assistant" && last.streaming) {
+            return [...prev.slice(0, -1), { ...last, text: `${last.text} ${text}` }];
+          }
+          return [...prev, { kind: "assistant", id: nextId(), text, streaming: true }];
+        });
+        break;
+      }
+      case "state":
+        // Bot turn over (back to listening) or session ended — seal the block.
+        if (event.state === "listening" || event.state === "idle") {
+          setItems((prev) =>
+            prev.map((it) =>
+              it.kind === "assistant" && it.streaming ? { ...it, streaming: false } : it,
+            ),
+          );
+        }
+        break;
+      default:
+        break;
+    }
+  }, []);
+
   return {
     items,
     sessionId,
@@ -242,5 +283,6 @@ export function useChat() {
     loadSession,
     newChat,
     removeSession,
+    applyVoiceEvent,
   };
 }

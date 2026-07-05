@@ -5,6 +5,7 @@
 import type {
   AgentEvent,
   AgentPolicyDecision,
+  AgentToolInfo,
   AppSummary,
   AuditEntry,
   AuthStatus,
@@ -13,6 +14,8 @@ import type {
   UserSummary,
   Automation,
   AutomationRun,
+  ChannelInfo,
+  DeliveryTarget,
   DirListing,
   ExternalAccessInfo,
   ExternalClientScope,
@@ -131,15 +134,25 @@ export const api = {
   deleteSession: (id: string) =>
     fetch(`/api/sessions/${id}`, { method: "DELETE" }).then((r) => json<{ ok: true }>(r)),
 
-  // Automations
+  // Automations — `deliver: null` in a patch clears the delivery target.
   listAutomations: () => fetch("/api/automations").then((r) => json<Automation[]>(r)),
-  createAutomation: (data: { name: string; schedule: string; prompt: string }) =>
+  createAutomation: (data: {
+    name: string;
+    schedule: string;
+    prompt: string;
+    deliver?: DeliveryTarget;
+  }) =>
     fetch("/api/automations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     }).then((r) => json<Automation>(r)),
-  updateAutomation: (id: string, patch: Partial<Pick<Automation, "name" | "schedule" | "prompt" | "enabled">>) =>
+  updateAutomation: (
+    id: string,
+    patch: Partial<Pick<Automation, "name" | "schedule" | "prompt" | "enabled">> & {
+      deliver?: DeliveryTarget | null;
+    },
+  ) =>
     fetch(`/api/automations/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -290,6 +303,9 @@ export const api = {
       body: JSON.stringify({ key, decision }),
     }).then((r) => json<{ rules: Record<string, AgentPolicyDecision> }>(r)),
 
+  // Built-in agent tools (catalog + enabled state; toggles persist via saveSettings)
+  listAgentTools: () => fetch("/api/agent-tools").then((r) => json<AgentToolInfo[]>(r)),
+
   // Audit log
   getAudit: (opts?: { limit?: number; caller?: string }) => {
     const params = new URLSearchParams();
@@ -351,6 +367,33 @@ export const api = {
     post<McpServerInfo>(`/api/mcp-servers/${encodeURIComponent(id)}/restart`),
   mcpServerLog: (id: string) =>
     fetch(`/api/mcp-servers/${encodeURIComponent(id)}/log`).then((r) => json<{ log: string }>(r)),
+
+  // Channels (external messaging: Telegram, …)
+  listChannels: () => fetch("/api/channels").then((r) => json<ChannelInfo[]>(r)),
+  addChannel: (data: { kind: "telegram"; name: string; token: string }) =>
+    post<ChannelInfo>("/api/channels", data),
+  updateChannel: (id: string, patch: { name?: string; token?: string; enabled?: boolean }) =>
+    fetch(`/api/channels/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    }).then((r) => json<ChannelInfo>(r)),
+  removeChannel: (id: string) =>
+    fetch(`/api/channels/${encodeURIComponent(id)}`, { method: "DELETE" }).then((r) =>
+      json<{ ok: true }>(r),
+    ),
+  restartChannel: (id: string) =>
+    post<ChannelInfo>(`/api/channels/${encodeURIComponent(id)}/restart`),
+  resolvePairing: (id: string, code: string, approve: boolean) =>
+    post<ChannelInfo>(
+      `/api/channels/${encodeURIComponent(id)}/pairings/${encodeURIComponent(code)}`,
+      { approve },
+    ),
+  removeChannelPeer: (id: string, chatId: string) =>
+    fetch(
+      `/api/channels/${encodeURIComponent(id)}/peers/${encodeURIComponent(chatId)}`,
+      { method: "DELETE" },
+    ).then((r) => json<ChannelInfo>(r)),
 
   // External access (Arco as an outward MCP server)
   getExternalAccess: () =>

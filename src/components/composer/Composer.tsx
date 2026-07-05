@@ -37,6 +37,10 @@ export interface ComposerProps {
   /** Plus-menu wiring: attach action and workspace panel switches. */
   onAddFile?: () => void;
   panelToggles?: ComposerPanelToggle[];
+  /** Voice session wiring — when provided, the mic button toggles it. */
+  voiceActive?: boolean;
+  voiceAvailable?: boolean;
+  onVoiceToggle?: () => void;
   /** Banner docked below the card — pair with `ComposerNotice`. */
   notice?: ReactNode;
   /** When set, renders the usage status bar below the card. */
@@ -60,6 +64,9 @@ export function Composer({
   modelItems,
   onAddFile,
   panelToggles,
+  voiceActive,
+  voiceAvailable,
+  onVoiceToggle,
   notice,
   usage,
   onPlanUsageClick,
@@ -118,6 +125,9 @@ export function Composer({
           onModeChange={onModeChange}
           model={model}
           modelItems={modelItems}
+          voiceActive={voiceActive}
+          voiceAvailable={voiceAvailable}
+          onVoiceToggle={onVoiceToggle}
           onSubmit={onSubmit}
           onStop={onStop}
           canSubmit={value.trim().length > 0}

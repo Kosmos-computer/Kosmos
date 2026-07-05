@@ -16,7 +16,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { ChevronDown, MoreHorizontal, Mic, Send, Square } from "lucide-react";
+import { ChevronDown, MicOff, MoreHorizontal, Mic, Send, Square } from "lucide-react";
 import { Menu, type MenuItem } from "../Menu";
 import { ComposerAttachMenu, type ComposerPanelToggle } from "./ComposerAttachMenu";
 import { ComposerEmojiPicker } from "./ComposerEmojiPicker";
@@ -45,6 +45,10 @@ export interface ComposerControlsRowProps {
   onModeChange?: (id: string) => void;
   model?: string;
   modelItems?: MenuItem[];
+  /** Voice session wiring — when provided, the mic button toggles it. */
+  voiceActive?: boolean;
+  voiceAvailable?: boolean;
+  onVoiceToggle?: () => void;
   onSubmit: () => void;
   onStop?: () => void;
   canSubmit: boolean;
@@ -63,6 +67,9 @@ export function ComposerControlsRow({
   onModeChange,
   model,
   modelItems,
+  voiceActive,
+  voiceAvailable,
+  onVoiceToggle,
   onSubmit,
   onStop,
   canSubmit,
@@ -276,11 +283,22 @@ export function ComposerControlsRow({
       <div ref={rightRef} className="arco-composer__controlsright">
         <button
           type="button"
-          className="arco-btn arco-btn--ghost arco-btn--icon"
-          aria-label="Voice input"
-          title="Voice input"
+          className={`arco-btn ${voiceActive ? "arco-btn--primary" : "arco-btn--ghost"} arco-btn--icon`}
+          aria-label={voiceActive ? "End voice conversation" : "Start voice conversation"}
+          aria-pressed={onVoiceToggle ? voiceActive : undefined}
+          title={
+            onVoiceToggle
+              ? voiceAvailable || voiceActive
+                ? voiceActive
+                  ? "End voice conversation"
+                  : "Start voice conversation"
+                : "Voice server offline — see voice-server/README.md"
+              : "Voice input"
+          }
+          disabled={onVoiceToggle ? !voiceAvailable && !voiceActive : undefined}
+          onClick={onVoiceToggle}
         >
-          <Mic size={15} />
+          {voiceActive ? <MicOff size={15} /> : <Mic size={15} />}
         </button>
         {streaming ? (
           <button

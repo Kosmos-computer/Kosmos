@@ -16,6 +16,7 @@
  * confirm / deny and parking on the user when confirmation is required.
  */
 import type { AgentEvent } from "../../shared/types.js";
+import { loadSettings } from "../env.js";
 import { appendAudit } from "../platform/grantStore.js";
 import { requestConfirmation } from "./confirmations.js";
 import type { LlmToolDef } from "./llm.js";
@@ -63,10 +64,32 @@ const WRITE_SYSTEM_TOOLS = new Set([
 ]);
 
 function systemTools(): RegisteredTool[] {
+  // Settings-level kill switch (Settings → Agent tools): disabled tools are
+  // removed from the model's schema entirely — same semantics as MCP
+  // disabledTools, unlike a policy "deny" which fails at call time.
+  const disabled = new Set(loadSettings().disabledTools ?? []);
+  return agentTools
+    .filter((tool) => !disabled.has(tool.name))
+    .map((tool) => ({
+      ...tool,
+      source: { kind: "system" as const },
+      access: WRITE_SYSTEM_TOOLS.has(tool.name) ? ("write" as const) : ("read" as const),
+    }));
+}
+
+/** Catalog for the Settings UI: every built-in tool + its enabled state. */
+export function describeSystemTools(): {
+  name: string;
+  description: string;
+  access: "read" | "write";
+  enabled: boolean;
+}[] {
+  const disabled = new Set(loadSettings().disabledTools ?? []);
   return agentTools.map((tool) => ({
-    ...tool,
-    source: { kind: "system" as const },
-    access: WRITE_SYSTEM_TOOLS.has(tool.name) ? ("write" as const) : ("read" as const),
+    name: tool.name,
+    description: tool.description,
+    access: WRITE_SYSTEM_TOOLS.has(tool.name) ? "write" : "read",
+    enabled: !disabled.has(tool.name),
   }));
 }
 

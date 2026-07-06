@@ -1,0 +1,113 @@
+.section {
+  max-width: var(--lf-max-width);
+  margin: 0 auto;
+  padding: 4rem 1.25rem 0;
+}
+
+@media (min-width: 768px) {
+  .section {
+    padding-top: 7rem;
+  }
+}
+
+.grid {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 700px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem;
+  }
+}
+
+@media (min-width: 1100px) {
+  .grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  border-radius: var(--lf-radius-lg);
+  background: var(--lf-surface);
+  box-shadow: var(--lf-shadow);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin-bottom: 1rem;
+}
+
+.cardId {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  height: 1.625rem;
+  padding: 0 0.5rem;
+  border-radius: 0.5rem;
+  background: var(--lf-text);
+  color: var(--lf-on-dark);
+  font-family: var(--lf-font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.cardTopic {
+  font-family: var(--lf-font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--lf-text-muted);
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.cardOneLiner {
+  margin: 0.625rem 0 0;
+  font-family: var(--lf-font-sans);
+  font-style: italic;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--lf-accent-warm);
+}
+
+.cardPoints {
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.cardPoints li {
+  position: relative;
+  padding-left: 1rem;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--lf-text-secondary);
+}
+
+.cardPoints li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 0.3125rem;
+  height: 0.3125rem;
+  border-radius: 999px;
+  background: var(--lf-accent);
+  opacity: 0.55;
+}

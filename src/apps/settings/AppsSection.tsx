@@ -11,6 +11,21 @@ import { describePermissionKey } from "@shared/manifest";
 import { api } from "../../lib/api";
 import { useCan } from "../../os/auth/authStore";
 import { useOsStore } from "../../os/osStore";
+import {
+  SettingsAlert,
+  SettingsEmpty,
+  SettingsFieldRow,
+  SettingsPage,
+  SettingsPanel,
+  SettingsPanelBody,
+  SettingsPanelHeader,
+  SettingsRow,
+  SettingsRowActions,
+  SettingsSection,
+  SettingsStack,
+  SettingsSubhead,
+} from "../../components/patterns";
+import { Button, Chip, Input } from "../../components/ui";
 
 function GrantRow({
   app,
@@ -31,25 +46,21 @@ function GrantRow({
     onChanged();
   };
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+    <SettingsRow disabled={!app.enabled}>
       {granted ? (
-        <ShieldCheck size={14} style={{ color: "var(--arco-success)", flexShrink: 0 }} />
+        <ShieldCheck size={14} className="arco-icon arco-icon--success" />
       ) : (
-        <ShieldOff size={14} style={{ color: "var(--arco-text-tertiary)", flexShrink: 0 }} />
+        <ShieldOff size={14} className="arco-icon arco-icon--tertiary" />
       )}
-      <span style={{ flex: 1, fontSize: "var(--arco-text-sm)" }}>
-        {describePermissionKey(grantKey)}
-      </span>
+      <span className="arco-settings-tool-row__desc">{describePermissionKey(grantKey)}</span>
       {canManage && (
-        <button
-          className={`arco-chip ${granted ? "arco-chip--active" : ""}`}
-          onClick={() => void toggle()}
-          aria-pressed={granted}
-        >
-          {granted ? "granted" : "denied"}
-        </button>
+        <SettingsRowActions>
+          <Chip active={granted} onClick={() => void toggle()} aria-pressed={granted}>
+            {granted ? "granted" : "denied"}
+          </Chip>
+        </SettingsRowActions>
       )}
-    </div>
+    </SettingsRow>
   );
 }
 
@@ -88,112 +99,87 @@ export function AppsSection() {
   };
 
   return (
-    <section className="arco-form">
-      <strong>Apps & permissions</strong>
+    <SettingsPage>
+      <SettingsSection intro="Manage installed apps, permissions, and agent tools contributed by each app.">
+        {installError ? <SettingsAlert tone="error">{installError}</SettingsAlert> : null}
 
-      {installedApps.length === 0 && (
-        <span style={{ color: "var(--arco-text-tertiary)", fontSize: "var(--arco-text-sm)" }}>
-          No apps installed.
-        </span>
-      )}
+        {installedApps.length === 0 ? (
+          <SettingsEmpty>No apps installed.</SettingsEmpty>
+        ) : (
+          <SettingsStack>
+            {installedApps.map((app) => (
+              <SettingsPanel key={app.manifest.id} disabled={!app.enabled}>
+                <SettingsPanelHeader>
+                  <span className="arco-settings-panel__title">{app.manifest.name}</span>
+                  <span className="arco-settings-panel__meta">
+                    v{app.manifest.version} · {app.manifest.tier} · {app.source}
+                  </span>
+                  {canManage && (
+                    <SettingsRowActions>
+                      <Chip
+                        active={app.enabled}
+                        onClick={() => void setEnabled(app, !app.enabled)}
+                        aria-pressed={app.enabled}
+                      >
+                        {app.enabled ? "enabled" : "disabled"}
+                      </Chip>
+                      <Button
+                        size="icon"
+                        onClick={() => void uninstall(app)}
+                        aria-label={`Uninstall ${app.manifest.name}`}
+                      >
+                        <Trash2 size={13} />
+                      </Button>
+                    </SettingsRowActions>
+                  )}
+                </SettingsPanelHeader>
+                {app.manifest.description ? (
+                  <p className="arco-settings-panel__desc">{app.manifest.description}</p>
+                ) : null}
+                {Object.keys(app.grants).length > 0 && (
+                  <SettingsPanelBody>
+                    {Object.entries(app.grants).map(([key, state]) => (
+                      <GrantRow
+                        key={key}
+                        app={app}
+                        grantKey={key}
+                        state={state}
+                        canManage={canManage}
+                        onChanged={() => void refreshApps()}
+                      />
+                    ))}
+                  </SettingsPanelBody>
+                )}
+                {(app.manifest.tools?.length ?? 0) > 0 && (
+                  <p className="arco-settings-panel__meta">
+                    Contributes agent tools: {app.manifest.tools!.map((t) => t.name).join(", ")} — calls run
+                    under this app&apos;s permissions above.
+                  </p>
+                )}
+              </SettingsPanel>
+            ))}
+          </SettingsStack>
+        )}
 
-      {installedApps.map((app) => (
-        <div
-          key={app.manifest.id}
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 8,
-            padding: "10px 12px",
-            border: "1px solid var(--arco-border)",
-            borderRadius: "var(--arco-radius-md, 8px)",
-            opacity: app.enabled ? 1 : 0.6,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-            <strong style={{ fontSize: "var(--arco-text-md)" }}>{app.manifest.name}</strong>
-            <span style={{ color: "var(--arco-text-tertiary)", fontSize: "var(--arco-text-xs)" }}>
-              v{app.manifest.version} · {app.manifest.tier} · {app.source}
-            </span>
-            <span style={{ flex: 1 }} />
-            {canManage && (
-              <>
-                <button
-                  className={`arco-chip ${app.enabled ? "arco-chip--active" : ""}`}
-                  onClick={() => void setEnabled(app, !app.enabled)}
-                  aria-pressed={app.enabled}
-                >
-                  {app.enabled ? "enabled" : "disabled"}
-                </button>
-                <button
-                  className="arco-btn arco-btn--icon"
-                  onClick={() => void uninstall(app)}
-                  aria-label={`Uninstall ${app.manifest.name}`}
-                >
-                  <Trash2 size={13} />
-                </button>
-              </>
-            )}
-          </div>
-          {app.manifest.description && (
-            <span style={{ color: "var(--arco-text-secondary)", fontSize: "var(--arco-text-sm)" }}>
-              {app.manifest.description}
-            </span>
-          )}
-          {Object.keys(app.grants).length > 0 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {Object.entries(app.grants).map(([key, state]) => (
-                <GrantRow
-                  key={key}
-                  app={app}
-                  grantKey={key}
-                  state={state}
-                  canManage={canManage}
-                  onChanged={() => void refreshApps()}
-                />
-              ))}
-            </div>
-          )}
-          {(app.manifest.tools?.length ?? 0) > 0 && (
-            <span style={{ color: "var(--arco-text-tertiary)", fontSize: "var(--arco-text-xs)" }}>
-              Contributes agent tools:{" "}
-              {app.manifest.tools!.map((t) => t.name).join(", ")} — calls run under this app's
-              permissions above.
-            </span>
-          )}
-        </div>
-      ))}
-
-      {canManage && (
-        <>
-          <label className="arco-label" htmlFor="app-install-url">
-            Install from manifest URL
-          </label>
-          <div style={{ display: "flex", gap: 8 }}>
-            <input
-              id="app-install-url"
-              className="arco-input"
-              style={{ flex: 1 }}
-              placeholder="https://example.com/my-app/manifest.json"
-              value={installUrl}
-              onChange={(e) => setInstallUrl(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && void install()}
-            />
-            <button
-              className="arco-btn arco-btn--primary"
-              disabled={installing || !installUrl.trim()}
-              onClick={() => void install()}
-            >
-              {installing ? "Installing…" : "Install"}
-            </button>
-          </div>
-          {installError && (
-            <span style={{ color: "var(--arco-danger, #e5484d)", fontSize: "var(--arco-text-sm)" }}>
-              {installError}
-            </span>
-          )}
-        </>
-      )}
-    </section>
+        {canManage && (
+          <>
+            <SettingsSubhead>Install from URL</SettingsSubhead>
+            <SettingsFieldRow label="Manifest" htmlFor="app-install-url">
+              <Input
+                id="app-install-url"
+                width="auto"
+                placeholder="https://example.com/my-app/manifest.json"
+                value={installUrl}
+                onChange={(e) => setInstallUrl(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && void install()}
+              />
+              <Button variant="primary" disabled={installing || !installUrl.trim()} onClick={() => void install()}>
+                {installing ? "Installing…" : "Install"}
+              </Button>
+            </SettingsFieldRow>
+          </>
+        )}
+      </SettingsSection>
+    </SettingsPage>
   );
 }

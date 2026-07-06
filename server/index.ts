@@ -114,9 +114,11 @@ app.post("/api/chat", requireCap("chat"), async (c) => {
   if (!session) return c.json({ error: "Session not found" }, 404);
 
   return streamSSE(c, async (stream) => {
+    // Queue writes so terminal events (error/done) flush before close — a bare
+    // void writeSSE can be dropped when the stream closes immediately after.
+    const pending: Promise<void>[] = [];
     const emit = (event: AgentEvent) => {
-      // Fire-and-forget: hono queues writes; a client disconnect aborts the stream.
-      void stream.writeSSE({ data: JSON.stringify(event) });
+      pending.push(stream.writeSSE({ data: JSON.stringify(event) }));
     };
     emit({ type: "session", sessionId: session.id });
     try {
@@ -136,6 +138,7 @@ app.post("/api/chat", requireCap("chat"), async (c) => {
     } catch (err) {
       emit({ type: "error", message: err instanceof Error ? err.message : "Agent turn failed" });
     }
+    await Promise.all(pending);
     await stream.close();
   });
 });

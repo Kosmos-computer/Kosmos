@@ -1,32 +1,104 @@
 /**
- * Manifest icon names → Lucide components. A small allowlist rather than the
- * full lucide `icons` map, which would defeat tree-shaking and balloon the
- * bundle; unknown names fall back to the puzzle piece.
+ * Manifest / generated-app icon names → Lucide components. A small allowlist
+ * rather than the full lucide `icons` map, which would defeat tree-shaking;
+ * unknown names fall back to the puzzle piece.
  */
 import type { LucideIcon } from "lucide-react";
 import {
+  BarChart3,
+  BookHeart,
   Calendar,
   CalendarDays,
+  Camera,
+  Clock,
+  CloudSun,
+  Coffee,
+  Dumbbell,
   FileText,
+  FlaskConical,
   Folder,
+  Gamepad2,
+  HardDrive,
+  Heart,
+  Home,
+  Image,
+  Layout,
+  Lightbulb,
+  ListTodo,
   Mail,
+  Map,
+  MapPin,
   Music,
+  Palette,
+  Pencil,
+  Plane,
   Presentation,
   Puzzle,
+  Rocket,
+  Search,
+  ShoppingCart,
+  Star,
+  StickyNote,
+  Sun,
   Table,
+  Target,
+  Timer,
+  Trophy,
+  Users,
+  Utensils,
+  Video,
+  Wallet,
+  Wrench,
 } from "lucide-react";
+import { isAppIconName } from "@shared/appIcons";
 
 const ICONS: Record<string, LucideIcon> = {
+  "bar-chart-3": BarChart3,
+  "book-heart": BookHeart,
   calendar: Calendar,
   "calendar-days": CalendarDays,
-  mail: Mail,
+  camera: Camera,
+  clock: Clock,
+  "cloud-sun": CloudSun,
+  coffee: Coffee,
+  dumbbell: Dumbbell,
   "file-text": FileText,
-  table: Table,
-  presentation: Presentation,
+  "flask-conical": FlaskConical,
   folder: Folder,
+  "gamepad-2": Gamepad2,
+  "hard-drive": HardDrive,
+  heart: Heart,
+  home: Home,
+  image: Image,
+  layout: Layout,
+  lightbulb: Lightbulb,
+  "list-todo": ListTodo,
+  mail: Mail,
+  map: Map,
+  "map-pin": MapPin,
   music: Music,
+  palette: Palette,
+  pencil: Pencil,
+  plane: Plane,
+  presentation: Presentation,
+  rocket: Rocket,
+  search: Search,
+  "shopping-cart": ShoppingCart,
+  star: Star,
+  "sticky-note": StickyNote,
+  sun: Sun,
+  table: Table,
+  target: Target,
+  timer: Timer,
+  trophy: Trophy,
+  users: Users,
+  utensils: Utensils,
+  video: Video,
+  wallet: Wallet,
+  wrench: Wrench,
 };
 
 export function appIcon(name?: string): LucideIcon {
-  return (name && ICONS[name]) || Puzzle;
+  if (name && isAppIconName(name)) return ICONS[name];
+  return Puzzle;
 }

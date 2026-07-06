@@ -22,10 +22,9 @@ import {
 import type { LucideIcon } from "lucide-react";
 import type { WorkspaceTab } from "@shared/types";
 import { useChat } from "../chat/useChat";
-import { AssistantBlock } from "../chat/AssistantBlock";
-import { ToolCard } from "../chat/ToolCard";
-import { ConfirmCard } from "../chat/ConfirmCard";
 import { VoiceBar } from "../chat/VoiceBar";
+import { ChatThread } from "../../components/chat/ChatThread";
+import { EmptyState } from "../../components/ui";
 import { useVoice, voiceClient } from "../../voice";
 import { FaceWidget } from "../../face-rig";
 import { Composer } from "../../components/composer/Composer";
@@ -221,37 +220,13 @@ export function StudioApp() {
             }}
           >
             {chat.items.length === 0 && (
-              <div className="arco-empty">
+              <EmptyState>
                 <FaceWidget className="arco-studio__emptyface" />
-                <strong style={{ color: "var(--arco-text-secondary)", fontSize: "var(--arco-text-md)" }}>
-                  Build with the agent
-                </strong>
+                <strong className="arco-empty__title">Build with the agent</strong>
                 <span>Files, diffs, commands, and app previews appear in the drawer as it works.</span>
-              </div>
+              </EmptyState>
             )}
-            {chat.items.map((item) => {
-              switch (item.kind) {
-                case "user":
-                  return (
-                    <div key={item.id} className="arco-chat__user">
-                      {item.text}
-                    </div>
-                  );
-                case "assistant":
-                  return <AssistantBlock key={item.id} item={item} onFollowUp={submit} />;
-                case "tool":
-                  return <ToolCard key={item.id} item={item} />;
-                case "confirm":
-                  return <ConfirmCard key={item.id} item={item} />;
-                case "error":
-                  return (
-                    <div key={item.id} className="arco-chat__error">
-                      {item.text}
-                    </div>
-                  );
-              }
-            })}
-            {chat.streaming && <div className="arco-chat__working">Working…</div>}
+            <ChatThread items={chat.items} streaming={chat.streaming} onFollowUp={submit} />
           </div>
 
           {voice.active && <VoiceBar voice={voice} />}

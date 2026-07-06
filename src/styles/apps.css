@@ -85,6 +85,136 @@
   font-weight: 600;
 }
 
+/* ── Apps library — iPhone-style icon home ─────────────────────────────────── */
+
+.arco-apps-home {
+  flex: 1;
+  min-height: 0;
+  padding: var(--arco-space-xl) var(--arco-space-l) var(--arco-space-2xl);
+  border-radius: var(--arco-radius-l);
+  background:
+    radial-gradient(ellipse 120% 80% at 15% 0%, var(--arco-accent-soft) 0%, transparent 55%),
+    radial-gradient(
+      ellipse 90% 70% at 85% 100%,
+      color-mix(in srgb, var(--arco-accent) 16%, transparent) 0%,
+      transparent 52%
+    ),
+    linear-gradient(168deg, var(--arco-bg-surface) 0%, var(--arco-bg-sunk) 100%);
+}
+
+.arco-apps-home__section + .arco-apps-home__section {
+  margin-top: var(--arco-space-xl);
+}
+
+.arco-apps-home__sectionlabel {
+  margin-bottom: var(--arco-space-m);
+  padding-inline: var(--arco-space-xs);
+  font-size: var(--arco-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--arco-text-tertiary);
+}
+
+.arco-apps-home__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--arco-space-xl) var(--arco-space-s);
+  justify-items: center;
+}
+
+.arco-apps-home__tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--arco-space-xs);
+  width: 100%;
+  max-width: 88px;
+}
+
+.arco-apps-home__glyph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 22%;
+  border: none;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 22%, transparent),
+    0 8px 18px color-mix(in srgb, #000 22%, transparent);
+  transition: transform var(--arco-dur-fast), filter var(--arco-dur-fast);
+}
+
+.arco-apps-home__glyph:hover {
+  transform: scale(1.04);
+  filter: brightness(1.05);
+}
+
+.arco-apps-home__glyph:active {
+  transform: scale(0.96);
+  filter: brightness(0.95);
+}
+
+.arco-apps-home__menu {
+  width: 100%;
+  justify-content: center;
+}
+
+.arco-apps-home__menu .arco-menu__panel {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.arco-apps-home__label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  max-width: 100%;
+  padding: 2px 4px;
+  border: none;
+  border-radius: var(--arco-radius-s);
+  background: transparent;
+  color: var(--arco-text-primary);
+  font-size: var(--arco-text-xs);
+  font-weight: 500;
+  line-height: 1.25;
+  cursor: pointer;
+  transition: background var(--arco-dur-fast);
+}
+
+.arco-apps-home__label:hover,
+.arco-apps-home__label[aria-expanded="true"] {
+  background: color-mix(in srgb, var(--arco-bg-hover) 72%, transparent);
+}
+
+.arco-apps-home__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 68px;
+}
+
+.arco-apps-home__more {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  color: var(--arco-text-secondary);
+  opacity: 0;
+  transition: opacity var(--arco-dur-fast), color var(--arco-dur-fast);
+}
+
+.arco-apps-home__label:hover .arco-apps-home__more,
+.arco-apps-home__label[aria-expanded="true"] .arco-apps-home__more {
+  opacity: 1;
+  color: var(--arco-text-primary);
+}
+
 /* Toggle switch */
 .arco-switch {
   position: relative;
@@ -163,6 +293,11 @@
   padding: var(--arco-space-s) var(--arco-space-m);
   border-bottom: 1px solid var(--arco-border);
   flex-shrink: 0;
+}
+
+.arco-chat .arco-master-detail {
+  flex: 1;
+  min-height: 0;
 }
 
 .arco-chat__main {
@@ -504,6 +639,12 @@
   padding: var(--arco-space-s) var(--arco-space-m);
   border-bottom: 1px solid var(--arco-border);
   flex-shrink: 0;
+}
+
+.arco-appsurface__toolbar-search {
+  flex: 1;
+  min-width: 140px;
+  max-width: 420px;
 }
 
 .arco-appsurface__body {

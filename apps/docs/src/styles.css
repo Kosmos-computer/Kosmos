@@ -6,9 +6,9 @@ body,
 }
 
 body {
-  background: var(--os-bg-base, #121417);
-  color: var(--os-text-primary, #e8eaed);
-  font-family: var(--os-font-sans, system-ui, sans-serif);
+  background: var(--os-bg-base);
+  color: var(--os-text-primary);
+  font-family: var(--os-font-sans);
 }
 
 .docs-shell {
@@ -25,10 +25,10 @@ body {
 .docs-toolbar {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid var(--os-border, #333);
-  background: var(--os-bg-raised, #22262b);
+  gap: var(--os-space-s, 0.5rem);
+  padding: var(--os-space-s, 0.5rem) var(--os-space-m, 0.75rem);
+  border-bottom: 1px solid var(--os-border);
+  background: var(--os-bg-raised);
 }
 
 .docs-title {
@@ -40,19 +40,19 @@ body {
 }
 
 .docs-btn {
-  border: 1px solid var(--os-border, #333);
-  background: var(--os-bg-sunk, #1a1d21);
+  border: 1px solid var(--os-border);
+  background: var(--os-bg-sunk);
   color: inherit;
-  border-radius: 6px;
+  border-radius: var(--os-radius-s, 6px);
   padding: 0.35rem 0.65rem;
-  font-size: 0.85rem;
+  font-size: var(--os-text-sm, 0.85rem);
   cursor: pointer;
 }
 .docs-btn:hover { opacity: 0.9; }
 .docs-btn--primary {
-  background: var(--os-accent, #6ea8fe);
+  background: var(--os-accent);
   border-color: transparent;
-  color: #0b0d0f;
+  color: var(--os-text-inverted);
 }
 .docs-btn:disabled { opacity: 0.5; cursor: default; }
 
@@ -64,29 +64,29 @@ body {
 .docs-row {
   display: flex;
   width: 100%;
-  gap: 0.75rem;
+  gap: var(--os-space-m, 0.75rem);
   align-items: center;
   padding: 0.65rem 0.75rem;
   border: none;
-  border-bottom: 1px solid var(--os-border, #333);
+  border-bottom: 1px solid var(--os-border);
   background: transparent;
   color: inherit;
   text-align: left;
   cursor: pointer;
 }
-.docs-row:hover { background: var(--os-bg-sunk, #1a1d21); }
+.docs-row:hover { background: var(--os-bg-sunk); }
 .docs-row__name { flex: 1; }
-.docs-row__meta { font-size: 0.75rem; color: var(--os-text-tertiary, #888); }
+.docs-row__meta { font-size: var(--os-text-xs, 0.75rem); color: var(--os-text-tertiary); }
 
 .docs-empty {
   padding: 2rem 1rem;
   text-align: center;
-  color: var(--os-text-secondary, #b0b3b8);
+  color: var(--os-text-secondary);
 }
 
 .docs-error {
   padding: 0.5rem 0.75rem;
-  background: color-mix(in srgb, var(--os-danger, #ff6b6b) 15%, transparent);
-  color: var(--os-danger, #ff6b6b);
-  font-size: 0.85rem;
+  background: var(--os-danger-soft);
+  color: var(--os-danger);
+  font-size: var(--os-text-sm, 0.85rem);
 }

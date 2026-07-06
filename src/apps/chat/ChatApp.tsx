@@ -4,24 +4,25 @@
  * from fenced openui-lang via the chat component library.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import { History, Mic, MicOff, Plus, Send, Square, Trash2 } from "lucide-react";
+import { History, Plus, Trash2 } from "lucide-react";
 import { useChat } from "./useChat";
-import { AssistantBlock } from "./AssistantBlock";
-import { ToolCard } from "./ToolCard";
-import { ConfirmCard } from "./ConfirmCard";
 import { onPrimeComposer } from "./composerBus";
 import { VoiceBar } from "./VoiceBar";
 import { useVoice, voiceClient } from "../../voice";
+import { Composer } from "../../components/composer/Composer";
+import { ChatThread } from "../../components/chat/ChatThread";
+import { MasterDetail } from "../../components/patterns";
+import { EmptyState } from "../../components/ui";
+import { useModelSelection } from "../studio/useModelSelection";
 
 export function ChatApp() {
   const chat = useChat();
   const voice = useVoice();
+  const { modelLabel, modelItems } = useModelSelection();
   const [draft, setDraft] = useState("");
   const [showSessions, setShowSessions] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Follow the stream unless the user scrolled up (hermes pattern).
   const followRef = useRef(true);
   useEffect(() => {
     const el = scrollRef.current;
@@ -39,22 +40,50 @@ export function ChatApp() {
     [draft, chat],
   );
 
-  // Voice conversations appear in the thread like typed ones: your final
-  // transcripts as user messages, the bot's speech as assistant text.
   useEffect(() => voiceClient.subscribe(chat.applyVoiceEvent), [chat.applyVoiceEvent]);
 
-  // primeComposer events from apps (Refine, follow-ups, library).
   useEffect(
     () =>
       onPrimeComposer(({ text, submit: shouldSubmit }) => {
-        if (shouldSubmit) {
-          submit(text);
-        } else {
-          setDraft(text);
-          inputRef.current?.focus();
-        }
+        if (shouldSubmit) submit(text);
+        else setDraft(text);
       }),
     [submit],
+  );
+
+  const sessionList = (
+    <>
+      {chat.sessions.length === 0 && <EmptyState>No sessions yet</EmptyState>}
+      {chat.sessions.map((s) => (
+        <div
+          key={s.id}
+          className={[
+            "arco-master-detail__list-item",
+            s.id === chat.sessionId ? "arco-master-detail__list-item--active" : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+        >
+          <button
+            className="arco-master-detail__list-button"
+            onClick={() => {
+              void chat.loadSession(s.id);
+              setShowSessions(false);
+            }}
+          >
+            {s.kind === "automation" ? "⚙ " : ""}
+            {s.title}
+          </button>
+          <button
+            aria-label={`Delete session ${s.title}`}
+            className="arco-master-detail__list-delete"
+            onClick={() => void chat.removeSession(s.id)}
+          >
+            <Trash2 size={12} />
+          </button>
+        </div>
+      ))}
+    </>
   );
 
   return (
@@ -72,128 +101,45 @@ export function ChatApp() {
         </button>
       </div>
 
-      <div className="arco-chat__main">
-        {showSessions && (
-          <aside className="arco-chat__sessions arco-scroll">
-            {chat.sessions.length === 0 && <div className="arco-empty">No sessions yet</div>}
-            {chat.sessions.map((s) => (
-              <div
-                key={s.id}
-                className={`arco-chat__session ${s.id === chat.sessionId ? "arco-chat__session--active" : ""}`}
-              >
-                <button
-                  className="arco-chat__session-title"
-                  onClick={() => {
-                    void chat.loadSession(s.id);
-                    setShowSessions(false);
-                  }}
-                >
-                  {s.kind === "automation" ? "⚙ " : ""}
-                  {s.title}
-                </button>
-                <button
-                  aria-label={`Delete session ${s.title}`}
-                  className="arco-chat__session-delete"
-                  onClick={() => void chat.removeSession(s.id)}
-                >
-                  <Trash2 size={12} />
-                </button>
-              </div>
-            ))}
-          </aside>
-        )}
-
-        <div
-          ref={scrollRef}
-          className="arco-chat__thread arco-scroll"
-          onScroll={() => {
-            const el = scrollRef.current;
-            if (el) followRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
-          }}
-        >
-          {chat.items.length === 0 && (
-            <div className="arco-empty">
-              <strong style={{ color: "var(--arco-text-secondary)", fontSize: "var(--arco-text-md)" }}>
-                Ask Arco to build something
-              </strong>
-              <span>
+      <MasterDetail
+        listOpen={showSessions}
+        list={sessionList}
+        detail={
+          <div
+            ref={scrollRef}
+            className="arco-chat__thread arco-scroll"
+            onScroll={() => {
+              const el = scrollRef.current;
+              if (el) followRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+            }}
+          >
+            {chat.items.length === 0 && (
+              <EmptyState title="Ask Arco to build something">
                 “Build me a system monitor” · “Track my reading list” · “Dashboard of this repo”
-              </span>
-            </div>
-          )}
-          {chat.items.map((item) => {
-            switch (item.kind) {
-              case "user":
-                return (
-                  <div key={item.id} className="arco-chat__user">
-                    {item.text}
-                  </div>
-                );
-              case "assistant":
-                return <AssistantBlock key={item.id} item={item} onFollowUp={submit} />;
-              case "tool":
-                return <ToolCard key={item.id} item={item} />;
-              case "confirm":
-                return <ConfirmCard key={item.id} item={item} />;
-              case "error":
-                return (
-                  <div key={item.id} className="arco-chat__error">
-                    {item.text}
-                  </div>
-                );
-            }
-          })}
-          {chat.streaming && <div className="arco-chat__working">Working…</div>}
-        </div>
-      </div>
+              </EmptyState>
+            )}
+            <ChatThread items={chat.items} streaming={chat.streaming} onFollowUp={submit} />
+          </div>
+        }
+      />
 
       {voice.active && <VoiceBar voice={voice} />}
 
-      <div className="arco-chat__composer">
-        <button
-          className={`arco-btn ${voice.active ? "arco-btn--primary" : ""}`}
-          onClick={() => void voice.toggle().catch(() => {})}
-          disabled={!voice.available && !voice.active}
-          title={
-            voice.available || voice.active
-              ? voice.active
-                ? "End voice conversation"
-                : "Start voice conversation"
-              : "Voice server offline — see voice-server/README.md"
-          }
-          aria-label={voice.active ? "End voice conversation" : "Start voice conversation"}
-          aria-pressed={voice.active}
-        >
-          {voice.active ? <MicOff size={13} /> : <Mic size={13} />}
-        </button>
-        <textarea
-          ref={inputRef}
-          className="arco-chat__input"
-          placeholder="Ask Arco to build, automate, or explain…"
+      <div className="arco-composer-dock">
+        <Composer
           value={draft}
-          rows={1}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              submit();
-            }
-          }}
+          onChange={setDraft}
+          onSubmit={() => submit()}
+          streaming={chat.streaming}
+          onStop={chat.stop}
+          placeholder="Ask Arco to build, automate, or explain…"
+          model={modelLabel}
+          modelItems={modelItems}
+          voiceActive={voice.active}
+          voiceAvailable={voice.available}
+          onVoiceToggle={() => void voice.toggle().catch(() => {})}
+          inputAriaLabel="Chat message"
         />
-        {chat.streaming ? (
-          <button className="arco-btn arco-btn--danger" onClick={chat.stop} aria-label="Stop">
-            <Square size={13} />
-          </button>
-        ) : (
-          <button
-            className="arco-btn arco-btn--primary"
-            onClick={() => submit()}
-            disabled={!draft.trim()}
-            aria-label="Send"
-          >
-            <Send size={13} />
-          </button>
-        )}
       </div>
     </div>
   );

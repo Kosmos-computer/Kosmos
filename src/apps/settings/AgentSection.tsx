@@ -13,6 +13,19 @@ import { useCallback, useEffect, useState } from "react";
 import { RefreshCw, ShieldCheck, ShieldOff, ShieldQuestion, Trash2 } from "lucide-react";
 import type { AgentPolicyDecision, AuditEntry } from "@shared/types";
 import { api } from "../../lib/api";
+import {
+  SettingsAlert,
+  SettingsDivider,
+  SettingsEmpty,
+  SettingsFieldRow,
+  SettingsPage,
+  SettingsRow,
+  SettingsRowActions,
+  SettingsSection,
+  SettingsStack,
+  SettingsSubhead,
+} from "../../components/patterns";
+import { Button, Chip, Input } from "../../components/ui";
 
 const DECISIONS: AgentPolicyDecision[] = ["auto", "confirm", "deny"];
 
@@ -86,147 +99,98 @@ export function AgentSection() {
   const ruleEntries = Object.entries(rules);
 
   return (
-    <section className="arco-form">
-      <strong>Agent permissions</strong>
-      <span style={{ color: "var(--arco-text-secondary)", fontSize: "var(--arco-text-sm)" }}>
-        Rules decide whether the agent runs a tool automatically, asks first, or is blocked. Keys
-        are a tool source (<code>system</code>, <code>mcp:&lt;server&gt;</code>,{" "}
-        <code>app:&lt;id&gt;</code>) optionally narrowed with <code>#&lt;tool&gt;</code>. Without a
-        rule, reads run automatically and writes ask.
-      </span>
+    <SettingsPage>
+      <SettingsSection
+        intro={
+          <>
+            Rules decide whether the agent runs a tool automatically, asks first, or is blocked. Keys are a tool
+            source (<code>system</code>, <code>mcp:&lt;server&gt;</code>, <code>app:&lt;id&gt;</code>) optionally
+            narrowed with <code>#&lt;tool&gt;</code>. Without a rule, reads run automatically and writes ask.
+          </>
+        }
+      >
+        {error ? <SettingsAlert tone="error">{error}</SettingsAlert> : null}
 
-      {error && (
-        <span style={{ color: "var(--arco-danger, #e5484d)", fontSize: "var(--arco-text-sm)" }}>
-          {error}
-        </span>
-      )}
+        {ruleEntries.length === 0 ? (
+          <SettingsEmpty>No rules yet — defaults apply.</SettingsEmpty>
+        ) : (
+          <SettingsStack>
+            {ruleEntries.map(([key, decision]) => {
+              const Icon = DECISION_ICON[decision];
+              return (
+                <SettingsRow key={key}>
+                  <Icon size={14} style={{ color: DECISION_COLOR[decision], flexShrink: 0 }} />
+                  <code className="arco-code arco-settings-tool-row__desc">{key}</code>
+                  <SettingsRowActions>
+                    <Chip active onClick={() => void cycle(key, decision)} title="Click to cycle auto → confirm → deny">
+                      {decision}
+                    </Chip>
+                    <Button size="icon" onClick={() => void remove(key)} aria-label={`Remove rule ${key}`}>
+                      <Trash2 size={13} />
+                    </Button>
+                  </SettingsRowActions>
+                </SettingsRow>
+              );
+            })}
+          </SettingsStack>
+        )}
 
-      {ruleEntries.length === 0 ? (
-        <span style={{ color: "var(--arco-text-tertiary)", fontSize: "var(--arco-text-sm)" }}>
-          No rules yet — defaults apply.
-        </span>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {ruleEntries.map(([key, decision]) => {
-            const Icon = DECISION_ICON[decision];
-            return (
-              <div key={key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <Icon size={14} style={{ color: DECISION_COLOR[decision], flexShrink: 0 }} />
-                <code style={{ flex: 1, fontSize: "var(--arco-text-sm)", wordBreak: "break-all" }}>
-                  {key}
-                </code>
-                <button
-                  className="arco-chip arco-chip--active"
-                  onClick={() => void cycle(key, decision)}
-                  title="Click to cycle auto → confirm → deny"
-                >
-                  {decision}
-                </button>
-                <button
-                  className="arco-btn arco-btn--icon"
-                  onClick={() => void remove(key)}
-                  aria-label={`Remove rule ${key}`}
-                >
-                  <Trash2 size={13} />
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      )}
+        <SettingsSubhead>Add rule</SettingsSubhead>
+        <SettingsFieldRow label="Key" htmlFor="agent-rule-key">
+          <Input
+            id="agent-rule-key"
+            width="auto"
+            placeholder="mcp:linear#create_issue"
+            value={newKey}
+            onChange={(e) => setNewKey(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && void addRule()}
+          />
+          <select
+            className="arco-input arco-input--compact"
+            value={newDecision}
+            onChange={(e) => setNewDecision(e.target.value as AgentPolicyDecision)}
+            aria-label="Rule decision"
+          >
+            {DECISIONS.map((d) => (
+              <option key={d} value={d}>
+                {d}
+              </option>
+            ))}
+          </select>
+          <Button variant="primary" disabled={!newKey.trim()} onClick={() => void addRule()}>
+            Add
+          </Button>
+        </SettingsFieldRow>
 
-      <label className="arco-label" htmlFor="agent-rule-key">
-        Add rule
-      </label>
-      <div style={{ display: "flex", gap: 8 }}>
-        <input
-          id="agent-rule-key"
-          className="arco-input"
-          style={{ flex: 1 }}
-          placeholder="mcp:linear#create_issue"
-          value={newKey}
-          onChange={(e) => setNewKey(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && void addRule()}
-        />
-        <select
-          className="arco-input"
-          style={{ width: 110 }}
-          value={newDecision}
-          onChange={(e) => setNewDecision(e.target.value as AgentPolicyDecision)}
-          aria-label="Rule decision"
-        >
-          {DECISIONS.map((d) => (
-            <option key={d} value={d}>
-              {d}
-            </option>
-          ))}
-        </select>
-        <button
-          className="arco-btn arco-btn--primary"
-          disabled={!newKey.trim()}
-          onClick={() => void addRule()}
-        >
-          Add
-        </button>
-      </div>
+        <SettingsDivider />
 
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
-        <strong style={{ fontSize: "var(--arco-text-sm)" }}>Recent activity</strong>
-        <span style={{ flex: 1 }} />
-        <button
-          className="arco-btn arco-btn--icon"
-          onClick={() => void refresh()}
-          aria-label="Refresh activity"
-        >
-          <RefreshCw size={13} />
-        </button>
-      </div>
-      {audit.length === 0 ? (
-        <span style={{ color: "var(--arco-text-tertiary)", fontSize: "var(--arco-text-sm)" }}>
-          No privileged calls recorded yet.
-        </span>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          {audit.map((entry, i) => (
-            <div
-              key={`${entry.ts}-${i}`}
-              style={{
-                display: "flex",
-                alignItems: "baseline",
-                gap: 8,
-                fontSize: "var(--arco-text-xs)",
-              }}
-            >
-              <span style={{ color: "var(--arco-text-tertiary)", whiteSpace: "nowrap" }}>
-                {new Date(entry.ts).toLocaleString()}
-              </span>
-              <span
-                style={{
-                  color: entry.allowed ? "var(--arco-success)" : "var(--arco-danger, #e5484d)",
-                }}
-              >
-                {entry.allowed ? "allowed" : "denied"}
-              </span>
-              <code style={{ wordBreak: "break-all" }}>{entry.method}</code>
-              <span style={{ color: "var(--arco-text-secondary)" }}>
-                {describeCaller(entry.caller)}
-              </span>
-              {entry.detail && (
-                <span
-                  style={{
-                    color: "var(--arco-text-tertiary)",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {entry.detail}
+        <SettingsRow>
+          <SettingsSubhead>Recent activity</SettingsSubhead>
+          <SettingsRowActions>
+            <Button size="icon" onClick={() => void refresh()} aria-label="Refresh activity">
+              <RefreshCw size={13} />
+            </Button>
+          </SettingsRowActions>
+        </SettingsRow>
+
+        {audit.length === 0 ? (
+          <SettingsEmpty>No privileged calls recorded yet.</SettingsEmpty>
+        ) : (
+          <SettingsStack>
+            {audit.map((entry, i) => (
+              <div key={`${entry.ts}-${i}`} className="arco-settings-audit-row">
+                <span className="arco-settings-audit-time">{new Date(entry.ts).toLocaleString()}</span>
+                <span style={{ color: entry.allowed ? "var(--arco-success)" : "var(--arco-danger, #e5484d)" }}>
+                  {entry.allowed ? "allowed" : "denied"}
                 </span>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-    </section>
+                <code className="arco-code">{entry.method}</code>
+                <span className="arco-settings-panel__meta">{describeCaller(entry.caller)}</span>
+                {entry.detail ? <span className="arco-settings-audit-detail">{entry.detail}</span> : null}
+              </div>
+            ))}
+          </SettingsStack>
+        )}
+      </SettingsSection>
+    </SettingsPage>
   );
 }

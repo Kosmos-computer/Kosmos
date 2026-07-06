@@ -6,6 +6,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";
+import { isAppIconName, pickAppIcon } from "../../shared/appIcons.js";
 import type { AppSummary, StoredApp } from "../../shared/types.js";
 import { dataDirs } from "../env.js";
 
@@ -18,12 +19,36 @@ export class AppStore {
     return path.join(this.dir, `${id}.json`);
   }
 
-  async create(data: Pick<StoredApp, "title" | "content" | "sessionId">): Promise<StoredApp> {
+  private resolveIcon(
+    title: string,
+    id: string,
+    icon?: string,
+  ): string {
+    if (icon && isAppIconName(icon)) return icon;
+    return pickAppIcon(title, id);
+  }
+
+  /** Backfill missing icons on older apps and persist once. */
+  private async ensureIcon(record: StoredApp): Promise<StoredApp> {
+    if (record.icon && isAppIconName(record.icon)) return record;
+    const icon = pickAppIcon(record.title, record.id);
+    const updated: StoredApp = { ...record, icon };
+    await fs.writeFile(this.filePath(record.id), JSON.stringify(updated, null, 2), "utf-8");
+    return updated;
+  }
+
+  async create(
+    data: Pick<StoredApp, "title" | "content" | "sessionId"> & { icon?: string },
+  ): Promise<StoredApp> {
     await fs.mkdir(this.dir, { recursive: true });
     const now = new Date().toISOString();
+    const id = crypto.randomUUID();
     const record: StoredApp = {
-      id: crypto.randomUUID(),
-      ...data,
+      id,
+      title: data.title,
+      content: data.content,
+      sessionId: data.sessionId,
+      icon: this.resolveIcon(data.title, id, data.icon),
       versions: [{ content: data.content, timestamp: now, source: "create" }],
       createdAt: now,
       updatedAt: now,
@@ -34,7 +59,7 @@ export class AppStore {
 
   async update(
     id: string,
-    patch: Partial<Pick<StoredApp, "title" | "content">>,
+    patch: Partial<Pick<StoredApp, "title" | "content" | "icon">>,
   ): Promise<StoredApp> {
     const existing = await this.get(id);
     if (!existing) throw new Error(`App not found: ${id}`);
@@ -49,9 +74,14 @@ export class AppStore {
       while (versions.length > MAX_VERSIONS) versions.shift();
     }
 
+    const nextTitle = patch.title ?? existing.title;
     const updated: StoredApp = {
       ...existing,
       ...patch,
+      icon:
+        patch.icon !== undefined
+          ? this.resolveIcon(nextTitle, id, patch.icon)
+          : existing.icon ?? pickAppIcon(nextTitle, id),
       versions,
       updatedAt: new Date().toISOString(),
     };
@@ -98,13 +128,15 @@ export class AppStore {
           try {
             const raw = await fs.readFile(path.join(this.dir, file), "utf-8");
             const app = JSON.parse(raw) as StoredApp;
+            const withIcon = await this.ensureIcon(app);
             const summary: AppSummary = {
-              id: app.id,
-              title: app.title,
-              sessionId: app.sessionId,
-              createdAt: app.createdAt,
-              updatedAt: app.updatedAt,
-              versionCount: app.versions?.length ?? 0,
+              id: withIcon.id,
+              title: withIcon.title,
+              icon: withIcon.icon,
+              sessionId: withIcon.sessionId,
+              createdAt: withIcon.createdAt,
+              updatedAt: withIcon.updatedAt,
+              versionCount: withIcon.versions?.length ?? 0,
             };
             return summary;
           } catch {
@@ -122,7 +154,7 @@ export class AppStore {
       const raw = await fs.readFile(this.filePath(id), "utf-8");
       const record = JSON.parse(raw) as StoredApp;
       if (!record.versions) record.versions = [];
-      return record;
+      return this.ensureIcon(record);
     } catch {
       return null;
     }

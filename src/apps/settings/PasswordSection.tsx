@@ -5,6 +5,15 @@
  */
 import { useState, type FormEvent } from "react";
 import { api } from "../../lib/api";
+import {
+  SettingsAlert,
+  SettingsFieldRow,
+  SettingsPage,
+  SettingsSaveBar,
+  SettingsSection,
+  SettingsStack,
+} from "../../components/patterns";
+import { Button, Input } from "../../components/ui";
 
 export function PasswordSection() {
   const [current, setCurrent] = useState("");
@@ -35,63 +44,52 @@ export function PasswordSection() {
   };
 
   return (
-    <section className="arco-form">
-      <strong>Password</strong>
-      <form className="arco-form" onSubmit={(e) => void submit(e)}>
-        <div>
-          <label className="arco-label" htmlFor="pw-current">Current password</label>
-          <input
-            id="pw-current"
-            className="arco-input"
-            type="password"
-            autoComplete="current-password"
-            value={current}
-            onChange={(e) => setCurrent(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label className="arco-label" htmlFor="pw-new">New password</label>
-          <input
-            id="pw-new"
-            className="arco-input"
-            type="password"
-            autoComplete="new-password"
-            minLength={8}
-            value={next}
-            onChange={(e) => setNext(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label className="arco-label" htmlFor="pw-confirm">Confirm new password</label>
-          <input
-            id="pw-confirm"
-            className="arco-input"
-            type="password"
-            autoComplete="new-password"
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-            required
-          />
-        </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <button className="arco-btn arco-btn--primary" type="submit" disabled={busy}>
-            {busy ? "Updating…" : "Update password"}
-          </button>
-          {message && (
-            <span
-              role={message.kind === "error" ? "alert" : "status"}
-              style={{
-                color: message.kind === "ok" ? "var(--arco-success)" : "var(--arco-danger)",
-                fontSize: "var(--arco-text-sm)",
-              }}
-            >
-              {message.text}
-            </span>
-          )}
-        </div>
-      </form>
-    </section>
+    <SettingsPage>
+      <SettingsSection intro="Change your password. Other active sessions will be signed out.">
+        <form onSubmit={(e) => void submit(e)}>
+          {message ? (
+            <SettingsAlert tone={message.kind === "ok" ? "success" : "error"}>{message.text}</SettingsAlert>
+          ) : null}
+          <SettingsStack>
+            <SettingsFieldRow label="Current" htmlFor="pw-current">
+              <Input
+                id="pw-current"
+                type="password"
+                autoComplete="current-password"
+                value={current}
+                onChange={(e) => setCurrent(e.target.value)}
+                required
+              />
+            </SettingsFieldRow>
+            <SettingsFieldRow label="New password" htmlFor="pw-new">
+              <Input
+                id="pw-new"
+                type="password"
+                autoComplete="new-password"
+                minLength={8}
+                value={next}
+                onChange={(e) => setNext(e.target.value)}
+                required
+              />
+            </SettingsFieldRow>
+            <SettingsFieldRow label="Confirm" htmlFor="pw-confirm">
+              <Input
+                id="pw-confirm"
+                type="password"
+                autoComplete="new-password"
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                required
+              />
+            </SettingsFieldRow>
+          </SettingsStack>
+          <SettingsSaveBar>
+            <Button variant="primary" type="submit" disabled={busy}>
+              {busy ? "Updating…" : "Update password"}
+            </Button>
+          </SettingsSaveBar>
+        </form>
+      </SettingsSection>
+    </SettingsPage>
   );
 }

@@ -33,7 +33,7 @@ const permissionSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("storage"), scope: z.literal("own") }),
   z.object({
     kind: z.literal("shell"),
-    features: z.array(z.enum(["notify", "windows", "clipboard"])).min(1),
+    features: z.array(z.enum(["notify", "windows", "clipboard", "agent"])).min(1),
   }),
 ]);
 

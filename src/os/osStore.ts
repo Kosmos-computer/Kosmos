@@ -6,6 +6,8 @@ import { create } from "zustand";
 import type { AppSummary, ConfirmOption, WebApp } from "@shared/types";
 import type { InstalledAppInfo } from "@shared/manifest";
 import { api } from "../lib/api";
+import { normalizeWallpaper, type WallpaperId } from "./wallpaper/wallpapers";
+import { normalizeAuthWallpaper, type AuthWallpaperId } from "./wallpaper/authWallpapers";
 
 export type Theme = "dark" | "light";
 
@@ -28,7 +30,8 @@ export interface ShellConfirm {
 
 interface OsStore {
   theme: Theme;
-  wallpaper: string;
+  wallpaper: WallpaperId;
+  authWallpaper: AuthWallpaperId;
   notifications: OsNotification[];
   apps: AppSummary[];
   webApps: WebApp[];
@@ -39,7 +42,8 @@ interface OsStore {
   shellConfirms: ShellConfirm[];
 
   setTheme: (theme: Theme) => void;
-  setWallpaper: (wallpaper: string) => void;
+  setWallpaper: (wallpaper: WallpaperId) => void;
+  setAuthWallpaper: (authWallpaper: AuthWallpaperId) => void;
   notify: (message: string) => void;
   dismissNotification: (id: string) => void;
   refreshApps: () => Promise<void>;
@@ -51,7 +55,8 @@ interface OsStore {
 
 export const useOsStore = create<OsStore>((set) => ({
   theme: (localStorage.getItem("arco:theme") as Theme) || "dark",
-  wallpaper: localStorage.getItem("arco:wallpaper") || "aurora",
+  wallpaper: normalizeWallpaper(localStorage.getItem("arco:wallpaper")),
+  authWallpaper: normalizeAuthWallpaper(localStorage.getItem("arco:auth-wallpaper")),
   notifications: [],
   apps: [],
   webApps: [],
@@ -69,6 +74,11 @@ export const useOsStore = create<OsStore>((set) => ({
   setWallpaper: (wallpaper) => {
     localStorage.setItem("arco:wallpaper", wallpaper);
     set({ wallpaper });
+  },
+
+  setAuthWallpaper: (authWallpaper) => {
+    localStorage.setItem("arco:auth-wallpaper", authWallpaper);
+    set({ authWallpaper });
   },
 
   notify: (message) => {

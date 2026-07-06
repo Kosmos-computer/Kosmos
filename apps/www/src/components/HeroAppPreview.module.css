@@ -1,0 +1,31 @@
+.frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--lf-radius-lg);
+  box-shadow: var(--lf-shadow-lg);
+  padding: clamp(1rem, 3vw, 2rem);
+  min-height: 22rem;
+  --arco-bg-desktop: #0b0d12;
+}
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.shotWrap {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  border-radius: calc(var(--lf-radius-lg) - 0.25rem);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4);
+}
+
+.shot {
+  display: block;
+  width: 100%;
+  height: auto;
+  vertical-align: middle;
+}

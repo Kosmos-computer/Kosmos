@@ -2,7 +2,7 @@
  * Settings — LLM provider (presets + custom + mock), theme, wallpaper.
  * API keys persist server-side and come back masked.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { LlmProvider, Settings } from "@shared/types";
 import { ACP_PRESETS, PROVIDER_PRESETS } from "@shared/types";
 import { api } from "../../lib/api";
@@ -18,6 +18,25 @@ import { McpServersSection } from "./McpServersSection";
 import { ProvidersSection } from "./ProvidersSection";
 import { SkillsSection } from "./SkillsSection";
 import { ToolsSection } from "./ToolsSection";
+import { WALLPAPER_GROUPS, type WallpaperId } from "../../os/wallpaper/wallpapers";
+import { AUTH_WALLPAPER_GROUPS, type AuthWallpaperId } from "../../os/wallpaper/authWallpapers";
+import {
+  SettingsChipRow,
+  SettingsFieldRow,
+  SettingsPage,
+  SettingsSaveBar,
+  SettingsSection,
+  SettingsStack,
+  SidebarPane,
+} from "../../components/patterns";
+import { Button, Chip, EmptyState, Input } from "../../components/ui";
+import { SettingsNav } from "./SettingsNav";
+import {
+  DEFAULT_SETTINGS_SECTION,
+  settingsSectionLabel,
+  visibleSettingsNavGroups,
+  type SettingsSectionId,
+} from "./settingsSections";
 
 const PROVIDERS: { id: LlmProvider; label: string }[] = [
   { id: "mock", label: "Mock (no key needed)" },
@@ -29,20 +48,32 @@ const PROVIDERS: { id: LlmProvider; label: string }[] = [
   { id: "custom", label: "Custom endpoint" },
 ];
 
-const WALLPAPERS = ["aurora", "dusk", "graphite", "forest"];
-
 export function SettingsApp() {
-  const { theme, setTheme, wallpaper, setWallpaper } = useOsStore();
+  const { theme, setTheme, wallpaper, setWallpaper, authWallpaper, setAuthWallpaper } = useOsStore();
   const canManageUsers = useCan("users:manage");
   const canWriteSettings = useCan("settings:write");
   const [settings, setSettings] = useState<Settings | null>(null);
   const [saved, setSaved] = useState(false);
+  const [activeSection, setActiveSection] = useState<SettingsSectionId>(DEFAULT_SETTINGS_SECTION);
+  const [sidebarWidth, setSidebarWidth] = useState(220);
+
+  const navGroups = useMemo(
+    () => visibleSettingsNavGroups({ canWriteSettings, canManageUsers }),
+    [canWriteSettings, canManageUsers],
+  );
 
   useEffect(() => {
     void api.getSettings().then(setSettings);
   }, []);
 
-  if (!settings) return <div className="arco-empty">Loading settings…</div>;
+  useEffect(() => {
+    const visible = navGroups.flatMap((group) => group.items.map((item) => item.id));
+    if (!visible.includes(activeSection)) {
+      setActiveSection(visible[0] ?? DEFAULT_SETTINGS_SECTION);
+    }
+  }, [navGroups, activeSection]);
+
+  if (!settings) return <EmptyState>Loading settings…</EmptyState>;
 
   const update = (patch: Partial<Settings>) => {
     setSettings((s) => (s ? { ...s, ...patch } : s));
@@ -64,7 +95,6 @@ export function SettingsApp() {
     setSaved(true);
   };
 
-  // Which agent chip is lit: builtin, a matching preset, or custom.
   const activeAgentChip =
     settings.agent !== "acp"
       ? "builtin"
@@ -81,157 +111,201 @@ export function SettingsApp() {
     }
   };
 
+  const sectionTitle = settingsSectionLabel(activeSection, navGroups);
+
   return (
-    <div className="arco-panel arco-scroll" style={{ gap: 16 }}>
-      <section className="arco-form">
-        <strong>Agent</strong>
-        <div className="arco-chip-row">
-          {[{ id: "builtin", label: "Built-in" }, ...ACP_PRESETS, { id: "custom", label: "Custom (ACP)" }].map(
-            (a) => (
-              <button
-                key={a.id}
-                className={`arco-chip ${activeAgentChip === a.id ? "arco-chip--active" : ""}`}
-                onClick={() => pickAgent(a.id)}
-                aria-pressed={activeAgentChip === a.id}
+    <div className="arco-settings-shell">
+      <SidebarPane
+        width={sidebarWidth}
+        onWidthChange={setSidebarWidth}
+        minWidth={200}
+        maxWidth={320}
+        handleLabel="Resize settings sidebar"
+      >
+        <SettingsNav groups={navGroups} activeSection={activeSection} onSelect={setActiveSection} />
+      </SidebarPane>
+
+      <div className="arco-settings-shell__main">
+        <header className="arco-settings-shell__header">
+          <h1 className="arco-settings-shell__title">{sectionTitle}</h1>
+        </header>
+        <div className="arco-settings-shell__content arco-scroll">
+          {activeSection === "agent" && (
+            <SettingsPage>
+              <SettingsSection
+                intro="Choose which agent runtime handles chat. External ACP agents bring their own model and tools."
               >
-                {a.label}
-              </button>
-            ),
+                <SettingsStack>
+                  <SettingsFieldRow label="Runtime">
+                    <SettingsChipRow>
+                      {[{ id: "builtin", label: "Built-in" }, ...ACP_PRESETS, { id: "custom", label: "Custom (ACP)" }].map(
+                        (a) => (
+                          <Chip key={a.id} active={activeAgentChip === a.id} onClick={() => pickAgent(a.id)}>
+                            {a.label}
+                          </Chip>
+                        ),
+                      )}
+                    </SettingsChipRow>
+                  </SettingsFieldRow>
+                  {settings.agent === "acp" && (
+                    <SettingsFieldRow
+                      label="Spawn command"
+                      htmlFor="set-acp-command"
+                      hint="stdio ACP server — sign in with the provider CLI or set a matching API key below"
+                    >
+                      <Input
+                        id="set-acp-command"
+                        width="auto"
+                        value={settings.acpCommand}
+                        placeholder="npx -y @zed-industries/claude-code-acp"
+                        onChange={(e) => update({ acpCommand: e.target.value })}
+                      />
+                    </SettingsFieldRow>
+                  )}
+                </SettingsStack>
+                <SettingsSaveBar saved={saved}>
+                  <Button variant="primary" onClick={() => void save()}>
+                    Save
+                  </Button>
+                </SettingsSaveBar>
+              </SettingsSection>
+            </SettingsPage>
           )}
+
+          {activeSection === "model" && (
+            <SettingsPage>
+              <SettingsSection intro="Provider settings apply to the built-in agent and automations.">
+                <SettingsStack>
+                  <SettingsFieldRow label="Provider">
+                    <SettingsChipRow>
+                      {PROVIDERS.map((p) => (
+                        <Chip
+                          key={p.id}
+                          active={settings.provider === p.id}
+                          onClick={() => pickProvider(p.id)}
+                        >
+                          {p.label}
+                        </Chip>
+                      ))}
+                    </SettingsChipRow>
+                  </SettingsFieldRow>
+                  {settings.provider !== "mock" && (
+                    <>
+                      <SettingsFieldRow label="Base URL" htmlFor="set-baseurl">
+                        <Input
+                          id="set-baseurl"
+                          width="auto"
+                          value={settings.baseUrl}
+                          onChange={(e) => update({ baseUrl: e.target.value })}
+                        />
+                      </SettingsFieldRow>
+                      <SettingsFieldRow label="Model" htmlFor="set-model">
+                        <Input
+                          id="set-model"
+                          width="auto"
+                          value={settings.model}
+                          onChange={(e) => update({ model: e.target.value })}
+                        />
+                      </SettingsFieldRow>
+                      <SettingsFieldRow label="API key" htmlFor="set-key">
+                        <Input
+                          id="set-key"
+                          width="auto"
+                          type="password"
+                          value={settings.apiKey}
+                          placeholder="sk-…"
+                          onChange={(e) => update({ apiKey: e.target.value })}
+                        />
+                      </SettingsFieldRow>
+                    </>
+                  )}
+                </SettingsStack>
+                <SettingsSaveBar saved={saved}>
+                  <Button variant="primary" onClick={() => void save()}>
+                    Save
+                  </Button>
+                </SettingsSaveBar>
+              </SettingsSection>
+            </SettingsPage>
+          )}
+
+          {activeSection === "appearance" && (
+            <SettingsPage>
+              <SettingsSection intro="Theme and background for the desktop and sign-in screen.">
+                <SettingsStack>
+                  <SettingsFieldRow label="Theme">
+                    <SettingsChipRow>
+                      {(["dark", "light"] as const).map((t) => (
+                        <Chip key={t} active={theme === t} onClick={() => setTheme(t)}>
+                          {t}
+                        </Chip>
+                      ))}
+                    </SettingsChipRow>
+                  </SettingsFieldRow>
+                  {WALLPAPER_GROUPS.map((group) => (
+                    <SettingsFieldRow key={group.label} label={group.label} alignTop>
+                      <div className="arco-wallpaper-grid">
+                        {group.options.map((option) => (
+                          <button
+                            key={option.id}
+                            type="button"
+                            className={`arco-wallpaper-swatch ${wallpaper === option.id ? "arco-wallpaper-swatch--active" : ""}`}
+                            onClick={() => setWallpaper(option.id as WallpaperId)}
+                            aria-pressed={wallpaper === option.id}
+                            aria-label={`${option.label} background${option.animated ? " (animated)" : ""}`}
+                          >
+                            <span className={`arco-wallpaper-swatch__preview arco-wallpaper-${option.id}`} />
+                            <span className="arco-wallpaper-swatch__label">{option.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </SettingsFieldRow>
+                  ))}
+                  {AUTH_WALLPAPER_GROUPS.map((group) => (
+                    <SettingsFieldRow key={group.label} label={group.label} alignTop>
+                      <div className="arco-wallpaper-grid">
+                        {group.options.map((option) => (
+                          <button
+                            key={option.id}
+                            type="button"
+                            className={`arco-wallpaper-swatch ${authWallpaper === option.id ? "arco-wallpaper-swatch--active" : ""}`}
+                            onClick={() => setAuthWallpaper(option.id as AuthWallpaperId)}
+                            aria-pressed={authWallpaper === option.id}
+                            aria-label={`${option.label} sign-in background${option.animated ? " (animated)" : ""}`}
+                          >
+                            <span
+                              className={`arco-wallpaper-swatch__preview ${
+                                option.imageUrl
+                                  ? "arco-auth-wallpaper-swatch__preview--photo"
+                                  : option.id === "desktop"
+                                    ? `arco-wallpaper-${wallpaper}`
+                                    : `arco-wallpaper-${option.id}`
+                              }`}
+                              style={option.imageUrl ? { backgroundImage: `url(${option.imageUrl})` } : undefined}
+                            />
+                            <span className="arco-wallpaper-swatch__label">{option.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </SettingsFieldRow>
+                  ))}
+                </SettingsStack>
+              </SettingsSection>
+            </SettingsPage>
+          )}
+
+          {activeSection === "apps" && <AppsSection />}
+          {activeSection === "tools" && <ToolsSection />}
+          {activeSection === "mcp" && <McpServersSection />}
+          {activeSection === "skills" && <SkillsSection />}
+          {activeSection === "channels" && <ChannelsSection />}
+          {activeSection === "permissions" && canWriteSettings && <AgentSection />}
+          {activeSection === "providers" && <ProvidersSection />}
+          {activeSection === "external" && <ExternalAccessSection />}
+          {activeSection === "password" && <PasswordSection />}
+          {activeSection === "users" && canManageUsers && <UsersSection />}
         </div>
-        {settings.agent === "acp" && (
-          <>
-            <label className="arco-label" htmlFor="set-acp-command">
-              Spawn command (stdio ACP server)
-            </label>
-            <input
-              id="set-acp-command"
-              className="arco-input"
-              value={settings.acpCommand}
-              placeholder="npx -y @zed-industries/claude-code-acp"
-              onChange={(e) => update({ acpCommand: e.target.value })}
-            />
-            <p style={{ color: "var(--arco-text-dim)", fontSize: "var(--arco-text-sm)", margin: 0 }}>
-              The external agent brings its own model and tools; the provider settings below only apply
-              to the built-in agent (and automations, which always use it). Sign in with the provider's
-              own CLI, or set a matching API key below. Enabled MCP servers are forwarded automatically.
-            </p>
-          </>
-        )}
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <button className="arco-btn arco-btn--primary" onClick={() => void save()}>
-            Save
-          </button>
-          {saved && <span style={{ color: "var(--arco-success)", fontSize: "var(--arco-text-sm)" }}>Saved</span>}
-        </div>
-      </section>
-
-      <section className="arco-form">
-        <strong>Model provider</strong>
-        <div className="arco-chip-row">
-          {PROVIDERS.map((p) => (
-            <button
-              key={p.id}
-              className={`arco-chip ${settings.provider === p.id ? "arco-chip--active" : ""}`}
-              onClick={() => pickProvider(p.id)}
-              aria-pressed={settings.provider === p.id}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
-
-        {settings.provider !== "mock" && (
-          <>
-            <label className="arco-label" htmlFor="set-baseurl">
-              Base URL (OpenAI-compatible)
-            </label>
-            <input
-              id="set-baseurl"
-              className="arco-input"
-              value={settings.baseUrl}
-              onChange={(e) => update({ baseUrl: e.target.value })}
-            />
-            <label className="arco-label" htmlFor="set-model">
-              Model
-            </label>
-            <input
-              id="set-model"
-              className="arco-input"
-              value={settings.model}
-              onChange={(e) => update({ model: e.target.value })}
-            />
-            <label className="arco-label" htmlFor="set-key">
-              API key
-            </label>
-            <input
-              id="set-key"
-              className="arco-input"
-              type="password"
-              value={settings.apiKey}
-              placeholder="sk-…"
-              onChange={(e) => update({ apiKey: e.target.value })}
-            />
-          </>
-        )}
-
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <button className="arco-btn arco-btn--primary" onClick={() => void save()}>
-            Save
-          </button>
-          {saved && <span style={{ color: "var(--arco-success)", fontSize: "var(--arco-text-sm)" }}>Saved</span>}
-        </div>
-      </section>
-
-      <section className="arco-form">
-        <strong>Appearance</strong>
-        <label className="arco-label">Theme</label>
-        <div className="arco-chip-row">
-          {(["dark", "light"] as const).map((t) => (
-            <button
-              key={t}
-              className={`arco-chip ${theme === t ? "arco-chip--active" : ""}`}
-              onClick={() => setTheme(t)}
-              aria-pressed={theme === t}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-        <label className="arco-label">Wallpaper</label>
-        <div className="arco-chip-row">
-          {WALLPAPERS.map((w) => (
-            <button
-              key={w}
-              className={`arco-chip ${wallpaper === w ? "arco-chip--active" : ""}`}
-              onClick={() => setWallpaper(w)}
-              aria-pressed={wallpaper === w}
-            >
-              {w}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <AppsSection />
-
-      <ToolsSection />
-
-      <McpServersSection />
-
-      <SkillsSection />
-
-      <ChannelsSection />
-
-      {canWriteSettings && <AgentSection />}
-
-      <ProvidersSection />
-
-      <ExternalAccessSection />
-
-      <PasswordSection />
-
-      {canManageUsers && <UsersSection />}
+      </div>
     </div>
   );
 }

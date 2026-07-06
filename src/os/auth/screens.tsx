@@ -6,8 +6,10 @@
  * like one surface morphing between states rather than separate pages.
  */
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { useOsStore } from "../osStore";
+import { ArcoLogo } from "../../components/ArcoLogo";
+import { ArcoMark } from "../../components/ArcoMark";
 import { useAuthStore } from "./authStore";
+import { AuthWallpaperBackdrop } from "../wallpaper/AuthWallpaperBackdrop";
 
 // ── Boot splash ──────────────────────────────────────────────────────────────
 
@@ -16,8 +18,7 @@ export function BootScreen() {
   return (
     <div className="arco-boot" role="status" aria-label="Arco OS is starting">
       <div className="arco-boot__logo">
-        <div className="arco-boot__mark" />
-        <div className="arco-boot__name">Arco OS</div>
+        <ArcoMark className="arco-boot__mark" title="" />
       </div>
       <div className="arco-boot__bar">
         <div className="arco-boot__bar-fill" />
@@ -29,11 +30,14 @@ export function BootScreen() {
 // ── Shared card scaffold ─────────────────────────────────────────────────────
 
 /** Wallpaper-backed centered card used by setup, login, and lock. */
-function AuthCard({ children }: { children: ReactNode }) {
-  const wallpaper = useOsStore((s) => s.wallpaper);
+function AuthCard({ branding, children }: { branding?: ReactNode; children: ReactNode }) {
   return (
-    <div className={`arco-authscreen arco-wallpaper-${wallpaper}`}>
-      <div className="arco-authscreen__card">{children}</div>
+    <div className="arco-authscreen">
+      <AuthWallpaperBackdrop />
+      <div className="arco-authscreen__stack">
+        {branding ? <div className="arco-authscreen__branding">{branding}</div> : null}
+        <div className="arco-authscreen__card">{children}</div>
+      </div>
     </div>
   );
 }
@@ -153,11 +157,9 @@ export function LoginScreen() {
   };
 
   return (
-    <AuthCard>
+    <AuthCard branding={<ArcoLogo className="arco-authscreen__logo" />}>
       <div className="arco-authscreen__header">
-        <div className="arco-authscreen__mark" />
-        <div className="arco-authscreen__title">Arco OS</div>
-        <div className="arco-authscreen__subtitle">Sign in to continue</div>
+        <div className="arco-authscreen__lead">Sign in to continue</div>
       </div>
       <form className="arco-authscreen__form" onSubmit={(e) => void submit(e)}>
         <div>

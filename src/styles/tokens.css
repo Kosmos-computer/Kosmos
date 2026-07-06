@@ -58,7 +58,15 @@ html[data-theme="dark"] {
   --arco-text-primary: #eef1f6;
   --arco-text-secondary: #a8b0bf;
   --arco-text-tertiary: #6d7585;
+  --arco-text-dim: #6d7585;
+  --arco-text-disabled: rgba(109, 117, 133, 0.72);
   --arco-text-inverted: #10131a;
+
+  /* Semantic aliases — forwarded to installed apps as --os-* */
+  --arco-bg-base: var(--arco-bg-desktop);
+  --arco-bg-raised: var(--arco-bg-elevated);
+  --arco-font-sans: var(--arco-font-ui);
+  --arco-bg-selected: var(--arco-accent-soft);
 
   --arco-accent: #7c9dff;
   --arco-accent-strong: #5b82ff;
@@ -90,7 +98,14 @@ html[data-theme="light"] {
   --arco-text-primary: #171b23;
   --arco-text-secondary: #4e5665;
   --arco-text-tertiary: #8a92a3;
+  --arco-text-dim: #8a92a3;
+  --arco-text-disabled: rgba(138, 146, 163, 0.72);
   --arco-text-inverted: #ffffff;
+
+  --arco-bg-base: var(--arco-bg-desktop);
+  --arco-bg-raised: var(--arco-bg-elevated);
+  --arco-font-sans: var(--arco-font-ui);
+  --arco-bg-selected: var(--arco-accent-soft);
 
   --arco-accent: #3b64e0;
   --arco-accent-strong: #2b51c7;

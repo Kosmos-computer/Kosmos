@@ -1,5 +1,13 @@
 /** Type definitions for app-sdk (sdk.js). */
 
+export interface AppToolbarSlot {
+  id: string;
+  kind: "search";
+  placeholder?: string;
+  value?: string;
+  label?: string;
+}
+
 export interface AppTheme {
   theme: string;
   /** Shell design tokens, forwarded as --os-* custom properties. */
@@ -22,6 +30,11 @@ export interface AppClient {
   };
   shell: {
     notify: (message: string) => Promise<void>;
+    askAgent: (text?: string, submit?: boolean) => Promise<void>;
+    toolbar: {
+      set: (slots: AppToolbarSlot[]) => void;
+      onInput: (id: string, fn: (value: string) => void) => () => void;
+    };
   };
   /** Platform events — only topics the manifest subscribes to arrive. */
   events: {

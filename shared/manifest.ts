@@ -26,7 +26,7 @@ export type AppEntry =
   /** A declarative OpenUI app (StoredApp id) rendered by the shell. */
   | { kind: "openui"; appId: string };
 
-export type ShellFeature = "notify" | "windows" | "clipboard";
+export type ShellFeature = "notify" | "windows" | "clipboard" | "agent";
 
 /**
  * A permission the app requests at install time. Grants are keyed per
@@ -138,7 +138,11 @@ export function describePermissionKey(key: string): string {
         ? "Show notifications"
         : detail === "windows"
           ? "Open and manage windows"
-          : `Use shell feature: ${detail}`;
+          : detail === "agent"
+            ? "Open Chat and ask the agent"
+            : detail === "clipboard"
+              ? "Use the clipboard"
+              : `Use shell feature: ${detail}`;
     default:
       return key;
   }
@@ -163,6 +167,17 @@ export interface BridgeResponse {
   error?: string;
 }
 
+/** Controls an app can mount in the AppHost chrome toolbar. */
+export type AppToolbarSlot =
+  | {
+      id: string;
+      kind: "search";
+      placeholder?: string;
+      /** Sync the host input when the app clears or sets search text. */
+      value?: string;
+      label?: string;
+    };
+
 /** postMessage envelope, app ↔ host. All messages carry `appBridge: true`. */
 export type AppHostMessage =
   /** App → host: SDK boot complete; host replies with a theme push. */
@@ -183,4 +198,8 @@ export type AppHostMessage =
    * Host → app: a platform event topic the app's manifest subscribes to
    * fired. No payload — the app re-queries through its own grants.
    */
-  | { appBridge: true; type: "event"; topic: string };
+  | { appBridge: true; type: "event"; topic: string }
+  /** App → host: replace toolbar slots rendered beside the app title. */
+  | { appBridge: true; type: "toolbar-set"; slots: AppToolbarSlot[] }
+  /** Host → app: user edited a toolbar slot (e.g. search input). */
+  | { appBridge: true; type: "toolbar-input"; id: string; value: string };

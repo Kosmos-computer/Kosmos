@@ -3,7 +3,7 @@
  * (matrix-os dock sections). Running windows get an indicator dot; clicking
  * toggles open/focus. Sections refresh whenever the agent creates an app.
  */
-import { Globe, Sparkles } from "lucide-react";
+import { Globe } from "lucide-react";
 import { useOsStore } from "./osStore";
 import { useWindowStore, windowKey } from "./windowStore";
 import { SYSTEM_APPS } from "./systemApps";
@@ -65,6 +65,7 @@ export function Dock() {
 
       {apps.map((app) => {
         const key = windowKey({ type: "generated", appId: app.id });
+        const Icon = appIcon(app.icon);
         return (
           <button
             key={app.id}
@@ -74,7 +75,7 @@ export function Dock() {
             }
             aria-label={app.title}
           >
-            <Sparkles size={22} strokeWidth={1.8} />
+            <Icon size={22} strokeWidth={1.8} />
             {isOpen(key) && <span className="arco-dock__indicator" />}
             <span className="arco-dock__tooltip">{app.title}</span>
           </button>

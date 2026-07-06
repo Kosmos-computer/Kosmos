@@ -16,6 +16,8 @@ export interface VersionEntry {
 export interface StoredApp {
   id: string;
   title: string;
+  /** Lucide icon name (kebab-case), e.g. "list-todo". Assigned on create if omitted. */
+  icon?: string;
   /** OpenUI Lang markup — the live app content rendered by the Renderer. */
   content: string;
   /** Session id of the originating chat thread (for the refine flow). */

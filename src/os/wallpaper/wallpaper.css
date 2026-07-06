@@ -1,0 +1,166 @@
+/* Wallpaper backdrop layer and settings swatches. */
+
+.arco-wallpaper {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.arco-wallpaper__effect {
+  position: absolute;
+  inset: 0;
+}
+
+.arco-wallpaper__effect canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Slight tint so chrome and windows stay readable over bright effects. */
+.arco-wallpaper__veil {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--arco-bg-desktop) 18%, transparent);
+}
+
+/* Animated wallpaper bases — gradients sit beneath canvas/CSS orbs. */
+.arco-wallpaper-starfield {
+  background: var(--arco-bg-desktop);
+}
+
+.arco-wallpaper-nebula {
+  background:
+    radial-gradient(120% 90% at 15% 10%, rgba(94, 130, 255, 0.22), transparent 55%),
+    radial-gradient(100% 80% at 85% 20%, rgba(140, 90, 220, 0.18), transparent 55%),
+    var(--arco-bg-desktop);
+}
+
+.arco-wallpaper-nebula .arco-wallpaper-nebula {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.arco-wallpaper-nebula .arco-wallpaper-nebula span {
+  position: absolute;
+  inset: 0;
+  padding: 0 var(--i) var(--i) 0;
+  background: var(--clr);
+  border-radius: 50%;
+  transform-origin: calc(33.333% + var(--i));
+  animation: arco-nebula-spin linear infinite;
+  animation-duration: var(--d);
+  mix-blend-mode: lighten;
+  filter: blur(36px);
+  opacity: 0.55;
+}
+
+.arco-wallpaper-nebula .arco-wallpaper-nebula span:nth-child(even) {
+  animation-direction: reverse;
+}
+
+@keyframes arco-nebula-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arco-wallpaper-nebula .arco-wallpaper-nebula span {
+    animation: none;
+    opacity: 0.28;
+  }
+}
+
+/* Settings wallpaper picker */
+.arco-wallpaper-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: var(--arco-space-s);
+}
+
+.arco-wallpaper-swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--arco-space-xs);
+  padding: var(--arco-space-xs);
+  border-radius: var(--arco-radius-m);
+  border: 1px solid var(--arco-border);
+  background: var(--arco-bg-sunk);
+  cursor: pointer;
+  transition:
+    border-color var(--arco-dur-fast),
+    box-shadow var(--arco-dur-fast);
+}
+
+.arco-wallpaper-swatch:hover {
+  border-color: var(--arco-border-strong);
+}
+
+.arco-wallpaper-swatch--active {
+  border-color: var(--arco-accent);
+  box-shadow: 0 0 0 1px var(--arco-accent-soft);
+}
+
+.arco-wallpaper-swatch__preview {
+  display: block;
+  height: 52px;
+  border-radius: var(--arco-radius-s);
+  border: 1px solid var(--arco-border);
+  overflow: hidden;
+  background: var(--arco-bg-desktop);
+}
+
+.arco-wallpaper-swatch__preview.arco-wallpaper-starfield {
+  background:
+    radial-gradient(circle at 50% 60%, rgba(255, 255, 255, 0.35) 0%, transparent 42%),
+    linear-gradient(180deg, #12141c 0%, #0b0d12 100%);
+}
+
+.arco-wallpaper-swatch__preview.arco-wallpaper-nebula {
+  background:
+    radial-gradient(circle at 30% 40%, rgba(110, 168, 254, 0.55), transparent 50%),
+    radial-gradient(circle at 70% 60%, rgba(139, 92, 246, 0.45), transparent 45%),
+    var(--arco-bg-desktop);
+}
+
+.arco-wallpaper-swatch__label {
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-secondary);
+  text-align: center;
+  text-transform: capitalize;
+}
+
+.arco-wallpaper-swatch--active .arco-wallpaper-swatch__label {
+  color: var(--arco-text-primary);
+}
+
+/* Sign-in photo backdrop and picker swatches */
+.arco-auth-wallpaper--photo {
+  background: var(--arco-bg-desktop);
+}
+
+.arco-auth-wallpaper__photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.arco-auth-wallpaper__veil {
+  background: color-mix(in srgb, var(--arco-bg-desktop) 42%, transparent);
+}
+
+.arco-auth-wallpaper-swatch__preview--photo {
+  background-size: cover;
+  background-position: center;
+}

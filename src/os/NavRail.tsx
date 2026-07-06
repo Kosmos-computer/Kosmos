@@ -8,11 +8,12 @@
  * Clicking opens the app or focuses its window; the focused window's item
  * gets an accent indicator.
  */
-import { ChevronLeft, ChevronRight, Globe, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, Globe } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useOsStore } from "./osStore";
 import { useWindowStore, windowKey, type WindowKind } from "./windowStore";
 import { SYSTEM_APPS } from "./systemApps";
+import { appIcon } from "../apps/appview/appIcon";
 
 interface RailEntry {
   key: string;
@@ -73,6 +74,7 @@ function NavItem({
 export function NavRail() {
   const apps = useOsStore((s) => s.apps);
   const webApps = useOsStore((s) => s.webApps);
+  const installedApps = useOsStore((s) => s.installedApps.filter((e) => e.enabled));
   const expanded = useOsStore((s) => s.navExpanded);
   const setExpanded = useOsStore((s) => s.setNavExpanded);
   const windows = useWindowStore((s) => s.windows);
@@ -92,10 +94,17 @@ export function NavRail() {
       kind: { type: "system", app: def.id } as WindowKind,
       generated: false,
     })),
+    installedApps.map((entry) => ({
+      key: windowKey({ type: "installed", appId: entry.manifest.id }),
+      title: entry.manifest.name,
+      icon: appIcon(entry.manifest.icon),
+      kind: { type: "installed", appId: entry.manifest.id } as WindowKind,
+      generated: false,
+    })),
     apps.map((app) => ({
       key: windowKey({ type: "generated", appId: app.id }),
       title: app.title,
-      icon: Sparkles,
+      icon: appIcon(app.icon),
       kind: { type: "generated", appId: app.id } as WindowKind,
       generated: true,
     })),

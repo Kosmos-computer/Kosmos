@@ -12,6 +12,7 @@ import {
   FolderOpen,
   SquareTerminal,
   Settings as SettingsIcon,
+  StickyNote,
 } from "lucide-react";
 import type { SystemAppId } from "./windowStore";
 import { ChatApp } from "../apps/chat/ChatApp";
@@ -20,6 +21,7 @@ import { STUDIO_ID, STUDIO_TITLE } from "../apps/studio/studioMeta";
 import { AppsLibrary } from "../apps/library/AppsLibrary";
 import { AutomationsApp } from "../apps/automations/AutomationsApp";
 import { FilesApp } from "../apps/files/FilesApp";
+import { NotesApp } from "../apps/notes/NotesApp";
 import { TerminalApp } from "../apps/terminal/TerminalApp";
 import { SettingsApp } from "../apps/settings/SettingsApp";
 
@@ -36,6 +38,7 @@ export const SYSTEM_APPS: SystemAppDef[] = [
   { id: "apps", title: "Apps", icon: LayoutGrid, component: AppsLibrary },
   { id: "automations", title: "Automations", icon: CalendarClock, component: AutomationsApp },
   { id: "files", title: "Files", icon: FolderOpen, component: FilesApp },
+  { id: "notes", title: "Notes", icon: StickyNote, component: NotesApp },
   { id: "terminal", title: "Terminal", icon: SquareTerminal, component: TerminalApp },
   { id: "settings", title: "Settings", icon: SettingsIcon, component: SettingsApp },
 ];

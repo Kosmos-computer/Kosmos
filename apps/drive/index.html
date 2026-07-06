@@ -8,28 +8,37 @@
   </head>
   <body>
     <div id="app">
-      <header class="drv-header">
-        <nav class="drv-tabs" aria-label="Views">
-          <button id="tab-files" class="drv-tab drv-tab--active" type="button">Files</button>
-          <button id="tab-starred" class="drv-tab" type="button">Starred</button>
-          <button id="tab-trash" class="drv-tab" type="button">Trash</button>
+      <aside class="drv-sidebar">
+        <div class="drv-sidebar__brand">Drive</div>
+        <div class="drv-sidebar__actions">
+          <button id="new-file" class="drv-btn drv-btn--primary drv-sidebar__new" type="button">
+            New file
+          </button>
+          <button id="new-folder" class="drv-btn drv-sidebar__new-secondary" type="button">New folder</button>
+        </div>
+        <nav class="drv-sidebar__nav" aria-label="Locations">
+          <button id="nav-files" class="drv-nav-item drv-nav-item--active" type="button">
+            <span class="drv-icon drv-nav-item__icon" data-icon="folder" aria-hidden="true"></span>
+            My files
+          </button>
+          <button id="nav-starred" class="drv-nav-item" type="button">
+            <span class="drv-icon drv-nav-item__icon" data-icon="star" aria-hidden="true"></span>
+            Starred
+          </button>
+          <button id="nav-trash" class="drv-nav-item" type="button">
+            <span class="drv-icon drv-nav-item__icon" data-icon="trash-2" aria-hidden="true"></span>
+            Trash
+          </button>
         </nav>
-        <input
-          id="search"
-          class="drv-search"
-          type="search"
-          placeholder="Search documents…"
-          aria-label="Search documents"
-        />
-        <button id="new-folder" class="drv-btn" type="button">New folder</button>
-        <button id="new-file" class="drv-btn drv-btn--primary" type="button">New file</button>
-      </header>
+      </aside>
 
-      <nav id="breadcrumbs" class="drv-crumbs" aria-label="Location"></nav>
+      <div class="drv-main">
+        <nav id="breadcrumbs" class="drv-crumbs" aria-label="Location"></nav>
 
-      <div id="list" class="drv-list" role="list"></div>
-      <div id="empty" class="drv-empty" hidden>Nothing here yet.</div>
-      <div class="drv-error" id="error" hidden></div>
+        <div id="list" class="drv-list" role="list"></div>
+        <div id="empty" class="drv-empty" hidden>Nothing here yet.</div>
+        <div class="drv-error" id="error" hidden></div>
+      </div>
     </div>
 
     <!-- Text file viewer/editor -->

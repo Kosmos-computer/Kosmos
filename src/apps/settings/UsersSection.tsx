@@ -1,15 +1,25 @@
 /**
- * UsersSection — account management inside Settings, visible only with the
- * users:manage capability (the server enforces it regardless). Lists
- * accounts, creates new ones with a role, changes roles, and deletes —
- * the owner-protection rules (can't delete/demote the last owner) surface
- * here as server error messages.
+ * UsersSection — account management inside Settings.
  */
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { KeyRound, Trash2 } from "lucide-react";
 import type { Role, UserSummary } from "@shared/types";
 import { api } from "../../lib/api";
 import { useAuthStore } from "../../os/auth/authStore";
+import {
+  SettingsAlert,
+  SettingsFieldRow,
+  SettingsPage,
+  SettingsPanel,
+  SettingsPanelBody,
+  SettingsPanelHeader,
+  SettingsRow,
+  SettingsRowActions,
+  SettingsSection,
+  SettingsStack,
+  SettingsSubhead,
+} from "../../components/patterns";
+import { Button, Input } from "../../components/ui";
 
 const ROLES: { id: Role; label: string; hint: string }[] = [
   { id: "admin", label: "Admin", hint: "Everything except managing accounts" },
@@ -23,14 +33,11 @@ export function UsersSection() {
   const [users, setUsers] = useState<UserSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  // Create form
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<Role>("member");
   const [busy, setBusy] = useState(false);
 
-  // Inline per-user password reset (admin action — no old password needed;
-  // the server revokes that user's sessions on change).
   const [resetId, setResetId] = useState<string | null>(null);
   const [resetValue, setResetValue] = useState("");
 
@@ -90,135 +97,131 @@ export function UsersSection() {
   };
 
   return (
-    <section className="arco-form">
-      <strong>Accounts</strong>
+    <SettingsPage>
+      <SettingsSection intro="Create accounts, assign roles, and reset passwords. The server enforces owner-protection rules.">
+        {error ? <SettingsAlert tone="error">{error}</SettingsAlert> : null}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--arco-space-s)" }}>
-        {users.map((u) => (
-          <div
-            key={u.id}
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "var(--arco-space-s)",
-              padding: "var(--arco-space-s)",
-              borderRadius: "var(--arco-radius-s)",
-              border: "1px solid var(--arco-border)",
-              background: "var(--arco-bg-sunk)",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "var(--arco-space-s)" }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 500 }}>
-                  {u.displayName}
-                  {u.id === me?.id && (
-                    <span style={{ color: "var(--arco-text-tertiary)", fontSize: "var(--arco-text-xs)" }}> (you)</span>
-                  )}
+        <SettingsStack>
+          {users.map((u) => (
+            <SettingsPanel key={u.id}>
+              <SettingsPanelHeader>
+                <div className="arco-settings-row__control" style={{ flexDirection: "column", alignItems: "flex-start", gap: 2 }}>
+                  <span className="arco-settings-panel__title">
+                    {u.displayName}
+                    {u.id === me?.id ? <span className="arco-settings-panel__meta"> (you)</span> : null}
+                  </span>
+                  <span className="arco-settings-panel__meta">@{u.username}</span>
                 </div>
-                <div style={{ color: "var(--arco-text-tertiary)", fontSize: "var(--arco-text-xs)" }}>@{u.username}</div>
-              </div>
+                <SettingsRowActions>
+                  <select
+                    className="arco-input arco-input--auto"
+                    value={u.role}
+                    aria-label={`Role for ${u.username}`}
+                    onChange={(e) => void changeRole(u.id, e.target.value as Role)}
+                    disabled={u.id === me?.id}
+                  >
+                    {ROLES.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.label}
+                      </option>
+                    ))}
+                  </select>
+                  <Button
+                    onClick={() => {
+                      setResetValue("");
+                      setResetId(resetId === u.id ? null : u.id);
+                    }}
+                    disabled={u.id === me?.id}
+                    aria-label={`Reset password for ${u.username}`}
+                    aria-expanded={resetId === u.id}
+                    title="Reset password"
+                  >
+                    <KeyRound size={13} />
+                  </Button>
+                  <Button
+                    variant="danger"
+                    onClick={() => void remove(u.id)}
+                    disabled={u.id === me?.id}
+                    aria-label={`Delete ${u.username}`}
+                  >
+                    <Trash2 size={13} />
+                  </Button>
+                </SettingsRowActions>
+              </SettingsPanelHeader>
+              {resetId === u.id && (
+                <SettingsPanelBody>
+                  <form onSubmit={(e) => void resetPassword(e)} className="arco-settings-tool-row">
+                    <Input
+                      type="password"
+                      placeholder="New password (8+ chars)"
+                      aria-label={`New password for ${u.username}`}
+                      autoComplete="new-password"
+                      autoFocus
+                      minLength={8}
+                      value={resetValue}
+                      onChange={(e) => setResetValue(e.target.value)}
+                      required
+                    />
+                    <Button variant="primary" type="submit">
+                      Set
+                    </Button>
+                    <Button type="button" onClick={() => setResetId(null)}>
+                      Cancel
+                    </Button>
+                  </form>
+                </SettingsPanelBody>
+              )}
+            </SettingsPanel>
+          ))}
+        </SettingsStack>
+
+        <SettingsSubhead>Add account</SettingsSubhead>
+        <form onSubmit={(e) => void create(e)}>
+          <SettingsStack>
+            <SettingsFieldRow label="Username">
+              <Input
+                width="auto"
+                placeholder="username"
+                autoComplete="off"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+              />
+            </SettingsFieldRow>
+            <SettingsFieldRow label="Password">
+              <Input
+                width="auto"
+                type="password"
+                placeholder="8+ characters"
+                autoComplete="new-password"
+                minLength={8}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </SettingsFieldRow>
+            <SettingsFieldRow label="Role">
               <select
-                className="arco-input"
-                style={{ width: "auto" }}
-                value={u.role}
-                aria-label={`Role for ${u.username}`}
-                onChange={(e) => void changeRole(u.id, e.target.value as Role)}
-                disabled={u.id === me?.id}
+                className="arco-input arco-input--auto"
+                value={role}
+                aria-label="Role for the new account"
+                onChange={(e) => setRole(e.target.value as Role)}
               >
                 {ROLES.map((r) => (
-                  <option key={r.id} value={r.id}>{r.label}</option>
+                  <option key={r.id} value={r.id} title={r.hint}>
+                    {r.label}
+                  </option>
                 ))}
               </select>
-              <button
-                className="arco-btn"
-                onClick={() => {
-                  setResetValue("");
-                  setResetId(resetId === u.id ? null : u.id);
-                }}
-                disabled={u.id === me?.id}
-                aria-label={`Reset password for ${u.username}`}
-                aria-expanded={resetId === u.id}
-                title="Reset password"
-              >
-                <KeyRound size={13} />
-              </button>
-              <button
-                className="arco-btn arco-btn--danger"
-                onClick={() => void remove(u.id)}
-                disabled={u.id === me?.id}
-                aria-label={`Delete ${u.username}`}
-              >
-                <Trash2 size={13} />
-              </button>
-            </div>
-            {resetId === u.id && (
-              <form onSubmit={(e) => void resetPassword(e)} style={{ display: "flex", gap: "var(--arco-space-s)" }}>
-                <input
-                  className="arco-input"
-                  type="password"
-                  placeholder="New password (8+ chars)"
-                  aria-label={`New password for ${u.username}`}
-                  autoComplete="new-password"
-                  autoFocus
-                  minLength={8}
-                  value={resetValue}
-                  onChange={(e) => setResetValue(e.target.value)}
-                  required
-                />
-                <button className="arco-btn arco-btn--primary" type="submit">Set</button>
-                <button className="arco-btn" type="button" onClick={() => setResetId(null)}>Cancel</button>
-              </form>
-            )}
-          </div>
-        ))}
-      </div>
-
-      <label className="arco-label" style={{ marginTop: "var(--arco-space-s)" }}>Add account</label>
-      <form onSubmit={(e) => void create(e)} style={{ display: "flex", gap: "var(--arco-space-s)", flexWrap: "wrap" }}>
-        <input
-          className="arco-input"
-          style={{ flex: "1 1 120px" }}
-          placeholder="username"
-          autoComplete="off"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          required
-        />
-        <input
-          className="arco-input"
-          style={{ flex: "1 1 140px" }}
-          type="password"
-          placeholder="password (8+ chars)"
-          autoComplete="new-password"
-          minLength={8}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <select
-          className="arco-input"
-          style={{ width: "auto" }}
-          value={role}
-          aria-label="Role for the new account"
-          onChange={(e) => setRole(e.target.value as Role)}
-        >
-          {ROLES.map((r) => (
-            <option key={r.id} value={r.id} title={r.hint}>{r.label}</option>
-          ))}
-        </select>
-        <button className="arco-btn arco-btn--primary" type="submit" disabled={busy}>
-          {busy ? "Adding…" : "Add"}
-        </button>
-      </form>
-      <div style={{ color: "var(--arco-text-tertiary)", fontSize: "var(--arco-text-xs)" }}>
-        {ROLES.find((r) => r.id === role)?.hint}
-      </div>
-
-      {error && (
-        <div style={{ color: "var(--arco-danger)", fontSize: "var(--arco-text-sm)" }} role="alert">
-          {error}
-        </div>
-      )}
-    </section>
+            </SettingsFieldRow>
+            <SettingsFieldRow label=" " hint={ROLES.find((r) => r.id === role)?.hint}>
+              <Button variant="primary" type="submit" disabled={busy}>
+                {busy ? "Adding…" : "Add account"}
+              </Button>
+            </SettingsFieldRow>
+          </SettingsStack>
+        </form>
+      </SettingsSection>
+    </SettingsPage>
   );
 }

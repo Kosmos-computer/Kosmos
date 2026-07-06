@@ -1,0 +1,91 @@
+.section {
+  max-width: var(--lf-max-width);
+  margin: 0 auto;
+  padding: 4rem 1.25rem 0;
+}
+
+@media (min-width: 768px) {
+  .section {
+    padding-top: 7rem;
+  }
+}
+
+.header {
+  padding: 2.25rem 1.75rem 2rem;
+  border-bottom: 1px solid var(--lf-border);
+}
+
+@media (min-width: 768px) {
+  .header {
+    padding: 3rem 3rem 2.5rem;
+  }
+}
+
+.title {
+  margin: 0;
+  max-width: 42rem;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.grid {
+  display: grid;
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.cell {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 2.25rem 1.75rem;
+  border-bottom: 1px solid var(--lf-border);
+}
+
+@media (min-width: 768px) {
+  .cell {
+    padding: 3rem;
+  }
+
+  .cell:nth-child(odd) {
+    border-right: 1px solid var(--lf-border);
+  }
+
+  .cell[data-last-row="true"] {
+    border-bottom: none;
+  }
+}
+
+.copy {
+  max-width: 19rem;
+}
+
+.cellTitle {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 500;
+}
+
+.cellBody {
+  margin: 0.75rem 0 0;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--lf-text-secondary);
+}
+
+.copy a {
+  margin-top: 1.25rem;
+}
+
+@media (max-width: 639px) {
+  .cell svg {
+    display: none;
+  }
+}

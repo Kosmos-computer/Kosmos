@@ -31,7 +31,20 @@ export type ChatItem =
       approved?: boolean;
       options?: ConfirmOption[];
     }
-  | { kind: "error"; id: string; text: string };
+  | { kind: "error"; id: string; text: string }
+  | {
+      kind: "thought";
+      id: string;
+      text: string;
+      duration?: number | "brief";
+      defaultOpen?: boolean;
+    }
+  | {
+      kind: "todo";
+      id: string;
+      items: { id: string; label: string; status: "pending" | "active" | "completed" }[];
+    }
+  | { kind: "status"; id: string; text: string };
 
 let itemCounter = 0;
 function nextId(): string {

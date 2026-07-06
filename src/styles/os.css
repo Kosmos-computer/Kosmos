@@ -214,8 +214,12 @@
   color: var(--arco-text-primary);
 }
 .arco-navrail__item--active {
-  background: var(--arco-bg-active);
+  background: var(--arco-bg-selected);
   color: var(--arco-text-primary);
+}
+.arco-navrail__item:focus-visible {
+  outline: 2px solid var(--arco-accent);
+  outline-offset: 1px;
 }
 .arco-navrail__item--generated {
   color: var(--arco-accent);

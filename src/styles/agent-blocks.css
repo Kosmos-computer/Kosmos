@@ -1,0 +1,175 @@
+/* Agent message blocks — thought traces, action output, todo plans, status lines. */
+
+.arco-agent-thought,
+.arco-agent-action {
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-m);
+  background: var(--arco-bg-sunk);
+  overflow: hidden;
+}
+
+.arco-agent-thought__trigger,
+.arco-agent-action__header {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  width: 100%;
+  padding: var(--arco-space-s) var(--arco-space-m);
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-secondary);
+  text-align: left;
+}
+
+.arco-agent-thought__trigger:hover,
+.arco-agent-action__header:hover {
+  background: var(--arco-bg-hover);
+  color: var(--arco-text-primary);
+}
+
+.arco-agent-thought__chevron,
+.arco-agent-action__chevron {
+  display: flex;
+  color: var(--arco-text-tertiary);
+  transition: transform var(--arco-dur-fast);
+}
+
+.arco-agent-thought__chevron--open,
+.arco-agent-action__chevron--open {
+  transform: rotate(90deg);
+}
+
+.arco-agent-thought__body,
+.arco-agent-action__body {
+  padding: 0 var(--arco-space-m) var(--arco-space-m);
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-secondary);
+  white-space: pre-wrap;
+}
+
+.arco-agent-action__icon {
+  display: flex;
+  color: var(--arco-accent);
+  flex-shrink: 0;
+}
+
+.arco-agent-action__title {
+  flex: 1;
+  min-width: 0;
+}
+
+.arco-agent-action__command {
+  font-family: var(--arco-font-mono);
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arco-agent-action__output {
+  margin: 0;
+  padding: var(--arco-space-s);
+  border-radius: var(--arco-radius-s);
+  background: var(--arco-bg-raised);
+  font-family: var(--arco-font-mono);
+  font-size: var(--arco-text-xs);
+  overflow-x: auto;
+}
+
+.arco-agent-todo {
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-m);
+  background: var(--arco-bg-sunk);
+  overflow: hidden;
+}
+
+.arco-agent-todo__header {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-s) var(--arco-space-m);
+  font-size: var(--arco-text-sm);
+  font-weight: 600;
+  color: var(--arco-text-secondary);
+  border-bottom: 1px solid var(--arco-border);
+}
+
+.arco-agent-todo__count {
+  margin-left: auto;
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+}
+
+.arco-agent-todo__list {
+  list-style: none;
+  margin: 0;
+  padding: var(--arco-space-xs) 0;
+}
+
+.arco-agent-todo__row {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-xs) var(--arco-space-m);
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-primary);
+}
+
+.arco-agent-todo__row--pending {
+  color: var(--arco-text-tertiary);
+}
+
+.arco-agent-todo__row--completed {
+  color: var(--arco-text-tertiary);
+  text-decoration: line-through;
+}
+
+.arco-agent-todo__indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid var(--arco-border-strong);
+  color: var(--arco-text-tertiary);
+}
+
+.arco-agent-todo__indicator--active {
+  border-color: var(--arco-accent);
+  color: var(--arco-accent);
+  background: var(--arco-accent-soft);
+}
+
+.arco-agent-todo__indicator--completed {
+  border-color: var(--arco-success);
+  background: color-mix(in srgb, var(--arco-success) 18%, transparent);
+  color: var(--arco-success);
+}
+
+.arco-agent-status {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+}
+
+.arco-agent-status__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--arco-accent);
+  animation: arco-agent-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes arco-agent-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+}

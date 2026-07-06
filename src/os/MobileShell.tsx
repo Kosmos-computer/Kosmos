@@ -4,7 +4,7 @@
  * This is the "adaptive at the shell level" half of the adaptivity story
  * (AdaptiveSurface handles the per-container half).
  */
-import { ChevronLeft, Globe, Sparkles } from "lucide-react";
+import { ChevronLeft, Globe } from "lucide-react";
 import { useEffect } from "react";
 import { Bell } from "lucide-react";
 import { useOsStore } from "./osStore";
@@ -93,18 +93,21 @@ export function MobileShell() {
                 </button>
               );
             })}
-            {apps.map((app) => (
-              <button
-                key={app.id}
-                className="arco-mobile-home__icon"
-                onClick={() => open({ type: "generated", appId: app.id }, app.title)}
-              >
-                <span className="arco-mobile-home__glyph" style={{ color: "var(--arco-accent)" }}>
-                  <Sparkles size={26} strokeWidth={1.7} />
-                </span>
-                {app.title}
-              </button>
-            ))}
+            {apps.map((app) => {
+              const Icon = appIcon(app.icon);
+              return (
+                <button
+                  key={app.id}
+                  className="arco-mobile-home__icon"
+                  onClick={() => open({ type: "generated", appId: app.id }, app.title)}
+                >
+                  <span className="arco-mobile-home__glyph" style={{ color: "var(--arco-accent)" }}>
+                    <Icon size={26} strokeWidth={1.7} />
+                  </span>
+                  {app.title}
+                </button>
+              );
+            })}
             {webApps.map((app) => (
               <button
                 key={app.id}
@@ -129,9 +132,17 @@ export function MobileShell() {
             w.kind.type === "installed"
               ? installedApps.find((e) => w.kind.type === "installed" && e.manifest.id === w.kind.appId)
               : null;
+          const generated =
+            w.kind.type === "generated"
+              ? apps.find((a) => w.kind.type === "generated" && a.id === w.kind.appId)
+              : null;
           const Icon =
             def?.icon ??
-            (installed ? appIcon(installed.manifest.icon) : w.kind.type === "web" ? Globe : Sparkles);
+            (installed
+              ? appIcon(installed.manifest.icon)
+              : w.kind.type === "web"
+                ? Globe
+                : appIcon(generated?.icon));
           const isActive = active?.id === w.id;
           return (
             <button

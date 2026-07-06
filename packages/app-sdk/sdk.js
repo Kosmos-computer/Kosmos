@@ -23,6 +23,7 @@ export function createAppClient() {
   let theme = { theme: "dark", tokens: {} };
   const themeListeners = new Set();
   const eventListeners = new Map(); // topic → Set<fn>
+  const toolbarInputListeners = new Map(); // slot id → Set<fn>
 
   window.addEventListener("message", (event) => {
     const msg = event.data;
@@ -39,6 +40,8 @@ export function createAppClient() {
       for (const fn of themeListeners) fn(theme);
     } else if (msg.type === "event") {
       for (const fn of eventListeners.get(msg.topic) ?? []) fn();
+    } else if (msg.type === "toolbar-input") {
+      for (const fn of toolbarInputListeners.get(msg.id) ?? []) fn(msg.value);
     }
   });
 
@@ -77,6 +80,25 @@ export function createAppClient() {
     /** Shell affordances, checked against grants in the host. */
     shell: {
       notify: (message) => call("shell.notify", { message }),
+      /**
+       * Open Chat and seed the composer (iframe apps can't reach the shell
+       * composer bus directly — this routes through AppHost).
+       */
+      askAgent: (text = "", submit = false) => call("shell.askAgent", { text, submit }),
+      /**
+       * Mount controls in the AppHost toolbar (search fields, etc.). The host
+       * owns the DOM; apps receive edits through toolbar.onInput.
+       */
+      toolbar: {
+        set(slots) {
+          window.parent.postMessage({ appBridge: true, type: "toolbar-set", slots }, "*");
+        },
+        onInput(id, fn) {
+          if (!toolbarInputListeners.has(id)) toolbarInputListeners.set(id, new Set());
+          toolbarInputListeners.get(id).add(fn);
+          return () => toolbarInputListeners.get(id)?.delete(fn);
+        },
+      },
     },
     /**
      * Platform events. Only topics declared in the manifest's

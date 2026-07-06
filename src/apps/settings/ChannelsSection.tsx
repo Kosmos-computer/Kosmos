@@ -1,18 +1,28 @@
 /**
  * Settings → Channels — external messaging gateways (Telegram first).
- *
- * One card per channel: status dot, bot identity, enable toggle, restart,
- * delete, approved chats, and pending pairing requests. Pairing approval
- * lives here on purpose: unknown senders can never talk their way in from
- * the channel itself — the decision happens in this authenticated surface.
  */
 import { useCallback, useEffect, useState } from "react";
 import { Check, MessageCircle, Plus, RotateCw, Trash2, X } from "lucide-react";
 import type { ChannelInfo, ChannelStatus } from "@shared/types";
 import { api } from "../../lib/api";
 import { useCan } from "../../os/auth/authStore";
+import {
+  SettingsAlert,
+  SettingsEmpty,
+  SettingsFieldRow,
+  SettingsPage,
+  SettingsPanel,
+  SettingsPanelBody,
+  SettingsPanelHeader,
+  SettingsRow,
+  SettingsRowActions,
+  SettingsSection,
+  SettingsStack,
+  SettingsStatusDot,
+  SettingsSubhead,
+} from "../../components/patterns";
+import { Button, Chip, Input } from "../../components/ui";
 
-/** Status → dot color, matching the MCP section's visual language. */
 function statusColor(status: ChannelStatus): string {
   switch (status) {
     case "running":
@@ -31,7 +41,6 @@ export function ChannelsSection() {
   const [channels, setChannels] = useState<ChannelInfo[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  // Add form (Telegram only in v1 — the kind picker appears with adapter #2)
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const [token, setToken] = useState("");
@@ -45,15 +54,12 @@ export function ChannelsSection() {
     }
   }, []);
 
-  // Poll while visible: pairing requests arrive from outside the app, so the
-  // list must update without a user action.
   useEffect(() => {
     void refresh();
     const t = setInterval(() => void refresh(), 10_000);
     return () => clearInterval(t);
   }, [refresh]);
 
-  /** Replace one channel's row with the server's post-mutation snapshot. */
   const patchRow = (updated: ChannelInfo | undefined) => {
     if (!updated) return void refresh();
     setChannels((list) => list.map((ch) => (ch.config.id === updated.config.id ? updated : ch)));
@@ -73,205 +79,145 @@ export function ChannelsSection() {
   };
 
   const remove = async (ch: ChannelInfo) => {
-    if (!window.confirm(`Remove channel "${ch.config.name}"? Its approved chats are forgotten.`))
-      return;
+    if (!window.confirm(`Remove channel "${ch.config.name}"? Its approved chats are forgotten.`)) return;
     await api.removeChannel(ch.config.id);
     await refresh();
   };
 
   return (
-    <section className="arco-form">
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <MessageCircle size={14} style={{ color: "var(--arco-text-secondary)" }} />
-        <strong>Channels</strong>
-        <span style={{ flex: 1 }} />
-        {canManage && (
-          <button className="arco-btn" onClick={() => setAdding((v) => !v)}>
-            <Plus size={13} /> Add Telegram
-          </button>
+    <SettingsPage>
+      <SettingsSection intro="Talk to the agent from messaging apps, and let automations deliver results there. Unknown senders get a pairing code — approve them below before their messages are processed.">
+        <SettingsRow>
+          <MessageCircle size={14} className="arco-icon arco-icon--secondary" />
+          {canManage && (
+            <SettingsRowActions>
+              <Button onClick={() => setAdding((v) => !v)}>
+                <Plus size={13} /> Add Telegram
+              </Button>
+            </SettingsRowActions>
+          )}
+        </SettingsRow>
+
+        {error ? <SettingsAlert tone="error">{error}</SettingsAlert> : null}
+
+        {adding && (
+          <>
+            <SettingsSubhead>Connect Telegram</SettingsSubhead>
+            <SettingsStack>
+              <SettingsFieldRow label="Name" htmlFor="ch-name">
+                <Input id="ch-name" width="auto" value={name} placeholder="Telegram" onChange={(e) => setName(e.target.value)} />
+              </SettingsFieldRow>
+              <SettingsFieldRow label="Bot token" htmlFor="ch-token" hint="From @BotFather">
+                <Input
+                  id="ch-token"
+                  width="auto"
+                  type="password"
+                  value={token}
+                  placeholder="123456789:AA…"
+                  onChange={(e) => setToken(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && void add()}
+                />
+              </SettingsFieldRow>
+              <SettingsFieldRow label=" ">
+                <Button variant="primary" disabled={!name.trim() || !token.trim()} onClick={() => void add()}>
+                  Connect
+                </Button>
+                <Button onClick={() => setAdding(false)}>Cancel</Button>
+              </SettingsFieldRow>
+            </SettingsStack>
+          </>
         )}
-      </div>
-      <span style={{ color: "var(--arco-text-secondary)", fontSize: "var(--arco-text-sm)" }}>
-        Talk to the agent from messaging apps, and let automations deliver results there. Unknown
-        senders get a pairing code — approve them below before their messages are processed.
-      </span>
 
-      {error && (
-        <span style={{ color: "var(--arco-danger, #e5484d)", fontSize: "var(--arco-text-sm)" }}>
-          {error}
-        </span>
-      )}
-
-      {adding && (
-        <div className="arco-form" style={{ paddingLeft: 8 }}>
-          <label className="arco-label" htmlFor="ch-name">
-            Name
-          </label>
-          <input
-            id="ch-name"
-            className="arco-input"
-            value={name}
-            placeholder="Telegram"
-            onChange={(e) => setName(e.target.value)}
-          />
-          <label className="arco-label" htmlFor="ch-token">
-            Bot token (from @BotFather)
-          </label>
-          <input
-            id="ch-token"
-            className="arco-input"
-            type="password"
-            value={token}
-            placeholder="123456789:AA…"
-            onChange={(e) => setToken(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && void add()}
-          />
-          <div style={{ display: "flex", gap: 8 }}>
-            <button
-              className="arco-btn arco-btn--primary"
-              disabled={!name.trim() || !token.trim()}
-              onClick={() => void add()}
-            >
-              Connect
-            </button>
-            <button className="arco-btn" onClick={() => setAdding(false)}>
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-
-      {channels.length === 0 && !adding ? (
-        <span style={{ color: "var(--arco-text-tertiary)", fontSize: "var(--arco-text-sm)" }}>
-          No channels connected.
-        </span>
-      ) : (
-        channels.map((ch) => (
-          <div key={ch.config.id} className="arco-card">
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span
-                aria-hidden
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: "50%",
-                  background: statusColor(ch.status),
-                  flexShrink: 0,
-                }}
-              />
-              <strong style={{ fontSize: "var(--arco-text-sm)" }}>{ch.config.name}</strong>
-              <span style={{ color: "var(--arco-text-tertiary)", fontSize: "var(--arco-text-xs)" }}>
-                {ch.config.kind}
-                {ch.botName ? ` · ${ch.botName}` : ""}
-              </span>
-              <span style={{ flex: 1 }} />
-              {canManage && (
-                <>
-                  <button
-                    className={`arco-chip ${ch.config.enabled ? "arco-chip--active" : ""}`}
-                    onClick={() =>
-                      void api
-                        .updateChannel(ch.config.id, { enabled: !ch.config.enabled })
-                        .then(patchRow)
-                    }
-                    aria-pressed={ch.config.enabled}
-                  >
-                    {ch.config.enabled ? "enabled" : "disabled"}
-                  </button>
-                  <button
-                    className="arco-btn arco-btn--icon"
-                    onClick={() => void api.restartChannel(ch.config.id).then(patchRow)}
-                    aria-label={`Restart ${ch.config.name}`}
-                    title="Restart"
-                  >
-                    <RotateCw size={13} />
-                  </button>
-                  <button
-                    className="arco-btn arco-btn--icon"
-                    onClick={() => void remove(ch)}
-                    aria-label={`Remove ${ch.config.name}`}
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                </>
-              )}
-            </div>
-
-            {ch.error && (
-              <div
-                style={{
-                  color: "var(--arco-danger, #e5484d)",
-                  fontSize: "var(--arco-text-xs)",
-                  marginTop: 4,
-                }}
-              >
-                {ch.error}
-              </div>
-            )}
-
-            {ch.pairings.length > 0 && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 8 }}>
-                <span className="arco-label">Pairing requests</span>
-                {ch.pairings.map((p) => (
-                  <div key={p.code} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: "var(--arco-text-sm)" }}>{p.label}</span>
-                    <code style={{ fontSize: "var(--arco-text-xs)", color: "var(--arco-text-tertiary)" }}>
-                      {p.code}
-                    </code>
-                    <span style={{ flex: 1 }} />
-                    {canManage && (
-                      <>
-                        <button
-                          className="arco-btn"
-                          onClick={() =>
-                            void api.resolvePairing(ch.config.id, p.code, true).then(patchRow)
-                          }
-                        >
-                          <Check size={13} /> Approve
-                        </button>
-                        <button
-                          className="arco-btn"
-                          onClick={() =>
-                            void api.resolvePairing(ch.config.id, p.code, false).then(patchRow)
-                          }
-                        >
-                          <X size={13} /> Deny
-                        </button>
-                      </>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {ch.peers.length > 0 && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 8 }}>
-                <span className="arco-label">Approved chats</span>
-                {ch.peers.map((peer) => (
-                  <div key={peer.chatId} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: "var(--arco-text-sm)" }}>{peer.label}</span>
-                    <code style={{ fontSize: "var(--arco-text-xs)", color: "var(--arco-text-tertiary)" }}>
-                      {peer.chatId}
-                    </code>
-                    <span style={{ flex: 1 }} />
-                    {canManage && (
-                      <button
-                        className="arco-btn arco-btn--icon"
+        {channels.length === 0 && !adding ? (
+          <SettingsEmpty>No channels connected.</SettingsEmpty>
+        ) : (
+          <SettingsStack>
+            {channels.map((ch) => (
+              <SettingsPanel key={ch.config.id} disabled={!ch.config.enabled}>
+                <SettingsPanelHeader>
+                  <SettingsStatusDot color={statusColor(ch.status)} label={`status: ${ch.status}`} />
+                  <span className="arco-settings-panel__title">{ch.config.name}</span>
+                  <span className="arco-settings-panel__meta">
+                    {ch.config.kind}
+                    {ch.botName ? ` · ${ch.botName}` : ""}
+                  </span>
+                  {canManage && (
+                    <SettingsRowActions>
+                      <Chip
+                        active={ch.config.enabled}
                         onClick={() =>
-                          void api.removeChannelPeer(ch.config.id, peer.chatId).then(patchRow)
+                          void api.updateChannel(ch.config.id, { enabled: !ch.config.enabled }).then(patchRow)
                         }
-                        aria-label={`Remove ${peer.label}`}
+                        aria-pressed={ch.config.enabled}
                       >
+                        {ch.config.enabled ? "enabled" : "disabled"}
+                      </Chip>
+                      <Button
+                        size="icon"
+                        onClick={() => void api.restartChannel(ch.config.id).then(patchRow)}
+                        aria-label={`Restart ${ch.config.name}`}
+                        title="Restart"
+                      >
+                        <RotateCw size={13} />
+                      </Button>
+                      <Button size="icon" onClick={() => void remove(ch)} aria-label={`Remove ${ch.config.name}`}>
                         <Trash2 size={13} />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ))
-      )}
-    </section>
+                      </Button>
+                    </SettingsRowActions>
+                  )}
+                </SettingsPanelHeader>
+
+                {ch.error ? <SettingsAlert tone="error">{ch.error}</SettingsAlert> : null}
+
+                {ch.pairings.length > 0 && (
+                  <SettingsPanelBody>
+                    <span className="arco-settings-group-label">Pairing requests</span>
+                    {ch.pairings.map((p) => (
+                      <SettingsRow key={p.code}>
+                        <span className="arco-settings-tool-row__desc">{p.label}</span>
+                        <code className="arco-code arco-code--xs">{p.code}</code>
+                        {canManage && (
+                          <SettingsRowActions>
+                            <Button onClick={() => void api.resolvePairing(ch.config.id, p.code, true).then(patchRow)}>
+                              <Check size={13} /> Approve
+                            </Button>
+                            <Button onClick={() => void api.resolvePairing(ch.config.id, p.code, false).then(patchRow)}>
+                              <X size={13} /> Deny
+                            </Button>
+                          </SettingsRowActions>
+                        )}
+                      </SettingsRow>
+                    ))}
+                  </SettingsPanelBody>
+                )}
+
+                {ch.peers.length > 0 && (
+                  <SettingsPanelBody>
+                    <span className="arco-settings-group-label">Approved chats</span>
+                    {ch.peers.map((peer) => (
+                      <SettingsRow key={peer.chatId}>
+                        <span className="arco-settings-tool-row__desc">{peer.label}</span>
+                        <code className="arco-code arco-code--xs">{peer.chatId}</code>
+                        {canManage && (
+                          <SettingsRowActions>
+                            <Button
+                              size="icon"
+                              onClick={() => void api.removeChannelPeer(ch.config.id, peer.chatId).then(patchRow)}
+                              aria-label={`Remove ${peer.label}`}
+                            >
+                              <Trash2 size={13} />
+                            </Button>
+                          </SettingsRowActions>
+                        )}
+                      </SettingsRow>
+                    ))}
+                  </SettingsPanelBody>
+                )}
+              </SettingsPanel>
+            ))}
+          </SettingsStack>
+        )}
+      </SettingsSection>
+    </SettingsPage>
   );
 }

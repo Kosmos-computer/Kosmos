@@ -297,6 +297,11 @@ export const agentTools: AgentTool[] = [
       properties: {
         title: { type: "string", description: "Short display title for the app" },
         code: { type: "string", description: "Complete openui-lang source code for the app" },
+        icon: {
+          type: "string",
+          description:
+            "Optional Lucide icon name (kebab-case), e.g. list-todo, cloud-sun, gamepad-2. Omit to auto-pick from the title.",
+        },
       },
       required: ["title", "code"],
     },
@@ -306,7 +311,12 @@ export const agentTools: AgentTool[] = [
       const lint = lintOpenUICode(code);
       // Save unconditionally — rejecting outright forces full-rewrite retries,
       // which is the failure mode the patch loop exists to avoid.
-      const app = await appStore.create({ title, content: code, sessionId: ctx.sessionId });
+      const app = await appStore.create({
+        title,
+        content: code,
+        sessionId: ctx.sessionId,
+        ...(typeof args.icon === "string" ? { icon: args.icon } : {}),
+      });
       ctx.emit({ type: "apps_changed" });
       ctx.emit({ type: "os_ui", action: { action: "open_app", appId: app.id } });
       return { id: app.id, title: app.title, ...lintPayload(lint) };
@@ -337,6 +347,10 @@ export const agentTools: AgentTool[] = [
         id: { type: "string", description: "The app id" },
         patch: { type: "string", description: "openui-lang statements to merge (changed/new only)" },
         title: { type: "string", description: "Optional new title" },
+        icon: {
+          type: "string",
+          description: "Optional Lucide icon name (kebab-case) for the dock and app library",
+        },
       },
       required: ["id", "patch"],
     },
@@ -349,6 +363,7 @@ export const agentTools: AgentTool[] = [
       const updated = await appStore.update(id, {
         content: merged,
         ...(typeof args.title === "string" ? { title: args.title } : {}),
+        ...(typeof args.icon === "string" ? { icon: args.icon } : {}),
       });
       ctx.emit({ type: "apps_changed" });
       return { id: updated.id, updatedAt: updated.updatedAt, ...lintPayload(lint) };

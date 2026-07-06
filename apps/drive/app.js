@@ -7,6 +7,7 @@
  * "files.changed" event — Drive re-queries instead of trusting payloads.
  */
 import { createAppClient } from "/app-sdk.js";
+import { icon, mountDataIcons } from "./icons.js";
 
 const os = createAppClient();
 
@@ -22,12 +23,20 @@ let crumbs = []; // [{id, name}] path to the current folder, root excluded
 let entries = [];
 let searchQuery = "";
 let openFileId = null; // id shown in the file dialog
+let dragEntryId = null; // entry id while a row drag is in progress
+let openMenu = null; // currently open row menu panel
+
+const SEARCH_SLOT = {
+  id: "search",
+  kind: "search",
+  placeholder: "Search documents…",
+  label: "Search documents",
+};
 
 const listEl = document.getElementById("list");
 const emptyEl = document.getElementById("empty");
 const errorEl = document.getElementById("error");
 const crumbsEl = document.getElementById("breadcrumbs");
-const searchEl = document.getElementById("search");
 const fileDialog = document.getElementById("file-dialog");
 const fileTitle = document.getElementById("file-dialog-title");
 const fileMeta = document.getElementById("file-dialog-meta");
@@ -35,10 +44,10 @@ const fileContent = document.getElementById("file-content");
 const moveDialog = document.getElementById("move-dialog");
 const moveList = document.getElementById("move-list");
 
-const TABS = {
-  files: document.getElementById("tab-files"),
-  starred: document.getElementById("tab-starred"),
-  trash: document.getElementById("tab-trash"),
+const NAV = {
+  files: document.getElementById("nav-files"),
+  starred: document.getElementById("nav-starred"),
+  trash: document.getElementById("nav-trash"),
 };
 
 // ── Data ──────────────────────────────────────────────────────────────────────
@@ -84,18 +93,22 @@ function formatDate(iso) {
     : d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
-function iconFor(entry) {
-  if (entry.mimeType === FOLDER_MIME) return "📁";
-  if (entry.mimeType.startsWith("image/")) return "🖼️";
-  if (entry.mimeType === "text/markdown") return "📝";
-  return "📄";
+function entryIconName(entry) {
+  if (entry.mimeType === FOLDER_MIME) return "folder";
+  if (entry.mimeType.startsWith("image/")) return "image";
+  return "file-text";
+}
+
+function entryIcon(entry, { size = 15 } = {}) {
+  const el = icon(entryIconName(entry), { size, className: entry.mimeType === FOLDER_MIME ? "drv-icon--accent" : "" });
+  return el;
 }
 
 // ── Rendering ─────────────────────────────────────────────────────────────────
 
 function render() {
-  for (const [id, el] of Object.entries(TABS)) {
-    el.classList.toggle("drv-tab--active", view === id || (view === "search" && id === "files"));
+  for (const [id, el] of Object.entries(NAV)) {
+    el.classList.toggle("drv-nav-item--active", view === id || (view === "search" && id === "files"));
   }
   renderCrumbs();
   renderList();
@@ -120,7 +133,7 @@ function renderCrumbs() {
   crumbs.forEach((crumb, i) => {
     const sep = document.createElement("span");
     sep.className = "drv-crumbs__sep";
-    sep.textContent = "›";
+    sep.appendChild(icon("chevron-right", { size: 14 }));
     crumbsEl.appendChild(sep);
     if (i === crumbs.length - 1) {
       const here = document.createElement("span");
@@ -141,21 +154,64 @@ function renderCrumbs() {
 function renderList() {
   listEl.replaceChildren();
   emptyEl.hidden = entries.length > 0;
+  const canDrag = view !== "trash";
 
   for (const entry of entries) {
     const row = document.createElement("div");
     row.className = "drv-row";
     row.setAttribute("role", "listitem");
+    row.dataset.entryId = entry.id;
+
+    if (canDrag) {
+      row.draggable = true;
+      row.addEventListener("dragstart", (event) => {
+        if (event.target.closest(".drv-row__menu")) {
+          event.preventDefault();
+          return;
+        }
+        dragEntryId = entry.id;
+        event.dataTransfer.setData("application/x-drive-entry", entry.id);
+        event.dataTransfer.effectAllowed = "move";
+        row.classList.add("drv-row--dragging");
+      });
+      row.addEventListener("dragend", () => {
+        dragEntryId = null;
+        row.classList.remove("drv-row--dragging");
+        clearDropTargets();
+      });
+    }
+
+    if (entry.mimeType === FOLDER_MIME && canDrag) {
+      row.addEventListener("dragover", (event) => {
+        if (!dragEntryId || dragEntryId === entry.id) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+      });
+      row.addEventListener("dragenter", (event) => {
+        if (!dragEntryId || dragEntryId === entry.id) return;
+        event.preventDefault();
+        row.classList.add("drv-row--drop-target");
+      });
+      row.addEventListener("dragleave", (event) => {
+        if (row.contains(event.relatedTarget)) return;
+        row.classList.remove("drv-row--drop-target");
+      });
+      row.addEventListener("drop", (event) => {
+        event.preventDefault();
+        row.classList.remove("drv-row--drop-target");
+        void dropEntryOnFolder(entry.id);
+      });
+    }
 
     const main = document.createElement("button");
     main.type = "button";
     main.className = "drv-row__main";
     main.addEventListener("click", () => openEntry(entry));
 
-    const icon = document.createElement("span");
-    icon.className = "drv-row__icon";
-    icon.textContent = iconFor(entry);
-    main.appendChild(icon);
+    const iconEl = document.createElement("span");
+    iconEl.className = "drv-row__icon";
+    iconEl.appendChild(entryIcon(entry));
+    main.appendChild(iconEl);
 
     const name = document.createElement("span");
     name.className = "drv-row__name";
@@ -163,7 +219,7 @@ function renderList() {
     if (entry.starred) {
       const star = document.createElement("span");
       star.className = "drv-row__star";
-      star.textContent = "★";
+      star.appendChild(icon("star", { size: 12, filled: true }));
       name.appendChild(star);
     }
     main.appendChild(name);
@@ -176,49 +232,152 @@ function renderList() {
     main.appendChild(meta);
 
     row.appendChild(main);
-    row.appendChild(buildActions(entry));
+    row.appendChild(buildRowMenu(entry));
     listEl.appendChild(row);
   }
 }
 
-function buildActions(entry) {
-  const actions = document.createElement("div");
-  actions.className = "drv-row__actions";
-  const add = (label, title, fn) => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "drv-btn drv-btn--ghost";
-    btn.textContent = label;
-    btn.title = title;
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      void fn();
-    });
-    actions.appendChild(btn);
-  };
+function clearDropTargets() {
+  for (const row of listEl.querySelectorAll(".drv-row--drop-target")) {
+    row.classList.remove("drv-row--drop-target");
+  }
+}
 
+async function dropEntryOnFolder(targetFolderId) {
+  const sourceId = dragEntryId;
+  if (!sourceId || sourceId === targetFolderId) return;
+  const dragged = entries.find((each) => each.id === sourceId);
+  if (dragged?.parentId === targetFolderId) return;
+  dragEntryId = null;
+  await invoke("files.move", { id: sourceId, parentId: targetFolderId });
+}
+
+function getMenuItems(entry) {
   if (view === "trash") {
-    add("Restore", "Restore from trash", () => invoke("files.restore", { id: entry.id }));
-    add("Delete", "Delete forever", async () => {
-      if (confirm(`Permanently delete "${entry.name}"? This cannot be undone.`)) {
-        await invoke("files.delete", { id: entry.id });
-      }
-    });
-    return actions;
+    return [
+      {
+        label: "Restore",
+        fn: () => invoke("files.restore", { id: entry.id }),
+      },
+      {
+        label: "Delete forever",
+        danger: true,
+        fn: async () => {
+          if (confirm(`Permanently delete "${entry.name}"? This cannot be undone.`)) {
+            await invoke("files.delete", { id: entry.id });
+          }
+        },
+      },
+    ];
   }
 
-  add(entry.starred ? "★" : "☆", entry.starred ? "Unstar" : "Star", () =>
-    invoke("files.star", { id: entry.id, starred: !entry.starred }),
-  );
-  add("Rename", "Rename", async () => {
-    const name = prompt("Rename to:", entry.name);
-    if (name && name.trim() && name !== entry.name) {
-      await invoke("files.rename", { id: entry.id, name: name.trim() });
+  return [
+    {
+      label: entry.starred ? "Unstar" : "Star",
+      fn: () => invoke("files.star", { id: entry.id, starred: !entry.starred }),
+    },
+    {
+      label: "Rename",
+      fn: async () => {
+        const name = prompt("Rename to:", entry.name);
+        if (name && name.trim() && name !== entry.name) {
+          await invoke("files.rename", { id: entry.id, name: name.trim() });
+        }
+      },
+    },
+    {
+      label: "Move to folder",
+      fn: () => openMoveDialog(entry),
+    },
+    {
+      label: "Move to trash",
+      danger: true,
+      fn: () => invoke("files.trash", { id: entry.id }),
+    },
+  ];
+}
+
+function closeOpenMenu() {
+  if (!openMenu) return;
+  openMenu.hidden = true;
+  openMenu.style.top = "";
+  openMenu.style.right = "";
+  openMenu.closest(".drv-row__menu")?.querySelector("button")?.setAttribute("aria-expanded", "false");
+  openMenu = null;
+}
+
+function positionRowMenu(trigger, menu) {
+  const rect = trigger.getBoundingClientRect();
+  menu.style.top = `${rect.bottom + 4}px`;
+  menu.style.right = `${window.innerWidth - rect.right}px`;
+}
+
+function buildRowMenu(entry) {
+  const wrap = document.createElement("div");
+  wrap.className = "drv-row__menu";
+
+  const trigger = document.createElement("button");
+  trigger.type = "button";
+  trigger.className = "drv-btn drv-btn--ghost drv-btn--icon";
+  trigger.setAttribute("aria-label", "More actions");
+  trigger.setAttribute("aria-haspopup", "menu");
+  trigger.setAttribute("aria-expanded", "false");
+  trigger.appendChild(icon("ellipsis-vertical", { size: 14 }));
+
+  const menu = document.createElement("div");
+  menu.className = "drv-menu";
+  menu.setAttribute("role", "menu");
+  menu.hidden = true;
+
+  for (const item of getMenuItems(entry)) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = ["drv-menu__item", item.danger ? "drv-menu__item--danger" : ""]
+      .filter(Boolean)
+      .join(" ");
+    btn.setAttribute("role", "menuitem");
+    btn.textContent = item.label;
+    btn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      closeOpenMenu();
+      void item.fn();
+    });
+    menu.appendChild(btn);
+  }
+
+  trigger.addEventListener("mousedown", (event) => event.stopPropagation());
+  trigger.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const isOpen = !menu.hidden;
+    closeOpenMenu();
+    if (!isOpen) {
+      positionRowMenu(trigger, menu);
+      menu.hidden = false;
+      trigger.setAttribute("aria-expanded", "true");
+      openMenu = menu;
     }
   });
-  add("Move", "Move to folder", () => openMoveDialog(entry));
-  add("🗑", "Move to trash", () => invoke("files.trash", { id: entry.id }));
-  return actions;
+
+  wrap.appendChild(trigger);
+  wrap.appendChild(menu);
+  return wrap;
+}
+
+function clearSearch() {
+  searchQuery = "";
+  os.shell.toolbar.set([SEARCH_SLOT]);
+}
+
+function applySearch(query) {
+  const q = query.trim();
+  if (q) {
+    view = "search";
+    searchQuery = q;
+  } else {
+    view = "files";
+    searchQuery = "";
+  }
+  void refresh();
 }
 
 async function invoke(intent, params) {
@@ -237,7 +396,7 @@ function openFolder(id, path) {
   view = "files";
   folderId = id;
   crumbs = path;
-  searchEl.value = "";
+  clearSearch();
   void refresh();
 }
 
@@ -284,12 +443,13 @@ document.getElementById("file-cancel").addEventListener("click", () => fileDialo
 
 async function openMoveDialog(entry) {
   moveList.replaceChildren();
-  const addOption = (label, targetId) => {
+  const addOption = (iconName, label, targetId) => {
     if (targetId === entry.parentId || targetId === entry.id) return;
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "drv-move-option";
-    btn.textContent = label;
+    btn.appendChild(icon(iconName, { size: 15, className: "drv-icon--accent" }));
+    btn.appendChild(document.createTextNode(label));
     btn.addEventListener("click", async () => {
       moveDialog.close();
       await invoke("files.move", { id: entry.id, parentId: targetId });
@@ -297,13 +457,13 @@ async function openMoveDialog(entry) {
     moveList.appendChild(btn);
   };
 
-  addOption("📁 My files (root)", null);
+  addOption("folder", "My files (root)", null);
   try {
     // One level of folders is enough for a v1 picker; deep trees can be
     // navigated by moving in steps.
     const rootEntries = await os.intents.invoke("files.list", {});
     for (const each of rootEntries) {
-      if (each.mimeType === FOLDER_MIME) addOption(`📁 ${each.name}`, each.id);
+      if (each.mimeType === FOLDER_MIME) addOption("folder", each.name, each.id);
     }
   } catch (err) {
     showError(err.message);
@@ -315,32 +475,25 @@ document.getElementById("move-cancel").addEventListener("click", () => moveDialo
 
 // ── Toolbar ───────────────────────────────────────────────────────────────────
 
-TABS.files.addEventListener("click", () => openFolder(null, []));
-TABS.starred.addEventListener("click", () => {
+NAV.files.addEventListener("click", () => openFolder(null, []));
+NAV.starred.addEventListener("click", () => {
   view = "starred";
-  searchEl.value = "";
+  clearSearch();
   void refresh();
 });
-TABS.trash.addEventListener("click", () => {
+NAV.trash.addEventListener("click", () => {
   view = "trash";
-  searchEl.value = "";
+  clearSearch();
   void refresh();
 });
 
 let searchTimer;
-searchEl.addEventListener("input", () => {
+os.shell.toolbar.onInput("search", (value) => {
   clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => {
-    const q = searchEl.value.trim();
-    if (q) {
-      view = "search";
-      searchQuery = q;
-    } else {
-      view = "files";
-    }
-    void refresh();
-  }, 250);
+  searchTimer = setTimeout(() => applySearch(value), 250);
 });
+
+os.shell.toolbar.set([SEARCH_SLOT]);
 
 document.getElementById("new-folder").addEventListener("click", async () => {
   const name = prompt("Folder name:");
@@ -372,4 +525,15 @@ os.events.on("files.changed", () => void refresh());
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 
+document.addEventListener("click", (event) => {
+  if (event.target.closest(".drv-row__menu")) return;
+  closeOpenMenu();
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") closeOpenMenu();
+});
+listEl.addEventListener("scroll", closeOpenMenu, { passive: true });
+window.addEventListener("resize", closeOpenMenu);
+
+mountDataIcons();
 void refresh();

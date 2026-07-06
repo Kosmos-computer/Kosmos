@@ -8,6 +8,16 @@ import { useCallback, useEffect, useState } from "react";
 import type { AgentPolicyDecision, AgentToolInfo } from "@shared/types";
 import { api } from "../../lib/api";
 import { useCan } from "../../os/auth/authStore";
+import {
+  SettingsAlert,
+  SettingsGroupLabel,
+  SettingsPage,
+  SettingsRow,
+  SettingsRowActions,
+  SettingsSection,
+  SettingsStack,
+} from "../../components/patterns";
+import { Chip } from "../../components/ui";
 
 /** Group tools by what they let the agent do, so the list scans well. */
 const TOOL_GROUPS: { label: string; match: (name: string) => boolean }[] = [
@@ -61,13 +71,9 @@ function PolicyChip({
     onChanged();
   };
   return (
-    <button
-      className={`arco-chip ${current ? "arco-chip--active" : ""}`}
-      onClick={() => void cycle()}
-      title="Agent policy for this tool (default: the tool's own built-in gates)"
-    >
+    <Chip active={Boolean(current)} onClick={() => void cycle()} title="Agent policy for this tool">
       {current ?? "default"}
-    </button>
+    </Chip>
   );
 }
 
@@ -85,36 +91,28 @@ function ToolRow({
   onChanged: () => void;
 }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, opacity: tool.enabled ? 1 : 0.55 }}>
-      <code style={{ fontSize: "var(--arco-text-sm)", flexShrink: 0 }}>{tool.name}</code>
-      <span
-        style={{
-          flex: 1,
-          color: "var(--arco-text-tertiary)",
-          fontSize: "var(--arco-text-xs)",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
-        }}
-        title={tool.description}
-      >
-        {tool.access === "read" ? "read · " : ""}
-        {tool.description}
-      </span>
-      {canManage && (
-        <>
-          <PolicyChip tool={tool} rules={rules} onChanged={onChanged} />
-          <button
-            className={`arco-chip ${tool.enabled ? "arco-chip--active" : ""}`}
-            onClick={() => onToggle(tool)}
-            aria-pressed={tool.enabled}
-            aria-label={`${tool.enabled ? "Disable" : "Enable"} ${tool.name}`}
-          >
-            {tool.enabled ? "on" : "off"}
-          </button>
-        </>
-      )}
-    </div>
+    <SettingsRow disabled={!tool.enabled}>
+      <div className="arco-settings-tool-row">
+        <code className="arco-code arco-code--nowrap">{tool.name}</code>
+        <span className="arco-settings-tool-row__desc" title={tool.description}>
+          {tool.access === "read" ? "read · " : ""}
+          {tool.description}
+        </span>
+        {canManage && (
+          <SettingsRowActions>
+            <PolicyChip tool={tool} rules={rules} onChanged={onChanged} />
+            <Chip
+              active={tool.enabled}
+              onClick={() => onToggle(tool)}
+              aria-pressed={tool.enabled}
+              aria-label={`${tool.enabled ? "Disable" : "Enable"} ${tool.name}`}
+            >
+              {tool.enabled ? "on" : "off"}
+            </Chip>
+          </SettingsRowActions>
+        )}
+      </div>
+    </SettingsRow>
   );
 }
 
@@ -146,8 +144,6 @@ export function ToolsSection() {
     const disabled = new Set(tools.filter((t) => !t.enabled).map((t) => t.name));
     if (tool.enabled) disabled.add(tool.name);
     else disabled.delete(tool.name);
-    // Optimistic flip; saveSettings patches only disabledTools so the rest
-    // of the settings (API key etc.) are untouched.
     setTools((prev) => prev.map((t) => (t.name === tool.name ? { ...t, enabled: !t.enabled } : t)));
     try {
       await api.saveSettings({ disabledTools: [...disabled] });
@@ -160,44 +156,29 @@ export function ToolsSection() {
   const enabledCount = tools.filter((t) => t.enabled).length;
 
   return (
-    <section className="arco-form">
-      <strong>Agent tools</strong>
-      <span style={{ color: "var(--arco-text-secondary)", fontSize: "var(--arco-text-sm)" }}>
-        What the built-in agent is allowed to do ({enabledCount}/{tools.length} on). Switching a
-        tool off hides it from the agent entirely; the policy chip instead keeps it available but
-        controls approval (auto-run, confirm first, or deny).
-      </span>
-
-      {error && (
-        <span style={{ color: "var(--arco-danger, #e5484d)", fontSize: "var(--arco-text-sm)" }}>
-          {error}
-        </span>
-      )}
-
-      {groupTools(tools).map((group) => (
-        <div key={group.label} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <span
-            style={{
-              color: "var(--arco-text-tertiary)",
-              fontSize: "var(--arco-text-xs)",
-              textTransform: "uppercase",
-              letterSpacing: "0.04em",
-            }}
-          >
-            {group.label}
-          </span>
-          {group.tools.map((tool) => (
-            <ToolRow
-              key={tool.name}
-              tool={tool}
-              rules={rules}
-              canManage={canManage}
-              onToggle={(t) => void toggle(t)}
-              onChanged={() => void refresh()}
-            />
-          ))}
-        </div>
-      ))}
-    </section>
+    <SettingsPage>
+      <SettingsSection
+        intro={`What the built-in agent is allowed to do (${enabledCount}/${tools.length} on). Switching a tool off hides it from the agent entirely; the policy chip keeps it available but controls approval.`}
+      >
+        {error ? <SettingsAlert tone="error">{error}</SettingsAlert> : null}
+        {groupTools(tools).map((group) => (
+          <div key={group.label}>
+            <SettingsGroupLabel>{group.label}</SettingsGroupLabel>
+            <SettingsStack>
+              {group.tools.map((tool) => (
+                <ToolRow
+                  key={tool.name}
+                  tool={tool}
+                  rules={rules}
+                  canManage={canManage}
+                  onToggle={(t) => void toggle(t)}
+                  onChanged={() => void refresh()}
+                />
+              ))}
+            </SettingsStack>
+          </div>
+        ))}
+      </SettingsSection>
+    </SettingsPage>
   );
 }

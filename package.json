@@ -8,7 +8,9 @@
     "model-manager",
     "packages/app-sdk",
     "packages/editor-kit",
-    "apps/docs"
+    "apps/docs",
+    "apps/www",
+    "apps/arco-docs"
   ],
   "scripts": {
     "models": "npm run dev -w model-manager",
@@ -16,11 +18,16 @@
     "predev": "npm run build:apps",
     "dev": "concurrently -n server,web -c yellow,cyan \"npm run dev:server\" \"npm run dev:web\"",
     "dev:all": "concurrently -n server,web,voice -c yellow,cyan,magenta \"npm run dev:server\" \"npm run dev:web\" \"npm run voice\"",
+    "dev:www": "npm run dev -w @kosmos/www",
+    "dev:arco-docs": "npm run dev -w @arco/docs-site",
+    "dev:site": "concurrently -n www,docs -c green,blue \"npm run dev:www\" \"npm run dev:arco-docs\"",
     "dev:server": "tsx watch server/index.ts",
     "dev:web": "vite",
     "voice": "cd voice-server && .venv/bin/python bot.py --host localhost --port 4620",
     "build:apps": "npm run build -w @arco/docs-app",
-    "build": "npm run build:apps && vite build",
+    "build:www": "npm run build -w @kosmos/www",
+    "build:arco-docs": "npm run build -w @arco/docs-site",
+    "build": "npm run build:apps && npm run build:www && npm run build:arco-docs && vite build",
     "start": "NODE_ENV=production tsx server/index.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.server.json"
   },

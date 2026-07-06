@@ -1,0 +1,15 @@
+{
+  "name": "@arco/docs-site",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Arco generative UI library documentation.",
+  "type": "module",
+  "scripts": {
+    "dev": "vitepress dev",
+    "build": "vitepress build",
+    "preview": "vitepress preview"
+  },
+  "devDependencies": {
+    "vitepress": "^1.6.3"
+  }
+}

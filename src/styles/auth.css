@@ -58,21 +58,10 @@
   animation: arco-boot-rise 900ms var(--arco-ease) both;
 }
 
-/* The brand mark: the menu bar's status dot, grown up. */
 .arco-boot__mark {
   width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 32% 30%, var(--arco-accent) 0%, var(--arco-accent-strong) 65%, transparent 100%);
-  box-shadow: 0 0 48px var(--arco-accent-soft), 0 0 96px var(--arco-accent-soft);
-}
-
-.arco-boot__name {
-  font-size: var(--arco-text-xl);
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--arco-text-secondary);
+  height: auto;
+  color: var(--arco-text-primary);
 }
 
 @keyframes arco-boot-rise {
@@ -107,6 +96,7 @@
 /* ── Auth screens (login / setup / lock) ───────────────────────────────── */
 
 .arco-authscreen {
+  position: relative;
   height: 100%;
   display: flex;
   align-items: center;
@@ -114,8 +104,26 @@
   padding: var(--arco-space-xl);
 }
 
-.arco-authscreen__card {
+.arco-authscreen__stack {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--arco-space-xl);
   width: min(360px, 100%);
+}
+
+.arco-authscreen__branding {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  animation: arco-boot-rise 500ms var(--arco-ease) both;
+}
+
+.arco-authscreen__card {
+  position: relative;
+  width: 100%;
   display: flex;
   flex-direction: column;
   gap: var(--arco-space-l);
@@ -144,9 +152,23 @@
   box-shadow: 0 0 24px var(--arco-accent-soft);
 }
 
+.arco-authscreen__logo {
+  width: min(180px, 72vw);
+  height: auto;
+  color: var(--arco-text-primary);
+}
+
 .arco-authscreen__title {
   font-size: var(--arco-text-lg);
   font-weight: 600;
+}
+
+.arco-authscreen__lead {
+  font-size: var(--arco-text-xl);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--arco-text-primary);
+  text-align: center;
 }
 
 .arco-authscreen__subtitle {

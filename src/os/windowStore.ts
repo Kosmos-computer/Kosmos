@@ -12,6 +12,7 @@ export type SystemAppId =
   | "apps"
   | "automations"
   | "files"
+  | "notes"
   | "terminal"
   | "settings";
 

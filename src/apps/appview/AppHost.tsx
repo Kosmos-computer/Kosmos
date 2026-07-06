@@ -11,9 +11,11 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { RotateCw, ShieldAlert } from "lucide-react";
-import type { AppHostMessage } from "@shared/manifest";
+import type { AppHostMessage, AppToolbarSlot } from "@shared/manifest";
 import { api } from "../../lib/api";
 import { onAppEvent } from "../../os/appEventBus";
+import { primeComposer } from "../chat/composerBus";
+import { useWindowStore, windowKey } from "../../os/windowStore";
 import { useOsStore } from "../../os/osStore";
 import { AppSurface } from "./AppSurface";
 
@@ -49,6 +51,18 @@ function collectAppTokens(): Record<string, string> {
     const value = computed.getPropertyValue(name).trim();
     if (value) tokens[APP_TOKEN_PREFIX + name.slice(SHELL_TOKEN_PREFIX.length)] = value;
   }
+
+  // Legacy aliases used by installed apps before canonical --arco-* names existed.
+  const aliasSources: Record<string, string> = {
+    "bg-base": "--arco-bg-base",
+    "bg-raised": "--arco-bg-raised",
+    "font-sans": "--arco-font-sans",
+  };
+  for (const [suffix, source] of Object.entries(aliasSources)) {
+    const value = computed.getPropertyValue(source).trim();
+    if (value) tokens[`${APP_TOKEN_PREFIX}${suffix}`] = value;
+  }
+
   return tokens;
 }
 
@@ -60,6 +74,7 @@ export function AppHost({ appId }: { appId: string }) {
   const [token, setToken] = useState<string | null>(null);
   const [frameTick, setFrameTick] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [toolbarSlots, setToolbarSlots] = useState<AppToolbarSlot[]>([]);
 
   const entry = app?.manifest.entry;
   const src =
@@ -77,6 +92,10 @@ export function AppHost({ appId }: { appId: string }) {
       .then(({ token }) => setToken(token))
       .catch((err: Error) => setError(err.message));
   }, [appId, app, entry?.kind, frameTick]);
+
+  useEffect(() => {
+    setToolbarSlots([]);
+  }, [frameTick]);
 
   const postToApp = useCallback(
     (message: AppHostMessage) => {
@@ -121,6 +140,10 @@ export function AppHost({ appId }: { appId: string }) {
         pushTheme();
         return;
       }
+      if (msg.type === "toolbar-set") {
+        setToolbarSlots(msg.slots);
+        return;
+      }
       if (msg.type !== "request") return;
 
       const respond = (ok: boolean, result?: unknown, errorText?: string) =>
@@ -134,6 +157,22 @@ export function AppHost({ appId }: { appId: string }) {
           return;
         }
         notify(`${app.manifest.name}: ${String(msg.params.message ?? "")}`);
+        respond(true, { ok: true });
+        return;
+      }
+
+      if (msg.method === "shell.askAgent") {
+        if (grants["shell:agent"] !== "granted") {
+          respond(false, undefined, `Permission denied: Chat access is not granted for ${app.manifest.name}.`);
+          return;
+        }
+        const text = String(msg.params.text ?? "");
+        const submit = msg.params.submit === true;
+        const wm = useWindowStore.getState();
+        const chatKey = windowKey({ type: "system", app: "chat" });
+        wm.open({ type: "system", app: "chat" }, "Chat");
+        wm.focus(chatKey);
+        primeComposer({ text, submit });
         respond(true, { ok: true });
         return;
       }
@@ -161,9 +200,28 @@ export function AppHost({ appId }: { appId: string }) {
     <div className="arco-appsurface">
       <div className="arco-appsurface__toolbar">
         <ShieldAlert size={13} style={{ color: "var(--arco-text-tertiary)" }} />
-        <span className="arco-studio__editorpath" style={{ flex: 1 }}>
+        <span className="arco-studio__editorpath">
           {app.manifest.name} · v{app.manifest.version} · {app.manifest.tier}
         </span>
+        {toolbarSlots.map((slot) =>
+          slot.kind === "search" ? (
+            <input
+              key={slot.id}
+              type="search"
+              className="arco-input arco-appsurface__toolbar-search"
+              placeholder={slot.placeholder}
+              value={slot.value ?? ""}
+              aria-label={slot.label ?? slot.placeholder ?? "Search"}
+              onChange={(event) => {
+                const value = event.target.value;
+                setToolbarSlots((prev) =>
+                  prev.map((each) => (each.id === slot.id ? { ...each, value } : each)),
+                );
+                postToApp({ appBridge: true, type: "toolbar-input", id: slot.id, value });
+              }}
+            />
+          ) : null,
+        )}
         <button
           className="arco-btn arco-btn--icon"
           onClick={() => setFrameTick((t) => t + 1)}

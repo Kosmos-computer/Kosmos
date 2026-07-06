@@ -4,10 +4,6 @@
  * server exposes, a per-tool enable toggle (disabled tools are hidden from
  * the model), and a per-tool policy chip that writes `mcp:<id>#<tool>`
  * rules (default → auto → confirm → deny).
- *
- * The add form supports both transports: a stdio command (e.g.
- * `npx -y @modelcontextprotocol/server-filesystem /tmp`) or an http/sse URL.
- * Env vars and headers accept KEY=VALUE lines; values come back masked.
  */
 import { useCallback, useEffect, useState } from "react";
 import { ChevronDown, ChevronRight, RefreshCw, Trash2 } from "lucide-react";
@@ -19,6 +15,23 @@ import type {
 } from "@shared/types";
 import { api } from "../../lib/api";
 import { useCan } from "../../os/auth/authStore";
+import {
+  SettingsAlert,
+  SettingsEmpty,
+  SettingsFieldRow,
+  SettingsLog,
+  SettingsPage,
+  SettingsPanel,
+  SettingsPanelBody,
+  SettingsPanelHeader,
+  SettingsRow,
+  SettingsRowActions,
+  SettingsSection,
+  SettingsStack,
+  SettingsStatusDot,
+  SettingsSubhead,
+} from "../../components/patterns";
+import { Button, Chip, Input } from "../../components/ui";
 
 const STATUS_COLOR: Record<McpServerInfo["status"], string> = {
   running: "var(--arco-success)",
@@ -27,7 +40,6 @@ const STATUS_COLOR: Record<McpServerInfo["status"], string> = {
   stopped: "var(--arco-text-tertiary)",
 };
 
-/** Parse "KEY=VALUE" lines into a record (used for env vars and headers). */
 function parseKeyValues(text: string): Record<string, string> | undefined {
   const out: Record<string, string> = {};
   for (const line of text.split("\n")) {
@@ -43,7 +55,6 @@ function transportSummary(t: McpTransport): string {
   return `${t.kind} · ${t.url}`;
 }
 
-/** Policy chip for one MCP tool: default → auto → confirm → deny → default. */
 function ToolPolicyChip({
   ruleKey,
   rules,
@@ -61,13 +72,9 @@ function ToolPolicyChip({
     onChanged();
   };
   return (
-    <button
-      className={`arco-chip ${current ? "arco-chip--active" : ""}`}
-      onClick={() => void cycle()}
-      title="Agent policy for this tool (default: reads auto, writes confirm)"
-    >
+    <Chip active={Boolean(current)} onClick={() => void cycle()} title="Agent policy for this tool">
       {current ?? "default"}
-    </button>
+    </Chip>
   );
 }
 
@@ -93,38 +100,27 @@ function ToolRow({
     onChanged();
   };
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, opacity: disabled ? 0.55 : 1 }}>
-      <code style={{ fontSize: "var(--arco-text-sm)", flexShrink: 0 }}>{tool.name}</code>
-      <span
-        style={{
-          flex: 1,
-          color: "var(--arco-text-tertiary)",
-          fontSize: "var(--arco-text-xs)",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
-        }}
-      >
-        {tool.readOnly ? "read · " : ""}
-        {tool.description ?? ""}
-      </span>
-      {canManage && (
-        <>
-          <ToolPolicyChip
-            ruleKey={`mcp:${server.config.id}#${tool.name}`}
-            rules={rules}
-            onChanged={onChanged}
-          />
-          <button
-            className={`arco-chip ${disabled ? "" : "arco-chip--active"}`}
-            onClick={() => void toggle()}
-            aria-pressed={!disabled}
-          >
-            {disabled ? "hidden" : "exposed"}
-          </button>
-        </>
-      )}
-    </div>
+    <SettingsRow disabled={disabled}>
+      <div className="arco-settings-tool-row">
+        <code className="arco-code arco-code--nowrap">{tool.name}</code>
+        <span className="arco-settings-tool-row__desc">
+          {tool.readOnly ? "read · " : ""}
+          {tool.description ?? ""}
+        </span>
+        {canManage && (
+          <SettingsRowActions>
+            <ToolPolicyChip
+              ruleKey={`mcp:${server.config.id}#${tool.name}`}
+              rules={rules}
+              onChanged={onChanged}
+            />
+            <Chip active={!disabled} onClick={() => void toggle()} aria-pressed={!disabled}>
+              {disabled ? "hidden" : "exposed"}
+            </Chip>
+          </SettingsRowActions>
+        )}
+      </div>
+    </SettingsRow>
   );
 }
 
@@ -169,94 +165,45 @@ function ServerCard({
   };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 8,
-        padding: "10px 12px",
-        border: "1px solid var(--arco-border)",
-        borderRadius: "var(--arco-radius-md, 8px)",
-        opacity: cfg.enabled ? 1 : 0.6,
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span
-          aria-label={`status: ${server.status}`}
-          style={{
-            width: 8,
-            height: 8,
-            borderRadius: "50%",
-            background: STATUS_COLOR[cfg.enabled ? server.status : "stopped"],
-            flexShrink: 0,
-          }}
+    <SettingsPanel disabled={!cfg.enabled}>
+      <SettingsPanelHeader>
+        <SettingsStatusDot
+          color={STATUS_COLOR[cfg.enabled ? server.status : "stopped"]}
+          label={`status: ${server.status}`}
         />
-        <strong style={{ fontSize: "var(--arco-text-md)" }}>{cfg.name}</strong>
-        <span
-          style={{
-            color: "var(--arco-text-tertiary)",
-            fontSize: "var(--arco-text-xs)",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {transportSummary(cfg.transport)}
-        </span>
-        <span style={{ flex: 1 }} />
+        <span className="arco-settings-panel__title">{cfg.name}</span>
+        <span className="arco-settings-panel__meta">{transportSummary(cfg.transport)}</span>
         {canManage && (
-          <>
-            <button
-              className={`arco-chip ${cfg.enabled ? "arco-chip--active" : ""}`}
-              onClick={() => void setEnabled(!cfg.enabled)}
-              aria-pressed={cfg.enabled}
-            >
+          <SettingsRowActions>
+            <Chip active={cfg.enabled} onClick={() => void setEnabled(!cfg.enabled)} aria-pressed={cfg.enabled}>
               {cfg.enabled ? "enabled" : "disabled"}
-            </button>
-            <button
-              className="arco-btn arco-btn--icon"
-              onClick={() => void restart()}
-              aria-label={`Restart ${cfg.name}`}
-              title="Restart"
-            >
+            </Chip>
+            <Button size="icon" onClick={() => void restart()} aria-label={`Restart ${cfg.name}`} title="Restart">
               <RefreshCw size={13} />
-            </button>
-            <button
-              className="arco-btn arco-btn--icon"
-              onClick={() => void remove()}
-              aria-label={`Remove ${cfg.name}`}
-            >
+            </Button>
+            <Button size="icon" onClick={() => void remove()} aria-label={`Remove ${cfg.name}`}>
               <Trash2 size={13} />
-            </button>
-          </>
+            </Button>
+          </SettingsRowActions>
         )}
-      </div>
+      </SettingsPanelHeader>
 
-      {server.error && (
-        <span style={{ color: "var(--arco-danger, #e5484d)", fontSize: "var(--arco-text-sm)" }}>
-          {server.error}
-        </span>
-      )}
+      {server.error ? <SettingsAlert tone="error">{server.error}</SettingsAlert> : null}
 
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <button
-          className="arco-btn"
-          onClick={() => setExpanded((e) => !e)}
-          aria-expanded={expanded}
-          style={{ fontSize: "var(--arco-text-xs)" }}
-        >
+      <SettingsRow>
+        <Button className="arco-card__meta" onClick={() => setExpanded((e) => !e)} aria-expanded={expanded}>
           {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
           {server.tools.length} tool{server.tools.length === 1 ? "" : "s"}
-        </button>
+        </Button>
         {cfg.transport.kind === "stdio" && (
-          <button className="arco-btn" style={{ fontSize: "var(--arco-text-xs)" }} onClick={() => void viewLog()}>
+          <Button className="arco-card__meta" onClick={() => void viewLog()}>
             {log !== null ? "Hide log" : "View log"}
-          </button>
+          </Button>
         )}
-      </div>
+      </SettingsRow>
 
       {expanded && server.tools.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <SettingsPanelBody>
           {server.tools.map((tool) => (
             <ToolRow
               key={tool.name}
@@ -267,27 +214,11 @@ function ServerCard({
               onChanged={onChanged}
             />
           ))}
-        </div>
+        </SettingsPanelBody>
       )}
 
-      {log !== null && (
-        <pre
-          style={{
-            fontSize: "var(--arco-text-xs)",
-            fontFamily: "var(--arco-font-mono)",
-            background: "var(--arco-bg-sunk)",
-            padding: 8,
-            borderRadius: "var(--arco-radius-s, 4px)",
-            maxHeight: 200,
-            overflow: "auto",
-            whiteSpace: "pre-wrap",
-            wordBreak: "break-word",
-          }}
-        >
-          {log}
-        </pre>
-      )}
-    </div>
+      {log !== null && <SettingsLog>{log}</SettingsLog>}
+    </SettingsPanel>
   );
 }
 
@@ -297,7 +228,6 @@ export function McpServersSection() {
   const [rules, setRules] = useState<Record<string, AgentPolicyDecision>>({});
   const [error, setError] = useState<string | null>(null);
 
-  // Add form
   const [name, setName] = useState("");
   const [kind, setKind] = useState<"stdio" | "http" | "sse">("stdio");
   const [command, setCommand] = useState("");
@@ -330,8 +260,6 @@ export function McpServersSection() {
       const keyValues = parseKeyValues(secrets);
       let transport: McpTransport;
       if (kind === "stdio") {
-        // First token is the command, the rest are args — matches how users
-        // paste "npx -y @modelcontextprotocol/server-filesystem /tmp".
         const parts = command.trim().split(/\s+/);
         transport = {
           kind: "stdio",
@@ -359,100 +287,94 @@ export function McpServersSection() {
     name.trim().length > 0 && (kind === "stdio" ? command.trim().length > 0 : url.trim().length > 0);
 
   return (
-    <section className="arco-form">
-      <strong>MCP servers</strong>
-      <span style={{ color: "var(--arco-text-secondary)", fontSize: "var(--arco-text-sm)" }}>
-        External tool providers (Model Context Protocol). Tools from running servers join the
-        agent; writes ask for approval unless you set a policy rule.
-      </span>
+    <SettingsPage>
+      <SettingsSection intro="External tool providers (Model Context Protocol). Tools from running servers join the agent; writes ask for approval unless you set a policy rule.">
+        {error ? <SettingsAlert tone="error">{error}</SettingsAlert> : null}
 
-      {error && (
-        <span style={{ color: "var(--arco-danger, #e5484d)", fontSize: "var(--arco-text-sm)" }}>
-          {error}
-        </span>
-      )}
+        {servers.length === 0 ? (
+          <SettingsEmpty>No MCP servers configured.</SettingsEmpty>
+        ) : (
+          <SettingsStack>
+            {servers.map((server) => (
+              <ServerCard
+                key={server.config.id}
+                server={server}
+                rules={rules}
+                canManage={canManage}
+                onChanged={() => void refresh()}
+              />
+            ))}
+          </SettingsStack>
+        )}
 
-      {servers.length === 0 ? (
-        <span style={{ color: "var(--arco-text-tertiary)", fontSize: "var(--arco-text-sm)" }}>
-          No MCP servers configured.
-        </span>
-      ) : (
-        servers.map((server) => (
-          <ServerCard
-            key={server.config.id}
-            server={server}
-            rules={rules}
-            canManage={canManage}
-            onChanged={() => void refresh()}
-          />
-        ))
-      )}
-
-      {canManage && (
-        <>
-          <label className="arco-label" htmlFor="mcp-name">
-            Add server
-          </label>
-          <div style={{ display: "flex", gap: 8 }}>
-            <input
-              id="mcp-name"
-              className="arco-input"
-              style={{ flex: 1 }}
-              placeholder="Name (e.g. Filesystem)"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-            <select
-              className="arco-input"
-              style={{ width: 100 }}
-              value={kind}
-              onChange={(e) => setKind(e.target.value as typeof kind)}
-              aria-label="Transport kind"
-            >
-              <option value="stdio">stdio</option>
-              <option value="http">http</option>
-              <option value="sse">sse</option>
-            </select>
-          </div>
-          {kind === "stdio" ? (
-            <input
-              className="arco-input"
-              placeholder="npx -y @modelcontextprotocol/server-filesystem /tmp"
-              value={command}
-              onChange={(e) => setCommand(e.target.value)}
-              aria-label="Command"
-            />
-          ) : (
-            <input
-              className="arco-input"
-              placeholder="https://example.com/mcp"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              aria-label="Server URL"
-            />
-          )}
-          <textarea
-            className="arco-input"
-            rows={2}
-            placeholder={
-              kind === "stdio" ? "Env vars, one per line: API_TOKEN=…" : "Headers, one per line: Authorization=Bearer …"
-            }
-            value={secrets}
-            onChange={(e) => setSecrets(e.target.value)}
-            aria-label={kind === "stdio" ? "Environment variables" : "Headers"}
-            style={{ fontFamily: "var(--arco-font-mono)", fontSize: "var(--arco-text-xs)" }}
-          />
-          <div>
-            <button
-              className="arco-btn arco-btn--primary"
-              disabled={adding || !canSubmit}
-              onClick={() => void add()}
-            >
-              {adding ? "Connecting…" : "Add & connect"}
-            </button>
-          </div>
-        </>
-      )}
-    </section>
+        {canManage && (
+          <>
+            <SettingsSubhead>Add server</SettingsSubhead>
+            <SettingsStack>
+              <SettingsFieldRow label="Name" htmlFor="mcp-name">
+                <Input
+                  id="mcp-name"
+                  width="auto"
+                  placeholder="Name (e.g. Filesystem)"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+                <select
+                  className="arco-input arco-input--compact"
+                  value={kind}
+                  onChange={(e) => setKind(e.target.value as typeof kind)}
+                  aria-label="Transport kind"
+                >
+                  <option value="stdio">stdio</option>
+                  <option value="http">http</option>
+                  <option value="sse">sse</option>
+                </select>
+              </SettingsFieldRow>
+              <SettingsFieldRow label={kind === "stdio" ? "Command" : "URL"}>
+                {kind === "stdio" ? (
+                  <Input
+                    width="auto"
+                    placeholder="npx -y @modelcontextprotocol/server-filesystem /tmp"
+                    value={command}
+                    onChange={(e) => setCommand(e.target.value)}
+                    aria-label="Command"
+                  />
+                ) : (
+                  <Input
+                    width="auto"
+                    placeholder="https://example.com/mcp"
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    aria-label="Server URL"
+                  />
+                )}
+              </SettingsFieldRow>
+              <SettingsFieldRow
+                label={kind === "stdio" ? "Env vars" : "Headers"}
+                hint="One KEY=VALUE per line"
+              >
+                <textarea
+                  className="arco-input arco-settings-log"
+                  rows={2}
+                  placeholder={
+                    kind === "stdio"
+                      ? "API_TOKEN=…"
+                      : "Authorization=Bearer …"
+                  }
+                  value={secrets}
+                  onChange={(e) => setSecrets(e.target.value)}
+                  aria-label={kind === "stdio" ? "Environment variables" : "Headers"}
+                />
+              </SettingsFieldRow>
+              <SettingsFieldRow label=" ">
+                <Button variant="primary" disabled={adding || !canSubmit} onClick={() => void add()}>
+                  {adding ? "Connecting…" : "Add & connect"}
+                </Button>
+              </SettingsFieldRow>
+            </SettingsStack>
+          </>
+        )}
+      </SettingsSection>
+    </SettingsPage>
   );
 }

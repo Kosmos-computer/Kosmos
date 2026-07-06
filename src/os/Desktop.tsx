@@ -18,6 +18,7 @@ import { WebAppSurface } from "../apps/appview/WebAppSurface";
 import { AppHost } from "../apps/appview/AppHost";
 import { AgentCursor } from "./cursor/AgentCursor";
 import { ConfirmCard } from "../apps/chat/ConfirmCard";
+import { WallpaperBackdrop } from "./wallpaper/WallpaperBackdrop";
 
 function Notifications() {
   const notifications = useOsStore((s) => s.notifications);
@@ -83,7 +84,6 @@ function WindowContent({ winId }: { winId: string }) {
 }
 
 export function Desktop() {
-  const wallpaper = useOsStore((s) => s.wallpaper);
   const navExpanded = useOsStore((s) => s.navExpanded);
   const refreshApps = useOsStore((s) => s.refreshApps);
   const windows = useWindowStore((s) => s.windows);
@@ -112,10 +112,11 @@ export function Desktop() {
 
   return (
     <div
-      className={`arco-desktop arco-wallpaper-${wallpaper}`}
+      className="arco-desktop"
       // Maximized windows read this to sit flush against the rail edge.
       style={{ "--arco-nav-width": navExpanded ? "200px" : "56px" } as CSSProperties}
     >
+      <WallpaperBackdrop />
       <MenuBar />
       <NavRail />
       {windows.map((win) => (

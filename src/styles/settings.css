@@ -1,0 +1,464 @@
+/* Settings app — Longformer-style two-pane shell + normalized detail pages. */
+
+.arco-settings-shell {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+  background: var(--arco-bg-surface-solid);
+}
+
+.arco-settings-shell__main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--arco-bg-surface-solid);
+}
+
+.arco-settings-shell__header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--arco-space-xl) var(--arco-space-2xl) var(--arco-space-m);
+}
+
+.arco-settings-shell__title {
+  margin: 0;
+  font-size: var(--arco-text-xl);
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--arco-text-primary);
+}
+
+.arco-settings-shell__content {
+  flex: 1;
+  min-height: 0;
+  padding: var(--arco-space-s) var(--arco-space-2xl) var(--arco-space-2xl);
+  overflow-y: auto;
+}
+
+.arco-settings-shell .arco-nav-sidebar__sections {
+  padding-top: var(--arco-space-m);
+}
+
+.arco-settings-shell .arco-nav-sidebar__nav-item {
+  font-size: var(--arco-text-sm);
+}
+
+/* ── Detail page ─────────────────────────────────────────────────────────── */
+
+.arco-settings-page {
+  max-width: 740px;
+}
+
+.arco-settings-section {
+  scroll-margin-top: var(--arco-space-m);
+}
+
+.arco-settings-intro {
+  margin: 0 0 var(--arco-space-xl);
+  color: var(--arco-text-secondary);
+  font-size: var(--arco-text-md);
+  line-height: 1.55;
+}
+
+.arco-settings-subhead {
+  margin: var(--arco-space-xl) 0 var(--arco-space-m);
+  font-size: var(--arco-text-md);
+  font-weight: 700;
+  color: var(--arco-text-primary);
+}
+
+.arco-settings-divider {
+  margin: var(--arco-space-2xl) 0;
+  border: none;
+  border-top: 1px solid var(--arco-border);
+}
+
+.arco-settings-group-label {
+  padding: var(--arco-space-l) 0 var(--arco-space-xs);
+  font-size: var(--arco-text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--arco-text-tertiary);
+}
+
+.arco-settings-group-label:first-child {
+  padding-top: 0;
+}
+
+/* ── Row stack with hairline dividers ────────────────────────────────────── */
+
+.arco-settings-stack {
+  display: flex;
+  flex-direction: column;
+}
+
+.arco-settings-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-l);
+  min-height: 52px;
+  padding: var(--arco-space-m) 0;
+}
+
+.arco-settings-stack > .arco-settings-row + .arco-settings-row::before,
+.arco-settings-stack > .arco-settings-panel + .arco-settings-panel::before,
+.arco-settings-stack > .arco-settings-row + .arco-settings-panel::before,
+.arco-settings-stack > .arco-settings-panel + .arco-settings-row::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: var(--arco-border);
+  pointer-events: none;
+}
+
+.arco-settings-row--align-top {
+  align-items: flex-start;
+}
+
+.arco-settings-row--align-top .arco-settings-row__label {
+  padding-top: var(--arco-space-xs);
+}
+
+.arco-settings-row--align-top .arco-settings-row__control {
+  align-items: flex-start;
+}
+
+.arco-settings-row__label {
+  flex: 0 0 160px;
+  min-width: 0;
+  font-size: var(--arco-text-md);
+  font-weight: 600;
+  color: var(--arco-text-primary);
+}
+
+.arco-settings-row__label label {
+  display: block;
+  cursor: pointer;
+}
+
+.arco-settings-row__hint {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--arco-text-sm);
+  font-weight: 400;
+  color: var(--arco-text-tertiary);
+}
+
+.arco-settings-row__control {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  color: var(--arco-text-secondary);
+  font-size: var(--arco-text-md);
+}
+
+.arco-settings-row__meta {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+}
+
+.arco-settings-row__actions {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-xs);
+}
+
+.arco-settings-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--arco-space-xs);
+}
+
+/* ── Nested panels (apps, MCP servers) ─────────────────────────────────────── */
+
+.arco-settings-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-m) 0;
+}
+
+.arco-settings-panel--disabled {
+  opacity: 0.6;
+}
+
+.arco-settings-panel__header {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  flex-wrap: wrap;
+}
+
+.arco-settings-panel__header .arco-settings-row__actions {
+  margin-left: auto;
+}
+
+.arco-settings-row > .arco-settings-subhead {
+  margin: 0;
+  flex: 1;
+}
+
+.arco-settings-panel__title {
+  font-size: var(--arco-text-md);
+  font-weight: 600;
+  color: var(--arco-text-primary);
+}
+
+.arco-settings-panel__meta {
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+}
+
+.arco-settings-panel__desc {
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-secondary);
+  line-height: 1.5;
+}
+
+.arco-settings-panel__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-2xs);
+  padding-left: calc(8px + var(--arco-space-s));
+}
+
+/* ── Alerts, empty, save, log ──────────────────────────────────────────────── */
+
+.arco-settings-alert {
+  margin: 0 0 var(--arco-space-m);
+  font-size: var(--arco-text-sm);
+}
+
+.arco-settings-alert--error {
+  color: var(--arco-danger);
+}
+
+.arco-settings-alert--success {
+  color: var(--arco-success);
+}
+
+.arco-settings-alert--muted {
+  color: var(--arco-text-tertiary);
+}
+
+.arco-settings-empty {
+  margin: var(--arco-space-xl) 0;
+  color: var(--arco-text-secondary);
+  font-size: var(--arco-text-md);
+}
+
+.arco-settings-save-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  padding-top: var(--arco-space-l);
+  margin-top: var(--arco-space-m);
+  border-top: 1px solid var(--arco-border);
+}
+
+.arco-settings-save-bar__saved {
+  font-size: var(--arco-text-sm);
+  color: var(--arco-success);
+}
+
+.arco-settings-log {
+  margin: 0;
+  padding: var(--arco-space-s);
+  border-radius: var(--arco-radius-s);
+  background: var(--arco-bg-sunk);
+  border: 1px solid var(--arco-border);
+  font-family: var(--arco-font-mono);
+  font-size: var(--arco-text-xs);
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 200px;
+  overflow: auto;
+  color: var(--arco-text-secondary);
+}
+
+.arco-settings-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Tool / list rows inside a stack */
+.arco-settings-tool-row {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  width: 100%;
+}
+
+.arco-settings-tool-row__desc {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+}
+
+.arco-settings-callout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-xs);
+  padding: var(--arco-space-m) 0;
+  margin: var(--arco-space-m) 0;
+  border-top: 1px solid var(--arco-border);
+  border-bottom: 1px solid var(--arco-border);
+  background: transparent;
+}
+
+.arco-settings-callout--warning {
+  border-top-color: color-mix(in srgb, var(--arco-warning) 40%, var(--arco-border));
+  border-bottom-color: color-mix(in srgb, var(--arco-warning) 40%, var(--arco-border));
+}
+
+.arco-settings-callout__token {
+  flex: 1;
+  font-size: var(--arco-text-xs);
+  word-break: break-all;
+  font-family: var(--arco-font-mono);
+}
+
+.arco-settings-appearance-group {
+  margin-top: 0;
+}
+
+/* ── Settings-scoped overrides (no boxed cards, Longformer-flat) ─────────── */
+
+.arco-settings-shell .arco-form,
+.arco-settings-shell .arco-card {
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  gap: 0;
+}
+
+.arco-settings-shell .arco-section__title {
+  display: none;
+}
+
+.arco-settings-shell .arco-label {
+  font-size: var(--arco-text-md);
+  font-weight: 600;
+  color: var(--arco-text-primary);
+  margin: 0;
+}
+
+.arco-settings-shell .arco-settings-log {
+  border: none;
+  background: var(--arco-bg-sunk);
+}
+
+.arco-settings-shell .arco-wallpaper-grid {
+  width: 100%;
+}
+
+.arco-settings-shell .arco-wallpaper-swatch {
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.arco-settings-shell .arco-wallpaper-swatch:hover {
+  border-color: transparent;
+}
+
+.arco-settings-shell .arco-wallpaper-swatch--active {
+  border: none;
+  box-shadow: none;
+}
+
+.arco-settings-shell .arco-wallpaper-swatch__preview {
+  border: 2px solid var(--arco-border);
+  transition:
+    border-color var(--arco-dur-fast),
+    box-shadow var(--arco-dur-fast);
+}
+
+.arco-settings-shell .arco-wallpaper-swatch:hover .arco-wallpaper-swatch__preview {
+  border-color: var(--arco-border-strong);
+}
+
+.arco-settings-shell .arco-wallpaper-swatch--active .arco-wallpaper-swatch__preview {
+  border-color: var(--arco-accent);
+  box-shadow: 0 0 0 1px var(--arco-accent-soft);
+}
+
+.arco-settings-shell .arco-wallpaper-swatch__label {
+  font-weight: 600;
+}
+
+/* Audit trail rows */
+.arco-settings-audit-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-xs) 0;
+  font-size: var(--arco-text-xs);
+  border-bottom: 1px solid var(--arco-border);
+}
+
+.arco-settings-audit-time {
+  color: var(--arco-text-tertiary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.arco-settings-audit-detail {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--arco-text-tertiary);
+}
+
+/* Legacy helpers kept for any stragglers */
+.arco-settings__nested {
+  padding-left: var(--arco-space-s);
+}
+
+@media (max-width: 900px) {
+  .arco-settings-shell__header,
+  .arco-settings-shell__content {
+    padding-left: var(--arco-space-l);
+    padding-right: var(--arco-space-l);
+  }
+
+  .arco-settings-row__label {
+    flex-basis: 120px;
+  }
+
+  .arco-settings-row {
+    flex-wrap: wrap;
+    gap: var(--arco-space-s);
+  }
+}

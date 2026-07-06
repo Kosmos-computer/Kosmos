@@ -1,0 +1,102 @@
+.section {
+  max-width: var(--lf-max-width);
+  margin: 0 auto;
+  padding: 4rem 1.25rem 0;
+}
+
+@media (min-width: 768px) {
+  .section {
+    padding-top: 7rem;
+  }
+}
+
+.card {
+  padding: 2.5rem 1.75rem;
+  border-radius: var(--lf-radius-lg);
+  background: var(--lf-text);
+  color: var(--lf-on-dark);
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  .card {
+    padding: 3.5rem 3rem;
+  }
+}
+
+.title {
+  margin: 0;
+  font-family: var(--lf-font-sans);
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-weight: 400;
+  line-height: 1.15;
+}
+
+.body {
+  margin: 1rem auto 0;
+  max-width: 36rem;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: rgba(245, 245, 245, 0.78);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.625rem;
+  margin-top: 1.75rem;
+}
+
+.actions .buttonPrimary {
+  background: var(--lf-on-dark);
+  border-color: var(--lf-on-dark);
+  color: var(--lf-text);
+}
+
+.actions .buttonSecondary {
+  background: transparent;
+  border-color: rgba(245, 245, 245, 0.35);
+  color: var(--lf-on-dark);
+}
+
+.footer {
+  margin-top: 4rem;
+  padding: 2.5rem 1.25rem 3rem;
+  border-top: 1px solid rgba(64, 64, 64, 0.12);
+}
+
+.footerInner {
+  max-width: var(--lf-max-width);
+  margin: 0 auto;
+  text-align: center;
+}
+
+.footerBrand {
+  margin: 0;
+  font-family: var(--lf-font-mono);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.footerCopy {
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
+  color: var(--lf-text-muted);
+}
+
+.footerNav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem 1.5rem;
+  margin-top: 1.25rem;
+  font-size: 0.875rem;
+  color: var(--lf-accent);
+}
+
+.footerNav a:hover {
+  opacity: 0.7;
+}

@@ -500,33 +500,43 @@
   flex: 1;
   min-width: 0;
   min-height: 0;
-  border-right: 1px solid var(--arco-border);
 }
 
-.arco-sidebar-pane__handle {
+/* ── Column resize handle (shared) ─────────────────────────────────────────
+   Overlaps adjacent panes (negative margin) so the 1px grip sits on the
+   seam with no dead space — used by SidebarPane, Agent Studio, etc. */
+
+.arco-resize-handle {
+  position: relative;
   width: 6px;
   flex-shrink: 0;
+  margin: 0 -3px;
   display: flex;
   align-items: stretch;
   justify-content: center;
   cursor: col-resize;
   touch-action: none;
+  z-index: 1;
 }
 
-.arco-sidebar-pane__handle:hover,
-.arco-sidebar-pane__handle--active {
+.arco-resize-handle:hover,
+.arco-resize-handle--active {
   background: var(--arco-accent-soft);
 }
 
-.arco-sidebar-pane__grip {
-  width: 2px;
-  margin: var(--arco-space-m) 0;
+.arco-resize-handle__grip {
+  width: 1px;
+  align-self: stretch;
   border-radius: 999px;
-  background: var(--arco-border-strong);
+  background: var(--arco-border);
+  transition:
+    background var(--arco-dur-fast),
+    width var(--arco-dur-fast);
 }
 
-.arco-sidebar-pane__handle:hover .arco-sidebar-pane__grip,
-.arco-sidebar-pane__handle--active .arco-sidebar-pane__grip {
+.arco-resize-handle:hover .arco-resize-handle__grip,
+.arco-resize-handle--active .arco-resize-handle__grip {
+  width: 2px;
   background: var(--arco-accent);
 }
 

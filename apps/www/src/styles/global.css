@@ -17,6 +17,14 @@
   --lf-radius: 0.625rem;
   --lf-radius-lg: 1rem;
   --lf-max-width: 87.5rem;
+
+  /* Clay UI — light monochrome adaptation */
+  --clay-base: #e8e8e8;
+  --clay-highlight: rgba(255, 255, 255, 0.9);
+  --clay-shadow: rgba(0, 0, 0, 0.12);
+  --clay-shadow-deep: #c4c4c4;
+  --clay-inset-light: rgba(255, 255, 255, 0.85);
+  --clay-inset-dark: rgba(0, 0, 0, 0.06);
 }
 
 *,
@@ -40,6 +48,8 @@ body {
 
 #root {
   min-height: 100vh;
+  position: relative;
+  z-index: 1;
 }
 
 a {

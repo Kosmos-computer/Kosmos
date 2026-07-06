@@ -1,10 +1,10 @@
 .hero {
-  padding-top: 2.5rem;
+  padding-top: 7rem;
 }
 
 @media (min-width: 768px) {
   .hero {
-    padding-top: 4rem;
+    padding-top: 8.5rem;
   }
 }
 

@@ -87,10 +87,10 @@ export const installedAppStore = {
     }
     const installed = new Set(load().map((e) => e.manifest.id));
     for (const dir of dirs) {
+      const manifestPath = path.join(APPS_DIR, dir, "manifest.json");
+      if (!fs.existsSync(manifestPath)) continue;
       try {
-        const raw = JSON.parse(
-          fs.readFileSync(path.join(APPS_DIR, dir, "manifest.json"), "utf-8"),
-        ) as unknown;
+        const raw = JSON.parse(fs.readFileSync(manifestPath, "utf-8")) as unknown;
         const { manifest, error } = parseManifest(raw);
         if (!manifest) {
           console.warn(`[platform] skipping app seed "${dir}": ${error}`);

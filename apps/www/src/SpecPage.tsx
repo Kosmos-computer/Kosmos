@@ -14,11 +14,7 @@ import { specNavLinks } from "./content/spec-content";
 export default function SpecPage() {
   return (
     <div>
-      <SiteHeader
-        links={specNavLinks}
-        homeHref="/"
-        primaryAction={{ label: "Roadmap", href: "#roadmap" }}
-      />
+      <SiteHeader links={specNavLinks} homeHref="/" />
       <main>
         <SpecHero />
         <FoundationSection />
@@ -31,6 +27,7 @@ export default function SpecPage() {
         <CTASection
           title="One registry away from generative apps"
           body="The full spec lives in docs/open-standards-map.md and the Arco docs site. Start with the registry prototype — everything else on the roadmap builds on it."
+          journey={false}
           actions={[
             { label: "Back to Kosmos", href: "/", variant: "primary" },
             { label: "Arco docs", href: arcoDocsUrl, variant: "secondary" },

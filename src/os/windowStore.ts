@@ -130,6 +130,35 @@ const DEFAULT_SIZES: Record<string, { w: number; h: number }> = {
   "system:settings": { w: 560, h: 620 },
 };
 
+const MENUBAR_HEIGHT = 34;
+const MIN_VISIBLE = 80;
+
+function navWidth(): number {
+  if (typeof window === "undefined") return 56;
+  const raw = getComputedStyle(document.documentElement).getPropertyValue("--arco-nav-width").trim();
+  const parsed = parseInt(raw, 10);
+  return Number.isFinite(parsed) ? parsed : 56;
+}
+
+/** Keep restored windows reachable — persisted layouts can land off-screen. */
+function ensureVisibleRect(key: string, rect: WindowRect, index: number): WindowRect {
+  if (typeof window === "undefined") return rect;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const leftBound = navWidth() + 12;
+  let { x, y, w, h } = rect;
+  const visibleW = Math.max(0, Math.min(x + w, vw) - Math.max(x, leftBound));
+  const visibleH = Math.max(0, Math.min(y + h, vh) - Math.max(y, MENUBAR_HEIGHT));
+  if (visibleW < MIN_VISIBLE || visibleH < MIN_VISIBLE) {
+    return defaultRect(key, index);
+  }
+  w = Math.min(w, vw - leftBound - 12);
+  h = Math.min(h, vh - MENUBAR_HEIGHT - 12);
+  x = Math.max(leftBound, Math.min(x, vw - w - 12));
+  y = Math.max(MENUBAR_HEIGHT + 2, Math.min(y, vh - h - 12));
+  return { x, y, w, h };
+}
+
 function defaultRect(key: string, index: number): WindowRect {
   // Web apps are full projects — give them a workbench-sized window.
   // Installed apps get a roomy default too; they're real apps, not widgets.
@@ -174,10 +203,11 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
       const existing = state.windows.find((w) => w.id === id);
       let next: WindowStore;
       if (existing) {
+        const rect = ensureVisibleRect(id, existing, state.windows.indexOf(existing));
         next = {
           ...state,
           windows: state.windows.map((w) =>
-            w.id === id ? { ...w, minimized: false, title, z: state.nextZ } : w,
+            w.id === id ? { ...w, ...rect, minimized: false, title, z: state.nextZ } : w,
           ),
           nextZ: state.nextZ + 1,
         } as WindowStore;
@@ -220,11 +250,15 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
 
   focus: (id) => {
     set((state) => {
+      const target = state.windows.find((w) => w.id === id);
       const top = [...state.windows].sort((a, b) => b.z - a.z)[0];
       if (top?.id === id && !top.minimized) return state;
+      const rect = target ? ensureVisibleRect(id, target, state.windows.indexOf(target)) : undefined;
       const next = {
         ...state,
-        windows: state.windows.map((w) => (w.id === id ? { ...w, z: state.nextZ, minimized: false } : w)),
+        windows: state.windows.map((w) =>
+          w.id === id ? { ...w, ...(rect ?? {}), z: state.nextZ, minimized: false } : w,
+        ),
         nextZ: state.nextZ + 1,
       } as WindowStore;
       persist(next);

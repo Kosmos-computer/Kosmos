@@ -1,0 +1,164 @@
+.section {
+  position: relative;
+  height: 280vh;
+  width: 100%;
+}
+
+.scene {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  perspective: 1200px;
+  overflow: hidden;
+}
+
+.sphere {
+  position: relative;
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+}
+
+.card {
+  position: absolute;
+  width: 140px;
+  height: 190px;
+  left: -70px;
+  top: -95px;
+  transform-style: preserve-3d;
+  backface-visibility: visible;
+}
+
+.cardImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+  filter: grayscale(70%) brightness(0.85);
+  transition: filter 0.4s ease;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.15);
+}
+
+.cardLabel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  font-family: var(--lf-font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--lf-text-secondary);
+  background: linear-gradient(145deg, var(--lf-surface), var(--lf-surface-muted));
+}
+
+.cardActive .cardImage,
+.cardActive .cardLabel {
+  filter: none;
+}
+
+.cardActive .cardImage {
+  filter: grayscale(0%) brightness(1);
+}
+
+.floatingText {
+  position: sticky;
+  top: 28%;
+  z-index: 10;
+  width: min(320px, 42vw);
+  margin-left: clamp(1.25rem, 8vw, 6rem);
+  padding-bottom: 2rem;
+}
+
+.dynamicTitle {
+  margin: 0 0 1rem;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+
+.dynamicDesc {
+  margin: 0;
+  color: var(--lf-text-muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.networkLines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@media (max-width: 768px) {
+  .section {
+    height: 220vh;
+  }
+
+  .floatingText {
+    top: auto;
+    bottom: 12%;
+    margin-left: 5%;
+    width: 90%;
+  }
+
+  .card {
+    width: 110px;
+    height: 150px;
+    left: -55px;
+    top: -75px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .section {
+    height: auto;
+    padding: 4rem 1.25rem;
+  }
+
+  .scene {
+    position: relative;
+    height: auto;
+    min-height: 24rem;
+    perspective: none;
+  }
+
+  .sphere {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 1rem;
+    width: 100%;
+    max-width: var(--lf-max-width);
+    height: auto;
+    margin: 0 auto;
+  }
+
+  .card {
+    position: relative;
+    left: auto;
+    top: auto;
+    width: auto;
+    height: 160px;
+    transform: none !important;
+  }
+
+  .floatingText {
+    position: relative;
+    top: auto;
+    margin: 0 auto 2rem;
+    width: 100%;
+    max-width: var(--lf-max-width);
+    text-align: center;
+  }
+}

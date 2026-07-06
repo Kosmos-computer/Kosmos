@@ -11,6 +11,9 @@ import { normalizeAuthWallpaper, type AuthWallpaperId } from "./wallpaper/authWa
 
 export type Theme = "dark" | "light";
 
+/** Desktop = floating windows with titlebar chrome. App = full-screen apps without window controls. */
+export type ShellView = "desktop" | "app";
+
 export interface OsNotification {
   id: string;
   message: string;
@@ -39,7 +42,13 @@ interface OsStore {
   agentBusy: boolean;
   /** Left nav rail: collapsed icon rail (false) vs expanded icon+label list (true). */
   navExpanded: boolean;
+  /** Which apps show on the nav rail, and in what order (windowKey ids). */
+  navPinnedIds: string[];
+  /** Which apps show on the dock, and in what order (windowKey ids) — independent from navPinnedIds. */
+  dockPinnedIds: string[];
   shellConfirms: ShellConfirm[];
+  /** Shell layout: desktop windows vs chromeless full-screen apps. */
+  shellView: ShellView;
 
   setTheme: (theme: Theme) => void;
   setWallpaper: (wallpaper: WallpaperId) => void;
@@ -49,8 +58,21 @@ interface OsStore {
   refreshApps: () => Promise<void>;
   setAgentBusy: (busy: boolean) => void;
   setNavExpanded: (expanded: boolean) => void;
+  setNavPinnedIds: (updater: string[] | ((prev: string[]) => string[])) => void;
+  setDockPinnedIds: (updater: string[] | ((prev: string[]) => string[])) => void;
+  setShellView: (view: ShellView) => void;
   addShellConfirm: (confirm: ShellConfirm) => void;
   removeShellConfirm: (confirmId: string) => void;
+}
+
+function loadPinnedIds(key: string): string[] {
+  try {
+    const raw = localStorage.getItem(key);
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) && parsed.every((id) => typeof id === "string") ? parsed : [];
+  } catch {
+    return [];
+  }
 }
 
 export const useOsStore = create<OsStore>((set) => ({
@@ -63,7 +85,10 @@ export const useOsStore = create<OsStore>((set) => ({
   installedApps: [],
   agentBusy: false,
   navExpanded: localStorage.getItem("arco:nav-expanded") === "true",
+  navPinnedIds: loadPinnedIds("arco:nav-pinned"),
+  dockPinnedIds: loadPinnedIds("arco:dock-pinned"),
   shellConfirms: [],
+  shellView: localStorage.getItem("arco:shell-view") === "app" ? "app" : "desktop",
 
   setTheme: (theme) => {
     localStorage.setItem("arco:theme", theme);
@@ -124,5 +149,26 @@ export const useOsStore = create<OsStore>((set) => ({
   setNavExpanded: (expanded) => {
     localStorage.setItem("arco:nav-expanded", String(expanded));
     set({ navExpanded: expanded });
+  },
+
+  setNavPinnedIds: (updater) =>
+    set((s) => {
+      const navPinnedIds = typeof updater === "function" ? updater(s.navPinnedIds) : updater;
+      if (navPinnedIds === s.navPinnedIds) return s;
+      localStorage.setItem("arco:nav-pinned", JSON.stringify(navPinnedIds));
+      return { navPinnedIds };
+    }),
+
+  setDockPinnedIds: (updater) =>
+    set((s) => {
+      const dockPinnedIds = typeof updater === "function" ? updater(s.dockPinnedIds) : updater;
+      if (dockPinnedIds === s.dockPinnedIds) return s;
+      localStorage.setItem("arco:dock-pinned", JSON.stringify(dockPinnedIds));
+      return { dockPinnedIds };
+    }),
+
+  setShellView: (shellView) => {
+    localStorage.setItem("arco:shell-view", shellView);
+    set({ shellView });
   },
 }));

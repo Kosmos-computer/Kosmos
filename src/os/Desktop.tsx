@@ -10,6 +10,7 @@ import { useWindowStore } from "./windowStore";
 import { MenuBar } from "./MenuBar";
 import { NavRail } from "./NavRail";
 import { Dock } from "./Dock";
+import { HoverDock } from "./HoverDock";
 import { WindowFrame } from "./WindowFrame";
 import { systemApp } from "./systemApps";
 import { connectShellEvents } from "./shellEvents";
@@ -85,6 +86,7 @@ function WindowContent({ winId }: { winId: string }) {
 
 export function Desktop() {
   const navExpanded = useOsStore((s) => s.navExpanded);
+  const shellView = useOsStore((s) => s.shellView);
   const refreshApps = useOsStore((s) => s.refreshApps);
   const windows = useWindowStore((s) => s.windows);
   const open = useWindowStore((s) => s.open);
@@ -112,7 +114,7 @@ export function Desktop() {
 
   return (
     <div
-      className="arco-desktop"
+      className={["arco-desktop", shellView === "app" && "arco-desktop--app-view"].filter(Boolean).join(" ")}
       // Maximized windows read this to sit flush against the rail edge.
       style={{ "--arco-nav-width": navExpanded ? "200px" : "56px" } as CSSProperties}
     >
@@ -124,7 +126,9 @@ export function Desktop() {
           <WindowContent winId={win.id} />
         </WindowFrame>
       ))}
-      <Dock />
+      <HoverDock enabled={shellView === "app"}>
+        <Dock />
+      </HoverDock>
       <Notifications />
       <ShellConfirms />
       <AgentCursor />

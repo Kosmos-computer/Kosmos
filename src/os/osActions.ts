@@ -13,6 +13,40 @@ import { publishAppEvent } from "./appEventBus";
 import { useStudioStore } from "../apps/studio/studioStore";
 import { STUDIO_TITLE } from "../apps/studio/studioMeta";
 
+/** Open any resolved app id — system, generated, or installed. */
+function openAppById(appId: string): void {
+  const os = useOsStore.getState();
+  const wm = useWindowStore.getState();
+  const wanted = appId.trim();
+  const lower = wanted.toLowerCase();
+  const tail = lower.split(".").pop() ?? lower;
+
+  const sys = SYSTEM_APPS.find((a) => a.id === wanted || a.id === tail);
+  if (sys) {
+    wm.open({ type: "system", app: sys.id }, sys.title);
+    return;
+  }
+
+  void os.refreshApps().then(() => {
+    const state = useOsStore.getState();
+    const generated =
+      state.apps.find((a) => a.id === wanted) ??
+      state.apps.find((a) => a.title.toLowerCase() === lower) ??
+      state.apps.find((a) => a.title.toLowerCase().includes(lower));
+    if (generated) {
+      wm.open({ type: "generated", appId: generated.id }, generated.title);
+      return;
+    }
+    const installed =
+      state.installedApps.find((a) => a.manifest.id === wanted) ??
+      state.installedApps.find((a) => a.manifest.name.toLowerCase() === lower) ??
+      state.installedApps.find((a) => a.manifest.name.toLowerCase().includes(lower));
+    if (installed?.enabled) {
+      wm.open({ type: "installed", appId: installed.manifest.id }, installed.manifest.name);
+    }
+  });
+}
+
 /** Handle the shell-relevant subset of AgentEvents (chat handles the rest). */
 export function handleShellEvent(event: AgentEvent): void {
   const os = useOsStore.getState();
@@ -49,32 +83,17 @@ export function handleShellEvent(event: AgentEvent): void {
     case "os_ui": {
       const action = event.action;
       if (action.action === "open_app") {
-        // One id space for the agent: system apps, generated apps, then
-        // installed platform apps. Refresh first — the app may have been
-        // created (or installed) milliseconds ago.
-        const sys = SYSTEM_APPS.find((a) => a.id === action.appId);
-        if (sys) {
-          wm.open({ type: "system", app: sys.id }, sys.title);
-          break;
-        }
-        void os.refreshApps().then(() => {
-          const state = useOsStore.getState();
-          const generated = state.apps.find((a) => a.id === action.appId);
-          if (generated) {
-            wm.open({ type: "generated", appId: generated.id }, generated.title);
-            return;
-          }
-          const installed = state.installedApps.find((a) => a.manifest.id === action.appId);
-          if (installed?.enabled) {
-            wm.open({ type: "installed", appId: installed.manifest.id }, installed.manifest.name);
-          }
-        });
+        openAppById(action.appId);
       } else if (action.action === "open_system") {
         // Look up lazily: resolving SYSTEM_APPS at module scope creates a
         // circular-import TDZ crash (systemApps → app components → osActions).
         const def = SYSTEM_APPS.find((a) => a.id === action.app);
         if (def) {
           wm.open({ type: "system", app: def.id }, def.title);
+        } else {
+          // Older callers may still send open_system for installed apps like
+          // "docs" — treat the id as an open_app target instead of no-op'ing.
+          openAppById(action.app);
         }
       } else if (action.action === "close_app") {
         // The agent addresses apps by id, not window key — try every kind.

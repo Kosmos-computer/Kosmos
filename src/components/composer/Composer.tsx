@@ -45,6 +45,8 @@ export interface ComposerProps {
   notice?: ReactNode;
   /** When set, renders the usage status bar below the card. */
   usage?: UsageStats;
+  /** Optional left slot in the status row (e.g. project picker). */
+  statusStart?: ReactNode;
   onPlanUsageClick?: () => void;
   inputAriaLabel?: string;
 }
@@ -69,6 +71,7 @@ export function Composer({
   onVoiceToggle,
   notice,
   usage,
+  statusStart,
   onPlanUsageClick,
   inputAriaLabel = "Message",
 }: ComposerProps) {
@@ -134,9 +137,10 @@ export function Composer({
         />
       </div>
       {notice && <div className="arco-composer__noticeslot">{notice}</div>}
-      {usage && (
-        <div className="arco-composer__statusbar">
-          <UsagePopover stats={usage} onPlanUsageClick={onPlanUsageClick} />
+      {(statusStart || usage) && (
+        <div className={`arco-composer__statusbar${statusStart ? " arco-composer__statusbar--split" : ""}`}>
+          {statusStart}
+          {usage && <UsagePopover stats={usage} onPlanUsageClick={onPlanUsageClick} />}
         </div>
       )}
     </div>

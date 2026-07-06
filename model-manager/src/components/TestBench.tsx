@@ -5,6 +5,8 @@
  */
 import { useState } from "react";
 import { Gauge } from "lucide-react";
+import { Button } from "@arco/components/ui/Button";
+import { SettingsAlert, SettingsPanelBody, SettingsPanelHeader } from "@arco/components/patterns/SettingsLayout";
 import { useStore } from "../state/store";
 import { benchChat, type BenchResult } from "../lib/bridge";
 
@@ -39,83 +41,84 @@ export function TestBench() {
   };
 
   return (
-    <div className="mm-card">
-      <div className="mm-card__title">
-        <span>
-          <Gauge size={13} style={{ verticalAlign: -2, marginRight: 6 }} />
+    <section className="arco-card">
+      <SettingsPanelHeader>
+        <span className="arco-settings-panel__title">
+          <Gauge size={13} className="arco-icon arco-icon--secondary" />
           Test bench
         </span>
-      </div>
+      </SettingsPanelHeader>
 
-      <div style={{ display: "flex", gap: 8 }}>
-        <select
-          className="mm-input"
-          style={{ flex: 1 }}
-          value={selected}
-          onChange={(e) => setTarget(e.target.value)}
-          aria-label="Model to benchmark"
-        >
-          {loaded.length === 0 && <option value="">No models on disk</option>}
-          {loaded.map((m) => (
-            <option key={m.file} value={m.routerId ?? ""}>
-              {m.catalog?.label ?? m.file}
-              {m.phase === "running" ? " (loaded)" : ""}
-            </option>
-          ))}
-        </select>
-        <button
-          className="mm-btn mm-btn--primary"
-          onClick={() => void runBench()}
-          disabled={busy || !engineRunning || !selected}
-          title={engineRunning ? "" : "Start the engine first"}
-        >
-          {busy ? "Running…" : "Run"}
-        </button>
-      </div>
-
-      <textarea
-        className="mm-input"
-        rows={2}
-        value={prompt}
-        onChange={(e) => setPrompt(e.target.value)}
-        aria-label="Bench prompt"
-      />
-
-      {error && <div className="mm-hint" style={{ color: "var(--arco-danger)" }}>{error}</div>}
-
-      {result && (
-        <>
-          <div className="mm-bench__stats">
-            <Stat
-              value={result.tokensPerSecond != null ? result.tokensPerSecond.toFixed(1) : "—"}
-              label="tokens / sec"
-            />
-            <Stat
-              value={result.ttftMs != null ? `${(result.ttftMs / 1000).toFixed(2)}s` : "—"}
-              label="prompt eval (TTFT)"
-            />
-            <Stat value={result.generatedTokens?.toString() ?? "—"} label="tokens out" />
-            <Stat value={`${(result.totalMs / 1000).toFixed(2)}s`} label="wall clock" />
-          </div>
-          <div className="mm-bench__result">{result.text}</div>
-        </>
-      )}
-
-      {!result && !error && (
-        <div className="mm-hint">
-          First run on a cold model includes load time. Run twice for honest numbers — the second
-          run also shows prefix-cache savings on TTFT.
+      <SettingsPanelBody>
+        <div className="arco-row">
+          <select
+            className="arco-input arco-input--auto"
+            value={selected}
+            onChange={(e) => setTarget(e.target.value)}
+            aria-label="Model to benchmark"
+          >
+            {loaded.length === 0 && <option value="">No models on disk</option>}
+            {loaded.map((m) => (
+              <option key={m.file} value={m.routerId ?? ""}>
+                {m.catalog?.label ?? m.file}
+                {m.phase === "running" ? " (loaded)" : ""}
+              </option>
+            ))}
+          </select>
+          <Button
+            variant="primary"
+            onClick={() => void runBench()}
+            disabled={busy || !engineRunning || !selected}
+            title={engineRunning ? "" : "Start the engine first"}
+          >
+            {busy ? "Running…" : "Run"}
+          </Button>
         </div>
-      )}
-    </div>
+
+        <textarea
+          className="arco-input"
+          rows={2}
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          aria-label="Bench prompt"
+        />
+
+        {error && <SettingsAlert tone="error">{error}</SettingsAlert>}
+
+        {result && (
+          <>
+            <div className="arco-models-bench__stats">
+              <Stat
+                value={result.tokensPerSecond != null ? result.tokensPerSecond.toFixed(1) : "—"}
+                label="tokens / sec"
+              />
+              <Stat
+                value={result.ttftMs != null ? `${(result.ttftMs / 1000).toFixed(2)}s` : "—"}
+                label="prompt eval (TTFT)"
+              />
+              <Stat value={result.generatedTokens?.toString() ?? "—"} label="tokens out" />
+              <Stat value={`${(result.totalMs / 1000).toFixed(2)}s`} label="wall clock" />
+            </div>
+            <div className="arco-models-bench__result">{result.text}</div>
+          </>
+        )}
+
+        {!result && !error && (
+          <p className="arco-settings-panel__desc">
+            First run on a cold model includes load time. Run twice for honest numbers — the second
+            run also shows prefix-cache savings on TTFT.
+          </p>
+        )}
+      </SettingsPanelBody>
+    </section>
   );
 }
 
 function Stat({ value, label }: { value: string; label: string }) {
   return (
-    <div className="mm-stat">
-      <span className="mm-stat__value">{value}</span>
-      <span className="mm-stat__label">{label}</span>
+    <div className="arco-models-stat">
+      <span className="arco-models-stat__value">{value}</span>
+      <span className="arco-models-stat__label">{label}</span>
     </div>
   );
 }

@@ -45,6 +45,9 @@ export interface MenuProps {
   side?: "top" | "bottom";
   "aria-label"?: string;
   className?: string;
+  /** Controlled open state — e.g. to open the menu from a right-click instead of the trigger's click. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function Menu({
@@ -54,12 +57,16 @@ export function Menu({
   side = "bottom",
   "aria-label": ariaLabel,
   className,
+  open: openProp,
+  onOpenChange,
 }: MenuProps) {
-  const [open, setOpen] = useState(false);
+  const [openState, setOpenState] = useState(false);
+  const open = openProp ?? openState;
+  const setOpen = onOpenChange ?? setOpenState;
   const rootRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  const close = useCallback(() => setOpen(false), []);
+  const close = useCallback(() => setOpen(false), [setOpen]);
   useDismiss(open, close, rootRef);
 
   // Focus the first enabled item on open so keyboard users land in the menu.
@@ -86,7 +93,7 @@ export function Menu({
   const triggerEl = cloneElement(trigger, {
     onClick: (e: React.MouseEvent) => {
       (trigger.props.onClick as ((e: React.MouseEvent) => void) | undefined)?.(e);
-      setOpen((v) => !v);
+      setOpen(!open);
     },
     "aria-haspopup": "menu",
     "aria-expanded": open,

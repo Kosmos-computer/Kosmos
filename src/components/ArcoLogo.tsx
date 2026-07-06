@@ -1,4 +1,4 @@
-import { ArcoMarkGraphic } from "./ArcoMark";
+import { LogoMarkGraphic } from "./LogoMark";
 
 type ArcoLogoProps = {
   className?: string;
@@ -64,7 +64,7 @@ export function ArcoLogo({ className, title = "Kosmos" }: ArcoLogoProps) {
           />
         </g>
       </g>
-      <ArcoMarkGraphic />
+      <LogoMarkGraphic />
     </svg>
   );
 }

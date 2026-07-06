@@ -241,7 +241,7 @@ async function duckDuckGoSearch(query: string, max: number): Promise<SearchResul
 
 // ── App id resolution for os_ui ──────────────────────────────────────────────
 
-const SYSTEM_APP_IDS = ["chat", "studio", "apps", "automations", "files", "terminal", "settings"];
+const SYSTEM_APP_IDS = ["chat", "studio", "apps", "automations", "files", "notes", "terminal", "settings"];
 
 /**
  * Map whatever the model called the app — an exact id, a system id (possibly
@@ -950,7 +950,7 @@ export const agentTools: AgentTool[] = [
   {
     name: "os_ui",
     description:
-      "Drive the Arco desktop: open an app window (action=open_app + appId — an app id or the app's display title, e.g. \"Tasks\"), open a system app (action=open_system + app one of: chat, apps, automations, files, terminal, settings, studio), close an app's window (action=close_app + appId — id or title), show a notification (action=notify + message), or focus a Studio drawer tab (action=open_workspace_tab + tab one of: files, diffs, terminal, preview, browser; optional path — a file to select, or a URL when tab=browser, e.g. after starting a dev server). If the app isn't found the result lists every available app.",
+      "Drive the Arco desktop: open an app window (action=open_app + appId — an app id or the app's display title, e.g. \"Tasks\" or \"Docs\"), open a system app (action=open_system + app — a system id like settings or a display name like Docs; non-system names resolve to open_app), close an app's window (action=close_app + appId — id or title), show a notification (action=notify + message), or focus a Studio drawer tab (action=open_workspace_tab + tab one of: files, diffs, terminal, preview, browser; optional path — a file to select, or a URL when tab=browser, e.g. after starting a dev server). If the app isn't found the result lists every available app.",
     parameters: {
       type: "object",
       properties: {
@@ -991,7 +991,17 @@ export const agentTools: AgentTool[] = [
         if ("error" in resolved) return resolved;
         action = { action: args.action, appId: resolved.appId };
       } else if (args.action === "open_system" && typeof args.app === "string") {
-        action = { action: "open_system", app: args.app };
+        const lower = args.app.trim().toLowerCase();
+        const tail = lower.split(".").pop() ?? lower;
+        if (SYSTEM_APP_IDS.includes(lower) || SYSTEM_APP_IDS.includes(tail)) {
+          action = { action: "open_system", app: SYSTEM_APP_IDS.includes(lower) ? lower : tail };
+        } else {
+          // Installed/generated apps (e.g. "Docs" → core.docs) are not system
+          // apps — resolve and open through the unified open_app path.
+          const resolved = await resolveAppId(args.app);
+          if ("error" in resolved) return resolved;
+          action = { action: "open_app", appId: resolved.appId };
+        }
       } else if (args.action === "notify" && typeof args.message === "string") {
         action = { action: "notify", message: args.message };
       } else if (

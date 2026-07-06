@@ -5,6 +5,7 @@
  */
 import { useCallback, useRef, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { X, Minus, Maximize2 } from "lucide-react";
+import { useOsStore } from "./osStore";
 import { useWindowStore, type OsWindow } from "./windowStore";
 
 const MENUBAR_HEIGHT = 34;
@@ -20,6 +21,8 @@ interface Props {
 }
 
 export function WindowFrame({ win, focused, children }: Props) {
+  const shellView = useOsStore((s) => s.shellView);
+  const appView = shellView === "app";
   const { close, focus, toggleMinimize, toggleMaximize, setRect } = useWindowStore();
   const dragState = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
   const resizeState = useRef<{
@@ -90,8 +93,9 @@ export function WindowFrame({ win, focused, children }: Props) {
   }, []);
 
   // Maximized windows fill the area right of the nav rail (--arco-nav-width
-  // is set by Desktop) and below the menu bar.
-  const style = win.maximized
+  // is set by Desktop) and below the menu bar. App view uses the same footprint
+  // but hides the titlebar and resize handles.
+  const style = win.maximized || appView
     ? {
         left: "var(--arco-nav-width, 0px)",
         top: MENUBAR_HEIGHT,
@@ -106,47 +110,55 @@ export function WindowFrame({ win, focused, children }: Props) {
 
   return (
     <section
-      className={`arco-window ${focused ? "arco-window--focused" : ""}`}
+      className={[
+        "arco-window",
+        focused && "arco-window--focused",
+        appView && "arco-window--app-view",
+      ]
+        .filter(Boolean)
+        .join(" ")}
       style={style}
       role="dialog"
       aria-label={win.title}
       onPointerDown={() => focus(win.id)}
     >
-      <header
-        className="arco-window__titlebar"
-        onPointerDown={onTitlePointerDown}
-        onPointerMove={onTitlePointerMove}
-        onPointerUp={onTitlePointerUp}
-        onDoubleClick={() => toggleMaximize(win.id)}
-      >
-        <div className="arco-window__dots">
-          <button
-            className="arco-window__dot arco-window__dot--close"
-            aria-label="Close window"
-            onClick={() => close(win.id)}
-          >
-            <X strokeWidth={3.5} />
-          </button>
-          <button
-            className="arco-window__dot arco-window__dot--min"
-            aria-label="Minimize window"
-            onClick={() => toggleMinimize(win.id)}
-          >
-            <Minus strokeWidth={3.5} />
-          </button>
-          <button
-            className="arco-window__dot arco-window__dot--max"
-            aria-label="Maximize window"
-            onClick={() => toggleMaximize(win.id)}
-          >
-            <Maximize2 strokeWidth={3.5} />
-          </button>
-        </div>
-        <span className="arco-window__title">{win.title}</span>
-      </header>
+      {!appView && (
+        <header
+          className="arco-window__titlebar"
+          onPointerDown={onTitlePointerDown}
+          onPointerMove={onTitlePointerMove}
+          onPointerUp={onTitlePointerUp}
+          onDoubleClick={() => toggleMaximize(win.id)}
+        >
+          <div className="arco-window__dots">
+            <button
+              className="arco-window__dot arco-window__dot--close"
+              aria-label="Close window"
+              onClick={() => close(win.id)}
+            >
+              <X strokeWidth={3.5} />
+            </button>
+            <button
+              className="arco-window__dot arco-window__dot--min"
+              aria-label="Minimize window"
+              onClick={() => toggleMinimize(win.id)}
+            >
+              <Minus strokeWidth={3.5} />
+            </button>
+            <button
+              className="arco-window__dot arco-window__dot--max"
+              aria-label="Maximize window"
+              onClick={() => toggleMaximize(win.id)}
+            >
+              <Maximize2 strokeWidth={3.5} />
+            </button>
+          </div>
+          <span className="arco-window__title">{win.title}</span>
+        </header>
+      )}
       <div className="arco-window__content">{children}</div>
 
-      {!win.maximized && (
+      {!win.maximized && !appView && (
         <>
           <div
             className="arco-window__resize arco-window__resize--e"

@@ -1,0 +1,40 @@
+.constellation {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.card {
+  position: absolute;
+  width: 90px;
+  height: 120px;
+  opacity: 0.55;
+}
+
+.cardImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+  filter: grayscale(60%);
+}
+
+.cardLabel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  border-radius: 10px;
+  font-family: var(--lf-font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--lf-text-muted);
+  background: var(--lf-surface-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .constellation {
+    display: none;
+  }
+}

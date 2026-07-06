@@ -156,20 +156,19 @@
   color: var(--arco-text-tertiary);
 }
 
-.arco-agent-status__dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--arco-accent);
-  animation: arco-agent-pulse 1.2s ease-in-out infinite;
+.sprite-working-mark {
+  flex-shrink: 0;
+  width: 0.85rem;
+  height: auto;
+  color: var(--arco-text-primary);
 }
 
-@keyframes arco-agent-pulse {
-  0%,
-  100% {
-    opacity: 0.4;
-  }
-  50% {
-    opacity: 1;
-  }
+.sprite-working-mark__square {
+  fill: currentColor;
+  opacity: 0;
+  transition: opacity 0.14s ease;
+}
+
+.sprite-working-mark__square[data-on="true"] {
+  opacity: 1;
 }

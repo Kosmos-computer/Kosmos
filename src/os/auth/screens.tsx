@@ -7,7 +7,7 @@
  */
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { ArcoLogo } from "../../components/ArcoLogo";
-import { ArcoMark } from "../../components/ArcoMark";
+import { LogoMark } from "../../components/LogoMark";
 import { useAuthStore } from "./authStore";
 import { AuthWallpaperBackdrop } from "../wallpaper/AuthWallpaperBackdrop";
 
@@ -18,7 +18,7 @@ export function BootScreen() {
   return (
     <div className="arco-boot" role="status" aria-label="Arco OS is starting">
       <div className="arco-boot__logo">
-        <ArcoMark className="arco-boot__mark" title="" />
+        <LogoMark className="arco-boot__mark" title="" />
       </div>
       <div className="arco-boot__bar">
         <div className="arco-boot__bar-fill" />

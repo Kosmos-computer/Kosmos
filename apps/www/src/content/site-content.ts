@@ -8,14 +8,16 @@ export const siteMeta = {
 export const demoUrl = "http://localhost:4610";
 export const arcoDocsUrl = "http://localhost:5175";
 
-export const navLinks = [
+export const navPillLinks = [
   { label: "Platform", href: "#platform" },
   { label: "Architecture", href: "#architecture" },
   { label: "Principles", href: "#principles" },
   { label: "FAQ", href: "#faq" },
   { label: "Arco", href: "/spec.html" },
-  { label: "Docs", href: arcoDocsUrl },
 ] as const;
+
+/** @deprecated Use navPillLinks — kept for spec page overrides */
+export const navLinks = navPillLinks;
 
 export const integrations = [
   "OpenClaw Gateway",

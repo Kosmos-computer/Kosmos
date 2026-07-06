@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { ChevronRight, List, Terminal } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { SpriteWorkingMark } from "../SpriteWorkingMark";
 
 export type AgentThoughtDuration = number | "brief";
 
@@ -176,7 +177,7 @@ export interface AgentStatusLineProps {
 export function AgentStatusLine({ children, className = "" }: AgentStatusLineProps) {
   return (
     <div className={["arco-agent-status", className].filter(Boolean).join(" ")}>
-      <span className="arco-agent-status__dot" aria-hidden="true" />
+      <SpriteWorkingMark />
       <span>{children}</span>
     </div>
   );

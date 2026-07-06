@@ -7,15 +7,6 @@
   flex-direction: column;
 }
 
-.arco-studio__topbar {
-  display: flex;
-  align-items: center;
-  gap: var(--arco-space-xs);
-  padding: var(--arco-space-s) var(--arco-space-m);
-  border-bottom: 1px solid var(--arco-border);
-  flex-shrink: 0;
-}
-
 .arco-studio__body {
   flex: 1;
   min-height: 0;
@@ -34,6 +25,13 @@
   min-height: 0;
   border-right: 1px solid var(--arco-border);
   background: var(--arco-bg-sunk);
+}
+
+.arco-sidenav__toolbar {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--arco-space-xs) var(--arco-space-s) 0;
 }
 
 .arco-sidenav__header {
@@ -266,7 +264,25 @@
 
 /* ── Center: chat ─────────────────────────────────────────────────────────── */
 
-/* Empty-state avatar — the face rig scales via font-size (em-based grid). */
+/* Empty chat — centered face + composer. */
+.arco-studio__empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--arco-space-m);
+  min-height: 0;
+  padding: var(--arco-space-xl);
+}
+
+.arco-studio__content-inner {
+  width: 100%;
+  max-width: 740px;
+  margin: 0 auto;
+  min-width: 0;
+}
+
 .arco-face-widget.arco-studio__emptyface {
   font-size: 14px;
   margin-bottom: var(--arco-space-s);
@@ -279,19 +295,24 @@
   flex-direction: column;
 }
 
-/* ── Divider ──────────────────────────────────────────────────────────────── */
+/* ── Collapsed drawer rails ─────────────────────────────────────────────── */
 
-.arco-studio__divider {
-  width: 5px;
+.arco-studio__rail {
   flex-shrink: 0;
-  cursor: col-resize;
-  background: transparent;
-  border-left: 1px solid var(--arco-border);
-  transition: background var(--arco-dur-fast);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--arco-space-xs);
+  padding: var(--arco-space-s) var(--arco-space-xs);
+  background: var(--arco-bg-sunk);
 }
-.arco-studio__divider:hover,
-.arco-studio__divider:active {
-  background: var(--arco-accent-soft);
+
+.arco-studio__rail--left {
+  border-right: 1px solid var(--arco-border);
+}
+
+.arco-studio__rail--right {
+  border-left: 1px solid var(--arco-border);
 }
 
 /* ── Right drawer ─────────────────────────────────────────────────────────── */
@@ -304,12 +325,30 @@
   background: var(--arco-bg-sunk);
 }
 
-.arco-studio__tabs {
+.arco-studio__tabbar {
   display: flex;
-  gap: 2px;
+  align-items: flex-end;
+  gap: var(--arco-space-xs);
   padding: var(--arco-space-xs) var(--arco-space-s) 0;
   border-bottom: 1px solid var(--arco-border);
   flex-shrink: 0;
+}
+
+.arco-studio__tabs {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: 2px;
+  padding: 0;
+  border-bottom: none;
+  flex-shrink: 1;
+}
+
+.arco-studio__tabactions {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding-bottom: var(--arco-space-xs);
 }
 
 .arco-studio__tab {
@@ -631,6 +670,22 @@
 
 .arco-projectpicker {
   position: relative;
+}
+
+.arco-projectpicker--compact .arco-btn {
+  padding: 3px 8px;
+  font-size: var(--arco-text-xs);
+  font-weight: 500;
+  gap: 5px;
+}
+
+.arco-projectpicker--compact .arco-projectpicker__name {
+  max-width: 120px;
+}
+
+.arco-projectpicker--compact .arco-projectpicker__menu {
+  left: 0;
+  right: auto;
 }
 
 .arco-projectpicker__name {

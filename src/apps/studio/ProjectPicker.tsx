@@ -23,7 +23,12 @@ import { useStudioStore } from "./studioStore";
 
 const SANDBOX_LABEL = "Sandbox";
 
-export function ProjectPicker() {
+export interface ProjectPickerProps {
+  /** Smaller trigger for the composer status row. */
+  compact?: boolean;
+}
+
+export function ProjectPicker({ compact }: ProjectPickerProps) {
   const projectsInfo = useStudioStore((s) => s.projectsInfo);
   const refreshProjects = useStudioStore((s) => s.refreshProjects);
   const switchProject = useStudioStore((s) => s.switchProject);
@@ -89,8 +94,11 @@ export function ProjectPicker() {
 
   const blocked = error !== null && error.includes("macOS is blocking");
 
+  const iconSize = compact ? 11 : 13;
+  const chevronSize = compact ? 10 : 12;
+
   return (
-    <div className="arco-projectpicker" ref={rootRef}>
+    <div className={`arco-projectpicker${compact ? " arco-projectpicker--compact" : ""}`} ref={rootRef}>
       <button
         className="arco-btn"
         onClick={() => {
@@ -100,9 +108,9 @@ export function ProjectPicker() {
         aria-expanded={open}
         aria-haspopup="listbox"
       >
-        {active ? <FolderGit2 size={13} /> : <Folder size={13} />}
+        {active ? <FolderGit2 size={iconSize} /> : <Folder size={iconSize} />}
         <span className="arco-projectpicker__name">{active ? active.name : SANDBOX_LABEL}</span>
-        {open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+        {open ? <ChevronUp size={chevronSize} /> : <ChevronDown size={chevronSize} />}
       </button>
 
       {open && (

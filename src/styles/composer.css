@@ -417,6 +417,10 @@
   justify-content: flex-end;
   padding: 0 var(--arco-space-xs);
 }
+.arco-composer__statusbar--split {
+  justify-content: space-between;
+  gap: var(--arco-space-s);
+}
 
 .arco-usage__trigger {
   display: inline-flex;

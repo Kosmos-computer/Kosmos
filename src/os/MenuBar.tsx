@@ -1,6 +1,6 @@
-/** Top chrome: brand + agent status dot, focused window title, clock, theme toggle, lock. */
+/** Top chrome: brand + agent status dot, focused window title, shell view toggle, clock, theme toggle, lock. */
 import { useEffect, useState } from "react";
-import { Lock, Moon, Sun } from "lucide-react";
+import { AppWindow, Lock, Monitor, Moon, Sun } from "lucide-react";
 import { useAuthStore } from "./auth/authStore";
 import { useOsStore } from "./osStore";
 import { useWindowStore } from "./windowStore";
@@ -21,7 +21,7 @@ function useClock(): string {
 }
 
 export function MenuBar() {
-  const { theme, setTheme, agentBusy } = useOsStore();
+  const { theme, setTheme, agentBusy, shellView, setShellView } = useOsStore();
   const user = useAuthStore((s) => s.user);
   const lock = useAuthStore((s) => s.lock);
   const windows = useWindowStore((s) => s.windows);
@@ -42,6 +42,32 @@ export function MenuBar() {
       </span>
       <span className="arco-menubar__title">{focused?.title ?? ""}</span>
       <div className="arco-menubar__right">
+        <div
+          className="arco-menubar__view-toggle"
+          role="group"
+          aria-label="Shell view"
+        >
+          <button
+            type="button"
+            className={`arco-menubar__view-toggle-btn${shellView === "desktop" ? " arco-menubar__view-toggle-btn--active" : ""}`}
+            onClick={() => setShellView("desktop")}
+            aria-label="Desktop view"
+            aria-pressed={shellView === "desktop"}
+            title="Desktop view"
+          >
+            <Monitor size={14} />
+          </button>
+          <button
+            type="button"
+            className={`arco-menubar__view-toggle-btn${shellView === "app" ? " arco-menubar__view-toggle-btn--active" : ""}`}
+            onClick={() => setShellView("app")}
+            aria-label="App view"
+            aria-pressed={shellView === "app"}
+            title="App view"
+          >
+            <AppWindow size={14} />
+          </button>
+        </div>
         {user && <span title={`Signed in as ${user.username} (${user.role})`}>{user.displayName}</span>}
         <button
           className="arco-menubar__icon-btn"

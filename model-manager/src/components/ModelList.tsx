@@ -2,6 +2,8 @@
  * Model list — merges catalog, disk, and router state into actionable cards.
  */
 import { Download, Play, Square, Trash2, Zap, Send } from "lucide-react";
+import { Badge } from "@arco/components/ui/Badge";
+import { Button } from "@arco/components/ui/Button";
 import { useStore, type ModelRow } from "../state/store";
 
 function formatBytes(n: number | null): string {
@@ -20,13 +22,13 @@ const TIER_LABEL: Record<string, string> = {
 export function ModelList() {
   const models = useStore((s) => s.models);
   return (
-    <>
+    <div className="arco-models-stack">
       {models
         .filter((m) => !m.isDraft || m.phase !== "available")
         .map((m) => (
           <ModelCard key={m.file} row={m} />
         ))}
-    </>
+    </div>
   );
 }
 
@@ -41,111 +43,119 @@ function ModelCard({ row }: { row: ModelRow }) {
       : null;
 
   return (
-    <div className={`mm-model ${row.phase === "running" ? "mm-model--running" : ""}`}>
-      <div className="mm-model__head">
-        <span className="mm-model__name">{c?.label ?? row.file}</span>
-        {c && <span className="mm-badge mm-badge--accent">{TIER_LABEL[c.speedTier]}</span>}
+    <article
+      className={[
+        "arco-models-card",
+        row.phase === "running" ? "arco-models-card--running" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      <div className="arco-models-card__head">
+        <span className="arco-models-card__name">{c?.label ?? row.file}</span>
+        {c && <Badge>{TIER_LABEL[c.speedTier]}</Badge>}
         {c?.presetExtras?.["model-draft"] && (
-          <span className="mm-badge mm-badge--accent" title="Speculative decoding with draft model">
-            <Zap size={10} style={{ verticalAlign: -1 }} /> turbo
-          </span>
+          <Badge title="Speculative decoding with draft model">
+            <Zap size={10} /> turbo
+          </Badge>
         )}
-        {c?.experimental && <span className="mm-badge mm-badge--warn">experimental</span>}
-        {row.isDraft && <span className="mm-badge">draft</span>}
+        {c?.experimental && <Badge tone="warning">experimental</Badge>}
+        {row.isDraft && <Badge>draft</Badge>}
         <PhaseBadge row={row} />
       </div>
 
-      {c && <div className="mm-model__desc">{c.description}</div>}
-      <div className="mm-model__meta">
+      {c && <p className="arco-settings-panel__desc">{c.description}</p>}
+      <div className="arco-models-card__meta">
         {row.file}
         {row.sizeBytes != null && ` · ${formatBytes(row.sizeBytes)}`}
       </div>
 
       {row.phase === "downloading" && (
         <>
-          <div className="mm-progress">
-            <div className="mm-progress__fill" style={{ width: `${pct ?? 5}%` }} />
+          <div className="arco-widget__progress-track">
+            <div className="arco-widget__progress-fill" style={{ width: `${pct ?? 5}%` }} />
           </div>
-          <div className="mm-hint">
+          <p className="arco-settings-panel__meta">
             {formatBytes(row.download?.received ?? 0)}
-            {row.download?.total ? ` of ${formatBytes(row.download.total)}` : ""} {pct != null && `· ${pct}%`}
-          </div>
+            {row.download?.total ? ` of ${formatBytes(row.download.total)}` : ""}
+            {pct != null && ` · ${pct}%`}
+          </p>
         </>
       )}
 
-      <div className="mm-model__actions">
+      <div className="arco-models-card__actions">
         {row.phase === "available" && c && (
-          <button className="mm-btn mm-btn--primary" onClick={() => void download(c)}>
-            <Download size={13} style={{ verticalAlign: -2, marginRight: 5 }} />
+          <Button variant="primary" onClick={() => void download(c)}>
+            <Download size={13} />
             Download
-          </button>
+          </Button>
         )}
 
         {(row.phase === "stopped" || row.phase === "failed") && !row.isDraft && (
-          <button
-            className="mm-btn mm-btn--primary"
+          <Button
+            variant="primary"
             onClick={() => void run(row)}
             disabled={!engineRunning}
             title={engineRunning ? "" : "Start the engine first"}
           >
-            <Play size={13} style={{ verticalAlign: -2, marginRight: 5 }} />
+            <Play size={13} />
             Run
-          </button>
+          </Button>
         )}
 
         {row.phase === "loading" && (
-          <span className="mm-hint">Loading into memory…</span>
+          <span className="arco-settings-panel__meta">Loading into memory…</span>
         )}
 
         {row.phase === "running" && (
           <>
-            <button className="mm-btn" onClick={() => void stop(row)}>
-              <Square size={13} style={{ verticalAlign: -2, marginRight: 5 }} />
+            <Button onClick={() => void stop(row)}>
+              <Square size={13} />
               Stop
-            </button>
-            <button
-              className="mm-btn"
+            </Button>
+            <Button
               onClick={() => void configureArco(row)}
               title="Point Arco OS at this model (writes data/settings.json)"
             >
-              <Send size={13} style={{ verticalAlign: -2, marginRight: 5 }} />
+              <Send size={13} />
               Use in Arco
-            </button>
+            </Button>
           </>
         )}
 
         {(row.phase === "stopped" || row.phase === "failed") && (
-          <button
-            className="mm-btn mm-btn--ghost mm-btn--danger"
+          <Button
+            variant="ghost"
+            className="arco-btn--danger"
             onClick={() => void remove(row.file)}
             title="Delete the GGUF from disk"
           >
-            <Trash2 size={13} style={{ verticalAlign: -2, marginRight: 5 }} />
+            <Trash2 size={13} />
             Delete
-          </button>
+          </Button>
         )}
 
         {row.phase === "running" && arcoConfiguredPath && (
-          <span className="mm-hint">Arco configured ✓</span>
+          <span className="arco-settings-panel__meta">Arco configured ✓</span>
         )}
       </div>
-    </div>
+    </article>
   );
 }
 
 function PhaseBadge({ row }: { row: ModelRow }) {
   switch (row.phase) {
     case "running":
-      return <span className="mm-badge mm-badge--running">running</span>;
+      return <Badge tone="success">running</Badge>;
     case "loading":
-      return <span className="mm-badge mm-badge--accent">loading</span>;
+      return <Badge>loading</Badge>;
     case "downloading":
-      return <span className="mm-badge mm-badge--accent">downloading</span>;
+      return <Badge>downloading</Badge>;
     case "failed":
-      return <span className="mm-badge mm-badge--danger">failed</span>;
+      return <Badge tone="danger">failed</Badge>;
     case "stopped":
-      return <span className="mm-badge">on disk</span>;
+      return <Badge>on disk</Badge>;
     default:
-      return <span className="mm-badge">not downloaded</span>;
+      return <Badge>not downloaded</Badge>;
   }
 }

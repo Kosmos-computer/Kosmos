@@ -1,5 +1,7 @@
 import { demoUrl, siteMeta } from "../content/site-content";
+import clay from "../styles/clay.module.css";
 import shared from "../styles/shared.module.css";
+import { ChunkyButton } from "./ChunkyButton";
 import { HeroAppPreview } from "./HeroAppPreview";
 import styles from "./HeroSection.module.css";
 
@@ -8,16 +10,14 @@ export function HeroSection() {
     <section className={styles.hero}>
       <div className={shared.section}>
         <div className={styles.content}>
+          <span className={clay.chunkyBadge}>✦ Generative AI OS</span>
           <h1 className={styles.title}>{siteMeta.tagline}</h1>
           <p className={styles.description}>{siteMeta.description}</p>
           <div className={styles.actions}>
-            <a className={shared.buttonPrimary} href={demoUrl}>
-              Try the demo
-              <span aria-hidden="true">→</span>
-            </a>
-            <a className={shared.buttonSecondary} href="#architecture">
+            <ChunkyButton href={demoUrl}>Try the demo →</ChunkyButton>
+            <ChunkyButton href="#architecture" variant="secondary">
               Read the architecture
-            </a>
+            </ChunkyButton>
           </div>
         </div>
       </div>

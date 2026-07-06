@@ -5,7 +5,7 @@ import styles from "./FeatureSection.module.css";
 
 export function FeatureSection() {
   return (
-    <section id="platform" className={styles.section}>
+    <section className={styles.section}>
       <div className={shared.card}>
         <div className={styles.header}>
           <h2 className={styles.title}>

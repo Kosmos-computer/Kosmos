@@ -1,15 +1,16 @@
 /**
  * Arco Models — window layout.
- * Left column: engine control + model list. Right column: test bench + logs.
+ * Top: engine bar. Main: model list (left) + test bench / logs (right).
  */
 import { useEffect } from "react";
+import { X } from "lucide-react";
+import { Button } from "@arco/components/ui/Button";
 import { useStore } from "./state/store";
 import { bridge } from "./lib/bridge";
 import { EngineBar } from "./components/EngineBar";
 import { ModelList } from "./components/ModelList";
 import { TestBench } from "./components/TestBench";
 import { LogsPane } from "./components/LogsPane";
-import { X } from "lucide-react";
 
 const POLL_MS = 3000;
 
@@ -31,28 +32,26 @@ export function App() {
   }, [refresh, applyDownloadProgress, pushLog]);
 
   return (
-    <>
-      <div className="mm-titlebar">Arco Models</div>
-      <div className="mm-shell">
-        <div className="mm-col">
-          <EngineBar />
-          {error && (
-            <div className="mm-error" role="alert">
-              <span>{error}</span>
-              <button onClick={clearError} aria-label="Dismiss error">
-                <X size={14} />
-              </button>
-            </div>
-          )}
-          <div className="mm-scroll mm-col" style={{ flex: 1 }}>
-            <ModelList />
-          </div>
+    <div className="arco-models-app">
+      <header className="arco-models-titlebar">Arco Models</header>
+      <EngineBar />
+      {error && (
+        <div className="arco-models-error" role="alert">
+          <span>{error}</span>
+          <Button variant="ghost" size="icon" onClick={clearError} aria-label="Dismiss error">
+            <X size={14} />
+          </Button>
         </div>
-        <div className="mm-col">
+      )}
+      <div className="arco-models-shell">
+        <div className="arco-models-scroll arco-models-col">
+          <ModelList />
+        </div>
+        <div className="arco-models-col">
           <TestBench />
           <LogsPane />
         </div>
       </div>
-    </>
+    </div>
   );
 }

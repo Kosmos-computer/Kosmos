@@ -78,6 +78,38 @@
   color: var(--arco-text-primary);
 }
 
+.arco-menubar__view-toggle {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--arco-radius-s);
+  background: var(--arco-bg-hover);
+}
+
+.arco-menubar__view-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 22px;
+  border-radius: calc(var(--arco-radius-s) - 1px);
+  color: var(--arco-text-tertiary);
+  transition:
+    background var(--arco-dur-fast),
+    color var(--arco-dur-fast);
+}
+
+.arco-menubar__view-toggle-btn:hover {
+  color: var(--arco-text-secondary);
+}
+
+.arco-menubar__view-toggle-btn--active {
+  background: var(--arco-bg-surface);
+  color: var(--arco-text-primary);
+  box-shadow: 0 0 0 1px var(--arco-border);
+}
+
 /* ── Nav rail ─────────────────────────────────────────────────────────────── */
 /* Left column for app switching (ported from UI Experiments NavRail).
    Collapsed: 56px icon strip. Expanded: icon + label rows. The desktop sets
@@ -177,17 +209,59 @@
   display: none;
 }
 
-.arco-navrail__section {
+.arco-navrail__itemslot {
+  position: relative;
+}
+.arco-navrail__itemslot--dragging {
+  opacity: 0.4;
+}
+.arco-navrail__itemslot--drop-before::before {
+  content: "";
+  position: absolute;
+  top: -3px;
+  left: var(--arco-space-xs);
+  right: var(--arco-space-xs);
+  height: 2px;
+  border-radius: 1px;
+  background: var(--arco-accent);
+}
+.arco-navrail__itemslot--undocking {
+  opacity: 1;
+}
+.arco-navrail__itemslot--undocking .arco-navrail__item {
+  background: var(--arco-danger-soft);
+  color: var(--arco-danger);
+}
+.arco-navrail__undock-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
   display: flex;
-  flex-direction: column;
-  gap: var(--arco-space-2xs);
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--arco-danger);
+  color: #fff;
 }
 
-.arco-navrail__separator {
-  height: 1px;
-  margin: var(--arco-space-xs) var(--arco-space-xs);
-  background: var(--arco-border-strong);
-  flex-shrink: 0;
+/* Context menu overlay: covers the item so the panel anchors to it, but
+   stays click-through except for its own (open) panel. */
+.arco-itemctx {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.arco-itemctx .arco-menu__panel {
+  pointer-events: auto;
+}
+
+.arco-navrail__item--add {
+  color: var(--arco-text-tertiary);
+}
+.arco-navrail__item--add:hover {
+  color: var(--arco-text-primary);
 }
 
 .arco-navrail__item {
@@ -350,12 +424,49 @@
   background: var(--arco-text-secondary);
 }
 
-.arco-dock__separator {
-  width: 1px;
-  align-self: stretch;
-  margin: 6px 4px;
-  background: var(--arco-border-strong);
+.arco-dock__itemslot {
+  position: relative;
   flex-shrink: 0;
+}
+.arco-dock__itemslot--dragging {
+  opacity: 0.4;
+}
+.arco-dock__itemslot--drop-before::before {
+  content: "";
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: -3px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--arco-accent);
+}
+.arco-dock__itemslot--undocking {
+  opacity: 1;
+}
+.arco-dock__itemslot--undocking .arco-dock__item {
+  background: var(--arco-danger-soft);
+  color: var(--arco-danger);
+}
+.arco-dock__undock-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--arco-danger);
+  color: #fff;
+}
+
+.arco-dock__item--add {
+  color: var(--arco-text-tertiary);
+}
+.arco-dock__item--add:hover {
+  color: var(--arco-text-primary);
 }
 
 .arco-dock__tooltip {
@@ -379,6 +490,117 @@
   opacity: 1;
 }
 
+/* ── Hover dock (App View bottom-edge reveal) ─────────────────────────────── */
+
+.arco-hover-dock {
+  position: fixed;
+  inset: auto 0 0;
+  z-index: var(--arco-z-chrome);
+  pointer-events: none;
+}
+
+.arco-hover-dock--peaked {
+  height: 112px;
+}
+
+.arco-hover-dock--open {
+  inset: 0;
+  z-index: var(--arco-z-overlay);
+}
+
+.arco-hover-dock__zone {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 28px;
+  pointer-events: auto;
+}
+
+.arco-hover-dock--peaked .arco-hover-dock__zone,
+.arco-hover-dock--open .arco-hover-dock__zone {
+  inset: 0;
+  height: auto;
+}
+
+.arco-hover-dock__tray {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 var(--arco-space-m) var(--arco-space-s);
+  transform: translateY(calc(100% + 12px));
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform var(--arco-dur-fast) var(--arco-ease),
+    opacity var(--arco-dur-fast) var(--arco-ease);
+}
+
+.arco-hover-dock__peak {
+  width: 44px;
+  height: 5px;
+  margin-bottom: var(--arco-space-s);
+  border-radius: 999px;
+  background: var(--arco-border-strong);
+  opacity: 0;
+  transform: scaleX(0.5);
+  transition:
+    opacity var(--arco-dur-fast) var(--arco-ease),
+    transform var(--arco-dur-fast) var(--arco-ease),
+    margin var(--arco-dur-fast) var(--arco-ease),
+    height var(--arco-dur-fast) var(--arco-ease);
+}
+
+.arco-hover-dock__tray--peaked,
+.arco-hover-dock__tray--open {
+  transition:
+    transform var(--arco-dur-med) var(--arco-ease),
+    opacity var(--arco-dur-med) var(--arco-ease);
+}
+
+.arco-hover-dock__tray--peaked .arco-hover-dock__peak,
+.arco-hover-dock__tray--open .arco-hover-dock__peak {
+  transition:
+    opacity var(--arco-dur-med) var(--arco-ease),
+    transform var(--arco-dur-med) var(--arco-ease),
+    margin var(--arco-dur-med) var(--arco-ease),
+    height var(--arco-dur-med) var(--arco-ease);
+}
+
+.arco-hover-dock__tray--peaked {
+  transform: translateY(calc(100% - 18px));
+}
+
+.arco-hover-dock__tray--peaked .arco-hover-dock__peak {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+.arco-hover-dock__tray--open {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.arco-hover-dock__tray--open .arco-hover-dock__peak {
+  opacity: 0;
+  height: 0;
+  margin-bottom: 0;
+  transform: scaleX(0.5);
+}
+
+.arco-hover-dock__tray .arco-dock {
+  position: relative;
+  bottom: auto;
+  left: auto;
+  transform: none;
+  margin: 0 auto;
+}
+
 /* ── Windows ──────────────────────────────────────────────────────────────── */
 
 .arco-window {
@@ -398,6 +620,21 @@
 
 .arco-window--focused {
   border-color: var(--arco-border-strong);
+}
+
+.arco-window--app-view {
+  border-radius: 0;
+  border-left: none;
+  border-top: none;
+  border-bottom: none;
+  box-shadow: none;
+  min-width: 0;
+  min-height: 0;
+}
+
+.arco-desktop--app-view .arco-window:not(.arco-window--focused) {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .arco-window__titlebar {

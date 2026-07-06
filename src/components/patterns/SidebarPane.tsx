@@ -46,12 +46,12 @@ export function SidebarPane({
         aria-orientation="vertical"
         aria-label={handleLabel}
         tabIndex={0}
-        className={["arco-sidebar-pane__handle", isResizing ? "arco-sidebar-pane__handle--active" : ""]
+        className={["arco-resize-handle", isResizing ? "arco-resize-handle--active" : ""]
           .filter(Boolean)
           .join(" ")}
         onPointerDown={onPointerDown}
       >
-        <span className="arco-sidebar-pane__grip" aria-hidden="true" />
+        <span className="arco-resize-handle__grip" aria-hidden="true" />
       </div>
     </div>
   );

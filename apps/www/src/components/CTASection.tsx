@@ -1,5 +1,6 @@
 import { arcoDocsUrl, demoUrl, siteMeta } from "../content/site-content";
-import shared from "../styles/shared.module.css";
+import { ChunkyButton } from "./ChunkyButton";
+import { JourneyConstellation } from "./JourneyConstellation";
 import styles from "./CTASection.module.css";
 
 type CTAAction = {
@@ -13,22 +14,45 @@ type CTASectionProps = {
   title?: string;
   body?: string;
   actions?: readonly CTAAction[];
+  journey?: boolean;
 };
 
 const defaultActions: readonly CTAAction[] = [
   { label: "Launch Kosmos demo", href: demoUrl, variant: "primary" },
-  {
-    label: "Read Arco docs",
-    href: arcoDocsUrl,
-    variant: "secondary",
-  },
+  { label: "Read Arco docs", href: arcoDocsUrl, variant: "secondary" },
 ];
 
 export function CTASection({
-  title = "Build the integrated AI workspace",
-  body = "Start with the Kosmos prototype, then follow the integration path — OpenClaw plugin, OpenHands embed, Arco streaming.",
+  title = "Start your journey",
+  body = "We would like to start a project with you — spin up the Kosmos prototype and explore the integrated AI workspace.",
   actions = defaultActions,
+  journey = true,
 }: CTASectionProps) {
+  if (journey) {
+    return (
+      <section className={styles.journeySection}>
+        <JourneyConstellation />
+        <div className={styles.journeyContent}>
+          <h2 className={styles.journeyTitle}>{title}</h2>
+          <p className={styles.journeyBody}>{body}</p>
+          <div className={styles.journeyActions}>
+            {actions.map((action) => (
+              <ChunkyButton
+                key={action.href}
+                href={action.href}
+                variant={action.variant === "secondary" ? "secondary" : "primary"}
+                size={action.variant === "primary" ? "large" : "default"}
+                external={action.external}
+              >
+                {action.label}
+              </ChunkyButton>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className={styles.section}>
       <div className={styles.card}>
@@ -36,18 +60,14 @@ export function CTASection({
         <p className={styles.body}>{body}</p>
         <div className={styles.actions}>
           {actions.map((action) => (
-            <a
+            <ChunkyButton
               key={action.href}
-              className={
-                action.variant === "secondary"
-                  ? shared.buttonSecondary
-                  : shared.buttonPrimary
-              }
               href={action.href}
-              {...(action.external ? { target: "_blank", rel: "noreferrer" } : {})}
+              variant={action.variant === "secondary" ? "secondary" : "primary"}
+              external={action.external}
             >
               {action.label}
-            </a>
+            </ChunkyButton>
           ))}
         </div>
       </div>

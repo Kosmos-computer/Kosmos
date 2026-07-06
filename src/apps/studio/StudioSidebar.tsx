@@ -9,7 +9,7 @@
  * buckets because Arco sessions carry no project field.
  */
 import { useMemo, useState } from "react";
-import { Calendar, ChevronDown, Folder, LayoutGrid, Plus, Search, Trash2 } from "lucide-react";
+import { Calendar, ChevronDown, Folder, LayoutGrid, PanelLeft, Plus, Search, Trash2 } from "lucide-react";
 import type { SessionSummary } from "@shared/types";
 import { Menu } from "../../components/Menu";
 import { useAuthStore } from "../../os/auth/authStore";
@@ -58,6 +58,7 @@ export interface StudioSidebarProps {
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
   onNewChat: () => void;
+  onClose?: () => void;
 }
 
 export function StudioSidebar({
@@ -66,6 +67,7 @@ export function StudioSidebar({
   onSelect,
   onDelete,
   onNewChat,
+  onClose,
 }: StudioSidebarProps) {
   const [listView, setListView] = useState<ListView>("recent");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -99,6 +101,20 @@ export function StudioSidebar({
 
   return (
     <aside className="arco-sidenav" aria-label="Conversations">
+      {onClose && (
+        <div className="arco-sidenav__toolbar">
+          <button
+            type="button"
+            className="arco-btn arco-btn--icon"
+            onClick={onClose}
+            aria-pressed
+            aria-label="Hide conversations"
+          >
+            <PanelLeft size={14} />
+          </button>
+        </div>
+      )}
+
       {/* ── Header: primary action + quick links ─────────────────────────── */}
       <div className="arco-sidenav__header">
         <button className="arco-btn arco-sidenav__primary" onClick={onNewChat}>

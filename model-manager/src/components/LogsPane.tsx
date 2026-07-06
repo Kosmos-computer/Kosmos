@@ -4,11 +4,12 @@
  */
 import { useEffect, useRef } from "react";
 import { ScrollText } from "lucide-react";
+import { SettingsPanelBody, SettingsPanelHeader } from "@arco/components/patterns/SettingsLayout";
 import { useStore } from "../state/store";
 
 export function LogsPane() {
   const logs = useStore((s) => s.logs);
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLPreElement>(null);
 
   // Follow the tail unless the user has scrolled up.
   useEffect(() => {
@@ -19,16 +20,18 @@ export function LogsPane() {
   }, [logs]);
 
   return (
-    <div className="mm-card" style={{ flex: 1, minHeight: 0 }}>
-      <div className="mm-card__title">
-        <span>
-          <ScrollText size={13} style={{ verticalAlign: -2, marginRight: 6 }} />
+    <section className="arco-card arco-models-log-pane">
+      <SettingsPanelHeader>
+        <span className="arco-settings-panel__title">
+          <ScrollText size={13} className="arco-icon arco-icon--secondary" />
           Engine logs
         </span>
-      </div>
-      <div className="mm-logs" ref={ref}>
-        {logs.length === 0 ? "Engine not started." : logs.join("\n")}
-      </div>
-    </div>
+      </SettingsPanelHeader>
+      <SettingsPanelBody>
+        <pre ref={ref} className="arco-settings-log arco-models-log">
+          {logs.length === 0 ? "Engine not started." : logs.join("\n")}
+        </pre>
+      </SettingsPanelBody>
+    </section>
   );
 }

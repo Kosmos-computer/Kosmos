@@ -1,0 +1,102 @@
+/* Clay / chunky UI — adapted from reference for light monochrome Kosmos site */
+
+.chunkyBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.2rem;
+  border-radius: 30px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  border: none;
+  color: var(--lf-on-dark);
+  background: var(--lf-text);
+  text-decoration: none;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease;
+  box-shadow:
+    0 4px 0 rgba(115, 115, 115, 0.45),
+    0 6px 10px rgba(0, 0, 0, 0.18),
+    inset 0 -2px 5px rgba(0, 0, 0, 0.12),
+    inset 0 2px 5px rgba(255, 255, 255, 0.25);
+}
+
+.chunkyBtn:active {
+  transform: translateY(4px);
+  box-shadow:
+    0 0 0 rgba(115, 115, 115, 0.45),
+    0 2px 5px rgba(0, 0, 0, 0.18),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.12);
+}
+
+.chunkyBtnSecondary {
+  color: var(--lf-text);
+  background: var(--clay-base);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 4px 0 var(--clay-shadow-deep),
+    0 6px 10px rgba(0, 0, 0, 0.12),
+    inset 1px 1px 2px var(--clay-inset-light),
+    inset -1px -1px 2px var(--clay-inset-dark);
+}
+
+.chunkyBtnSecondary:active {
+  box-shadow:
+    0 0 0 var(--clay-shadow-deep),
+    0 2px 5px rgba(0, 0, 0, 0.12),
+    inset 1px 1px 2px var(--clay-inset-light);
+}
+
+.chunkyBtnLarge {
+  font-size: 1.05rem;
+  padding: 0.85rem 2rem;
+}
+
+.chunkyBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--clay-base);
+  padding: 0.45rem 0.9rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  color: var(--lf-text-muted);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow:
+    4px 4px 8px var(--clay-shadow),
+    inset 2px 2px 4px var(--clay-inset-light),
+    inset -2px -2px 4px var(--clay-inset-dark);
+}
+
+.clayPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.25rem;
+  background: var(--clay-base);
+  padding: 0.45rem 0.5rem 0.45rem 1.5rem;
+  border-radius: 40px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow:
+    4px 4px 10px var(--clay-shadow),
+    inset 1px 1px 2px var(--clay-inset-light),
+    inset -1px -1px 2px var(--clay-inset-dark);
+}
+
+.clayCard {
+  background: var(--clay-base);
+  border-radius: 16px;
+  padding: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow:
+    8px 8px 16px var(--clay-shadow),
+    -4px -4px 10px rgba(255, 255, 255, 0.5),
+    inset 3px 3px 6px var(--clay-inset-light),
+    inset -3px -3px 6px var(--clay-inset-dark);
+  transition: filter 0.4s ease;
+}
+
+.clayCardActive {
+  filter: drop-shadow(0 0 20px rgba(0, 0, 0, 0.12));
+}

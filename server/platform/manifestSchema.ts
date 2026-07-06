@@ -9,8 +9,16 @@ const entrySchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("url"), url: z.string().url() }),
   z.object({
     kind: z.literal("bundle"),
-    // Path segment only — no traversal, resolved under ./apps/.
-    path: z.string().regex(/^[a-z0-9][a-z0-9-]*$/, "bundle path must be a plain folder name"),
+    // Segments under ./apps/ — e.g. "calendar" or "docs/dist" for Vite builds.
+    path: z
+      .string()
+      .min(1)
+      .refine(
+        (p) =>
+          !p.includes("..") &&
+          p.split("/").every((seg) => /^[a-z0-9][a-z0-9-]*$/.test(seg)),
+        "bundle path must be folder segments under ./apps/ (no ..)",
+      ),
   }),
   z.object({ kind: z.literal("openui"), appId: z.string().min(1) }),
 ]);

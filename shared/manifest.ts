@@ -21,7 +21,7 @@ export type AppTier = "declarative" | "code";
 export type AppEntry =
   /** A remote (or dev-server) URL, embedded in a sandboxed iframe. */
   | { kind: "url"; url: string }
-  /** A static bundle under ./apps/<path>/ served at /apps/<path>/. */
+  /** Static bundle under ./apps/<path>/ served at /apps/<path>/ (may be nested, e.g. docs/dist). */
   | { kind: "bundle"; path: string }
   /** A declarative OpenUI app (StoredApp id) rendered by the shell. */
   | { kind: "openui"; appId: string };

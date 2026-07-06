@@ -13,6 +13,7 @@
   "scripts": {
     "models": "npm run dev -w model-manager",
     "generate": "tsx scripts/generate-prompts.ts",
+    "predev": "npm run build:apps",
     "dev": "concurrently -n server,web -c yellow,cyan \"npm run dev:server\" \"npm run dev:web\"",
     "dev:all": "concurrently -n server,web,voice -c yellow,cyan,magenta \"npm run dev:server\" \"npm run dev:web\" \"npm run voice\"",
     "dev:server": "tsx watch server/index.ts",

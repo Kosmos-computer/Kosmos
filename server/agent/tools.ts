@@ -241,7 +241,7 @@ async function duckDuckGoSearch(query: string, max: number): Promise<SearchResul
 
 // ── App id resolution for os_ui ──────────────────────────────────────────────
 
-const SYSTEM_APP_IDS = ["chat", "studio", "apps", "automations", "files", "notes", "terminal", "settings"];
+const SYSTEM_APP_IDS = ["chat", "studio", "apps", "skills", "automations", "files", "notes", "terminal", "settings"];
 
 /**
  * Map whatever the model called the app — an exact id, a system id (possibly

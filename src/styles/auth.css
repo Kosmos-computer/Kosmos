@@ -82,7 +82,11 @@
 .arco-boot__bar-fill {
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--arco-accent), var(--arco-accent-strong));
+  background: linear-gradient(
+    90deg,
+    var(--arco-text-tertiary),
+    var(--arco-text-primary)
+  );
   animation: arco-boot-fill 2s var(--arco-ease) forwards;
 }
 

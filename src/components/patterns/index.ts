@@ -40,3 +40,12 @@ export {
 } from "./NavSidebar";
 export { SidebarPane, type SidebarPaneProps } from "./SidebarPane";
 export { useColumnResize, type UseColumnResizeOptions } from "./useColumnResize";
+export {
+  ModuleCardGrid,
+  ModuleHeader,
+  ModuleInner,
+  ModuleList,
+  ModulePage,
+  ModuleSection,
+  ModuleToolbar,
+} from "./ModuleDashboard";

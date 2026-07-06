@@ -4,7 +4,7 @@
  * on each group to start a chat in that folder/repo.
  */
 import { useEffect, useMemo, useState } from "react";
-import { Calendar, LayoutGrid, PanelLeft, Pin, Plus, Search, Trash2 } from "lucide-react";
+import { Calendar, LayoutGrid, Layers, PanelLeft, Pin, Plus, Search, Trash2 } from "lucide-react";
 import type { Project, SessionSummary } from "@shared/types";
 import { useAuthStore } from "../../os/auth/authStore";
 import { useWindowStore } from "../../os/windowStore";
@@ -76,7 +76,7 @@ export function StudioSidebar({
   const togglePinned = useSidebarPreferencesStore((s) => s.togglePinned);
   const prunePinned = useSidebarPreferencesStore((s) => s.prunePinned);
 
-  const openSystem = (app: "automations" | "apps") =>
+  const openSystem = (app: "automations" | "apps" | "skills") =>
     openWindow({ type: "system", app }, systemApp(app).title);
 
   const visibleSessions = useMemo(() => {
@@ -144,6 +144,13 @@ export function StudioSidebar({
             }}
           >
             <Search size={14} /> Search
+          </button>
+          <button
+            type="button"
+            className="arco-sidenav__quicklink"
+            onClick={() => openSystem("skills")}
+          >
+            <Layers size={14} /> Skills
           </button>
           <button
             type="button"

@@ -10,6 +10,7 @@ export type SystemAppId =
   | "chat"
   | "studio"
   | "apps"
+  | "skills"
   | "automations"
   | "files"
   | "notes"
@@ -124,7 +125,8 @@ const DEFAULT_SIZES: Record<string, { w: number; h: number }> = {
   // Studio is a workbench — it wants most of the screen by default.
   "system:studio": { w: 1180, h: 760 },
   "system:apps": { w: 760, h: 560 },
-  "system:automations": { w: 720, h: 560 },
+  "system:skills": { w: 760, h: 620 },
+  "system:automations": { w: 760, h: 620 },
   "system:files": { w: 680, h: 520 },
   "system:terminal": { w: 640, h: 440 },
   "system:settings": { w: 560, h: 620 },

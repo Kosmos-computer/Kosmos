@@ -17,6 +17,7 @@ import "./styles/os.css";
 import "./os/wallpaper/wallpaper.css";
 import "./styles/cursor.css";
 import "./styles/apps.css";
+import "./styles/extensions.css";
 import "./styles/composer.css";
 import "./styles/studio.css";
 import "./styles/adaptive.css";

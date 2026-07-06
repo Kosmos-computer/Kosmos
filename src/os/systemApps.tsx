@@ -13,6 +13,7 @@ import {
   SquareTerminal,
   Settings as SettingsIcon,
   StickyNote,
+  Layers,
 } from "lucide-react";
 import type { SystemAppId } from "./windowStore";
 import { ChatApp } from "../apps/chat/ChatApp";
@@ -20,6 +21,7 @@ import { StudioApp } from "../apps/studio/StudioApp";
 import { STUDIO_ID, STUDIO_TITLE } from "../apps/studio/studioMeta";
 import { AppsLibrary } from "../apps/library/AppsLibrary";
 import { AutomationsApp } from "../apps/automations/AutomationsApp";
+import { SkillsApp } from "../apps/skills/SkillsApp";
 import { FilesApp } from "../apps/files/FilesApp";
 import { NotesApp } from "../apps/notes/NotesApp";
 import { TerminalApp } from "../apps/terminal/TerminalApp";
@@ -36,6 +38,7 @@ export const SYSTEM_APPS: SystemAppDef[] = [
   { id: "chat", title: "Chat", icon: MessageSquare, component: ChatApp },
   { id: STUDIO_ID, title: STUDIO_TITLE, icon: PanelsTopLeft, component: StudioApp },
   { id: "apps", title: "Apps", icon: LayoutGrid, component: AppsLibrary },
+  { id: "skills", title: "Skills", icon: Layers, component: SkillsApp },
   { id: "automations", title: "Automations", icon: CalendarClock, component: AutomationsApp },
   { id: "files", title: "Files", icon: FolderOpen, component: FilesApp },
   { id: "notes", title: "Notes", icon: StickyNote, component: NotesApp },

@@ -21,6 +21,7 @@ import "./styles/groups.css";
 import "./styles/social.css";
 import "./styles/connections.css";
 import "./styles/sheets.css";
+import "./styles/memory.css";
 import "./styles/generator.css";
 import "./styles/auth.css";
 import "./styles/os.css";

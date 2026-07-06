@@ -25,6 +25,7 @@ import {
   GraduationCap,
   UsersRound,
   Share2,
+  Brain,
 } from "lucide-react";
 import type { SystemAppId } from "./windowStore";
 import { ChatApp } from "../apps/chat/ChatApp";
@@ -48,6 +49,7 @@ import { TerminalApp } from "../apps/terminal/TerminalApp";
 import { SettingsApp } from "../apps/settings/SettingsApp";
 import { StartupApp } from "../apps/startup/StartupApp";
 import { OnboardingApp } from "../apps/onboarding/OnboardingApp";
+import { MemoryApp } from "../apps/memory/MemoryApp";
 
 export interface SystemAppDef {
   id: SystemAppId;
@@ -61,6 +63,7 @@ export const SYSTEM_APPS: SystemAppDef[] = [
   { id: STUDIO_ID, title: STUDIO_TITLE, icon: PanelsTopLeft, component: StudioApp },
   { id: "apps", title: "Apps", icon: LayoutGrid, component: AppsLibrary },
   { id: "skills", title: "Skills", icon: Layers, component: SkillsApp },
+  { id: "memory", title: "Memory", icon: Brain, component: MemoryApp },
   { id: "keywallet", title: "Key Wallet", icon: Wallet, component: KeyWalletApp },
   { id: "apis", title: "APIs", icon: Plug, component: ApisApp },
   { id: "automations", title: "Automations", icon: CalendarClock, component: AutomationsApp },

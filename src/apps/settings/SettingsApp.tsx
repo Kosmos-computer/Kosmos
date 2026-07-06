@@ -19,6 +19,7 @@ import { ExternalAccessSection } from "./ExternalAccessSection";
 import { McpServersSection } from "./McpServersSection";
 import { ProvidersSection } from "./ProvidersSection";
 import { SkillsSection } from "./SkillsSection";
+import { MemorySection } from "./MemorySection";
 import { ToolsSection } from "./ToolsSection";
 import { WALLPAPER_GROUPS, type WallpaperId } from "../../os/wallpaper/wallpapers";
 import { AUTH_WALLPAPER_GROUPS, type AuthWallpaperId } from "../../os/wallpaper/authWallpapers";
@@ -427,6 +428,7 @@ export function SettingsApp() {
           {activeSection === "tools" && <ToolsSection />}
           {activeSection === "mcp" && <McpServersSection />}
           {activeSection === "skills" && <SkillsSection />}
+          {activeSection === "memory" && canWriteSettings && <MemorySection />}
           {activeSection === "channels" && <ChannelsSection />}
           {activeSection === "accounts" && <ConnectedAccountsSection />}
           {activeSection === "permissions" && canWriteSettings && <AgentSection />}

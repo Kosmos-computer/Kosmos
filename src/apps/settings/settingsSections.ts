@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   AppWindow,
   Bot,
+  Brain,
   Globe,
   Layers,
   Link2,
@@ -23,6 +24,7 @@ export type SettingsSectionId =
   | "tools"
   | "mcp"
   | "skills"
+  | "memory"
   | "channels"
   | "accounts"
   | "permissions"
@@ -65,6 +67,7 @@ export const SETTINGS_NAV_GROUPS: SettingsNavGroup[] = [
       { id: "tools", label: "Tools", icon: Wrench },
       { id: "mcp", label: "MCP servers", icon: Server },
       { id: "skills", label: "Skills", icon: Layers },
+      { id: "memory", label: "Memory", icon: Brain, requiresWrite: true },
     ],
   },
   {

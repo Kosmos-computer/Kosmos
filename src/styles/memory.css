@@ -1,0 +1,271 @@
+/* Memory workspace — Psyche operator surface (Arco tokens). */
+
+.arco-memory {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  background: var(--arco-surface-base);
+}
+
+.arco-memory__main {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+}
+
+.arco-memory-sidebar__note {
+  margin: 0;
+  padding: var(--arco-space-3);
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+  line-height: 1.4;
+}
+
+.arco-memory-view {
+  padding: var(--arco-space-6);
+  max-width: 960px;
+}
+
+.arco-memory-view--placeholder {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-3);
+}
+
+.arco-memory-view__header {
+  margin-bottom: var(--arco-space-5);
+}
+
+.arco-memory-view__title {
+  margin: 0 0 var(--arco-space-2);
+  font-size: var(--arco-text-xl);
+  font-weight: 600;
+  color: var(--arco-text-primary);
+}
+
+.arco-memory-view__subtitle {
+  margin: 0;
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-secondary);
+  line-height: 1.5;
+}
+
+.arco-memory-view__stub {
+  margin: 0;
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-tertiary);
+}
+
+.arco-memory-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--arco-space-4);
+}
+
+.arco-memory-metric {
+  padding: var(--arco-space-4);
+  border: 1px solid var(--arco-border-subtle);
+  border-radius: var(--arco-radius-md);
+  background: var(--arco-surface-raised);
+}
+
+.arco-memory-metric__label {
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+  margin-bottom: var(--arco-space-2);
+}
+
+.arco-memory-metric__value {
+  font-size: var(--arco-text-2xl);
+  font-weight: 600;
+  color: var(--arco-text-primary);
+}
+
+.arco-memory-metric__change {
+  margin-top: var(--arco-space-2);
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-secondary);
+}
+
+.arco-memory-metric--accent .arco-memory-metric__value {
+  color: var(--arco-accent);
+}
+
+.arco-memory-metric--success .arco-memory-metric__value {
+  color: var(--arco-success);
+}
+
+.arco-memory-filters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-3);
+  margin-bottom: var(--arco-space-5);
+}
+
+.arco-memory-filters__kinds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--arco-space-2);
+}
+
+.arco-memory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--arco-space-4);
+}
+
+.arco-memory-card {
+  padding: var(--arco-space-4);
+  border: 1px solid var(--arco-border-subtle);
+  border-radius: var(--arco-radius-md);
+  background: var(--arco-surface-raised);
+}
+
+.arco-memory-card__head {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--arco-space-3);
+  margin-bottom: var(--arco-space-3);
+}
+
+.arco-memory-card__title {
+  margin: 0;
+  font-size: var(--arco-text-sm);
+  font-weight: 600;
+  color: var(--arco-text-primary);
+}
+
+.arco-memory-card__source {
+  margin: var(--arco-space-1) 0 0;
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+}
+
+.arco-memory-card__summary {
+  margin: 0 0 var(--arco-space-3);
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-secondary);
+  line-height: 1.45;
+}
+
+.arco-memory-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--arco-space-2);
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+  margin-bottom: var(--arco-space-2);
+}
+
+.arco-memory-card__kind {
+  padding: 0 var(--arco-space-2);
+  border-radius: var(--arco-radius-sm);
+  background: var(--arco-surface-overlay);
+  color: var(--arco-text-secondary);
+}
+
+.arco-memory-card__confidence {
+  height: 4px;
+  border-radius: var(--arco-radius-full);
+  background: var(--arco-surface-overlay);
+  overflow: hidden;
+  margin-bottom: var(--arco-space-3);
+}
+
+.arco-memory-card__confidence-fill {
+  height: 100%;
+  background: var(--arco-accent);
+}
+
+.arco-memory-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--arco-space-2);
+}
+
+.arco-memory-card__tag {
+  font-size: var(--arco-text-xs);
+  padding: 0 var(--arco-space-2);
+  border-radius: var(--arco-radius-sm);
+  border: 1px solid var(--arco-border-subtle);
+  color: var(--arco-text-secondary);
+}
+
+.arco-memory-section {
+  margin-bottom: var(--arco-space-6);
+}
+
+.arco-memory-section__title {
+  margin: 0 0 var(--arco-space-3);
+  font-size: var(--arco-text-sm);
+  font-weight: 600;
+  color: var(--arco-text-primary);
+}
+
+.arco-memory-section__body {
+  margin: 0;
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-secondary);
+  line-height: 1.55;
+}
+
+.arco-memory-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--arco-border-subtle);
+  border-radius: var(--arco-radius-md);
+  overflow: hidden;
+}
+
+.arco-memory-list__row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--arco-space-3);
+  padding: var(--arco-space-3) var(--arco-space-4);
+  border-bottom: 1px solid var(--arco-border-subtle);
+  background: var(--arco-surface-raised);
+}
+
+.arco-memory-list__row:last-child {
+  border-bottom: none;
+}
+
+.arco-memory-list__row--stacked {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.arco-memory-list__primary {
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-primary);
+}
+
+.arco-memory-list__meta {
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+}
+
+.arco-memory-list__preview {
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-secondary);
+  line-height: 1.45;
+}
+
+.arco-memory-grants-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--arco-text-sm);
+}
+
+.arco-memory-grants-table th,
+.arco-memory-grants-table td {
+  padding: var(--arco-space-2) var(--arco-space-3);
+  border-bottom: 1px solid var(--arco-border-subtle);
+  text-align: left;
+}
+
+.arco-memory-grants-table th {
+  color: var(--arco-text-tertiary);
+  font-weight: 500;
+}

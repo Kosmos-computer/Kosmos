@@ -27,7 +27,8 @@ export type SystemAppId =
   | "terminal"
   | "settings"
   | "startup"
-  | "onboarding";
+  | "onboarding"
+  | "memory";
 
 export type WindowKind =
   | { type: "system"; app: SystemAppId }

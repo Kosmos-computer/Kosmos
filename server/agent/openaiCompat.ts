@@ -34,6 +34,7 @@ const SHELL_EVENT_TYPES = new Set<AgentEvent["type"]>([
   "os_ui",
   "apps_changed",
   "automations_changed",
+  "automation_run_finished",
   "file_changed",
   "cursor_request",
   "confirm_required",

@@ -21,6 +21,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import type { WorkspaceTab } from "@shared/types";
 import { useChat } from "../chat/useChat";
+import { onPrimeComposer } from "../chat/composerBus";
 import { VoiceBar } from "../chat/VoiceBar";
 import { ChatThread } from "../../components/chat/ChatThread";
 import { useVoice, voiceClient } from "../../voice";
@@ -124,6 +125,18 @@ export function StudioApp() {
   // Voice conversations land in the thread like typed ones (same as ChatApp):
   // final transcripts as user items, bot speech as streaming assistant text.
   useEffect(() => voiceClient.subscribe(chat.applyVoiceEvent), [chat.applyVoiceEvent]);
+
+  useEffect(
+    () =>
+      onPrimeComposer(({ text, submit: shouldSubmit }) => {
+        setDraft(text);
+        if (shouldSubmit) {
+          followRef.current = true;
+          void chat.send(text);
+        }
+      }),
+    [chat],
+  );
 
   const submit = useCallback(
     (text?: string) => {

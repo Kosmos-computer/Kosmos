@@ -7,6 +7,7 @@ export {
   type JSONContent,
 } from "./Editor";
 export { RichEditor, type RichEditorProps } from "./RichEditor";
+export { EditorBubbleMenu, type BubbleMenuExtraAction } from "./EditorBubbleMenu";
 export { createEditorExtensions, EMPTY_DOC, type CreateEditorExtensionsOptions } from "./createExtensions";
 export {
   useEditorToolbar,

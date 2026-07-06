@@ -1,0 +1,380 @@
+/* Maps workspace — OpenStreetMap via Leaflet */
+
+.arco-maps {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+  background: var(--arco-bg-surface-solid);
+}
+
+.arco-maps__history-nav {
+  width: 220px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--arco-border);
+  background: var(--arco-bg-surface-solid);
+}
+
+.arco-maps-history-nav {
+  height: 100%;
+}
+
+.arco-maps-history-nav__title {
+  margin: 0;
+  font-size: var(--arco-text-lg);
+  font-weight: 600;
+  color: var(--arco-text-primary);
+}
+
+.arco-maps-history-nav__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-xl) var(--arco-space-m);
+  text-align: center;
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-secondary);
+}
+
+.arco-maps-history-nav__clear {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--arco-space-xs);
+  width: 100%;
+  justify-content: center;
+}
+
+.arco-maps-history-nav .arco-nav-sidebar__nav-item .arco-list-item__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arco-maps-history-nav .arco-list-item__trailing {
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+  flex-shrink: 0;
+}
+
+.arco-maps__sidebar {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.arco-maps__mode-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--arco-space-xs);
+  padding: var(--arco-space-m);
+  border-bottom: 1px solid var(--arco-border);
+}
+
+.arco-maps__mode-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--arco-space-xs);
+  padding: var(--arco-space-s) var(--arco-space-m);
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-s);
+  background: var(--arco-bg-raised);
+  color: var(--arco-text-secondary);
+  font-size: var(--arco-text-sm);
+  cursor: pointer;
+}
+
+.arco-maps__mode-tab--active {
+  border-color: var(--arco-accent);
+  background: var(--arco-accent-soft);
+  color: var(--arco-text-primary);
+}
+
+.arco-maps__directions-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-m);
+  border-bottom: 1px solid var(--arco-border);
+}
+
+.arco-maps__endpoint {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+}
+
+.arco-maps__endpoint .arco-input,
+.arco-maps__endpoint-current {
+  flex: 1;
+}
+
+.arco-maps__endpoint-current {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-s) var(--arco-space-m);
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-s);
+  background: var(--arco-bg-raised);
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-primary);
+}
+
+.arco-maps__endpoint-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.arco-maps__endpoint-dot--start {
+  background: var(--arco-success);
+}
+
+.arco-maps__endpoint-dot--end {
+  background: var(--arco-danger);
+}
+
+.arco-maps__directions-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+}
+
+.arco-maps__locate-btn,
+.arco-maps__route-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--arco-space-xs);
+}
+
+.arco-maps__route-btn {
+  margin-left: auto;
+}
+
+.arco-maps__route-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--arco-space-m);
+  padding: var(--arco-space-m);
+  border-bottom: 1px solid var(--arco-border);
+}
+
+.arco-maps__route-summary strong {
+  display: block;
+  font-size: var(--arco-text-xl);
+  color: var(--arco-text-primary);
+}
+
+.arco-maps__route-summary span {
+  display: block;
+  margin-top: var(--arco-space-2xs);
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-secondary);
+}
+
+.arco-maps__route-endpoints {
+  display: grid;
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-m);
+  border-bottom: 1px solid var(--arco-border);
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-primary);
+}
+
+.arco-maps__steps {
+  list-style: none;
+  margin: 0;
+  padding: var(--arco-space-xs) 0;
+}
+
+.arco-maps__steps li {
+  padding: var(--arco-space-s) var(--arco-space-m);
+  border-bottom: 1px solid var(--arco-border);
+}
+
+.arco-maps__step-instruction {
+  display: block;
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-primary);
+  line-height: 1.45;
+}
+
+.arco-maps__step-meta {
+  display: block;
+  margin-top: var(--arco-space-2xs);
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-secondary);
+}
+
+.arco-maps__detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--arco-space-s);
+}
+
+.arco-maps__detail-actions .arco-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--arco-space-xs);
+}
+
+.arco-maps__search {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-m);
+  border-bottom: 1px solid var(--arco-border);
+}
+
+.arco-maps__search .arco-input {
+  flex: 1;
+}
+
+.arco-maps__clear {
+  flex-shrink: 0;
+}
+
+.arco-maps__results {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--arco-space-xs);
+}
+
+.arco-maps__result-category {
+  display: block;
+  color: var(--arco-text-secondary);
+  font-size: var(--arco-text-xs);
+  text-transform: capitalize;
+}
+
+.arco-maps__footer {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-m);
+  border-top: 1px solid var(--arco-border);
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-secondary);
+  cursor: pointer;
+}
+
+.arco-maps__map-area {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.arco-maps__canvas {
+  width: 100%;
+  height: 100%;
+  background: var(--arco-bg-sunk);
+}
+
+.arco-maps__canvas .leaflet-container {
+  font-family: var(--arco-font-ui);
+  background: var(--arco-bg-sunk);
+}
+
+.arco-maps__marker {
+  background: transparent;
+  border: none;
+}
+
+.arco-maps__marker-dot {
+  display: block;
+  width: 14px;
+  height: 14px;
+  margin: 7px;
+  border-radius: 50%;
+  background: var(--arco-danger);
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+.arco-maps__marker--active .arco-maps__marker-dot {
+  width: 18px;
+  height: 18px;
+  margin: 5px;
+  background: var(--arco-accent-strong);
+}
+
+.arco-maps__marker--start .arco-maps__marker-dot {
+  background: var(--arco-success);
+}
+
+.arco-maps__marker--end .arco-maps__marker-dot {
+  background: var(--arco-danger);
+}
+
+.arco-maps__detail-card {
+  position: absolute;
+  top: var(--arco-space-m);
+  right: var(--arco-space-m);
+  width: min(320px, calc(100% - var(--arco-space-xl)));
+  padding: var(--arco-space-m);
+  border-radius: var(--arco-radius-m);
+  border: 1px solid var(--arco-border);
+  background: var(--arco-bg-elevated);
+  box-shadow: var(--arco-shadow-window, 0 8px 24px rgba(0, 0, 0, 0.2));
+  z-index: 500;
+}
+
+.arco-maps__detail-header h2 {
+  margin: 0;
+  font-size: var(--arco-text-lg);
+  font-weight: 600;
+  color: var(--arco-text-primary);
+}
+
+.arco-maps__detail-category {
+  display: block;
+  margin-top: var(--arco-space-2xs);
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-secondary);
+  text-transform: capitalize;
+}
+
+.arco-maps__detail-address {
+  margin: var(--arco-space-s) 0;
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-secondary);
+  line-height: 1.45;
+}
+
+.arco-maps__detail-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--arco-space-xs);
+  font-size: var(--arco-text-sm);
+  color: var(--arco-accent);
+  text-decoration: none;
+}
+
+.arco-maps__detail-link:hover {
+  color: var(--arco-accent-strong);
+}
+
+.arco-maps__attribution {
+  position: absolute;
+  bottom: var(--arco-space-s);
+  left: var(--arco-space-s);
+  padding: var(--arco-space-2xs) var(--arco-space-s);
+  border-radius: var(--arco-radius-s);
+  background: var(--arco-bg-elevated);
+  font-size: 10px;
+  color: var(--arco-text-tertiary);
+  z-index: 500;
+}
+
+.arco-maps__attribution a {
+  color: var(--arco-accent);
+}

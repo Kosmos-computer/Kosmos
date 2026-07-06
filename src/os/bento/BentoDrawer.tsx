@@ -1,4 +1,3 @@
-import { X } from "lucide-react";
 import { useColumnResize } from "../../components/patterns/useColumnResize";
 import { useDismiss } from "../../components/useDismiss";
 import { useCallback, useRef } from "react";
@@ -49,24 +48,7 @@ export function BentoDrawer() {
         </div>
 
         <div className="arco-bento-drawer__panel">
-          <header className="arco-bento-drawer__header">
-            <div className="arco-bento-drawer__header-main">
-              <h2 className="arco-bento-drawer__title">Bento</h2>
-              <p className="arco-bento-drawer__subtitle">Dock live widgets on your desktop</p>
-            </div>
-            <button
-              type="button"
-              className="arco-bento-drawer__close"
-              onClick={close}
-              aria-label="Close bento drawer"
-            >
-              <X size={16} />
-            </button>
-          </header>
-
-          <div className="arco-bento-drawer__body">
-            <BentoWorkspace />
-          </div>
+          <BentoWorkspace onClose={close} />
         </div>
       </aside>
     </>

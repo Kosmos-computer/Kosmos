@@ -85,12 +85,12 @@ function positionPopup(popup: HTMLElement, clientRect?: (() => DOMRect | null) |
   popup.style.position = "fixed";
   popup.style.left = `${rect.left}px`;
   popup.style.top = `${rect.bottom + 6}px`;
-  popup.style.zIndex = "1000";
+  popup.style.zIndex = "3000";
 }
 
 const suggestionOptions: Omit<SuggestionOptions<SlashMenuItem>, "editor"> = {
   char: "/",
-  startOfLine: true,
+  startOfLine: false,
   allowSpaces: false,
   items: ({ query }) =>
     SLASH_ITEMS.filter((item) => item.label.toLowerCase().includes(query.toLowerCase())),

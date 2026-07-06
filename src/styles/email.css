@@ -248,3 +248,55 @@
   min-height: 160px;
   resize: vertical;
 }
+
+.arco-email__connect {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--arco-space-xl);
+}
+
+.arco-email__connect-card {
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-m);
+  padding: var(--arco-space-xl);
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-lg);
+  background: var(--arco-bg-elevated);
+}
+
+.arco-email__connect-card h2 {
+  margin: 0;
+  font-size: var(--arco-text-lg);
+}
+
+.arco-email__connect-card p {
+  margin: 0;
+  color: var(--arco-text-secondary);
+  line-height: 1.5;
+}
+
+.arco-email__connect-note,
+.arco-email__connect-error {
+  font-size: var(--arco-text-sm);
+}
+
+.arco-email__connect-error {
+  color: var(--arco-danger);
+}
+
+.arco-email__sidebar-footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-s);
+}
+
+.arco-email__connect-btn,
+.arco-email__disconnect {
+  width: 100%;
+  justify-content: center;
+  gap: var(--arco-space-xs);
+}

@@ -1,5 +1,5 @@
 export { Breadcrumb, type BreadcrumbItem, type BreadcrumbProps } from "./Breadcrumb";
-export { EditorToolbar, type BlockFormat, type EditorToolbarProps, type TextAlign, type TextMark } from "./EditorToolbar";
+export { EditorToolbar, type BlockFormat, type EditorToolbarProps, type ReadAloudStatus, type TextAlign, type TextMark } from "./EditorToolbar";
 export { FormActions, FormRow, Section, type FormActionsProps, type FormRowProps, type SectionProps } from "./Section";
 export { ListItem, type ListItemProps } from "./ListItem";
 export { MasterDetail, type MasterDetailProps } from "./MasterDetail";

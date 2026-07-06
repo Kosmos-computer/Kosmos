@@ -1,10 +1,11 @@
 import { useCallback, useMemo } from "react";
-import { ChevronDown, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, X } from "lucide-react";
 import { Menu, type MenuItem } from "../../components/Menu";
 import { BENTO_DEFAULT_ITEMS, BENTO_WIDGET_CATALOG } from "./bentoCatalog";
 import { useBentoStore } from "./bentoStore";
 import { BentoLiveProvider } from "./BentoLiveProvider";
 import { BentoGrid } from "./BentoGrid";
+import { BentoWidgetSettingsModal } from "./BentoWidgetSettingsModal";
 import { clampItemToGrid, findNextFreeSpot } from "./grid-utils";
 import type { BentoItem, BentoWidgetTemplate } from "./types";
 
@@ -12,12 +13,18 @@ function createInstanceId(templateId: string) {
   return `${templateId}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
+type BentoWorkspaceProps = {
+  onClose: () => void;
+};
+
 /** Interactive bento board — drag, resize, and add/remove widgets on a visible grid. */
-export function BentoWorkspace() {
+export function BentoWorkspace({ onClose }: BentoWorkspaceProps) {
   const items = useBentoStore((s) => s.items);
   const activeId = useBentoStore((s) => s.activeId);
   const setItems = useBentoStore((s) => s.setItems);
   const setActiveId = useBentoStore((s) => s.setActiveId);
+  const settingsItemId = useBentoStore((s) => s.settingsItemId);
+  const setSettingsItemId = useBentoStore((s) => s.setSettingsItemId);
 
   const placedTemplateIds = useMemo(() => new Set(items.map((item) => item.templateId)), [items]);
 
@@ -138,30 +145,45 @@ export function BentoWorkspace() {
 
   return (
     <div className="arco-bento-workspace">
-      <div className="arco-bento-workspace__toolbar">
-        <Menu
-          aria-label="Widget actions"
-          align="end"
-          trigger={
-            <button type="button" className="arco-bento-workspace__menu-btn">
-              <Plus size={14} aria-hidden="true" />
-              Widgets
-              <ChevronDown size={13} aria-hidden="true" />
-            </button>
-          }
-          items={menuItems}
-        />
-      </div>
-
       <BentoLiveProvider>
-        <BentoGrid
-          items={items}
-          activeId={activeId}
-          onFocus={setActiveId}
-          onMove={moveWidget}
-          onResize={resizeWidget}
-        />
+        <div className="arco-bento-workspace__stage">
+          <div className="arco-bento-workspace__toolbar">
+            <Menu
+              aria-label="Widget actions"
+              align="end"
+              trigger={
+                <button
+                  type="button"
+                  className="arco-bento-workspace__float-btn"
+                  aria-label="Add or manage widgets"
+                >
+                  <Plus size={16} />
+                </button>
+              }
+              items={menuItems}
+            />
+            <button
+              type="button"
+              className="arco-bento-workspace__float-btn"
+              onClick={onClose}
+              aria-label="Close bento drawer"
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          <BentoGrid
+            items={items}
+            activeId={activeId}
+            onFocus={setActiveId}
+            onOpenSettings={setSettingsItemId}
+            onMove={moveWidget}
+            onResize={resizeWidget}
+          />
+        </div>
       </BentoLiveProvider>
+
+      <BentoWidgetSettingsModal itemId={settingsItemId} onClose={() => setSettingsItemId(null)} />
     </div>
   );
 }

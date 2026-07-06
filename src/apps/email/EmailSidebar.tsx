@@ -1,4 +1,5 @@
-import { Archive, Inbox, Send, Trash2 } from "lucide-react";
+import { Archive, Inbox, LogOut, Plug, Send, Trash2 } from "lucide-react";
+import { Button } from "../../components/ui";
 import { NavSidebar, SidebarUserFooter } from "../../components/patterns";
 import type { MailFolder } from "./types";
 
@@ -21,11 +22,19 @@ export function EmailSidebar({
   userName,
   userEmail,
   onSelectFolder,
+  isConnected,
+  oauthConfigured,
+  onConnect,
+  onDisconnect,
 }: {
   folders: (MailFolder & { active?: boolean })[];
   userName: string;
   userEmail: string;
   onSelectFolder: (id: string) => void;
+  isConnected: boolean;
+  oauthConfigured: boolean;
+  onConnect: () => void;
+  onDisconnect: () => void;
 }) {
   return (
     <NavSidebar
@@ -39,10 +48,26 @@ export function EmailSidebar({
             leading: folderIcon(folder.icon),
             active: folder.active,
             onClick: () => onSelectFolder(folder.id),
+            disabled: !isConnected,
           })),
         },
       ]}
-      footer={<SidebarUserFooter name={userName} meta={userEmail} />}
+      footer={
+        <div className="arco-email__sidebar-footer">
+          {isConnected ? (
+            <Button variant="ghost" onClick={onDisconnect} className="arco-email__disconnect">
+              <LogOut size={14} />
+              Disconnect
+            </Button>
+          ) : (
+            <Button variant="primary" onClick={onConnect} disabled={!oauthConfigured} className="arco-email__connect-btn">
+              <Plug size={14} />
+              Connect Gmail
+            </Button>
+          )}
+          <SidebarUserFooter name={userName} meta={userEmail} />
+        </div>
+      }
     />
   );
 }

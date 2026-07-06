@@ -11,12 +11,15 @@ interface BentoStore {
   width: number;
   items: BentoItem[];
   activeId: string | null;
+  settingsItemId: string | null;
 
   setOpen: (open: boolean) => void;
   toggleOpen: () => void;
   setWidth: (width: number) => void;
   setItems: (items: BentoItem[]) => void;
   setActiveId: (id: string | null) => void;
+  setSettingsItemId: (id: string | null) => void;
+  updateItem: (id: string, patch: Partial<BentoItem>) => void;
 }
 
 function loadItems(): BentoItem[] {
@@ -38,11 +41,16 @@ function loadWidth(): number {
   return Number.isFinite(raw) && raw >= 320 && raw <= 720 ? raw : 420;
 }
 
-export const useBentoStore = create<BentoStore>((set) => ({
+function persistItems(items: BentoItem[]) {
+  localStorage.setItem("arco:bento-items", JSON.stringify(items));
+}
+
+export const useBentoStore = create<BentoStore>((set, get) => ({
   open: localStorage.getItem("arco:bento-open") === "true",
   width: loadWidth(),
   items: loadItems(),
   activeId: loadItems()[0]?.id ?? null,
+  settingsItemId: null,
 
   setOpen: (open) => {
     localStorage.setItem("arco:bento-open", String(open));
@@ -62,11 +70,19 @@ export const useBentoStore = create<BentoStore>((set) => ({
   },
 
   setItems: (items) => {
-    localStorage.setItem("arco:bento-items", JSON.stringify(items));
+    persistItems(items);
     set({ items });
   },
 
   setActiveId: (activeId) => set({ activeId }),
+
+  setSettingsItemId: (settingsItemId) => set({ settingsItemId }),
+
+  updateItem: (id, patch) => {
+    const items = get().items.map((item) => (item.id === id ? { ...item, ...patch } : item));
+    persistItems(items);
+    set({ items });
+  },
 }));
 
 export type BentoViewModel = Pick<

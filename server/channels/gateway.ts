@@ -159,9 +159,19 @@ function disconnect(id: string): void {
   e.error = undefined;
 }
 
+/** One-shot env bootstrap — paste TELEGRAM_BOT_TOKEN in .env to skip the Settings form. */
+function bootstrapFromEnv(): void {
+  const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
+  if (!token) return;
+  if (channelStore.list().some((c) => c.kind === "telegram")) return;
+  channelStore.add({ kind: "telegram", name: "Telegram", token });
+  console.log("[channels] bootstrapped Telegram from TELEGRAM_BOT_TOKEN");
+}
+
 export const channelGateway = {
   /** Boot: start every enabled channel in parallel, failures isolated. */
   async start(): Promise<void> {
+    bootstrapFromEnv();
     await Promise.all(channelStore.list().filter((c) => c.enabled).map((c) => connect(c.id)));
     const running = [...entries.values()].filter((e) => e.status === "running").length;
     if (channelStore.list().length > 0) {

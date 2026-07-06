@@ -101,8 +101,47 @@
   gap: var(--arco-space-xs);
 }
 
+.arco-generator__catalog-count {
+  margin-left: auto;
+  font-size: var(--arco-text-sm);
+  font-weight: 500;
+  color: var(--arco-text-tertiary);
+}
+
+.arco-generator__catalog-section {
+  margin-bottom: var(--arco-space-m);
+}
+
+.arco-generator__catalog-section-title {
+  padding: var(--arco-space-xs) var(--arco-space-s);
+  font-size: var(--arco-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--arco-text-tertiary);
+}
+
+.arco-generator__prompt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--arco-space-s);
+}
+
+.arco-generator__error {
+  margin: 0;
+  color: var(--arco-danger);
+  font-size: var(--arco-text-sm);
+}
+
+.arco-generator__warn {
+  margin: 0;
+  color: var(--arco-warning);
+  font-size: var(--arco-text-sm);
+}
+
 .arco-generator__preview-tabs {
   display: flex;
+  align-items: center;
   gap: var(--arco-space-xs);
   padding: var(--arco-space-m);
   border-bottom: 1px solid var(--arco-border);

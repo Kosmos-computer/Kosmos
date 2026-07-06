@@ -7,12 +7,13 @@ export interface BentoGridProps {
   items: BentoItem[];
   activeId?: string | null;
   onFocus: (id: string) => void;
+  onOpenSettings: (id: string) => void;
   onMove: (id: string, next: Pick<BentoItem, "col" | "row">) => void;
   onResize: (id: string, next: Pick<BentoItem, "col" | "row" | "colSpan" | "rowSpan">) => void;
   className?: string;
 }
 
-export function BentoGrid({ items, activeId, onFocus, onMove, onResize, className = "" }: BentoGridProps) {
+export function BentoGrid({ items, activeId, onFocus, onOpenSettings, onMove, onResize, className = "" }: BentoGridProps) {
   const gridRef = useRef<HTMLDivElement>(null);
   const rowCount = maxGridRow(items) + 2;
 
@@ -41,6 +42,7 @@ export function BentoGrid({ items, activeId, onFocus, onMove, onResize, classNam
             item={item}
             active={activeId === item.id}
             onFocus={onFocus}
+            onOpenSettings={onOpenSettings}
             onMove={onMove}
             onResize={onResize}
             gridRef={gridRef}

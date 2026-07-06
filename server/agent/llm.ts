@@ -77,7 +77,7 @@ export async function streamTurn(opts: StreamTurnOptions): Promise<LlmTurn> {
       {
         model: opts.settings.model,
         messages: opts.messages,
-        tools,
+        ...(tools.length > 0 ? { tools } : {}),
         stream: true,
         max_tokens: MAX_COMPLETION_TOKENS,
         // Ask OpenAI-compatible backends to append a final usage-only chunk

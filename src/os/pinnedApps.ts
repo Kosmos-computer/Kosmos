@@ -53,13 +53,65 @@ export function reorderPinned(pinnedIds: string[], fromIndex: number, toIndex: n
   return next;
 }
 
-/** Keep stored order while dropping unknown ids and appending newly seen ones. */
+const DEFAULT_PINNED_IDS = [
+  "system:chat",
+  "system:studio",
+  "system:apps",
+  "system:skills",
+  "system:files",
+  "system:maps",
+  "system:notes",
+  "system:email",
+  "system:tasks",
+  "system:contacts",
+  "system:terminal",
+  "system:settings",
+];
+
+function insertInCanonicalOrder(pinned: string[], id: string, allIds: string[]): string[] {
+  const idIdx = allIds.indexOf(id);
+  let insertAt = pinned.length;
+  for (let i = 0; i < pinned.length; i++) {
+    if (allIds.indexOf(pinned[i]) > idIdx) {
+      insertAt = i;
+      break;
+    }
+  }
+  const next = [...pinned];
+  next.splice(insertAt, 0, id);
+  return next;
+}
+
+function ensureAppAfter(pinned: string[], id: string, afterId: string): string[] {
+  if (!pinned.includes(id) || !pinned.includes(afterId)) return pinned;
+  const idIdx = pinned.indexOf(id);
+  const afterIdx = pinned.indexOf(afterId);
+  if (idIdx <= afterIdx + 1) return pinned;
+  return addPinned(removePinned(pinned, id), id, afterIdx + 1);
+}
+
+function defaultPinnedIds(allIds: string[]): string[] {
+  const picked = DEFAULT_PINNED_IDS.filter((id) => allIds.includes(id));
+  for (const id of allIds) {
+    if (!picked.includes(id)) picked.push(id);
+  }
+  return picked;
+}
+
+/** Keep stored order while dropping unknown ids and inserting newly seen ones in canonical order. */
 export function normalizePinned(stored: string[], allIds: string[]): string[] {
   const known = new Set(allIds);
-  const normalized = stored.filter((id) => known.has(id));
+  let normalized =
+    stored.filter((id) => known.has(id)).length > 0
+      ? stored.filter((id) => known.has(id))
+      : defaultPinnedIds(allIds);
+
   for (const id of allIds) {
-    if (!normalized.includes(id)) normalized.push(id);
+    if (!normalized.includes(id)) normalized = insertInCanonicalOrder(normalized, id, allIds);
   }
+
+  normalized = ensureAppAfter(normalized, "system:maps", "system:files");
+
   if (normalized.length === stored.length && normalized.every((id, i) => id === stored[i])) {
     return stored;
   }

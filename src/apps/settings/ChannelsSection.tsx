@@ -2,7 +2,7 @@
  * Settings → Channels — external messaging gateways (Telegram first).
  */
 import { useCallback, useEffect, useState } from "react";
-import { Check, MessageCircle, Plus, RotateCw, Trash2, X } from "lucide-react";
+import { Check, ExternalLink, MessageCircle, Plus, RotateCw, Trash2, X } from "lucide-react";
 import type { ChannelInfo, ChannelStatus } from "@shared/types";
 import { api } from "../../lib/api";
 import { useCan } from "../../os/auth/authStore";
@@ -22,6 +22,11 @@ import {
   SettingsSubhead,
 } from "../../components/patterns";
 import { Button, Chip, Input } from "../../components/ui";
+
+function telegramUrl(botName: string | undefined): string | null {
+  if (!botName?.startsWith("@")) return null;
+  return `https://t.me/${botName.slice(1)}`;
+}
 
 function statusColor(status: ChannelStatus): string {
   switch (status) {
@@ -86,7 +91,26 @@ export function ChannelsSection() {
 
   return (
     <SettingsPage>
-      <SettingsSection intro="Talk to the agent from messaging apps, and let automations deliver results there. Unknown senders get a pairing code — approve them below before their messages are processed.">
+      <SettingsSection intro="Talk to the agent from Telegram on your phone. Unknown senders get a pairing code — approve them below before their messages are processed. Automations can deliver results to approved chats too.">
+        {!adding && channels.length === 0 ? (
+          <SettingsPanel>
+            <SettingsPanelBody>
+              <span className="arco-settings-group-label">Quick start (~2 min)</span>
+              <ol className="arco-settings-intro" style={{ margin: 0, paddingLeft: "1.25rem" }}>
+                <li>
+                  In Telegram, message <strong>@BotFather</strong> and send <code className="arco-code arco-code--xs">/newbot</code>
+                </li>
+                <li>Copy the bot token BotFather replies with</li>
+                <li>Click <strong>Add Telegram</strong> below and paste the token</li>
+                <li>Open your new bot in Telegram, send any message, then approve the pairing code here</li>
+              </ol>
+              <p className="arco-settings-intro">
+                Tip: set <code className="arco-code arco-code--xs">TELEGRAM_BOT_TOKEN</code> in{" "}
+                <code className="arco-code arco-code--xs">.env</code> to auto-connect on server start.
+              </p>
+            </SettingsPanelBody>
+          </SettingsPanel>
+        ) : null}
         <SettingsRow>
           <MessageCircle size={14} className="arco-icon arco-icon--secondary" />
           {canManage && (
@@ -103,6 +127,10 @@ export function ChannelsSection() {
         {adding && (
           <>
             <SettingsSubhead>Connect Telegram</SettingsSubhead>
+            <p className="arco-settings-intro">
+              Need a token? Message <strong>@BotFather</strong> → <code className="arco-code arco-code--xs">/newbot</code> →
+              follow the prompts → paste the token below.
+            </p>
             <SettingsStack>
               <SettingsFieldRow label="Name" htmlFor="ch-name">
                 <Input id="ch-name" width="auto" value={name} placeholder="Telegram" onChange={(e) => setName(e.target.value)} />
@@ -168,6 +196,26 @@ export function ChannelsSection() {
                 </SettingsPanelHeader>
 
                 {ch.error ? <SettingsAlert tone="error">{ch.error}</SettingsAlert> : null}
+
+                {ch.status === "running" && telegramUrl(ch.botName) ? (
+                  <SettingsPanelBody>
+                    <SettingsRow>
+                      <span className="arco-settings-tool-row__desc">
+                        Message {ch.botName} in Telegram to talk to the agent.
+                      </span>
+                      <SettingsRowActions>
+                        <a
+                          className="arco-btn"
+                          href={telegramUrl(ch.botName)!}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <ExternalLink size={13} /> Open in Telegram
+                        </a>
+                      </SettingsRowActions>
+                    </SettingsRow>
+                  </SettingsPanelBody>
+                ) : null}
 
                 {ch.pairings.length > 0 && (
                   <SettingsPanelBody>

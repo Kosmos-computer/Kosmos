@@ -7,6 +7,7 @@
 export const APP_ICON_NAMES = [
   "bar-chart-3",
   "book-heart",
+  "calculator",
   "calendar",
   "calendar-days",
   "camera",
@@ -58,6 +59,7 @@ const TITLE_RULES: { pattern: RegExp; icon: AppIconName }[] = [
   { pattern: /\b(todos?|tasks?|checklists?)\b/i, icon: "list-todo" },
   { pattern: /\b(notes?|memos?|journals?|diary|diaries)\b/i, icon: "sticky-note" },
   { pattern: /\b(weather|forecast|climate)\b/i, icon: "cloud-sun" },
+  { pattern: /\b(calculators?|math|arithmetic)\b/i, icon: "calculator" },
   { pattern: /\b(clocks?|timers?|alarms?)\b/i, icon: "clock" },
   { pattern: /\b(calendar|schedules?|events?)\b/i, icon: "calendar-days" },
   { pattern: /\b(restaurants?|foods?|dining|recipes?|cook(?:ing)?)\b/i, icon: "utensils" },

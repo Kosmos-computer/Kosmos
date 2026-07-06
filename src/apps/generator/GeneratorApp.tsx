@@ -1,9 +1,9 @@
 import { SidebarPane } from "../../components/patterns";
 import { GeneratorCatalog, GeneratorWorkspace } from "./GeneratorPanels";
-import { useGeneratorStub } from "./useGeneratorStub";
+import { useGenerator } from "./useGenerator";
 
 export function GeneratorApp() {
-  const generator = useGeneratorStub();
+  const generator = useGenerator();
 
   return (
     <div className="arco-generator">
@@ -22,10 +22,13 @@ export function GeneratorApp() {
         result={generator.result}
         previewTab={generator.previewTab}
         examples={generator.examples}
+        error={generator.error}
         onPromptChange={generator.setPrompt}
-        onGenerate={generator.generate}
+        onGenerate={() => void generator.generate()}
         onExampleSelect={generator.setPrompt}
         onTabChange={generator.setPreviewTab}
+        onSaveToCatalog={() => void generator.saveToCatalog()}
+        onRefineInStudio={generator.refineInStudio}
       />
     </div>
   );

@@ -76,6 +76,44 @@
 
 .ek-slash-menu-host {
   pointer-events: auto;
+  z-index: 3000;
+}
+
+.ek-bubble-menu {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid var(--arco-border, var(--os-border, #333));
+  border-radius: var(--arco-radius-m, var(--os-radius-m, 8px));
+  background: var(--arco-bg-elevated, var(--os-bg-raised, #22262b));
+  box-shadow: var(--arco-shadow-chrome, 0 8px 24px rgb(0 0 0 / 35%));
+}
+
+.ek-bubble-menu__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--arco-radius-s, var(--os-radius-s, 6px));
+  background: transparent;
+  color: var(--arco-text-secondary, var(--os-text-secondary, #b0b3b8));
+  cursor: pointer;
+}
+
+.ek-bubble-menu__btn:hover,
+.ek-bubble-menu__btn--active {
+  background: var(--arco-bg-hover, var(--os-bg-sunk, #1a1d21));
+  color: var(--arco-text-primary, var(--os-text-primary, #e8eaed));
+}
+
+.ek-bubble-menu__divider {
+  width: 1px;
+  align-self: stretch;
+  margin: 4px 2px;
+  background: var(--arco-border, var(--os-border, #333));
 }
 
 .ek-slash-menu {
@@ -83,17 +121,17 @@
   max-width: 320px;
   max-height: 280px;
   overflow: auto;
-  padding: var(--os-space-xs, 4px);
-  border: 1px solid var(--os-border, #333);
-  border-radius: var(--os-radius-m, 8px);
-  background: var(--os-bg-raised, #22262b);
-  box-shadow: 0 8px 24px rgb(0 0 0 / 35%);
+  padding: var(--arco-space-xs, var(--os-space-xs, 4px));
+  border: 1px solid var(--arco-border, var(--os-border, #333));
+  border-radius: var(--arco-radius-m, var(--os-radius-m, 8px));
+  background: var(--arco-bg-elevated, var(--os-bg-raised, #22262b));
+  box-shadow: var(--arco-shadow-chrome, 0 8px 24px rgb(0 0 0 / 35%));
 }
 
 .ek-slash-menu__empty {
-  padding: var(--os-space-s, 8px) var(--os-space-m, 12px);
-  color: var(--os-text-tertiary, #888);
-  font-size: var(--os-text-sm, 13px);
+  padding: var(--arco-space-s, var(--os-space-s, 8px)) var(--arco-space-m, var(--os-space-m, 12px));
+  color: var(--arco-text-tertiary, var(--os-text-tertiary, #888));
+  font-size: var(--arco-text-sm, var(--os-text-sm, 13px));
 }
 
 .ek-slash-menu__item {
@@ -102,26 +140,26 @@
   align-items: flex-start;
   gap: 2px;
   width: 100%;
-  padding: var(--os-space-s, 8px) var(--os-space-m, 12px);
+  padding: var(--arco-space-s, var(--os-space-s, 8px)) var(--arco-space-m, var(--os-space-m, 12px));
   border: none;
-  border-radius: var(--os-radius-s, 6px);
+  border-radius: var(--arco-radius-s, var(--os-radius-s, 6px));
   background: transparent;
-  color: var(--os-text-primary, #e8eaed);
+  color: var(--arco-text-primary, var(--os-text-primary, #e8eaed));
   text-align: left;
   cursor: pointer;
 }
 
 .ek-slash-menu__item:hover,
 .ek-slash-menu__item--active {
-  background: var(--os-bg-sunk, #1a1d21);
+  background: var(--arco-bg-hover, var(--os-bg-sunk, #1a1d21));
 }
 
 .ek-slash-menu__label {
-  font-size: var(--os-text-sm, 13px);
+  font-size: var(--arco-text-sm, var(--os-text-sm, 13px));
   font-weight: 600;
 }
 
 .ek-slash-menu__hint {
-  font-size: var(--os-text-xs, 12px);
-  color: var(--os-text-tertiary, #888);
+  font-size: var(--arco-text-xs, var(--os-text-xs, 12px));
+  color: var(--arco-text-tertiary, var(--os-text-tertiary, #888));
 }

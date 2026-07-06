@@ -40,6 +40,7 @@
 /* ── Boot screen ───────────────────────────────────────────────────────── */
 
 .arco-boot {
+  position: relative;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -220,3 +221,27 @@
 .arco-authscreen__link:hover {
   color: var(--arco-text-primary);
 }
+
+/* ── Rainbow corner accent (boot + login) ──────────────────────────────── */
+
+.arco-auth-rainbow {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: row;
+  transform-origin: 0 100%;
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+
+.arco-auth-rainbow__segment {
+  width: 44px;
+  height: 5px;
+}
+
+.arco-auth-rainbow__segment--red { background: #e40303; }
+.arco-auth-rainbow__segment--orange { background: #ff8c00; }
+.arco-auth-rainbow__segment--yellow { background: #ffed00; }
+.arco-auth-rainbow__segment--green { background: #008026; }
+.arco-auth-rainbow__segment--blue { background: #004dff; }

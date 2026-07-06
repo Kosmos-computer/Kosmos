@@ -13,7 +13,11 @@ import type {
   Role,
   UserSummary,
   Automation,
+  AutomationHealthResponse,
   AutomationRun,
+  AutomationRunsResponse,
+  AutomationsListResponse,
+  AutomationTrigger,
   ChannelInfo,
   DeliveryTarget,
   DirListing,
@@ -27,6 +31,8 @@ import type {
   RunEntry,
   Session,
   SessionSummary,
+  GenerateUiResponse,
+  SavedGeneratorCatalogItem,
   Settings,
   Skill,
   SkillMeta,
@@ -37,6 +43,14 @@ import type {
 } from "@shared/types";
 import type { FileCreateInput, FileEntry } from "@shared/capabilities/files";
 import type { InstalledAppInfo, GrantState } from "@shared/manifest";
+import type {
+  MailAccountInfo,
+  MailFolderId,
+  MailInboxFilter,
+  MailSendInput,
+  MailThread,
+  MailThreadDetail,
+} from "@shared/mail";
 
 /** One contract's provider assignment + who could provide it. */
 export interface CapabilityProviderInfo {
@@ -117,6 +131,29 @@ export const api = {
       body: JSON.stringify({ versionIndex }),
     }).then((r) => json<StoredApp>(r)),
 
+  // UI Generator
+  listGeneratorCatalog: () =>
+    fetch("/api/generator/catalog").then((r) => json<SavedGeneratorCatalogItem[]>(r)),
+  generateUi: (prompt: string) =>
+    fetch("/api/generator/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt }),
+    }).then((r) => json<GenerateUiResponse>(r)),
+  saveGeneratorCatalogItem: (input: {
+    label: string;
+    code: string;
+    prompt?: string;
+    tier?: SavedGeneratorCatalogItem["tier"];
+  }) =>
+    fetch("/api/generator/catalog", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    }).then((r) => json<SavedGeneratorCatalogItem>(r)),
+  deleteGeneratorCatalogItem: (id: string) =>
+    fetch(`/api/generator/catalog/${id}`, { method: "DELETE" }).then((r) => json<{ ok: true }>(r)),
+
   // App runtime tool bridge (Query/Mutation — no LLM)
   invokeTool: (tool: string, params: Record<string, unknown>) =>
     fetch("/api/tools/invoke", {
@@ -141,12 +178,37 @@ export const api = {
       body: JSON.stringify({ title }),
     }).then((r) => json<Session>(r)),
 
-  // Automations — `deliver: null` in a patch clears the delivery target.
-  listAutomations: () => fetch("/api/automations").then((r) => json<Automation[]>(r)),
+  // Automations — paginated list, detail, runs, dispatch.
+  automationHealth: () =>
+    fetch("/api/automations/health").then((r) => json<AutomationHealthResponse>(r)),
+  listAutomations: (params: { limit?: number; offset?: number } = {}) => {
+    const qs = new URLSearchParams();
+    if (params.limit != null) qs.set("limit", String(params.limit));
+    if (params.offset != null) qs.set("offset", String(params.offset));
+    const query = qs.toString();
+    return fetch(`/api/automations${query ? `?${query}` : ""}`).then((r) =>
+      json<AutomationsListResponse>(r),
+    );
+  },
+  getAutomation: (id: string) =>
+    fetch(`/api/automations/${encodeURIComponent(id)}`).then((r) => json<Automation>(r)),
+  listAutomationRuns: (id: string, params: { limit?: number; offset?: number } = {}) => {
+    const qs = new URLSearchParams();
+    if (params.limit != null) qs.set("limit", String(params.limit));
+    if (params.offset != null) qs.set("offset", String(params.offset));
+    const query = qs.toString();
+    return fetch(`/api/automations/${encodeURIComponent(id)}/runs${query ? `?${query}` : ""}`).then(
+      (r) => json<AutomationRunsResponse>(r),
+    );
+  },
   createAutomation: (data: {
     name: string;
-    schedule: string;
+    schedule?: string;
     prompt: string;
+    trigger?: AutomationTrigger;
+    timezone?: string;
+    model?: string;
+    mcpServerIds?: string[];
     deliver?: DeliveryTarget;
   }) =>
     fetch("/api/automations", {
@@ -156,8 +218,12 @@ export const api = {
     }).then((r) => json<Automation>(r)),
   updateAutomation: (
     id: string,
-    patch: Partial<Pick<Automation, "name" | "schedule" | "prompt" | "enabled">> & {
+    patch: Partial<
+      Pick<Automation, "name" | "schedule" | "prompt" | "enabled" | "timezone" | "model" | "trigger">
+    > & {
       deliver?: DeliveryTarget | null;
+      mcpServerIds?: string[];
+      webhookSecret?: string;
     },
   ) =>
     fetch(`/api/automations/${id}`, {
@@ -168,7 +234,7 @@ export const api = {
   deleteAutomation: (id: string) =>
     fetch(`/api/automations/${id}`, { method: "DELETE" }).then((r) => json<{ ok: true }>(r)),
   runAutomation: (id: string) =>
-    fetch(`/api/automations/${id}/run`, { method: "POST" }).then((r) => json<AutomationRun>(r)),
+    fetch(`/api/automations/${id}/dispatch`, { method: "POST" }).then((r) => json<AutomationRun>(r)),
 
   // Files
   listFiles: (path = ".") =>
@@ -436,6 +502,44 @@ export const api = {
     post<McpServerInfo>(`/api/mcp-servers/${encodeURIComponent(id)}/restart`),
   mcpServerLog: (id: string) =>
     fetch(`/api/mcp-servers/${encodeURIComponent(id)}/log`).then((r) => json<{ log: string }>(r)),
+
+  // Mail (Gmail OAuth + live proxy)
+  mailStatus: () =>
+    fetch("/api/mail/status").then((r) =>
+      json<{ oauthConfigured: boolean; accounts: MailAccountInfo[] }>(r),
+    ),
+  listMailAccounts: () => fetch("/api/mail/accounts").then((r) => json<MailAccountInfo[]>(r)),
+  disconnectMailAccount: (id: string) =>
+    fetch(`/api/mail/accounts/${encodeURIComponent(id)}`, { method: "DELETE" }).then((r) =>
+      json<{ ok: true }>(r),
+    ),
+  connectGmail: () => {
+    window.location.href = "/api/mail/oauth/google/start";
+  },
+  listMailThreads: (params: {
+    folder?: MailFolderId;
+    filter?: MailInboxFilter;
+    q?: string;
+    accountId?: string;
+  } = {}) => {
+    const query = new URLSearchParams();
+    if (params.folder) query.set("folder", params.folder);
+    if (params.filter) query.set("filter", params.filter);
+    if (params.q) query.set("q", params.q);
+    if (params.accountId) query.set("accountId", params.accountId);
+    const suffix = query.toString();
+    return fetch(`/api/mail/threads${suffix ? `?${suffix}` : ""}`).then((r) => json<MailThread[]>(r));
+  },
+  getMailThread: (id: string, accountId?: string) => {
+    const suffix = accountId ? `?accountId=${encodeURIComponent(accountId)}` : "";
+    return fetch(`/api/mail/threads/${encodeURIComponent(id)}${suffix}`).then((r) =>
+      json<MailThreadDetail>(r),
+    );
+  },
+  sendMail: (input: MailSendInput & { accountId?: string }) =>
+    post<{ ok: true }>("/api/mail/send", input),
+  starMailThread: (id: string, starred: boolean, accountId?: string) =>
+    post<{ ok: true }>(`/api/mail/threads/${encodeURIComponent(id)}/star`, { starred, accountId }),
 
   // Channels (external messaging: Telegram, …)
   listChannels: () => fetch("/api/channels").then((r) => json<ChannelInfo[]>(r)),

@@ -24,6 +24,7 @@ import type {
   WorkspaceEntry,
 } from "../../shared/types.js";
 import { lintOpenUICode, type LintReport } from "../lint/lint-openui.js";
+import { generatorCatalogStore } from "../stores/generatorCatalogStore.js";
 import { appStore } from "../stores/appStore.js";
 import { installedAppStore } from "../platform/installedAppStore.js";
 import { automationStore } from "../stores/automationStore.js";
@@ -576,25 +577,52 @@ export const agentTools: AgentTool[] = [
   {
     name: "create_automation",
     description:
-      "Schedule a recurring agent run. The prompt is the automation's ONLY context at fire time — name targets explicitly (db namespace + schema, or app id). Cron syntax: '0 9 * * *' = daily 9am.",
+      "Schedule a recurring or event-triggered agent run. The prompt is the automation's ONLY context at fire time — name targets explicitly (db namespace + schema, or app id). Cron: '0 9 * * *' = daily 9am. For event triggers set trigger.type to 'event' with source/on fields.",
     parameters: {
       type: "object",
       properties: {
         name: { type: "string" },
-        schedule: { type: "string", description: "5-field cron expression" },
-        prompt: { type: "string", description: "The self-contained instruction to run on schedule" },
+        schedule: { type: "string", description: "5-field cron expression (schedule triggers)" },
+        prompt: { type: "string", description: "The self-contained instruction to run" },
+        trigger: {
+          type: "object",
+          description: "Optional trigger override ({ type: 'schedule'|'event', schedule?, source?, on?, filter? })",
+        },
+        deliver_channel_id: { type: "string", description: "Optional channel id for result delivery" },
+        deliver_chat_id: { type: "string", description: "Optional channel chat id for result delivery" },
       },
-      required: ["name", "schedule", "prompt"],
+      required: ["name", "prompt"],
     },
     execute: async (args, ctx) => {
+      const deliver =
+        typeof args.deliver_channel_id === "string" &&
+        typeof args.deliver_chat_id === "string" &&
+        args.deliver_channel_id &&
+        args.deliver_chat_id
+          ? { channelId: String(args.deliver_channel_id), chatId: String(args.deliver_chat_id) }
+          : undefined;
+      const trigger =
+        args.trigger && typeof args.trigger === "object"
+          ? (args.trigger as import("../../shared/types.js").AutomationTrigger)
+          : undefined;
       const automation = await automationStore.create({
         name: String(args.name),
-        schedule: String(args.schedule),
         prompt: String(args.prompt),
+        ...(trigger ? { trigger } : { schedule: String(args.schedule ?? "0 9 * * *") }),
+        ...(deliver ? { deliver } : {}),
       });
       bus.emit("automations_changed");
       ctx.emit({ type: "automations_changed" });
-      return { id: automation.id, name: automation.name, schedule: automation.schedule };
+      return {
+        id: automation.id,
+        name: automation.name,
+        schedule: automation.schedule,
+        trigger: automation.trigger,
+        webhookUrl:
+          automation.trigger.type === "event"
+            ? `/api/webhooks/automations/${automation.id}`
+            : undefined,
+      };
     },
   },
   {
@@ -602,11 +630,12 @@ export const agentTools: AgentTool[] = [
     description: "List scheduled automations.",
     parameters: { type: "object", properties: {} },
     execute: async () => {
-      const all = await automationStore.list();
-      return all.map((a) => ({
+      const { automations } = await automationStore.list({ limit: 10_000, offset: 0 });
+      return automations.map((a) => ({
         id: a.id,
         name: a.name,
         schedule: a.schedule,
+        trigger: a.trigger,
         enabled: a.enabled,
         lastRun: a.lastRun,
       }));
@@ -614,7 +643,7 @@ export const agentTools: AgentTool[] = [
   },
   {
     name: "update_automation",
-    description: "Update an automation's name, schedule, prompt, or enabled state.",
+    description: "Update an automation's name, schedule, prompt, trigger, or enabled state.",
     parameters: {
       type: "object",
       properties: {
@@ -623,12 +652,13 @@ export const agentTools: AgentTool[] = [
         schedule: { type: "string" },
         prompt: { type: "string" },
         enabled: { type: "boolean" },
+        trigger: { type: "object" },
       },
       required: ["id"],
     },
     execute: async (args, ctx) => {
       const patch: Record<string, unknown> = {};
-      for (const key of ["name", "schedule", "prompt", "enabled"] as const) {
+      for (const key of ["name", "schedule", "prompt", "enabled", "trigger"] as const) {
         if (args[key] !== undefined) patch[key] = args[key];
       }
       const updated = await automationStore.update(String(args.id), patch);
@@ -650,6 +680,20 @@ export const agentTools: AgentTool[] = [
       bus.emit("automations_changed");
       ctx.emit({ type: "automations_changed" });
       return { deleted: true };
+    },
+  },
+  {
+    name: "run_automation",
+    description: "Dispatch an automation immediately (run now).",
+    parameters: {
+      type: "object",
+      properties: { id: { type: "string" } },
+      required: ["id"],
+    },
+    execute: async (args) => {
+      const { runAutomationNow } = await import("../automations/runAutomation.js");
+      const run = await runAutomationNow(String(args.id));
+      return { runId: run.id, status: run.status, sessionId: run.sessionId };
     },
   },
 
@@ -1079,6 +1123,38 @@ export const agentTools: AgentTool[] = [
         },
         ctx,
       ),
+  },
+  {
+    name: "generator_catalog_add",
+    description:
+      "Save an inline openui-lang component to the Generator app's catalog so the user can browse and reuse it later. Use after designing a static UI block in chat or when the user asks to add a component to the catalog.",
+    parameters: {
+      type: "object",
+      properties: {
+        label: { type: "string", description: "Human-readable catalog label" },
+        code: { type: "string", description: "Complete openui-lang program with a root assignment" },
+        prompt: { type: "string", description: "Optional originating user prompt" },
+      },
+      required: ["label", "code"],
+    },
+    execute: async (args) => {
+      const code = String(args.code ?? "").trim();
+      const label = String(args.label ?? "").trim() || "Generated UI";
+      if (!code) return { error: "code is required" };
+      const lint = lintOpenUICode(code);
+      const entry = await generatorCatalogStore.add({
+        label,
+        code,
+        prompt: typeof args.prompt === "string" ? args.prompt : undefined,
+        tier: "saved",
+      });
+      return {
+        id: entry.id,
+        label: entry.label,
+        validation: lint.ok ? "ok" : "warn",
+        ...(lint.ok ? {} : { lintSummary: lint.summary }),
+      };
+    },
   },
 ];
 

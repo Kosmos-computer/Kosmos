@@ -1,6 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import type { Editor, JSONContent } from "@tiptap/core";
+import { EditorBubbleMenu, type BubbleMenuExtraAction } from "./EditorBubbleMenu";
 import { createEditorExtensions } from "./createExtensions";
 
 export interface RichEditorProps {
@@ -11,12 +12,19 @@ export interface RichEditorProps {
   editable?: boolean;
   widgets?: boolean;
   slashCommands?: boolean;
+  /** Selection bubble menu for inline marks. Default true when editable. */
+  bubbleMenu?: boolean;
+  bubbleMenuActions?: BubbleMenuExtraAction[];
   className?: string;
   contentClassName?: string;
   prosemirrorClassName?: string;
   ariaLabel?: string;
   onChange?: (doc: JSONContent) => void;
   onEditorReady?: (editor: Editor | null) => void;
+}
+
+function prosemirrorClassNames(customClass?: string) {
+  return ["ProseMirror", customClass].filter(Boolean).join(" ");
 }
 
 export function RichEditor({
@@ -26,6 +34,8 @@ export function RichEditor({
   editable = true,
   widgets = true,
   slashCommands = true,
+  bubbleMenu,
+  bubbleMenuActions,
   className = "ek-editor",
   contentClassName = "ek-editor__content",
   prosemirrorClassName = "",
@@ -33,20 +43,30 @@ export function RichEditor({
   onChange,
   onEditorReady,
 }: RichEditorProps) {
-  const extensions = createEditorExtensions({ placeholder, widgets, slashCommands });
+  const showBubbleMenu = bubbleMenu ?? editable;
+  const prosemirrorClass = prosemirrorClassNames(prosemirrorClassName);
 
-  const editor = useEditor({
-    extensions,
-    content,
-    editable,
-    editorProps: {
-      attributes: {
-        class: prosemirrorClassName,
-        "aria-label": ariaLabel,
+  const extensions = useMemo(
+    () => createEditorExtensions({ placeholder, widgets, slashCommands }),
+    [placeholder, widgets, slashCommands],
+  );
+
+  const editor = useEditor(
+    {
+      extensions,
+      content,
+      editable,
+      immediatelyRender: false,
+      editorProps: {
+        attributes: {
+          class: prosemirrorClass,
+          "aria-label": ariaLabel,
+        },
       },
+      onUpdate: ({ editor: ed }) => onChange?.(ed.getJSON()),
     },
-    onUpdate: ({ editor: ed }) => onChange?.(ed.getJSON()),
-  });
+    [extensions],
+  );
 
   useEffect(() => {
     onEditorReady?.(editor);
@@ -60,9 +80,11 @@ export function RichEditor({
 
   useEffect(() => {
     if (!editor) return;
-    editor.view.dom.className = prosemirrorClassName;
-    editor.view.dom.setAttribute("aria-label", ariaLabel);
-  }, [editor, prosemirrorClassName, ariaLabel]);
+    const dom = editor.view.dom;
+    const stateClasses = Array.from(dom.classList).filter((name) => name.startsWith("ProseMirror-"));
+    dom.className = [prosemirrorClass, ...stateClasses].filter(Boolean).join(" ");
+    dom.setAttribute("aria-label", ariaLabel);
+  }, [editor, prosemirrorClass, ariaLabel]);
 
   useEffect(() => {
     if (!editor) return;
@@ -73,6 +95,7 @@ export function RichEditor({
 
   return (
     <div className={className}>
+      {showBubbleMenu ? <EditorBubbleMenu editor={editor} extraActions={bubbleMenuActions} /> : null}
       <EditorContent editor={editor} className={contentClassName} />
     </div>
   );

@@ -7,6 +7,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
   BookHeart,
+  Calculator,
   Calendar,
   CalendarDays,
   Camera,
@@ -55,6 +56,7 @@ import { isAppIconName } from "@shared/appIcons";
 const ICONS: Record<string, LucideIcon> = {
   "bar-chart-3": BarChart3,
   "book-heart": BookHeart,
+  calculator: Calculator,
   calendar: Calendar,
   "calendar-days": CalendarDays,
   camera: Camera,

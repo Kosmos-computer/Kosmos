@@ -32,6 +32,29 @@ export type AppSummary = Omit<StoredApp, "content" | "versions"> & {
   versionCount: number;
 };
 
+// ── UI Generator catalog ─────────────────────────────────────────────────────
+
+export type GeneratorCatalogTier = "atom" | "card" | "block" | "widget" | "saved";
+
+/** User-saved component produced by the Generator or Studio. */
+export interface SavedGeneratorCatalogItem {
+  id: string;
+  label: string;
+  tier: GeneratorCatalogTier;
+  /** openui-lang source rendered in the preview pane. */
+  code: string;
+  prompt?: string;
+  createdAt: string;
+}
+
+export interface GenerateUiResponse {
+  title: string;
+  code: string;
+  raw: string;
+  validation: "ok" | "warn";
+  lintSummary?: string;
+}
+
 // ── Chat sessions ────────────────────────────────────────────────────────────
 
 /**
@@ -123,6 +146,13 @@ export type AgentEvent =
   | { type: "usage"; promptTokens: number; completionTokens: number; totalTokens: number }
   | { type: "apps_changed" }
   | { type: "automations_changed" }
+  | {
+      type: "automation_run_finished";
+      automationId: string;
+      automationName: string;
+      status: "ok" | "error";
+      summary: string;
+    }
   /**
    * A platform event topic fired (e.g. "files.changed"). Broadcast to every
    * desktop over /api/shell-events; the shell forwards it into installed-app
@@ -305,14 +335,17 @@ export interface ExternalAccessInfo {
 
 // ── Automations ──────────────────────────────────────────────────────────────
 
+export type AutomationRunStatus = "pending" | "running" | "ok" | "error";
+
 export interface AutomationRun {
   id: string;
   startedAt: string;
   finishedAt?: string;
-  status: "running" | "ok" | "error";
+  status: AutomationRunStatus;
   /** First lines of the agent's final reply — enough for a history list. */
   summary: string;
   sessionId: string;
+  errorDetail?: string;
 }
 
 /**
@@ -325,18 +358,57 @@ export interface DeliveryTarget {
   chatId: string;
 }
 
+/** Cron or webhook trigger — mirrors OpenHands agent-canvas shape. */
+export interface AutomationTrigger {
+  type: "schedule" | "event";
+  /** Cron expression (schedule triggers). */
+  schedule?: string;
+  /** Human-readable schedule, e.g. "Every weekday at 9:00 AM". */
+  scheduleHuman?: string;
+  /** Event source id, e.g. "github". */
+  source?: string;
+  /** Event pattern(s), e.g. "pull_request.opened". */
+  on?: string | string[];
+  /** Optional JSON-path filter on the webhook payload. */
+  filter?: string;
+}
+
 export interface Automation {
   id: string;
   name: string;
-  /** Standard 5-field cron expression. */
+  trigger: AutomationTrigger;
+  /** Legacy flat cron — kept in sync with trigger.schedule for older clients. */
   schedule: string;
   prompt: string;
   enabled: boolean;
   createdAt: string;
+  updatedAt: string;
   lastRun?: string;
+  /** Recent runs embedded for quick list views; full history via /runs API. */
   runs: AutomationRun[];
+  timezone?: string;
+  model?: string;
+  /** MCP server ids this automation may rely on (informational + preset gating). */
+  mcpServerIds?: string[];
+  /** Webhook HMAC secret for event triggers. */
+  webhookSecret?: string;
   /** Optional outbound delivery of the run result to a channel chat. */
   deliver?: DeliveryTarget;
+}
+
+export interface AutomationsListResponse {
+  automations: Automation[];
+  total: number;
+}
+
+export interface AutomationRunsResponse {
+  runs: AutomationRun[];
+  total: number;
+}
+
+export interface AutomationHealthResponse {
+  status: "ok" | "error";
+  message?: string;
 }
 
 // ── Channels (external messaging: the agent where the user already chats) ───

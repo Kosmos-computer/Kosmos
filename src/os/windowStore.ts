@@ -20,6 +20,8 @@ export type SystemAppId =
   | "email"
   | "tasks"
   | "contacts"
+  | "maps"
+  | "pay"
   | "groups"
   | "social"
   | "sheets"
@@ -159,6 +161,7 @@ const DEFAULT_SIZES: Record<string, { w: number; h: number }> = {
   "system:skills": { w: 760, h: 620 },
   "system:automations": { w: 760, h: 620 },
   "system:files": { w: 1080, h: 680 },
+  "system:maps": { w: 1180, h: 760 },
   "system:sheets": { w: 1180, h: 760 },
   "system:terminal": { w: 640, h: 440 },
   "system:settings": { w: 560, h: 620 },

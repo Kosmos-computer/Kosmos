@@ -1,7 +1,7 @@
 /**
- * Automations — primary dashboard (agent-canvas lesson: don't bury cron in
- * settings): search, grid/list toggle, active/inactive groups, run history,
- * and create form. The agent can also manage these via its automation tools.
+ * Automations — primary dashboard (OpenHands agent-canvas parity): search,
+ * grid/list, active/inactive groups, detail view, recommended presets,
+ * chat-first creation, run history, and channel delivery.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -14,10 +14,9 @@ import {
   Send,
   Trash2,
 } from "lucide-react";
-import type { Automation, ChannelInfo, DeliveryTarget } from "@shared/types";
+import type { Automation, ChannelInfo, DeliveryTarget, McpServerInfo } from "@shared/types";
 import { api } from "../../lib/api";
-import { useWindowStore } from "../../os/windowStore";
-import { primeComposer } from "../chat/composerBus";
+import { useOsStore } from "../../os/osStore";
 import {
   ModuleCardGrid,
   ModuleHeader,
@@ -28,9 +27,16 @@ import {
   ModuleToolbar,
 } from "../../components/patterns/ModuleDashboard";
 import { Button, EmptyState, Switch } from "../../components/ui";
+import { AutomationDetailView } from "./AutomationDetailView";
+import { CreateInstructionsModal } from "./CreateInstructionsModal";
+import { DeleteConfirmModal } from "./DeleteConfirmModal";
+import { EditAutomationModal } from "./EditAutomationModal";
+import { RecommendedAutomationsSection } from "./RecommendedAutomationsSection";
+import { describeSchedule, formatEventOn } from "./scheduleUtils";
 
 type AutomationView = "grid" | "list";
 const VIEW_KEY = "arco:automations-view";
+const PAGE_SIZE = 50;
 
 function readView(): AutomationView {
   const stored = localStorage.getItem(VIEW_KEY);
@@ -52,6 +58,13 @@ function parseTarget(value: string): DeliveryTarget | undefined {
   const idx = value.indexOf(":");
   if (idx <= 0) return undefined;
   return { channelId: value.slice(0, idx), chatId: value.slice(idx + 1) };
+}
+
+function triggerLabel(automation: Automation): string {
+  if (automation.trigger.type === "event") {
+    return `${automation.trigger.source ?? "event"} · ${formatEventOn(automation.trigger.on)}`;
+  }
+  return automation.trigger.scheduleHuman ?? describeSchedule(automation.trigger.schedule ?? automation.schedule);
 }
 
 function ViewToggle({ view, onChange }: { view: AutomationView; onChange: (view: AutomationView) => void }) {
@@ -81,15 +94,19 @@ function AutomationCard({
   automation,
   channels,
   runningId,
+  onOpen,
   onToggle,
   onRunNow,
+  onEdit,
   onDelete,
 }: {
   automation: Automation;
   channels: ChannelInfo[];
   runningId: string | null;
+  onOpen: () => void;
   onToggle: () => void;
   onRunNow: () => void;
+  onEdit: () => void;
   onDelete: () => void;
 }) {
   const deliverLabel = automation.deliver
@@ -100,26 +117,26 @@ function AutomationCard({
 
   return (
     <article className="arco-module-card">
-      <div className="arco-module-card__head">
+      <button type="button" className="arco-module-card__head" style={{ width: "100%", textAlign: "left", border: 0, background: "transparent", cursor: "pointer", padding: 0 }} onClick={onOpen}>
         <span className="arco-module-card__icon" aria-hidden="true">
           <Clock size={16} />
         </span>
         <div className="arco-module-card__body">
           <h3 className="arco-module-card__title">{automation.name}</h3>
           <div className="arco-module-card__meta">
-            <code>{automation.schedule}</code>
+            <code>{triggerLabel(automation)}</code>
             {automation.lastRun
               ? ` · last run ${new Date(automation.lastRun).toLocaleString()}`
               : " · never run"}
           </div>
         </div>
-        <div className="arco-module-card__actions">
-          <Switch
-            checked={automation.enabled}
-            aria-label={`${automation.enabled ? "Disable" : "Enable"} ${automation.name}`}
-            onChange={onToggle}
-          />
-        </div>
+      </button>
+      <div className="arco-module-card__actions" style={{ justifyContent: "flex-end" }}>
+        <Switch
+          checked={automation.enabled}
+          aria-label={`${automation.enabled ? "Disable" : "Enable"} ${automation.name}`}
+          onChange={onToggle}
+        />
       </div>
       <p className="arco-module-card__desc">{automation.prompt}</p>
       <div className="arco-module-card__pills">
@@ -135,17 +152,11 @@ function AutomationCard({
         <Button disabled={runningId === automation.id} onClick={onRunNow}>
           <Play size={13} /> {runningId === automation.id ? "Running…" : "Run now"}
         </Button>
+        <Button onClick={onEdit}>Edit</Button>
         <Button variant="danger" onClick={onDelete} aria-label={`Delete ${automation.name}`}>
           <Trash2 size={13} />
         </Button>
       </div>
-      {automation.runs.length > 0 ? (
-        <div className="arco-runs">
-          {automation.runs.slice(0, 5).map((run) => (
-            <RunChip key={run.id} run={run} />
-          ))}
-        </div>
-      ) : null}
     </article>
   );
 }
@@ -154,15 +165,19 @@ function AutomationListRow({
   automation,
   channels,
   runningId,
+  onOpen,
   onToggle,
   onRunNow,
+  onEdit,
   onDelete,
 }: {
   automation: Automation;
   channels: ChannelInfo[];
   runningId: string | null;
+  onOpen: () => void;
   onToggle: () => void;
   onRunNow: () => void;
+  onEdit: () => void;
   onDelete: () => void;
 }) {
   const deliverLabel = automation.deliver
@@ -178,10 +193,10 @@ function AutomationListRow({
         aria-label={`${automation.enabled ? "Disable" : "Enable"} ${automation.name}`}
         onChange={onToggle}
       />
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <button type="button" style={{ flex: 1, minWidth: 0, textAlign: "left", background: "transparent", border: 0, cursor: "pointer", color: "inherit" }} onClick={onOpen}>
         <div style={{ fontWeight: 600, fontSize: "var(--arco-text-sm)" }}>{automation.name}</div>
         <div className="arco-listrow__sub">
-          <code>{automation.schedule}</code>
+          <code>{triggerLabel(automation)}</code>
           {automation.lastRun
             ? ` · last run ${new Date(automation.lastRun).toLocaleString()}`
             : " · never run"}
@@ -195,41 +210,15 @@ function AutomationListRow({
         <div className="arco-listrow__sub" style={{ whiteSpace: "normal" }}>
           {automation.prompt}
         </div>
-        {automation.runs.length > 0 ? (
-          <div className="arco-runs">
-            {automation.runs.slice(0, 5).map((run) => (
-              <RunChip key={run.id} run={run} />
-            ))}
-          </div>
-        ) : null}
-      </div>
+      </button>
       <Button disabled={runningId === automation.id} onClick={onRunNow}>
         <Play size={13} /> {runningId === automation.id ? "Running…" : "Run now"}
       </Button>
+      <Button onClick={onEdit}>Edit</Button>
       <Button variant="danger" onClick={onDelete} aria-label={`Delete ${automation.name}`}>
         <Trash2 size={13} />
       </Button>
     </div>
-  );
-}
-
-function RunChip({ run }: { run: Automation["runs"][number] }) {
-  const openWindow = useWindowStore((s) => s.open);
-  return (
-    <button
-      type="button"
-      className={`arco-run arco-run--${run.status}`}
-      title={run.summary || run.status}
-      onClick={() => {
-        openWindow({ type: "system", app: "chat" }, "Chat");
-        primeComposer({
-          text: `Show me what happened in automation run session ${run.sessionId}`,
-          submit: false,
-        });
-      }}
-    >
-      {run.status} · {new Date(run.startedAt).toLocaleTimeString()}
-    </button>
   );
 }
 
@@ -239,8 +228,10 @@ function AutomationGroup({
   view,
   channels,
   runningId,
+  onOpen,
   onToggle,
   onRunNow,
+  onEdit,
   onDelete,
 }: {
   title: string;
@@ -248,9 +239,11 @@ function AutomationGroup({
   view: AutomationView;
   channels: ChannelInfo[];
   runningId: string | null;
+  onOpen: (id: string) => void;
   onToggle: (id: string, enabled: boolean) => void;
   onRunNow: (id: string) => void;
-  onDelete: (id: string) => void;
+  onEdit: (automation: Automation) => void;
+  onDelete: (id: string, name: string) => void;
 }) {
   if (automations.length === 0) return null;
 
@@ -264,9 +257,11 @@ function AutomationGroup({
               automation={automation}
               channels={channels}
               runningId={runningId}
+              onOpen={() => onOpen(automation.id)}
               onToggle={() => onToggle(automation.id, !automation.enabled)}
               onRunNow={() => onRunNow(automation.id)}
-              onDelete={() => onDelete(automation.id)}
+              onEdit={() => onEdit(automation)}
+              onDelete={() => onDelete(automation.id, automation.name)}
             />
           ))}
         </ModuleCardGrid>
@@ -278,9 +273,11 @@ function AutomationGroup({
               automation={automation}
               channels={channels}
               runningId={runningId}
+              onOpen={() => onOpen(automation.id)}
               onToggle={() => onToggle(automation.id, !automation.enabled)}
               onRunNow={() => onRunNow(automation.id)}
-              onDelete={() => onDelete(automation.id)}
+              onEdit={() => onEdit(automation)}
+              onDelete={() => onDelete(automation.id, automation.name)}
             />
           ))}
         </ModuleList>
@@ -290,22 +287,40 @@ function AutomationGroup({
 }
 
 export function AutomationsApp() {
+  const notify = useOsStore((s) => s.notify);
   const [automations, setAutomations] = useState<Automation[]>([]);
+  const [total, setTotal] = useState(0);
+  const [limit, setLimit] = useState(PAGE_SIZE);
   const [channels, setChannels] = useState<ChannelInfo[]>([]);
+  const [mcpServers, setMcpServers] = useState<McpServerInfo[]>([]);
   const [search, setSearch] = useState("");
   const [view, setView] = useState<AutomationView>(() => readView());
-  const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({ name: "", schedule: "0 9 * * *", prompt: "", deliver: "" });
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<Automation | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [runningId, setRunningId] = useState<string | null>(null);
+  const [healthOk, setHealthOk] = useState(true);
+  const [form, setForm] = useState({ name: "", schedule: "0 9 * * *", prompt: "", deliver: "" });
 
   const refresh = useCallback(async () => {
     try {
-      setAutomations(await api.listAutomations());
-      setChannels(await api.listChannels());
+      const [health, list, channelList, mcpList] = await Promise.all([
+        api.automationHealth(),
+        api.listAutomations({ limit, offset: 0 }),
+        api.listChannels(),
+        api.listMcpServers(),
+      ]);
+      setHealthOk(health.status === "ok");
+      setAutomations(list.automations);
+      setTotal(list.total);
+      setChannels(channelList);
+      setMcpServers(mcpList);
     } catch {
-      // Server unreachable — keep stale list.
+      setHealthOk(false);
     }
-  }, []);
+  }, [limit]);
 
   useEffect(() => {
     void refresh();
@@ -320,14 +335,14 @@ export function AutomationsApp() {
       (automation) =>
         automation.name.toLowerCase().includes(normalized) ||
         automation.prompt.toLowerCase().includes(normalized) ||
-        automation.schedule.toLowerCase().includes(normalized),
+        triggerLabel(automation).toLowerCase().includes(normalized),
     );
   }, [automations, search]);
 
   const active = useMemo(() => filtered.filter((automation) => automation.enabled), [filtered]);
   const inactive = useMemo(() => filtered.filter((automation) => !automation.enabled), [filtered]);
 
-  const create = useCallback(async () => {
+  const createAdvanced = useCallback(async () => {
     if (!form.name.trim() || !form.prompt.trim()) return;
     const deliver = parseTarget(form.deliver);
     await api.createAutomation({
@@ -337,7 +352,7 @@ export function AutomationsApp() {
       ...(deliver ? { deliver } : {}),
     });
     setForm({ name: "", schedule: "0 9 * * *", prompt: "", deliver: "" });
-    setCreating(false);
+    setAdvancedOpen(false);
     void refresh();
   }, [form, refresh]);
 
@@ -346,12 +361,15 @@ export function AutomationsApp() {
       setRunningId(id);
       try {
         await api.runAutomation(id);
+        notify("Automation run started");
+      } catch (err) {
+        notify(err instanceof Error ? err.message : "Run failed");
       } finally {
         setRunningId(null);
         void refresh();
       }
     },
-    [refresh],
+    [notify, refresh],
   );
 
   const handleViewChange = (next: AutomationView) => {
@@ -359,21 +377,48 @@ export function AutomationsApp() {
     setView(next);
   };
 
+  if (detailId) {
+    return (
+      <div className="arco-panel" style={{ padding: 0 }}>
+        <ModulePage>
+          <AutomationDetailView
+            automationId={detailId}
+            channels={channels}
+            onBack={() => setDetailId(null)}
+            onChanged={() => void refresh()}
+          />
+        </ModulePage>
+      </div>
+    );
+  }
+
   return (
     <div className="arco-panel" style={{ padding: 0 }}>
       <ModulePage>
         <ModuleInner>
           <ModuleHeader
             title="Automations"
-            subtitle="Scheduled agent runs on a cron. Each automation gets only its prompt — no chat history — and can optionally deliver results to a channel."
+            subtitle="Scheduled and event-triggered agent runs. Each automation gets only its prompt — no chat history — and can deliver results to a channel."
             actions={
-              <Button variant="primary" onClick={() => setCreating((value) => !value)}>
-                <Plus size={13} /> New
-              </Button>
+              <>
+                <Button onClick={() => setAdvancedOpen((value) => !value)}>Advanced</Button>
+                <Button variant="primary" onClick={() => setCreateOpen(true)}>
+                  <Plus size={13} /> New
+                </Button>
+              </>
             }
           />
 
-          {creating ? (
+          {!healthOk ? (
+            <EmptyState title="Automations unavailable">
+              <span>The automation service is not reachable. Check that the server is running.</span>
+              <Button onClick={() => void refresh()}>Retry</Button>
+            </EmptyState>
+          ) : null}
+
+          <CreateInstructionsModal open={createOpen} onClose={() => setCreateOpen(false)} />
+
+          {advancedOpen ? (
             <div className="arco-form">
               <label className="arco-label" htmlFor="auto-name">
                 Name
@@ -396,7 +441,7 @@ export function AutomationsApp() {
                 placeholder="0 9 * * *"
               />
               <label className="arco-label" htmlFor="auto-prompt">
-                Prompt (the automation's only context)
+                Prompt
               </label>
               <textarea
                 id="auto-prompt"
@@ -404,7 +449,6 @@ export function AutomationsApp() {
                 rows={3}
                 value={form.prompt}
                 onChange={(e) => setForm((current) => ({ ...current, prompt: e.target.value }))}
-                placeholder="Update app <id> with today's weather for Berlin…"
               />
               {deliveryOptions(channels).length > 0 ? (
                 <>
@@ -427,53 +471,88 @@ export function AutomationsApp() {
                 </>
               ) : null}
               <div style={{ display: "flex", gap: 8 }}>
-                <Button variant="primary" onClick={() => void create()}>
+                <Button variant="primary" onClick={() => void createAdvanced()}>
                   Create
                 </Button>
-                <Button onClick={() => setCreating(false)}>Cancel</Button>
+                <Button onClick={() => setAdvancedOpen(false)}>Cancel</Button>
               </div>
             </div>
           ) : null}
 
-          {automations.length > 0 ? (
+          {healthOk && automations.length > 0 ? (
             <ModuleToolbar search={search} onSearchChange={setSearch} searchLabel="Search automations">
               <ViewToggle view={view} onChange={handleViewChange} />
             </ModuleToolbar>
           ) : null}
 
-          {automations.length === 0 && !creating ? (
+          {healthOk && automations.length === 0 && !advancedOpen ? (
             <EmptyState title="No automations yet">
               <CalendarClock size={22} />
-              <span>
-                Create one here, or ask Arco: “every morning at 9, update my dashboard”.
-              </span>
+              <span>Create one with New, pick a recommended preset, or ask in chat.</span>
+              <Button variant="primary" onClick={() => setCreateOpen(true)}>
+                Create in chat
+              </Button>
             </EmptyState>
           ) : null}
 
-          {filtered.length === 0 && automations.length > 0 ? (
+          {healthOk && filtered.length === 0 && automations.length > 0 ? (
             <EmptyState title="No matching automations">Try a different search term.</EmptyState>
           ) : null}
 
-          <AutomationGroup
-            title="Active"
-            automations={active}
-            view={view}
-            channels={channels}
-            runningId={runningId}
-            onToggle={(id, enabled) => void api.updateAutomation(id, { enabled }).then(refresh)}
-            onRunNow={(id) => void runNow(id)}
-            onDelete={(id) => void api.deleteAutomation(id).then(refresh)}
-          />
+          {healthOk ? (
+            <>
+              <AutomationGroup
+                title="Active"
+                automations={active}
+                view={view}
+                channels={channels}
+                runningId={runningId}
+                onOpen={setDetailId}
+                onToggle={(id, enabled) => void api.updateAutomation(id, { enabled }).then(refresh)}
+                onRunNow={(id) => void runNow(id)}
+                onEdit={setEditTarget}
+                onDelete={(id, name) => setDeleteTarget({ id, name })}
+              />
+              <AutomationGroup
+                title="Inactive"
+                automations={inactive}
+                view={view}
+                channels={channels}
+                runningId={runningId}
+                onOpen={setDetailId}
+                onToggle={(id, enabled) => void api.updateAutomation(id, { enabled }).then(refresh)}
+                onRunNow={(id) => void runNow(id)}
+                onEdit={setEditTarget}
+                onDelete={(id, name) => setDeleteTarget({ id, name })}
+              />
+              {total > automations.length ? (
+                <Button onClick={() => setLimit((value) => value + PAGE_SIZE)}>Load more</Button>
+              ) : null}
+              <RecommendedAutomationsSection query={search} mcpServers={mcpServers} />
+            </>
+          ) : null}
 
-          <AutomationGroup
-            title="Inactive"
-            automations={inactive}
-            view={view}
-            channels={channels}
-            runningId={runningId}
-            onToggle={(id, enabled) => void api.updateAutomation(id, { enabled }).then(refresh)}
-            onRunNow={(id) => void runNow(id)}
-            onDelete={(id) => void api.deleteAutomation(id).then(refresh)}
+          {editTarget ? (
+            <EditAutomationModal
+              automation={editTarget}
+              channels={channels}
+              open={editTarget !== null}
+              onClose={() => setEditTarget(null)}
+              onSaved={() => void refresh()}
+            />
+          ) : null}
+
+          <DeleteConfirmModal
+            name={deleteTarget?.name ?? ""}
+            open={deleteTarget !== null}
+            onConfirm={() => {
+              if (!deleteTarget) return;
+              void api.deleteAutomation(deleteTarget.id).then(() => {
+                setDeleteTarget(null);
+                void refresh();
+              });
+            }}
+            onCancel={() => setDeleteTarget(null)}
           />
         </ModuleInner>
       </ModulePage>

@@ -13,6 +13,19 @@ import { AuthWallpaperBackdrop } from "../wallpaper/AuthWallpaperBackdrop";
 
 // ── Boot splash ──────────────────────────────────────────────────────────────
 
+/** Decorative rainbow ribbon anchored to the bottom-left corner. */
+function AuthRainbowCorner() {
+  return (
+    <div className="arco-auth-rainbow" aria-hidden>
+      <span className="arco-auth-rainbow__segment arco-auth-rainbow__segment--red" />
+      <span className="arco-auth-rainbow__segment arco-auth-rainbow__segment--orange" />
+      <span className="arco-auth-rainbow__segment arco-auth-rainbow__segment--yellow" />
+      <span className="arco-auth-rainbow__segment arco-auth-rainbow__segment--green" />
+      <span className="arco-auth-rainbow__segment arco-auth-rainbow__segment--blue" />
+    </div>
+  );
+}
+
 /** Logo + loading bar; the bar's CSS animation is timed to MIN_BOOT_MS. */
 export function BootScreen() {
   return (
@@ -23,6 +36,7 @@ export function BootScreen() {
       <div className="arco-boot__bar">
         <div className="arco-boot__bar-fill" />
       </div>
+      <AuthRainbowCorner />
     </div>
   );
 }
@@ -30,7 +44,15 @@ export function BootScreen() {
 // ── Shared card scaffold ─────────────────────────────────────────────────────
 
 /** Wallpaper-backed centered card used by setup, login, and lock. */
-function AuthCard({ branding, children }: { branding?: ReactNode; children: ReactNode }) {
+function AuthCard({
+  branding,
+  rainbowCorner = false,
+  children,
+}: {
+  branding?: ReactNode;
+  rainbowCorner?: boolean;
+  children: ReactNode;
+}) {
   return (
     <div className="arco-authscreen">
       <AuthWallpaperBackdrop />
@@ -38,6 +60,7 @@ function AuthCard({ branding, children }: { branding?: ReactNode; children: Reac
         {branding ? <div className="arco-authscreen__branding">{branding}</div> : null}
         <div className="arco-authscreen__card">{children}</div>
       </div>
+      {rainbowCorner ? <AuthRainbowCorner /> : null}
     </div>
   );
 }
@@ -157,7 +180,7 @@ export function LoginScreen() {
   };
 
   return (
-    <AuthCard branding={<ArcoLogo className="arco-authscreen__logo" />}>
+    <AuthCard branding={<ArcoLogo className="arco-authscreen__logo" />} rainbowCorner>
       <div className="arco-authscreen__header">
         <div className="arco-authscreen__lead">Sign in to continue</div>
       </div>

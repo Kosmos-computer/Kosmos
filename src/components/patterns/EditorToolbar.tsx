@@ -8,11 +8,15 @@ import {
   Code,
   Italic,
   Link2,
+  Loader2,
   Pilcrow,
   Redo2,
+  Sparkles,
+  Square,
   Strikethrough,
   Underline,
   Undo2,
+  Volume2,
 } from "lucide-react";
 import { Menu, type MenuItem } from "../Menu";
 import { Button } from "../ui/Button";
@@ -28,6 +32,8 @@ const BLOCK_LABELS: Record<BlockFormat, string> = {
   heading3: "Heading 3",
 };
 
+export type ReadAloudStatus = "idle" | "loading" | "playing";
+
 export interface EditorToolbarProps {
   className?: string;
   blockFormat?: BlockFormat;
@@ -41,6 +47,10 @@ export interface EditorToolbarProps {
   canRedo?: boolean;
   onUndo?: () => void;
   onRedo?: () => void;
+  readAloudStatus?: ReadAloudStatus;
+  onReadAloud?: () => void;
+  aiOpen?: boolean;
+  onAiAssist?: () => void;
 }
 
 function ToolButton({
@@ -87,6 +97,10 @@ export function EditorToolbar({
   canRedo,
   onUndo,
   onRedo,
+  readAloudStatus = "idle",
+  onReadAloud,
+  aiOpen,
+  onAiAssist,
 }: EditorToolbarProps) {
   const [localBlockFormat, setLocalBlockFormat] = useState<BlockFormat>("paragraph");
   const [localMarks, setLocalMarks] = useState<Set<TextMark>>(() => new Set());
@@ -191,6 +205,34 @@ export function EditorToolbar({
           <AlignRight size={15} strokeWidth={1.75} />
         </ToolButton>
       </div>
+
+      {(onReadAloud || onAiAssist) && (
+        <>
+          <span className="arco-editor-toolbar__divider" role="separator" aria-orientation="vertical" />
+          <div className="arco-editor-toolbar__group">
+            {onReadAloud ? (
+              <ToolButton
+                label={readAloudStatus === "idle" ? "Read aloud" : "Stop reading"}
+                pressed={readAloudStatus !== "idle"}
+                onClick={onReadAloud}
+              >
+                {readAloudStatus === "loading" ? (
+                  <Loader2 size={15} className="arco-spin" />
+                ) : readAloudStatus === "playing" ? (
+                  <Square size={15} strokeWidth={1.75} />
+                ) : (
+                  <Volume2 size={15} strokeWidth={1.75} />
+                )}
+              </ToolButton>
+            ) : null}
+            {onAiAssist ? (
+              <ToolButton label="AI assist" pressed={aiOpen} onClick={onAiAssist}>
+                <Sparkles size={15} strokeWidth={1.75} />
+              </ToolButton>
+            ) : null}
+          </div>
+        </>
+      )}
 
       <span className="arco-editor-toolbar__spacer" />
 

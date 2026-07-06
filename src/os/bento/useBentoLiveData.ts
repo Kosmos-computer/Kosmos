@@ -31,7 +31,7 @@ export function useBentoLiveData(): BentoLiveSnapshot {
         const [sessions, automations] = await Promise.all([api.listSessions(), api.listAutomations()]);
         if (cancelled) return;
         setSessionCount(sessions.length);
-        setAutomationCount(automations.length);
+        setAutomationCount(automations.total);
       } catch {
         if (!cancelled) {
           setSessionCount((prev) => prev ?? 0);

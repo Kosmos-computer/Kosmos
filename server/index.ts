@@ -10,6 +10,7 @@
  *   GET/PUT /api/files            — workspace browser
  *   POST /api/exec                — terminal command runner
  *   GET/PUT /api/settings         — LLM provider config + shell prefs
+ *   GET/POST /api/mail/*          — Gmail OAuth + live mail proxy
  *
  * In production it also serves the built shell from dist/.
  */
@@ -23,8 +24,13 @@ import { streamSSE } from "hono/streaming";
 import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
-import type { AgentEvent, DirListing, Settings } from "../shared/types.js";
-import { requireAuth, requireCap, type AuthEnv } from "./auth/middleware.js";
+import type {
+  AgentEvent,
+  AutomationTrigger,
+  DirListing,
+  Settings,
+} from "../shared/types.js";
+import { requireAuth, requireCap, currentUser, type AuthEnv } from "./auth/middleware.js";
 import { authRoutes } from "./auth/routes.js";
 import { runAgentTurn } from "./agent/loop.js";
 import { runAcpTurn, stopAllAcpRuns } from "./acp/acpAgent.js";
@@ -33,6 +39,8 @@ import { invokeRuntimeTool, runExec } from "./agent/tools.js";
 import { resolveClientRequest } from "./agent/clientRequests.js";
 import { resolveConfirmation } from "./agent/confirmations.js";
 import { runAutomationNow, startScheduler } from "./automations/scheduler.js";
+import { eventTriggerMatches, verifyWebhookSecret } from "./automations/eventMatcher.js";
+import { describeSchedule } from "./automations/scheduleUtils.js";
 import { dataDirs, ensureDataDirs, loadSettings, maskSettings, saveSettings } from "./env.js";
 import { gitCommit, gitFileDiff, gitInfo, gitPull, gitPush } from "./git.js";
 import { listRuns, runLog, startRun, stopRun } from "./runManager.js";
@@ -40,6 +48,8 @@ import { appStore } from "./stores/appStore.js";
 import { automationStore } from "./stores/automationStore.js";
 import { getActiveRoot, projectStore, resolveProjectPath } from "./stores/projectStore.js";
 import { sessionStore } from "./stores/sessionStore.js";
+import { generatorCatalogStore } from "./stores/generatorCatalogStore.js";
+import { generateUiFromPrompt } from "./services/generatorService.js";
 import { webAppStore } from "./stores/webAppStore.js";
 import { installedAppStore, APPS_DIR } from "./platform/installedAppStore.js";
 import { grantStore, readAudit } from "./platform/grantStore.js";
@@ -63,7 +73,17 @@ import { skillStore } from "./skills/skillStore.js";
 import { bus } from "./bus.js";
 import { shellClientConnected } from "./shellChannel.js";
 import { filesService } from "./services/filesService.js";
+import { searchPlaces, geocodePlace, getDrivingRoute } from "./services/mapsService.js";
 import type { FileCreateInput } from "../shared/capabilities/files.js";
+import type { MailFolderId, MailInboxFilter } from "../shared/mail.js";
+import { mailGateway } from "./mail/mailGateway.js";
+import {
+  buildGoogleAuthUrl,
+  consumeOAuthState,
+  createOAuthState,
+  webOriginAfterOAuth,
+} from "./mail/googleOAuth.js";
+import { mailStore } from "./mail/mailStore.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -225,6 +245,48 @@ app.post("/api/apps/:id/restore", requireCap("apps:manage"), async (c) => {
   return c.json(record);
 });
 
+// ── UI Generator (Studio-backed openui-lang synthesis + saved catalog) ─────
+
+app.get("/api/generator/catalog", async (c) => c.json(await generatorCatalogStore.list()));
+
+app.post("/api/generator/generate", requireCap("chat"), async (c) => {
+  const body = (await c.req.json()) as { prompt?: string };
+  const prompt = (body.prompt ?? "").trim();
+  if (!prompt) return c.json({ error: "prompt is required" }, 400);
+  try {
+    return c.json(await generateUiFromPrompt(prompt, c.req.raw.signal));
+  } catch (err) {
+    return c.json(
+      { error: err instanceof Error ? err.message : "Generation failed" },
+      500,
+    );
+  }
+});
+
+app.post("/api/generator/catalog", requireCap("chat"), async (c) => {
+  const body = (await c.req.json()) as {
+    label?: string;
+    code?: string;
+    prompt?: string;
+    tier?: "atom" | "card" | "block" | "widget" | "saved";
+  };
+  const code = (body.code ?? "").trim();
+  if (!code) return c.json({ error: "code is required" }, 400);
+  const entry = await generatorCatalogStore.add({
+    label: body.label ?? "Generated UI",
+    code,
+    prompt: body.prompt,
+    tier: body.tier,
+  });
+  return c.json(entry);
+});
+
+app.delete("/api/generator/catalog/:id", requireCap("chat"), async (c) => {
+  const ok = await generatorCatalogStore.remove(c.req.param("id"));
+  if (!ok) return c.json({ error: "Not found" }, 404);
+  return c.json({ ok: true });
+});
+
 // ── App runtime tool bridge (Query/Mutation — no LLM in the loop) ───────────
 
 app.post("/api/tools/invoke", requireCap("chat"), async (c) => {
@@ -239,7 +301,11 @@ app.post("/api/tools/invoke", requireCap("chat"), async (c) => {
 
 // ── Automations ──────────────────────────────────────────────────────────────
 
-app.get("/api/automations", async (c) => c.json(await automationStore.list()));
+function parsePagination(c: { req: { query: (key: string) => string | undefined } }) {
+  const limit = Math.min(200, Math.max(1, Number(c.req.query("limit") ?? 50) || 50));
+  const offset = Math.max(0, Number(c.req.query("offset") ?? 0) || 0);
+  return { limit, offset };
+}
 
 /** Validate a client-supplied delivery target (or null to clear it). */
 function parseDeliver(raw: unknown): import("../shared/types.js").DeliveryTarget | undefined {
@@ -251,18 +317,74 @@ function parseDeliver(raw: unknown): import("../shared/types.js").DeliveryTarget
   return undefined;
 }
 
+function parseTrigger(raw: unknown, scheduleFallback?: string): AutomationTrigger | undefined {
+  if (!raw || typeof raw !== "object") {
+    if (scheduleFallback) {
+      return { type: "schedule", schedule: scheduleFallback, scheduleHuman: describeSchedule(scheduleFallback) };
+    }
+    return undefined;
+  }
+  const t = raw as Record<string, unknown>;
+  if (t.type === "event") {
+    return {
+      type: "event",
+      source: typeof t.source === "string" ? t.source : undefined,
+      on: t.on as AutomationTrigger["on"],
+      filter: typeof t.filter === "string" ? t.filter : undefined,
+    };
+  }
+  const schedule =
+    typeof t.schedule === "string"
+      ? t.schedule
+      : typeof scheduleFallback === "string"
+        ? scheduleFallback
+        : undefined;
+  if (!schedule) return undefined;
+  return { type: "schedule", schedule, scheduleHuman: describeSchedule(schedule) };
+}
+
+app.get("/api/automations/health", async (c) =>
+  c.json({ status: "ok" satisfies import("../shared/types.js").AutomationHealthResponse["status"] }),
+);
+
+app.get("/api/automations", async (c) => {
+  const { limit, offset } = parsePagination(c);
+  return c.json(await automationStore.list({ limit, offset }));
+});
+
+app.get("/api/automations/:id", async (c) => {
+  const automation = await automationStore.get(c.req.param("id"));
+  if (!automation) return c.json({ error: "Not found" }, 404);
+  return c.json(automation);
+});
+
+app.get("/api/automations/:id/runs", async (c) => {
+  const automation = await automationStore.get(c.req.param("id"));
+  if (!automation) return c.json({ error: "Not found" }, 404);
+  const { limit, offset } = parsePagination(c);
+  return c.json(await automationStore.listRuns(c.req.param("id"), { limit, offset }));
+});
+
 app.post("/api/automations", requireCap("automations:manage"), async (c) => {
   const body = (await c.req.json()) as {
     name: string;
-    schedule: string;
+    schedule?: string;
     prompt: string;
+    trigger?: unknown;
+    timezone?: string;
+    model?: string;
+    mcpServerIds?: string[];
     deliver?: unknown;
   };
   const deliver = parseDeliver(body.deliver);
+  const trigger = parseTrigger(body.trigger, body.schedule);
   const automation = await automationStore.create({
     name: body.name,
-    schedule: body.schedule,
     prompt: body.prompt,
+    ...(trigger ? { trigger } : { schedule: body.schedule ?? "0 9 * * *" }),
+    ...(typeof body.timezone === "string" ? { timezone: body.timezone } : {}),
+    ...(typeof body.model === "string" ? { model: body.model } : {}),
+    ...(Array.isArray(body.mcpServerIds) ? { mcpServerIds: body.mcpServerIds } : {}),
     ...(deliver ? { deliver } : {}),
   });
   bus.emit("automations_changed");
@@ -276,13 +398,25 @@ app.patch("/api/automations/:id", requireCap("automations:manage"), async (c) =>
     prompt: string;
     enabled: boolean;
     deliver: unknown;
+    trigger: unknown;
+    timezone: string;
+    model: string;
+    mcpServerIds: string[];
+    webhookSecret: string;
   }>;
   const patch: Parameters<typeof automationStore.update>[1] = {};
   if (typeof body.name === "string") patch.name = body.name;
-  if (typeof body.schedule === "string") patch.schedule = body.schedule;
   if (typeof body.prompt === "string") patch.prompt = body.prompt;
   if (typeof body.enabled === "boolean") patch.enabled = body.enabled;
-  // deliver: null clears the target, an object sets it, absence leaves it.
+  if (typeof body.schedule === "string") patch.schedule = body.schedule;
+  if (typeof body.timezone === "string") patch.timezone = body.timezone;
+  if (typeof body.model === "string") patch.model = body.model;
+  if (Array.isArray(body.mcpServerIds)) patch.mcpServerIds = body.mcpServerIds;
+  if (typeof body.webhookSecret === "string") patch.webhookSecret = body.webhookSecret;
+  if (body.trigger !== undefined) {
+    const trigger = parseTrigger(body.trigger, body.schedule);
+    if (trigger) patch.trigger = trigger;
+  }
   if ("deliver" in body) patch.deliver = parseDeliver(body.deliver);
   const automation = await automationStore.update(c.req.param("id"), patch);
   bus.emit("automations_changed");
@@ -295,8 +429,46 @@ app.delete("/api/automations/:id", requireCap("automations:manage"), async (c) =
   return c.json({ ok: true });
 });
 
-app.post("/api/automations/:id/run", requireCap("automations:manage"), async (c) => {
-  const run = await runAutomationNow(c.req.param("id"));
+async function dispatchAutomation(c: import("hono").Context) {
+  const id = c.req.param("id");
+  const automation = await automationStore.get(id);
+  if (!automation) return c.json({ error: "Not found" }, 404);
+  const run = await runAutomationNow(id);
+  return c.json(run);
+}
+
+app.post("/api/automations/:id/run", requireCap("automations:manage"), dispatchAutomation);
+app.post("/api/automations/:id/dispatch", requireCap("automations:manage"), dispatchAutomation);
+
+app.post("/api/webhooks/automations/:id", async (c) => {
+  const automation = await automationStore.get(c.req.param("id"));
+  if (!automation || !automation.enabled) return c.json({ error: "Not found" }, 404);
+  if (automation.trigger.type !== "event") return c.json({ error: "Not an event automation" }, 400);
+
+  const rawBody = await c.req.text();
+  const headers: Record<string, string> = {};
+  c.req.raw.headers.forEach((value, key) => {
+    headers[key] = value;
+  });
+
+  if (!verifyWebhookSecret(automation.webhookSecret, headers, rawBody)) {
+    return c.json({ error: "Invalid webhook signature" }, 401);
+  }
+
+  let body: unknown = {};
+  if (rawBody.trim()) {
+    try {
+      body = JSON.parse(rawBody);
+    } catch {
+      return c.json({ error: "Invalid JSON body" }, 400);
+    }
+  }
+
+  if (!eventTriggerMatches(automation.trigger, { headers, body })) {
+    return c.json({ ok: true, skipped: true });
+  }
+
+  const run = await runAutomationNow(automation.id);
   return c.json(run);
 });
 
@@ -360,6 +532,69 @@ app.get("/api/drive/recent", requireCap("files:read"), (c) => {
 app.get("/api/drive/search", requireCap("files:read"), (c) => {
   const query = c.req.query("q") ?? "";
   return c.json(filesService.search(query));
+});
+
+app.get("/api/maps/search", async (c) => {
+  const q = c.req.query("q") ?? "";
+  if (!q.trim()) return c.json([]);
+  try {
+    const viewbox = c.req.query("viewbox");
+    const bounded = c.req.query("bounded") === "1";
+    const limit = Number(c.req.query("limit") ?? "12");
+    const results = await searchPlaces(q, {
+      viewbox,
+      bounded,
+      limit: Number.isFinite(limit) ? limit : 12,
+    });
+    return c.json(results);
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 502);
+  }
+});
+
+app.get("/api/maps/geocode", async (c) => {
+  const q = c.req.query("q") ?? "";
+  if (!q.trim()) return c.json(null);
+  try {
+    return c.json(await geocodePlace(q));
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 502);
+  }
+});
+
+app.get("/api/maps/route", async (c) => {
+  const fromLat = Number(c.req.query("fromLat"));
+  const fromLon = Number(c.req.query("fromLon"));
+  const toLat = Number(c.req.query("toLat"));
+  const toLon = Number(c.req.query("toLon"));
+  if (![fromLat, fromLon, toLat, toLon].every(Number.isFinite)) {
+    return c.json({ error: "fromLat, fromLon, toLat, and toLon are required" }, 400);
+  }
+
+  const fromName = c.req.query("fromName")?.trim() || "Start";
+  const toName = c.req.query("toName")?.trim() || "Destination";
+  const from = {
+    id: "route-from",
+    name: fromName,
+    category: "Route",
+    address: fromName,
+    lat: fromLat,
+    lon: fromLon,
+  };
+  const to = {
+    id: "route-to",
+    name: toName,
+    category: "Route",
+    address: toName,
+    lat: toLat,
+    lon: toLon,
+  };
+
+  try {
+    return c.json(await getDrivingRoute(from, to));
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 502);
+  }
 });
 
 app.get("/api/drive/entries/:id", requireCap("files:read"), (c) => {
@@ -832,6 +1067,123 @@ app.patch("/api/skills/:id", requireCap("settings:write"), async (c) => {
 app.delete("/api/skills/:id", requireCap("settings:write"), (c) => {
   if (!skillStore.remove(c.req.param("id"))) return c.json({ error: "Not found" }, 404);
   return c.json({ ok: true });
+});
+
+// ── Mail (Gmail OAuth + live proxy) ─────────────────────────────────────────
+
+app.get("/api/mail/status", (c) => {
+  const user = currentUser(c);
+  return c.json({
+    oauthConfigured: mailGateway.oauthConfigured(),
+    accounts: mailGateway.listAccounts(user.id),
+  });
+});
+
+app.get("/api/mail/accounts", (c) => c.json(mailGateway.listAccounts(currentUser(c).id)));
+
+app.delete("/api/mail/accounts/:id", (c) => {
+  const ok = mailGateway.disconnect(currentUser(c).id, c.req.param("id"));
+  if (!ok) return c.json({ error: "Not found" }, 404);
+  return c.json({ ok: true });
+});
+
+app.get("/api/mail/oauth/google/start", (c) => {
+  if (!mailGateway.oauthConfigured()) {
+    return c.json({ error: "Google OAuth is not configured on this server" }, 503);
+  }
+  const user = currentUser(c);
+  const state = createOAuthState(user.id);
+  return c.redirect(buildGoogleAuthUrl(state));
+});
+
+app.get("/api/mail/oauth/google/callback", async (c) => {
+  const error = c.req.query("error");
+  if (error) {
+    return c.redirect(`${webOriginAfterOAuth()}/?mailError=${encodeURIComponent(error)}`);
+  }
+  const code = c.req.query("code");
+  const state = c.req.query("state");
+  if (!code || !state) {
+    return c.redirect(`${webOriginAfterOAuth()}/?mailError=missing_code`);
+  }
+  const userId = consumeOAuthState(state);
+  if (!userId) {
+    return c.redirect(`${webOriginAfterOAuth()}/?mailError=invalid_state`);
+  }
+  try {
+    await mailStore.completeGoogleOAuth({ userId, code });
+    return c.redirect(`${webOriginAfterOAuth()}/?mailConnected=1`);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "oauth_failed";
+    return c.redirect(`${webOriginAfterOAuth()}/?mailError=${encodeURIComponent(message)}`);
+  }
+});
+
+app.get("/api/mail/threads", async (c) => {
+  const folder = (c.req.query("folder") ?? "inbox") as MailFolderId;
+  const filter = (c.req.query("filter") ?? "all") as MailInboxFilter;
+  const query = c.req.query("q") ?? undefined;
+  const accountId = c.req.query("accountId") ?? undefined;
+  try {
+    const threads = await mailGateway.listThreads(currentUser(c).id, {
+      accountId,
+      folder,
+      query,
+      filter,
+    });
+    return c.json(threads);
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Could not load mail" }, 502);
+  }
+});
+
+app.get("/api/mail/threads/:id", async (c) => {
+  const accountId = c.req.query("accountId") ?? undefined;
+  try {
+    const thread = await mailGateway.getThread(currentUser(c).id, c.req.param("id"), accountId);
+    void mailGateway.markRead(currentUser(c).id, c.req.param("id"), true, accountId).catch(() => {});
+    return c.json(thread);
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Could not load thread" }, 502);
+  }
+});
+
+app.post("/api/mail/send", async (c) => {
+  const body = (await c.req.json()) as {
+    to?: string;
+    subject?: string;
+    body?: string;
+    accountId?: string;
+  };
+  try {
+    await mailGateway.send(
+      currentUser(c).id,
+      {
+        to: String(body.to ?? ""),
+        subject: String(body.subject ?? ""),
+        body: String(body.body ?? ""),
+      },
+      body.accountId,
+    );
+    return c.json({ ok: true });
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Send failed" }, 502);
+  }
+});
+
+app.post("/api/mail/threads/:id/star", async (c) => {
+  const body = (await c.req.json()) as { starred?: boolean; accountId?: string };
+  try {
+    await mailGateway.setStarred(
+      currentUser(c).id,
+      c.req.param("id"),
+      body.starred === true,
+      body.accountId,
+    );
+    return c.json({ ok: true });
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Could not update star" }, 502);
+  }
 });
 
 // ── MCP servers (external tool providers for the agent) ─────────────────────

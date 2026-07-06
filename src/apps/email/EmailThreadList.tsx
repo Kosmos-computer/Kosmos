@@ -9,6 +9,8 @@ export function EmailThreadList({
   inboxFilter,
   unreadCount,
   starredCount,
+  loading = false,
+  error,
   onSearchChange,
   onFilterChange,
   onSelectThread,
@@ -21,6 +23,8 @@ export function EmailThreadList({
   inboxFilter: "all" | "unread" | "starred";
   unreadCount: number;
   starredCount: number;
+  loading?: boolean;
+  error?: string | null;
   onSearchChange: (query: string) => void;
   onFilterChange: (filter: "all" | "unread" | "starred") => void;
   onSelectThread: (id: string) => void;
@@ -65,7 +69,11 @@ export function EmailThreadList({
       </div>
 
       <div className="arco-email__thread-list arco-scroll">
-        {threads.length === 0 ? (
+        {error ? (
+          <EmptyState title="Could not load mail">{error}</EmptyState>
+        ) : loading ? (
+          <EmptyState title="Loading mail…" />
+        ) : threads.length === 0 ? (
           <EmptyState title={searchQuery.trim() ? "No mail found" : "Inbox is empty"}>
             {searchQuery.trim()
               ? "Try a different sender, subject, or preview."

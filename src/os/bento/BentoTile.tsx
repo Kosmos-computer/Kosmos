@@ -1,4 +1,5 @@
 import { useCallback, useRef } from "react";
+import { Settings2 } from "lucide-react";
 import { BentoCardContent } from "./BentoCardContent";
 import {
   applyResizeDelta,
@@ -21,6 +22,7 @@ export interface BentoTileProps {
   item: BentoItem;
   active?: boolean;
   onFocus: (id: string) => void;
+  onOpenSettings: (id: string) => void;
   onMove: (id: string, next: Pick<BentoItem, "col" | "row">) => void;
   onResize: (id: string, next: Pick<BentoItem, "col" | "row" | "colSpan" | "rowSpan">) => void;
   gridRef: React.RefObject<HTMLElement | null>;
@@ -69,7 +71,7 @@ function useResizeGesture(
   });
 }
 
-export function BentoTile({ item, active = false, onFocus, onMove, onResize, gridRef, allItems }: BentoTileProps) {
+export function BentoTile({ item, active = false, onFocus, onOpenSettings, onMove, onResize, gridRef, allItems }: BentoTileProps) {
   const live = useBentoLiveSnapshot();
   const content = resolveBentoContent(item.content, live);
   const startItemRef = useRef(item);
@@ -129,6 +131,15 @@ export function BentoTile({ item, active = false, onFocus, onMove, onResize, gri
     [dragGesture, item.id, onFocus],
   );
 
+  const handleSettingsClick = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      event.stopPropagation();
+      onFocus(item.id);
+      onOpenSettings(item.id);
+    },
+    [item.id, onFocus, onOpenSettings],
+  );
+
   return (
     <article
       className={[
@@ -138,12 +149,23 @@ export function BentoTile({ item, active = false, onFocus, onMove, onResize, gri
       ]
         .filter(Boolean)
         .join(" ")}
+      data-bento-theme={item.theme && item.theme !== "surface-default" ? item.theme : undefined}
       style={{
         gridColumn: `${item.col} / span ${item.colSpan}`,
         gridRow: `${item.row} / span ${item.rowSpan}`,
       }}
       onPointerDown={handleTilePointerDown}
     >
+      <button
+        type="button"
+        className="arco-bento-tile__settings"
+        data-bento-no-drag
+        aria-label={`Settings for ${item.label}`}
+        onClick={handleSettingsClick}
+      >
+        <Settings2 size={14} aria-hidden />
+      </button>
+
       <div className="arco-bento-tile__content">
         <BentoCardContent content={content} />
       </div>

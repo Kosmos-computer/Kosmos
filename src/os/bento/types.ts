@@ -1,5 +1,7 @@
 /** Bento grid layout types — ported from Longformer bento workspace semantics. */
 
+import type { BentoCardThemeId } from "./bentoThemes";
+
 export const BENTO_COLS = 12;
 export const BENTO_ROW_HEIGHT_PX = 48;
 export const BENTO_GAP_PX = 8;
@@ -31,6 +33,8 @@ export interface BentoItem {
   colSpan: number;
   rowSpan: number;
   content: BentoWidgetContent;
+  /** Visual shell theme — see bentoThemes.ts and bento-themes.css. */
+  theme?: BentoCardThemeId;
 }
 
 export interface BentoWidgetTemplate {

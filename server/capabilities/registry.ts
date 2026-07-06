@@ -10,6 +10,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { CalendarEventInput } from "../../shared/capabilities/calendar.js";
+import { CALCULATOR_CONTRACT_ID } from "../../shared/capabilities/calculator.js";
 import { CALENDAR_CONTRACT_ID } from "../../shared/capabilities/calendar.js";
 import { DOCS_CONTRACT_ID, EMPTY_DOC_JSON } from "../../shared/capabilities/docs.js";
 import { DOC_MIME, FILES_CONTRACT_ID, SHEET_MIME, type FileCreateInput } from "../../shared/capabilities/files.js";
@@ -17,6 +18,7 @@ import { EMPTY_SHEET_JSON, SHEETS_CONTRACT_ID } from "../../shared/capabilities/
 import { exportDocToMarkdown } from "../../shared/docFormat.js";
 import { VOICE_CONTRACT_ID } from "../../shared/capabilities/voice.js";
 import { intentMeta } from "../../shared/capabilities/index.js";
+import { calculatorService } from "../services/calculatorService.js";
 import { calendarService } from "../services/calendarService.js";
 import { filesService } from "../services/filesService.js";
 import { dataDirs } from "../env.js";
@@ -25,6 +27,7 @@ const PROVIDERS_FILE = path.join(dataDirs.root, "capability-providers.json");
 
 /** contractId → providing appId, or "system" for the built-in service. */
 const DEFAULT_PROVIDERS: Record<string, string> = {
+  [CALCULATOR_CONTRACT_ID]: "system",
   [CALENDAR_CONTRACT_ID]: "system",
   [FILES_CONTRACT_ID]: "system",
   [DOCS_CONTRACT_ID]: "system",
@@ -55,6 +58,13 @@ export function setProvider(contractId: string, providerId: string): void {
 type IntentHandler = (params: Record<string, unknown>) => unknown | Promise<unknown>;
 
 const systemHandlers: Record<string, IntentHandler> = {
+  "calculator.evaluate": (p) =>
+    calculatorService.evaluate(String(p.expression ?? "")),
+  "calculator.history.list": (p) =>
+    calculatorService.listHistory({
+      ...(typeof p.limit === "number" ? { limit: p.limit } : {}),
+    }),
+
   "calendar.events.list": (p) =>
     calendarService.list({
       ...(typeof p.from === "string" ? { from: p.from } : {}),

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Calculator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div id="app" class="calc-workspace" aria-label="Calculator">
+      <header class="calc-header">
+        <div class="calc-header__title-row">
+          <svg class="calc-header__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <rect x="4" y="2" width="16" height="20" rx="2" />
+            <line x1="8" y1="6" x2="16" y2="6" />
+            <line x1="8" y1="10" x2="8" y2="10.01" />
+            <line x1="12" y1="10" x2="12" y2="10.01" />
+            <line x1="16" y1="10" x2="16" y2="10.01" />
+            <line x1="8" y1="14" x2="8" y2="14.01" />
+            <line x1="12" y1="14" x2="12" y2="14.01" />
+            <line x1="16" y1="14" x2="16" y2="14.01" />
+            <line x1="8" y1="18" x2="8" y2="18.01" />
+            <line x1="12" y1="18" x2="12" y2="18.01" />
+            <line x1="16" y1="18" x2="16" y2="18.01" />
+          </svg>
+          <div>
+            <div class="calc-header__title">Calculator</div>
+            <div id="subtitle" class="calc-header__subtitle">TI Datamath · LED display</div>
+          </div>
+        </div>
+        <div id="variant-chips" class="calc-header__chips" role="group" aria-label="Calculator style"></div>
+      </header>
+
+      <div class="calc-body">
+        <div id="calculator-wrap" class="calc-body__pad"></div>
+        <aside class="calc-history" aria-label="Recent calculations">
+          <h2 class="calc-history__title">History</h2>
+          <ul id="history-list" class="calc-history__list"></ul>
+          <p id="history-empty" class="calc-history__empty">No calculations yet.</p>
+        </aside>
+      </div>
+
+      <div id="error" class="calc-error" hidden></div>
+    </div>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

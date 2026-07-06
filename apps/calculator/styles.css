@@ -1,0 +1,492 @@
+/*
+ * Calculator app — retro Datamath / Omron skins ported from UI Experiments.
+ * Shell chrome uses --os-* tokens; device skins use fixed calculator palettes.
+ */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  font-family: var(--os-font-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+  font-size: var(--os-text-md, 14px);
+  color: var(--os-text-primary, #eef1f6);
+  background: var(--os-bg-surface-solid, #181b22);
+}
+
+:root {
+  --calc-font-display: "Share Tech Mono", ui-monospace, monospace;
+
+  /* Datamath palette */
+  --calculator-case: #d6d2c4;
+  --calculator-keypad-bg: #1a1a1b;
+  --calculator-key-numeric: #f5f3ee;
+  --calculator-key-function: #d6d2c4;
+  --calculator-key-equals: #ff8c00;
+  --calculator-key-equals-text: #1a1a1b;
+  --calculator-key-text: #1a1a1b;
+  --calculator-display-bg: #1f0808;
+  --calculator-display-text: #ff2a2a;
+  --calculator-display-glow: rgba(255, 42, 42, 0.55);
+  --calculator-brand-gold: #c9a227;
+
+  /* Omron 86 palette */
+  --omron-orange: #ff6600;
+  --omron-body: #1a1a1a;
+  --omron-brand-text: #ff6600;
+  --omron-brand-pill-bg: #1a1a1a;
+  --omron-display-recess: #0a1210;
+  --omron-display-text: #7ef0d8;
+  --omron-display-glow: rgba(126, 240, 216, 0.55);
+  --omron-display-label: rgba(255, 255, 255, 0.45);
+  --omron-key-numeric-bg: #141414;
+  --omron-key-numeric-text: #ffffff;
+  --omron-key-function-bg: #f2f0eb;
+  --omron-key-function-text: #1a1a1a;
+}
+
+.calc-workspace {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  min-height: 0;
+}
+
+/* ── Header ── */
+.calc-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--os-space-l, 16px);
+  padding: var(--os-space-l, 16px);
+  border-bottom: 1px solid var(--os-border, rgba(255, 255, 255, 0.09));
+}
+
+.calc-header__title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--os-space-s, 8px);
+}
+
+.calc-header__icon {
+  flex-shrink: 0;
+  color: var(--os-text-secondary, #a8b0bf);
+}
+
+.calc-header__title {
+  font-size: var(--os-text-xl, 20px);
+  font-weight: 700;
+  color: var(--os-text-primary, #eef1f6);
+}
+
+.calc-header__subtitle {
+  font-size: var(--os-text-sm, 12.5px);
+  color: var(--os-text-tertiary, #6d7585);
+}
+
+.calc-header__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--os-space-s, 8px);
+}
+
+.calc-chip {
+  font: inherit;
+  font-size: var(--os-text-sm, 12.5px);
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--os-border, rgba(255, 255, 255, 0.09));
+  background: var(--os-bg-hover, rgba(255, 255, 255, 0.06));
+  color: var(--os-text-secondary, #a8b0bf);
+  cursor: pointer;
+}
+
+.calc-chip:hover {
+  background: var(--os-bg-active, rgba(255, 255, 255, 0.1));
+}
+
+.calc-chip--active {
+  background: var(--os-accent-soft, rgba(124, 157, 255, 0.16));
+  border-color: var(--os-accent, #7c9dff);
+  color: var(--os-text-primary, #eef1f6);
+}
+
+/* ── Body layout ── */
+.calc-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: var(--os-space-xl, 24px);
+  padding: var(--os-space-xl, 24px) var(--os-space-l, 16px);
+  overflow: hidden;
+}
+
+.calc-body__pad {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+/* ── History panel ── */
+.calc-history {
+  flex-shrink: 0;
+  width: min(240px, 32vw);
+  display: flex;
+  flex-direction: column;
+  gap: var(--os-space-s, 8px);
+  padding: var(--os-space-m, 12px);
+  border-radius: var(--os-radius-m, 10px);
+  background: var(--os-bg-sunk, rgba(12, 14, 18, 0.4));
+  border: 1px solid var(--os-border, rgba(255, 255, 255, 0.09));
+  overflow: hidden;
+}
+
+.calc-history__title {
+  margin: 0;
+  font-size: var(--os-text-sm, 12.5px);
+  font-weight: 600;
+  color: var(--os-text-secondary, #a8b0bf);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.calc-history__list {
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.calc-history__item {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--os-border, rgba(255, 255, 255, 0.09));
+  font-size: var(--os-text-sm, 12.5px);
+}
+
+.calc-history__expr {
+  color: var(--os-text-tertiary, #6d7585);
+  font-family: var(--calc-font-display);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calc-history__result {
+  color: var(--os-text-primary, #eef1f6);
+  font-family: var(--calc-font-display);
+  font-size: var(--os-text-md, 14px);
+  text-align: right;
+}
+
+.calc-history__empty {
+  margin: 0;
+  font-size: var(--os-text-sm, 12.5px);
+  color: var(--os-text-tertiary, #6d7585);
+}
+
+.calc-history__empty[hidden],
+.calc-history__list:not(:empty) + .calc-history__empty {
+  display: none;
+}
+
+/* ── Datamath pad ── */
+.calc-pad {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: min(100%, 340px);
+  padding: 20px;
+  border-radius: 14px;
+  background: var(--calculator-case);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 10px 28px rgba(0, 0, 0, 0.28);
+}
+
+.calc-pad__brand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px;
+  min-height: 22px;
+}
+
+.calc-pad__brand-name {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--calculator-brand-gold);
+}
+
+.calc-pad__brand-mark {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--calculator-brand-gold);
+}
+
+.calc-pad__display {
+  flex-shrink: 0;
+  min-height: 56px;
+  padding: 12px 16px;
+  border-radius: 6px;
+  background: var(--calculator-display-bg);
+  border: 2px inset rgba(0, 0, 0, 0.45);
+  font-family: var(--calc-font-display);
+  font-size: 32px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+  text-align: right;
+  color: var(--calculator-display-text);
+  text-shadow: 0 0 10px var(--calculator-display-glow);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calc-pad__keypad {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 10px;
+  background: var(--calculator-keypad-bg);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.55);
+}
+
+.calc-pad__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.calc-pad__key {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 1;
+  min-height: 0;
+  padding: 12px;
+  border: none;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--calculator-key-text);
+  cursor: pointer;
+  transition:
+    transform 140ms cubic-bezier(0.32, 0.72, 0, 1),
+    box-shadow 140ms cubic-bezier(0.32, 0.72, 0, 1);
+  box-shadow:
+    0 4px 0 rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.calc-pad__key:active {
+  transform: translateY(2px);
+  box-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.calc-pad__key--numeric {
+  background: var(--calculator-key-numeric);
+}
+
+.calc-pad__key--function,
+.calc-pad__key--operator {
+  background: var(--calculator-key-function);
+}
+
+.calc-pad__key--equals {
+  background: var(--calculator-key-equals);
+  color: var(--calculator-key-equals-text);
+  box-shadow:
+    0 4px 0 rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+.calc-pad__key--equals:active {
+  box-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.calc-pad__spacer {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+}
+
+/* ── Omron pad ── */
+.omron-pad {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 340px);
+  border-radius: 24px;
+  overflow: hidden;
+  background: var(--omron-body);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+}
+
+.omron-pad__header {
+  position: relative;
+  flex-shrink: 0;
+  min-height: 110px;
+  padding: 20px;
+  background: var(--omron-orange);
+}
+
+.omron-pad__brand {
+  position: absolute;
+  right: 20px;
+  bottom: 16px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--omron-brand-pill-bg);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--omron-brand-text);
+}
+
+.omron-pad__body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  background: var(--omron-body);
+}
+
+.omron-pad__display-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: 6px;
+  background: var(--omron-display-recess);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.65);
+}
+
+.omron-pad__display-labels {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--omron-display-label);
+}
+
+.omron-pad__display-label--active {
+  color: var(--omron-display-text);
+  text-shadow: 0 0 6px var(--omron-display-glow);
+}
+
+.omron-pad__display {
+  min-height: 48px;
+  font-family: var(--calc-font-display);
+  font-size: 32px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.1em;
+  text-align: right;
+  color: var(--omron-display-text);
+  text-shadow: 0 0 10px var(--omron-display-glow);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.omron-pad__grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+.omron-pad__key {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  width: 100%;
+  min-height: 0;
+  padding: 8px;
+  border: none;
+  border-radius: 50%;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    transform 140ms cubic-bezier(0.32, 0.72, 0, 1),
+    box-shadow 140ms cubic-bezier(0.32, 0.72, 0, 1);
+  box-shadow:
+    0 3px 0 rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.omron-pad__key:active {
+  transform: translateY(2px);
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.omron-pad__key--numeric {
+  background: var(--omron-key-numeric-bg);
+  color: var(--omron-key-numeric-text);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.omron-pad__key--function {
+  background: var(--omron-key-function-bg);
+  color: var(--omron-key-function-text);
+  box-shadow:
+    0 3px 0 rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+.omron-pad__key--function:active {
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+/* ── Errors ── */
+.calc-error {
+  margin: 0 var(--os-space-l, 16px) var(--os-space-l, 16px);
+  padding: 8px 12px;
+  font-size: var(--os-text-sm, 12.5px);
+  color: var(--os-danger, #e5737d);
+  background: var(--os-danger-soft, rgba(229, 115, 125, 0.14));
+  border: 1px solid var(--os-danger, #e5737d);
+  border-radius: var(--os-radius-s, 6px);
+}
+
+@media (max-width: 720px) {
+  .calc-body {
+    flex-direction: column;
+  }
+
+  .calc-history {
+    width: 100%;
+    max-height: 160px;
+  }
+}

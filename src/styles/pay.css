@@ -1,0 +1,402 @@
+/* Pay — unified payment gateway workspace */
+
+.arco-pay {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+  background: var(--arco-bg-surface-solid);
+}
+
+/* Provider rail */
+.arco-pay__rail {
+  width: 56px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-s) 0;
+  background: var(--arco-bg-elevated);
+  border-right: 1px solid var(--arco-border);
+}
+
+.arco-pay__rail-tile {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: var(--arco-radius-m);
+  background: var(--pay-accent, var(--arco-accent));
+  color: #fff;
+  font-size: var(--arco-text-xs);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.arco-pay__rail-tile--active {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.arco-pay__rail-tile--disconnected {
+  opacity: 0.45;
+}
+
+.arco-pay__rail-tile--add {
+  background: transparent;
+  border: 1px dashed var(--arco-border);
+  color: var(--arco-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Feed column */
+.arco-pay__feed-column {
+  flex: 1;
+  min-width: 0;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--arco-border);
+}
+
+.arco-pay__feed-header {
+  padding: var(--arco-space-m) var(--arco-space-l);
+  border-bottom: 1px solid var(--arco-border);
+}
+
+.arco-pay__feed-header h1 {
+  margin: 0 0 var(--arco-space-s);
+  font-size: var(--arco-text-lg);
+}
+
+.arco-pay__tabs {
+  display: flex;
+  gap: var(--arco-space-xs);
+}
+
+.arco-pay__tab--active {
+  outline: 2px solid var(--arco-accent);
+  outline-offset: 1px;
+}
+
+.arco-pay__connect-banner {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--arco-space-xl);
+}
+
+.arco-pay__demo-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--arco-space-m);
+  padding: var(--arco-space-m) var(--arco-space-l);
+  border-bottom: 1px solid var(--arco-border);
+  background: var(--arco-accent-soft);
+}
+
+.arco-pay__demo-banner p {
+  margin: 0;
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-secondary);
+}
+
+.arco-pay__feed {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* Transaction rows */
+.arco-pay__tx {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--arco-space-m);
+  padding: var(--arco-space-m) var(--arco-space-l);
+  border-bottom: 1px solid var(--arco-border);
+}
+
+.arco-pay__tx-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.arco-pay__tx-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-2xs);
+}
+
+.arco-pay__tx-main strong {
+  font-size: var(--arco-text-md);
+  font-weight: 600;
+}
+
+.arco-pay__tx-note {
+  color: var(--arco-text-secondary);
+  font-size: var(--arco-text-sm);
+}
+
+.arco-pay__tx-meta {
+  display: flex;
+  gap: var(--arco-space-s);
+  margin-top: var(--arco-space-xs);
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+}
+
+.arco-pay__tx-status {
+  color: var(--arco-warning);
+}
+
+.arco-pay__tx-amount {
+  flex-shrink: 0;
+  font-size: var(--arco-text-md);
+  font-weight: 700;
+  color: var(--arco-text-secondary);
+}
+
+.arco-pay__tx-amount--in {
+  color: var(--arco-success);
+}
+
+.arco-pay__tx-amount--out {
+  color: var(--arco-text-primary);
+}
+
+/* Sidebar */
+.arco-pay__sidebar {
+  width: 300px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-m);
+  padding: var(--arco-space-l);
+  overflow: auto;
+  background: var(--arco-bg-elevated);
+}
+
+.arco-pay__balance-card {
+  padding: var(--arco-space-l);
+  border-radius: var(--arco-radius-l);
+  background: linear-gradient(145deg, var(--arco-accent-soft), transparent 70%);
+  border: 1px solid var(--arco-border);
+}
+
+.arco-pay__balance-head {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-secondary);
+}
+
+.arco-pay__refresh {
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  color: var(--arco-text-tertiary);
+  cursor: pointer;
+  padding: var(--arco-space-xs);
+  border-radius: var(--arco-radius-s);
+}
+
+.arco-pay__refresh:hover {
+  background: var(--arco-bg-hover);
+  color: var(--arco-text-primary);
+}
+
+.arco-pay__spin {
+  animation: arco-pay-spin 0.8s linear infinite;
+}
+
+@keyframes arco-pay-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.arco-pay__balance-amount {
+  margin: var(--arco-space-s) 0 var(--arco-space-xs);
+  font-size: var(--arco-text-xl);
+  font-weight: 700;
+}
+
+.arco-pay__balance-pending {
+  margin: 0;
+  font-size: var(--arco-text-sm);
+  color: var(--arco-warning);
+}
+
+.arco-pay__balance-account {
+  margin: var(--arco-space-xs) 0 0;
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+}
+
+.arco-pay__balance-empty {
+  margin: var(--arco-space-m) 0;
+  color: var(--arco-text-tertiary);
+  font-size: var(--arco-text-sm);
+}
+
+.arco-pay__actions {
+  display: flex;
+  gap: var(--arco-space-s);
+  margin-top: var(--arco-space-l);
+}
+
+.arco-pay__actions .arco-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--arco-space-xs);
+}
+
+.arco-pay__panel {
+  padding: var(--arco-space-m);
+  border-radius: var(--arco-radius-m);
+  border: 1px solid var(--arco-border);
+  background: var(--arco-bg-surface-solid);
+}
+
+.arco-pay__panel--muted {
+  background: transparent;
+}
+
+.arco-pay__panel h2 {
+  margin: 0 0 var(--arco-space-s);
+  font-size: var(--arco-text-sm);
+  font-weight: 600;
+}
+
+.arco-pay__panel p {
+  margin: 0;
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-secondary);
+  line-height: 1.5;
+}
+
+.arco-pay__contacts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-s);
+}
+
+.arco-pay__contacts li {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+}
+
+.arco-pay__contacts strong {
+  display: block;
+  font-size: var(--arco-text-sm);
+}
+
+.arco-pay__contacts span {
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+}
+
+.arco-pay__error {
+  margin: 0;
+  padding: var(--arco-space-s) var(--arco-space-m);
+  border-radius: var(--arco-radius-s);
+  background: var(--arco-danger-soft);
+  color: var(--arco-danger);
+  font-size: var(--arco-text-sm);
+}
+
+/* Connect / action modals */
+.arco-pay-connect__mode {
+  margin: var(--arco-space-s) 0 0;
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+}
+
+.arco-pay-action-modal__amount {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-xs);
+  margin-bottom: var(--arco-space-m);
+}
+
+.arco-pay-action-modal__currency {
+  font-size: var(--arco-text-xl);
+  font-weight: 700;
+  color: var(--arco-text-secondary);
+}
+
+.arco-pay-action-modal__amount .arco-input {
+  font-size: var(--arco-text-xl);
+  font-weight: 700;
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+
+.arco-pay-action-modal__preview {
+  margin: 0 0 var(--arco-space-m);
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-secondary);
+}
+
+.arco-pay-action-modal__search {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  margin-bottom: var(--arco-space-s);
+}
+
+.arco-pay-recipient-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 220px;
+  overflow: auto;
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-m);
+}
+
+.arco-pay-recipient-list--compact {
+  max-height: 160px;
+}
+
+.arco-pay-recipient {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-m);
+  padding: var(--arco-space-s) var(--arco-space-m);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.arco-pay-recipient:hover {
+  background: var(--arco-bg-hover);
+}
+
+.arco-pay-recipient--selected {
+  background: var(--arco-accent-soft);
+}
+
+.arco-pay-recipient strong {
+  display: block;
+  font-size: var(--arco-text-sm);
+}
+
+.arco-pay-recipient span {
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+}

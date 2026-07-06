@@ -1,0 +1,365 @@
+/**
+ * Bento card theme styles — translated from Longformer UI Experiments primitives.
+ *
+ * Source references:
+ * - DesignCardShell.module.css (dark, light, blue, red, gradientGreen, gradientPurple)
+ * - GlassWidgetShell.module.css (dark, light)
+ * - StatCard.module.css (neutral, accent, success, warning)
+ * - FinanceWidgetShell.module.css (dark, lime, white, lavender)
+ * - BankingWidgetShell.module.css (purple, lime, white, black, chamfer)
+ * - FitnessWidgetShell.module.css (dark, pink)
+ * - InsightCard.module.css (sunken surface)
+ *
+ * Themes set CSS custom properties on the tile; inner card typography inherits via fallbacks.
+ */
+
+/* ── Shared theme tokens on tile ─────────────────────────────────────────── */
+
+.arco-bento-tile[data-bento-theme] {
+  --bento-theme-label: var(--arco-text-tertiary);
+  --bento-theme-value: var(--arco-text-primary);
+  --bento-theme-meta: var(--arco-text-secondary);
+  --bento-theme-border: var(--arco-border);
+  --bento-theme-radius: var(--arco-radius-l);
+  --bento-theme-shadow: var(--arco-shadow-chrome);
+  --bento-theme-ring-track: var(--arco-accent-soft);
+  --bento-theme-ring-fill: var(--arco-accent);
+  --bento-theme-font: var(--arco-font-ui);
+
+  border-radius: var(--bento-theme-radius);
+  border-color: var(--bento-theme-border);
+  box-shadow: var(--bento-theme-shadow);
+  font-family: var(--bento-theme-font);
+}
+
+.arco-bento-tile[data-bento-theme] .arco-bento-card__label {
+  color: var(--bento-theme-label);
+}
+
+.arco-bento-tile[data-bento-theme] .arco-bento-card__value,
+.arco-bento-tile[data-bento-theme] .arco-bento-card__clock,
+.arco-bento-tile[data-bento-theme] .arco-bento-card__insight-title {
+  color: var(--bento-theme-value);
+}
+
+.arco-bento-tile[data-bento-theme] .arco-bento-card__meta,
+.arco-bento-tile[data-bento-theme] .arco-bento-card__insight-copy,
+.arco-bento-tile[data-bento-theme] .arco-bento-card__list-value {
+  color: var(--bento-theme-meta);
+}
+
+.arco-bento-tile[data-bento-theme] .arco-bento-card__list-label,
+.arco-bento-tile[data-bento-theme] .arco-bento-weather__condition,
+.arco-bento-tile[data-bento-theme] .arco-bento-weather__stats dd {
+  color: var(--bento-theme-value);
+}
+
+.arco-bento-tile[data-bento-theme] .arco-bento-card__ring {
+  background:
+    radial-gradient(farthest-side, var(--bento-theme-ring-bg, var(--arco-bg-surface-solid)) 68%, transparent 70%),
+    conic-gradient(var(--bento-theme-ring-fill) var(--arco-bento-ring-percent, 0%), var(--bento-theme-ring-track) 0);
+  color: var(--bento-theme-value);
+}
+
+.arco-bento-tile[data-bento-theme] .arco-bento-card--insight {
+  background: transparent;
+}
+
+/* ── Surface ───────────────────────────────────────────────────────────────── */
+
+.arco-bento-tile[data-bento-theme="surface-sunken"] {
+  background: var(--arco-bg-sunk);
+  border-color: color-mix(in srgb, var(--arco-border) 80%, transparent);
+}
+
+.arco-bento-tile[data-bento-theme="surface-accent-soft"] {
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--arco-accent) 14%, transparent),
+    var(--arco-bg-surface-solid) 58%
+  );
+  border-color: color-mix(in srgb, var(--arco-accent) 24%, var(--arco-border));
+}
+
+/* ── Glass (GlassWidgetShell) ──────────────────────────────────────────────── */
+
+.arco-bento-tile[data-bento-theme="glass-dark"] {
+  background: rgba(12, 12, 14, 0.96);
+  border-color: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --bento-theme-label: rgba(255, 255, 255, 0.56);
+  --bento-theme-value: rgba(255, 255, 255, 0.94);
+  --bento-theme-meta: rgba(255, 255, 255, 0.72);
+  --bento-theme-ring-bg: rgba(12, 12, 14, 0.96);
+  --bento-theme-ring-track: rgba(255, 255, 255, 0.2);
+  --bento-theme-ring-fill: #fff;
+  --bento-theme-radius: 32px;
+  color-scheme: dark;
+}
+
+.arco-bento-tile[data-bento-theme="glass-light"] {
+  background: rgba(255, 255, 255, 0.96);
+  border-color: rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --bento-theme-label: rgba(0, 0, 0, 0.45);
+  --bento-theme-value: #111;
+  --bento-theme-meta: rgba(0, 0, 0, 0.55);
+  --bento-theme-ring-bg: #fff;
+  --bento-theme-ring-track: rgba(0, 0, 0, 0.08);
+  --bento-theme-ring-fill: var(--arco-accent);
+  --bento-theme-radius: 32px;
+}
+
+html[data-theme="light"] .arco-bento-tile[data-bento-theme="glass-dark"] {
+  color-scheme: dark;
+}
+
+/* ── Design cards (DesignCardShell) ────────────────────────────────────────── */
+
+.arco-bento-tile[data-bento-theme="design-dark"] {
+  background: #000;
+  border-color: transparent;
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --bento-theme-label: rgba(255, 255, 255, 0.56);
+  --bento-theme-value: rgba(255, 255, 255, 0.92);
+  --bento-theme-meta: rgba(255, 255, 255, 0.72);
+  --bento-theme-ring-bg: #000;
+  --bento-theme-ring-track: rgba(255, 255, 255, 0.2);
+  --bento-theme-ring-fill: #fff;
+  --bento-theme-radius: 28px;
+  color-scheme: dark;
+}
+
+.arco-bento-tile[data-bento-theme="design-light"] {
+  background: #f5f5f7;
+  border-color: transparent;
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  --bento-theme-label: rgba(0, 0, 0, 0.45);
+  --bento-theme-value: #111;
+  --bento-theme-meta: rgba(0, 0, 0, 0.55);
+  --bento-theme-ring-bg: #f5f5f7;
+  --bento-theme-radius: 28px;
+}
+
+.arco-bento-tile[data-bento-theme="design-blue"] {
+  background: linear-gradient(160deg, #2563eb, #1d4ed8);
+  border-color: transparent;
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.35);
+  --bento-theme-label: rgba(255, 255, 255, 0.72);
+  --bento-theme-value: #fff;
+  --bento-theme-meta: rgba(255, 255, 255, 0.82);
+  --bento-theme-ring-bg: #1d4ed8;
+  --bento-theme-ring-track: rgba(255, 255, 255, 0.28);
+  --bento-theme-ring-fill: #fff;
+  --bento-theme-radius: 28px;
+  color-scheme: dark;
+}
+
+.arco-bento-tile[data-bento-theme="design-red"] {
+  background: linear-gradient(160deg, #7f1d1d, #450a0a);
+  border-color: transparent;
+  --bento-theme-label: rgba(255, 255, 255, 0.72);
+  --bento-theme-value: #fff;
+  --bento-theme-meta: rgba(255, 255, 255, 0.82);
+  --bento-theme-ring-bg: #450a0a;
+  --bento-theme-ring-track: rgba(255, 255, 255, 0.24);
+  --bento-theme-ring-fill: #fff;
+  --bento-theme-radius: 28px;
+  color-scheme: dark;
+}
+
+.arco-bento-tile[data-bento-theme="design-green"] {
+  background: linear-gradient(145deg, #14532d, #052e16 55%, #000);
+  border-color: transparent;
+  --bento-theme-label: rgba(255, 255, 255, 0.72);
+  --bento-theme-value: #fff;
+  --bento-theme-meta: rgba(255, 255, 255, 0.82);
+  --bento-theme-ring-bg: #052e16;
+  --bento-theme-ring-track: rgba(255, 255, 255, 0.24);
+  --bento-theme-ring-fill: #86efac;
+  --bento-theme-radius: 28px;
+  color-scheme: dark;
+}
+
+.arco-bento-tile[data-bento-theme="design-purple"] {
+  background: linear-gradient(145deg, #312e81, #1e1b4b 55%, #000);
+  border-color: transparent;
+  --bento-theme-label: rgba(255, 255, 255, 0.72);
+  --bento-theme-value: #fff;
+  --bento-theme-meta: rgba(255, 255, 255, 0.82);
+  --bento-theme-ring-bg: #1e1b4b;
+  --bento-theme-ring-track: rgba(255, 255, 255, 0.24);
+  --bento-theme-ring-fill: #c4b5fd;
+  --bento-theme-radius: 28px;
+  color-scheme: dark;
+}
+
+/* ── Stat KPI (StatCard) ───────────────────────────────────────────────────── */
+
+.arco-bento-tile[data-bento-theme="stat-neutral"] {
+  background: var(--arco-bg-elevated);
+  --bento-theme-ring-track: var(--arco-border);
+  --bento-theme-ring-fill: var(--arco-accent);
+}
+
+.arco-bento-tile[data-bento-theme="stat-accent"] {
+  background: var(--arco-accent);
+  border-color: transparent;
+  --bento-theme-label: rgba(255, 255, 255, 0.72);
+  --bento-theme-value: #fff;
+  --bento-theme-meta: rgba(255, 255, 255, 0.72);
+  --bento-theme-ring-bg: var(--arco-accent);
+  --bento-theme-ring-track: rgba(255, 255, 255, 0.28);
+  --bento-theme-ring-fill: #fff;
+  color-scheme: dark;
+}
+
+.arco-bento-tile[data-bento-theme="stat-success"] {
+  background: var(--arco-success);
+  border-color: transparent;
+  --bento-theme-label: rgba(255, 255, 255, 0.72);
+  --bento-theme-value: #fff;
+  --bento-theme-meta: rgba(255, 255, 255, 0.72);
+  --bento-theme-ring-bg: var(--arco-success);
+  --bento-theme-ring-track: rgba(255, 255, 255, 0.28);
+  --bento-theme-ring-fill: #fff;
+  color-scheme: dark;
+}
+
+.arco-bento-tile[data-bento-theme="stat-warning"] {
+  background: var(--arco-warning);
+  border-color: transparent;
+  --bento-theme-label: rgba(255, 255, 255, 0.72);
+  --bento-theme-value: #fff;
+  --bento-theme-meta: rgba(255, 255, 255, 0.72);
+  --bento-theme-ring-bg: var(--arco-warning);
+  --bento-theme-ring-track: rgba(255, 255, 255, 0.28);
+  --bento-theme-ring-fill: #fff;
+  color-scheme: dark;
+}
+
+/* ── Finance (FinanceWidgetShell) ──────────────────────────────────────────── */
+
+.arco-bento-tile[data-bento-theme="finance-dark"] {
+  background: #171717;
+  border-color: transparent;
+  --bento-theme-label: rgba(255, 255, 255, 0.56);
+  --bento-theme-value: rgba(255, 255, 255, 0.92);
+  --bento-theme-meta: rgba(255, 255, 255, 0.72);
+  --bento-theme-radius: 28px;
+  color-scheme: dark;
+}
+
+.arco-bento-tile[data-bento-theme="finance-lime"] {
+  background: #d4f547;
+  border-color: transparent;
+  --bento-theme-label: rgba(18, 18, 18, 0.55);
+  --bento-theme-value: #121212;
+  --bento-theme-meta: rgba(18, 18, 18, 0.65);
+  --bento-theme-ring-bg: #d4f547;
+  --bento-theme-ring-track: rgba(18, 18, 18, 0.12);
+  --bento-theme-ring-fill: #121212;
+  --bento-theme-radius: 28px;
+}
+
+.arco-bento-tile[data-bento-theme="finance-lavender"] {
+  background: #c4b5fd;
+  border-color: transparent;
+  --bento-theme-label: rgba(255, 255, 255, 0.72);
+  --bento-theme-value: rgba(255, 255, 255, 0.95);
+  --bento-theme-meta: rgba(255, 255, 255, 0.82);
+  --bento-theme-ring-bg: #c4b5fd;
+  --bento-theme-radius: 28px;
+  color-scheme: dark;
+}
+
+.arco-bento-tile[data-bento-theme="finance-white"] {
+  background: #fff;
+  border-color: rgba(0, 0, 0, 0.06);
+  --bento-theme-label: rgba(18, 18, 18, 0.45);
+  --bento-theme-value: #121212;
+  --bento-theme-meta: rgba(18, 18, 18, 0.55);
+  --bento-theme-radius: 28px;
+}
+
+/* ── Banking (BankingWidgetShell) ──────────────────────────────────────────── */
+
+.arco-bento-tile[data-bento-theme="banking-purple"],
+.arco-bento-tile[data-bento-theme="banking-chamfer"] {
+  background: #c4b5fd;
+  border-color: transparent;
+  --bento-theme-label: rgba(18, 18, 18, 0.55);
+  --bento-theme-value: #121212;
+  --bento-theme-meta: rgba(18, 18, 18, 0.65);
+  --bento-theme-font: "Space Grotesk", var(--arco-font-ui);
+  --bento-theme-radius: 20px;
+}
+
+.arco-bento-tile[data-bento-theme="banking-chamfer"] {
+  clip-path: polygon(0 0, calc(100% - 28px) 0, 100% 28px, 100% 100%, 0 100%);
+  border-radius: 0;
+}
+
+.arco-bento-tile[data-bento-theme="banking-lime"] {
+  background: #d9f99d;
+  border-color: transparent;
+  --bento-theme-label: rgba(18, 18, 18, 0.55);
+  --bento-theme-value: #121212;
+  --bento-theme-meta: rgba(18, 18, 18, 0.65);
+  --bento-theme-font: "Space Grotesk", var(--arco-font-ui);
+  --bento-theme-radius: 20px;
+}
+
+.arco-bento-tile[data-bento-theme="banking-black"] {
+  background: #121212;
+  border-color: transparent;
+  --bento-theme-label: rgba(255, 255, 255, 0.56);
+  --bento-theme-value: rgba(255, 255, 255, 0.92);
+  --bento-theme-meta: rgba(255, 255, 255, 0.72);
+  --bento-theme-font: "Space Grotesk", var(--arco-font-ui);
+  --bento-theme-radius: 20px;
+  color-scheme: dark;
+}
+
+.arco-bento-tile[data-bento-theme="banking-white"] {
+  background: #fff;
+  border-color: rgba(0, 0, 0, 0.06);
+  --bento-theme-label: rgba(18, 18, 18, 0.45);
+  --bento-theme-value: #121212;
+  --bento-theme-meta: rgba(18, 18, 18, 0.55);
+  --bento-theme-font: "Space Grotesk", var(--arco-font-ui);
+  --bento-theme-radius: 20px;
+}
+
+/* ── Fitness (FitnessWidgetShell) ──────────────────────────────────────────── */
+
+.arco-bento-tile[data-bento-theme="fitness-dark"] {
+  background: #121212;
+  border-color: transparent;
+  --bento-theme-label: rgba(255, 255, 255, 0.56);
+  --bento-theme-value: rgba(255, 255, 255, 0.92);
+  --bento-theme-meta: rgba(255, 255, 255, 0.72);
+  --bento-theme-radius: 24px;
+  color-scheme: dark;
+}
+
+.arco-bento-tile[data-bento-theme="fitness-pink"] {
+  background: #f9c5d1;
+  border-color: transparent;
+  --bento-theme-label: rgba(18, 18, 18, 0.55);
+  --bento-theme-value: #121212;
+  --bento-theme-meta: rgba(18, 18, 18, 0.65);
+  --bento-theme-radius: 24px;
+}

@@ -26,6 +26,8 @@ import {
   UsersRound,
   Share2,
   Brain,
+  Map,
+  CircleDollarSign,
 } from "lucide-react";
 import type { SystemAppId } from "./windowStore";
 import { ChatApp } from "../apps/chat/ChatApp";
@@ -49,6 +51,8 @@ import { TerminalApp } from "../apps/terminal/TerminalApp";
 import { SettingsApp } from "../apps/settings/SettingsApp";
 import { StartupApp } from "../apps/startup/StartupApp";
 import { OnboardingApp } from "../apps/onboarding/OnboardingApp";
+import { MapsApp } from "../apps/maps/MapsApp";
+import { PayApp } from "../apps/pay/PayApp";
 import { MemoryApp } from "../apps/memory/MemoryApp";
 
 export interface SystemAppDef {
@@ -68,6 +72,8 @@ export const SYSTEM_APPS: SystemAppDef[] = [
   { id: "apis", title: "APIs", icon: Plug, component: ApisApp },
   { id: "automations", title: "Automations", icon: CalendarClock, component: AutomationsApp },
   { id: "files", title: "Drive", icon: HardDrive, component: FilesApp },
+  { id: "maps", title: "Maps", icon: Map, component: MapsApp },
+  { id: "pay", title: "Pay", icon: CircleDollarSign, component: PayApp },
   { id: "notes", title: "Notes", icon: StickyNote, component: NotesApp },
   { id: "email", title: "Email", icon: Mail, component: EmailApp },
   { id: "tasks", title: "Tasks", icon: CheckSquare, component: TasksApp },

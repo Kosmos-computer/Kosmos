@@ -315,14 +315,10 @@
   gap: var(--arco-space-2xs);
   flex: 1;
   min-height: 0;
-  /* Collapsed: visible so tooltips escape the 56px column (dock pattern). */
-  overflow: visible;
-}
-.arco-navrail--expanded .arco-navrail__items {
   overflow-y: auto;
   scrollbar-width: none;
 }
-.arco-navrail--expanded .arco-navrail__items::-webkit-scrollbar {
+.arco-navrail__items::-webkit-scrollbar {
   display: none;
 }
 

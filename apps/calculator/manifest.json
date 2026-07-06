@@ -1,0 +1,44 @@
+{
+  "id": "core.calculator",
+  "name": "Calculator",
+  "version": "0.1.0",
+  "description": "Retro calculator with Datamath and Omron skins — evaluates arithmetic and logs history via os.calculator@1.",
+  "icon": "calculator",
+  "tier": "code",
+  "entry": { "kind": "bundle", "path": "calculator" },
+  "implements": ["os.calculator@1"],
+  "permissions": [
+    { "kind": "contract", "id": "os.calculator@1", "access": "read" },
+    { "kind": "contract", "id": "os.calculator@1", "access": "write" },
+    { "kind": "shell", "features": ["notify"] }
+  ],
+  "tools": [
+    {
+      "name": "evaluate",
+      "description": "Evaluate a basic arithmetic expression (+, -, *, /, %, parentheses). Returns the numeric result and logs it to calculator history.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "expression": {
+            "type": "string",
+            "description": "Arithmetic expression, e.g. \"(12 + 8) / 4\""
+          }
+        },
+        "required": ["expression"]
+      },
+      "binding": { "kind": "intent", "intent": "calculator.evaluate" }
+    },
+    {
+      "name": "history",
+      "description": "List recent calculator evaluations (newest first).",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "limit": { "type": "number", "description": "Maximum entries (default 20, max 100)" }
+        }
+      },
+      "binding": { "kind": "intent", "intent": "calculator.history.list" }
+    }
+  ],
+  "events": { "subscribes": ["calculator.changed"] }
+}

@@ -65,6 +65,12 @@ export function handleShellEvent(event: AgentEvent): void {
       // The Automations app polls; nothing shell-global to do.
       break;
 
+    case "automation_run_finished": {
+      const statusLabel = event.status === "ok" ? "completed" : "failed";
+      os.notify(`Automation "${event.automationName}" ${statusLabel}`);
+      break;
+    }
+
     case "app_event":
       // Platform topic (files.changed, calendar.changed, …) — fan out to
       // open AppHost windows, which forward to subscribing app iframes.

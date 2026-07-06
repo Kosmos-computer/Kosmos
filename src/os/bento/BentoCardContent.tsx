@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { BentoMusicWidget } from "./BentoMusicWidget";
 import { BentoWeatherWidget } from "./BentoWeatherWidget";
 import type { BentoWidgetContent } from "./types";
 
@@ -79,5 +80,8 @@ export function BentoCardContent({ content }: BentoCardContentProps) {
 
     case "weather":
       return <BentoWeatherWidget />;
+
+    case "music":
+      return <BentoMusicWidget />;
   }
 }

@@ -9,6 +9,7 @@ import {
   Italic,
   Link2,
   Loader2,
+  Mic,
   Pilcrow,
   Redo2,
   Sparkles,
@@ -49,6 +50,9 @@ export interface EditorToolbarProps {
   onRedo?: () => void;
   readAloudStatus?: ReadAloudStatus;
   onReadAloud?: () => void;
+  dictationActive?: boolean;
+  dictationAvailable?: boolean;
+  onDictation?: () => void;
   aiOpen?: boolean;
   onAiAssist?: () => void;
 }
@@ -99,6 +103,9 @@ export function EditorToolbar({
   onRedo,
   readAloudStatus = "idle",
   onReadAloud,
+  dictationActive,
+  dictationAvailable = true,
+  onDictation,
   aiOpen,
   onAiAssist,
 }: EditorToolbarProps) {
@@ -206,7 +213,7 @@ export function EditorToolbar({
         </ToolButton>
       </div>
 
-      {(onReadAloud || onAiAssist) && (
+      {(onReadAloud || onDictation || onAiAssist) && (
         <>
           <span className="arco-editor-toolbar__divider" role="separator" aria-orientation="vertical" />
           <div className="arco-editor-toolbar__group">
@@ -223,6 +230,16 @@ export function EditorToolbar({
                 ) : (
                   <Volume2 size={15} strokeWidth={1.75} />
                 )}
+              </ToolButton>
+            ) : null}
+            {onDictation ? (
+              <ToolButton
+                label={dictationActive ? "Stop dictation" : "Dictate"}
+                pressed={dictationActive}
+                disabled={!dictationAvailable}
+                onClick={onDictation}
+              >
+                <Mic size={15} strokeWidth={1.75} />
               </ToolButton>
             ) : null}
             {onAiAssist ? (

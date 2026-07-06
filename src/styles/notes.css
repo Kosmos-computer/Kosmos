@@ -372,6 +372,33 @@
   gap: var(--arco-space-xs);
 }
 
+.arco-notes-dictation {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-xs);
+  margin-top: var(--arco-space-s);
+  padding: var(--arco-space-xs) var(--arco-space-s);
+  border: 1px solid color-mix(in srgb, var(--arco-accent) 35%, var(--arco-border));
+  border-radius: var(--arco-radius-s);
+  background: var(--arco-accent-soft);
+  color: var(--arco-text-secondary);
+  font-size: var(--arco-text-sm);
+}
+
+.arco-notes-dictation__label {
+  font-weight: 500;
+  color: var(--arco-text-primary);
+}
+
+.arco-notes-dictation__interim {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--arco-text-secondary);
+}
+
 .arco-notes__editor-surface {
   min-height: 280px;
 }

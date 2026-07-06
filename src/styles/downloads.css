@@ -1,0 +1,353 @@
+/* Downloads — Transmission-style torrent client (stub) */
+
+.arco-downloads {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+  background: var(--arco-bg-surface-solid);
+}
+
+.arco-downloads__main {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.arco-downloads__toolbar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-m);
+  padding: var(--arco-space-xs) var(--arco-space-m);
+  border-bottom: 1px solid var(--arco-border);
+  background: var(--arco-bg-surface-solid);
+}
+
+.arco-downloads__toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.arco-downloads__toolbar-spacer {
+  flex: 1;
+}
+
+.arco-downloads__split {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  --arco-downloads-detail-h: 240px;
+}
+
+.arco-downloads__table-pane {
+  flex: 1 1 0;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.arco-downloads__table-wrap {
+  flex: 1;
+  min-height: 0;
+}
+
+.arco-downloads__table-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--arco-space-xl);
+}
+
+.arco-downloads__table-header,
+.arco-downloads__row {
+  display: grid;
+  grid-template-columns:
+    minmax(160px, 2.2fr)
+    72px
+    120px
+    96px
+    72px
+    72px
+    80px
+    56px
+    80px
+    80px;
+  gap: var(--arco-space-s);
+  align-items: center;
+  padding: 0 var(--arco-space-m);
+  text-align: left;
+  font-size: var(--arco-text-sm);
+}
+
+.arco-downloads__table-header {
+  flex-shrink: 0;
+  height: 32px;
+  border-bottom: 1px solid var(--arco-border);
+  color: var(--arco-text-tertiary);
+  font-size: var(--arco-text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.arco-downloads__row {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid var(--arco-border-subtle, var(--arco-border));
+  background: transparent;
+  color: var(--arco-text-primary);
+  cursor: pointer;
+  min-height: 36px;
+}
+
+.arco-downloads__row:hover {
+  background: var(--arco-bg-hover);
+}
+
+.arco-downloads__row--selected {
+  background: var(--arco-accent-soft, var(--arco-bg-hover));
+}
+
+.arco-downloads__cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--arco-text-secondary);
+}
+
+.arco-downloads__cell--name {
+  color: var(--arco-text-primary);
+  font-weight: 500;
+}
+
+.arco-downloads__cell--status {
+  text-transform: capitalize;
+}
+
+.arco-downloads__cell--progress {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-xs);
+}
+
+.arco-downloads__meter {
+  flex: 1;
+  min-width: 0;
+  height: 8px;
+  border: none;
+  border-radius: 999px;
+  background: var(--arco-bg-hover);
+  overflow: hidden;
+}
+
+.arco-downloads__meter::-webkit-meter-bar {
+  background: var(--arco-bg-hover);
+  border: none;
+  border-radius: 999px;
+}
+
+.arco-downloads__meter::-webkit-meter-optimum-value,
+.arco-downloads__meter::-webkit-meter-suboptimum-value,
+.arco-downloads__meter::-webkit-meter-even-less-good-value {
+  background: var(--arco-accent);
+  border-radius: 999px;
+}
+
+.arco-downloads__meter::-moz-meter-bar {
+  background: var(--arco-accent);
+  border-radius: 999px;
+}
+
+.arco-downloads__progress-label {
+  flex-shrink: 0;
+  width: 36px;
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+  text-align: right;
+}
+
+.arco-downloads__split-handle {
+  flex-shrink: 0;
+  height: 7px;
+  cursor: row-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-top: 1px solid var(--arco-border);
+  border-bottom: 1px solid var(--arco-border);
+  background: var(--arco-bg-sunk);
+}
+
+.arco-downloads__split-handle--active,
+.arco-downloads__split-handle:hover {
+  background: var(--arco-bg-hover);
+}
+
+.arco-downloads__split-grip {
+  width: 36px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--arco-text-tertiary);
+  opacity: 0.45;
+}
+
+.arco-downloads__detail-pane {
+  flex-shrink: 0;
+  height: var(--arco-downloads-detail-h);
+  min-height: 140px;
+  max-height: 420px;
+  overflow: hidden;
+  border-top: 1px solid var(--arco-border);
+}
+
+.arco-downloads__status-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-xs) var(--arco-space-m);
+  border-top: 1px solid var(--arco-border);
+  background: var(--arco-bg-sunk);
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-secondary);
+}
+
+.arco-downloads__status-bar-spacer {
+  flex: 1;
+}
+
+/* Sidebar */
+.arco-downloads-sidebar__search {
+  position: relative;
+  width: 100%;
+}
+
+.arco-downloads-sidebar__search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--arco-text-tertiary);
+  pointer-events: none;
+}
+
+.arco-downloads-sidebar__search-input {
+  width: 100%;
+  padding-left: 32px;
+}
+
+.arco-downloads-sidebar__count {
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.arco-downloads-sidebar__tracker-label {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 160px;
+}
+
+/* Detail inspector */
+.arco-downloads-detail {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--arco-bg-surface-solid);
+}
+
+.arco-downloads-detail__tabs {
+  flex-shrink: 0;
+  display: flex;
+  gap: 2px;
+  padding: var(--arco-space-xs) var(--arco-space-s);
+  border-bottom: 1px solid var(--arco-border);
+}
+
+.arco-downloads-detail__tab {
+  border: none;
+  background: transparent;
+  padding: var(--arco-space-xs) var(--arco-space-m);
+  border-radius: var(--arco-radius-s);
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-secondary);
+  cursor: pointer;
+}
+
+.arco-downloads-detail__tab:hover {
+  background: var(--arco-bg-hover);
+  color: var(--arco-text-primary);
+}
+
+.arco-downloads-detail__tab--active {
+  background: var(--arco-bg-hover);
+  color: var(--arco-text-primary);
+  font-weight: 600;
+}
+
+.arco-downloads-detail__body {
+  flex: 1;
+  min-height: 0;
+  padding: var(--arco-space-m);
+}
+
+.arco-downloads-detail__grid {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: var(--arco-space-s) var(--arco-space-m);
+  margin: 0;
+  font-size: var(--arco-text-sm);
+}
+
+.arco-downloads-detail__grid dt {
+  margin: 0;
+  color: var(--arco-text-tertiary);
+}
+
+.arco-downloads-detail__grid dd {
+  margin: 0;
+  color: var(--arco-text-primary);
+}
+
+.arco-downloads-detail__mono {
+  font-family: var(--arco-font-mono, ui-monospace, monospace);
+  font-size: var(--arco-text-xs);
+  word-break: break-all;
+}
+
+.arco-downloads-detail__error {
+  color: var(--arco-danger);
+}
+
+.arco-downloads-detail__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--arco-text-sm);
+}
+
+.arco-downloads-detail__table th,
+.arco-downloads-detail__table td {
+  padding: var(--arco-space-xs) var(--arco-space-s);
+  border-bottom: 1px solid var(--arco-border);
+  text-align: left;
+}
+
+.arco-downloads-detail__table th {
+  font-size: var(--arco-text-xs);
+  font-weight: 600;
+  color: var(--arco-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}

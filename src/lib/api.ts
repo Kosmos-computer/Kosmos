@@ -41,6 +41,7 @@ import type {
   WebAppLaunchStatus,
   WorkspaceEntry,
 } from "@shared/types";
+import type { CalendarEvent, CalendarEventInput } from "@shared/capabilities/calendar";
 import type { FileCreateInput, FileEntry } from "@shared/capabilities/files";
 import type { InstalledAppInfo, GrantState } from "@shared/manifest";
 import type {
@@ -309,6 +310,33 @@ export const api = {
     ),
   deleteDriveEntry: (id: string) =>
     fetch(`/api/drive/entries/${encodeURIComponent(id)}`, { method: "DELETE" }).then((r) =>
+      json<{ deleted: boolean }>(r),
+    ),
+
+  // Calendar (os.calendar@1)
+  listCalendarEvents: (params: { from?: string; to?: string } = {}) => {
+    const qs = new URLSearchParams();
+    if (params.from) qs.set("from", params.from);
+    if (params.to) qs.set("to", params.to);
+    const query = qs.toString();
+    return fetch(`/api/calendar/events${query ? `?${query}` : ""}`).then((r) => json<CalendarEvent[]>(r));
+  },
+  getCalendarEvent: (id: string) =>
+    fetch(`/api/calendar/events/${encodeURIComponent(id)}`).then((r) => json<CalendarEvent>(r)),
+  createCalendarEvent: (input: CalendarEventInput) =>
+    fetch("/api/calendar/events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    }).then((r) => json<CalendarEvent>(r)),
+  updateCalendarEvent: (id: string, patch: Partial<CalendarEventInput>) =>
+    fetch(`/api/calendar/events/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    }).then((r) => json<CalendarEvent>(r)),
+  deleteCalendarEvent: (id: string) =>
+    fetch(`/api/calendar/events/${encodeURIComponent(id)}`, { method: "DELETE" }).then((r) =>
       json<{ deleted: boolean }>(r),
     ),
 

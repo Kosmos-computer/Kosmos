@@ -298,10 +298,11 @@
 .arco-mini-calendar__day {
   aspect-ratio: 1;
   border: none;
-  border-radius: var(--arco-radius-s);
+  border-radius: 9999px;
   background: transparent;
   color: var(--arco-text-secondary);
   font-size: var(--arco-text-sm);
+  line-height: 1;
   cursor: pointer;
 }
 

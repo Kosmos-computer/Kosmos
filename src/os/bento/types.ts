@@ -8,7 +8,7 @@ export const BENTO_GAP_PX = 8;
 
 export type BentoLiveKey = "apps" | "sessions" | "automations" | "agent" | "clock";
 
-export type BentoWidgetKind = "kpi" | "stat" | "list" | "clock" | "insight" | "weather";
+export type BentoWidgetKind = "kpi" | "stat" | "list" | "clock" | "insight" | "weather" | "music";
 
 export interface BentoWidgetContent {
   kind: BentoWidgetKind;

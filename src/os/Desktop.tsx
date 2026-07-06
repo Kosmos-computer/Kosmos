@@ -17,6 +17,7 @@ import { BentoDrawer } from "./bento/BentoDrawer";
 import { connectShellEvents } from "./shellEvents";
 import { WindowContentById } from "./windowContent";
 import { AgentCursor } from "./cursor/AgentCursor";
+import { MusicShell } from "../apps/music/MusicShell";
 import { ConfirmCard } from "../apps/chat/ConfirmCard";
 import { WallpaperBackdrop } from "./wallpaper/WallpaperBackdrop";
 import {
@@ -149,6 +150,7 @@ export function Desktop() {
       <Notifications />
       <ShellConfirms />
       <BentoDrawer />
+      <MusicShell />
       <AgentCursor />
     </div>
   );

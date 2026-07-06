@@ -54,3 +54,10 @@ The whole STT→LLM→TTS cascade can later be replaced by a single
 speech-to-speech realtime service (OpenAI Realtime, Gemini Live, Ultravox…)
 — Pipecat ships those as drop-in pipeline services; the browser client and
 face rig are unaffected.
+
+### One-shot endpoints
+
+| Route | Purpose |
+|-------|---------|
+| `POST /api/tts` | Read-aloud — JSON `{ "text": "..." }` → WAV |
+| `POST /api/stt` | Notes dictation fallback — multipart `file` (16 kHz mono WAV) → `{ "text": "..." }` |

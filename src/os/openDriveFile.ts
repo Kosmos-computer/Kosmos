@@ -14,7 +14,6 @@ import { useOsStore } from "./osStore";
 import { useWindowStore } from "./windowStore";
 
 const DOCS_APP_ID = "core.docs";
-const CALENDAR_APP_ID = "core.calendar";
 
 export type OpenDriveFileResult = "routed" | "inline" | "unsupported";
 
@@ -54,13 +53,8 @@ export function openDriveFile(file: DriveFileItem): OpenDriveFileResult {
   }
 
   if (file.mimeType === SCHEDULE_MIME || file.kind === "schedule") {
-    const calendar = os.installedApps.find((entry) => entry.manifest.id === CALENDAR_APP_ID);
-    if (!calendar?.enabled) {
-      os.notify("Enable Calendar in Settings to open schedules.");
-      return "unsupported";
-    }
-    launch.requestOpen(installedLaunchKey(CALENDAR_APP_ID), file.id);
-    wm.open({ type: "installed", appId: CALENDAR_APP_ID }, file.name);
+    launch.requestOpen(systemLaunchKey("calendar"), file.id);
+    wm.open({ type: "system", app: "calendar" }, file.name);
     return "routed";
   }
 

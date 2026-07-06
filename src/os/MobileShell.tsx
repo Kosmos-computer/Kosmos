@@ -14,6 +14,7 @@ import { AppSurface } from "../apps/appview/AppSurface";
 import { WebAppSurface } from "../apps/appview/WebAppSurface";
 import { AppHost } from "../apps/appview/AppHost";
 import { appIcon } from "../apps/appview/appIcon";
+import { MusicShell } from "../apps/music/MusicShell";
 
 export function MobileShell() {
   const apps = useOsStore((s) => s.apps);
@@ -183,6 +184,7 @@ export function MobileShell() {
           ))}
         </div>
       )}
+      <MusicShell />
     </div>
   );
 }

@@ -22,6 +22,7 @@ import { RESPONSE_ALREADY_SENT } from "@hono/node-server/utils/response";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import fs from "node:fs/promises";
+import { createReadStream } from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import type {
@@ -73,7 +74,11 @@ import { skillStore } from "./skills/skillStore.js";
 import { bus } from "./bus.js";
 import { shellClientConnected } from "./shellChannel.js";
 import { filesService } from "./services/filesService.js";
+import { calendarService } from "./services/calendarService.js";
+import type { CalendarEventInput } from "../shared/capabilities/calendar.js";
 import { searchPlaces, geocodePlace, getDrivingRoute } from "./services/mapsService.js";
+import { listSeedTracks, statSeedTrack } from "./services/musicSeedService.js";
+import { resolveTrackArt } from "./services/musicArtService.js";
 import type { FileCreateInput } from "../shared/capabilities/files.js";
 import type { MailFolderId, MailInboxFilter } from "../shared/mail.js";
 import { mailGateway } from "./mail/mailGateway.js";
@@ -597,6 +602,51 @@ app.get("/api/maps/route", async (c) => {
   }
 });
 
+app.get("/api/music/tracks", (c) => c.json(listSeedTracks()));
+
+app.get("/api/music/stream/:id", (c) => {
+  const resolved = statSeedTrack(c.req.param("id"));
+  if (!resolved) return c.json({ error: "Track not found" }, 404);
+
+  const range = c.req.header("range");
+  if (range) {
+    const match = /^bytes=(\d+)-(\d*)$/i.exec(range.trim());
+    if (!match) return c.json({ error: "Invalid range" }, 416);
+
+    const start = Number(match[1]);
+    const end = match[2] ? Number(match[2]) : resolved.size - 1;
+    if (!Number.isFinite(start) || !Number.isFinite(end) || start > end || end >= resolved.size) {
+      return c.json({ error: "Invalid range" }, 416);
+    }
+
+    const stream = createReadStream(resolved.absPath, { start, end });
+    return c.body(stream, 206, {
+      "Content-Range": `bytes ${start}-${end}/${resolved.size}`,
+      "Accept-Ranges": "bytes",
+      "Content-Length": String(end - start + 1),
+      "Content-Type": "audio/mpeg",
+    });
+  }
+
+  const stream = createReadStream(resolved.absPath);
+  return c.body(stream, 200, {
+    "Content-Length": String(resolved.size),
+    "Content-Type": "audio/mpeg",
+    "Accept-Ranges": "bytes",
+  });
+});
+
+app.get("/api/music/art/:id", (c) => {
+  const art = resolveTrackArt(c.req.param("id"));
+  if (!art) return c.json({ error: "Artwork not found" }, 404);
+
+  const stream = createReadStream(art.absPath);
+  return c.body(stream, 200, {
+    "Content-Type": art.mime,
+    "Cache-Control": "public, max-age=86400",
+  });
+});
+
 app.get("/api/drive/entries/:id", requireCap("files:read"), (c) => {
   try {
     return c.json(filesService.get(c.req.param("id")));
@@ -676,6 +726,55 @@ app.post("/api/drive/entries/:id/restore", requireCap("files:write"), (c) => {
 app.delete("/api/drive/entries/:id", requireCap("files:write"), (c) => {
   try {
     return c.json({ deleted: filesService.delete(c.req.param("id")) });
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 400);
+  }
+});
+
+// ── Calendar (os.calendar@1 — the OS event store) ────────────────────────────
+
+app.get("/api/calendar/events", (c) => {
+  const from = c.req.query("from");
+  const to = c.req.query("to");
+  try {
+    return c.json(
+      calendarService.list({
+        ...(from ? { from } : {}),
+        ...(to ? { to } : {}),
+      }),
+    );
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 400);
+  }
+});
+
+app.get("/api/calendar/events/:id", (c) => {
+  const event = calendarService.get(c.req.param("id"));
+  if (!event) return c.json({ error: "Event not found" }, 404);
+  return c.json(event);
+});
+
+app.post("/api/calendar/events", async (c) => {
+  try {
+    const body = (await c.req.json()) as CalendarEventInput;
+    return c.json(calendarService.create(body), 201);
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 400);
+  }
+});
+
+app.patch("/api/calendar/events/:id", async (c) => {
+  try {
+    const body = (await c.req.json()) as Partial<CalendarEventInput>;
+    return c.json(calendarService.update(c.req.param("id"), body));
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 400);
+  }
+});
+
+app.delete("/api/calendar/events/:id", (c) => {
+  try {
+    return c.json({ deleted: calendarService.delete(c.req.param("id")) });
   } catch (err) {
     return c.json({ error: (err as Error).message }, 400);
   }

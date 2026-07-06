@@ -56,6 +56,13 @@ export const BENTO_WIDGET_CATALOG: BentoWidgetTemplate[] = [
     content: { kind: "weather", label: "Live weather" },
   },
   {
+    templateId: "music",
+    label: "Now playing",
+    colSpan: 6,
+    rowSpan: 5,
+    content: { kind: "music", label: "Now playing" },
+  },
+  {
     templateId: "recent-apps",
     label: "Recent apps",
     colSpan: 8,
@@ -123,5 +130,15 @@ export const BENTO_DEFAULT_ITEMS: BentoItem[] = [
     colSpan: 8,
     rowSpan: 5,
     content: BENTO_WIDGET_CATALOG[6].content,
+  },
+  {
+    id: "music-1",
+    templateId: "music",
+    label: "Now playing",
+    col: 1,
+    row: 9,
+    colSpan: 4,
+    rowSpan: 4,
+    content: BENTO_WIDGET_CATALOG[7].content,
   },
 ];

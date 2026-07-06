@@ -18,6 +18,7 @@ import {
   Plug,
   Rocket,
   Mail,
+  CalendarDays,
   CheckSquare,
   Contact,
   Table,
@@ -28,6 +29,8 @@ import {
   Brain,
   Map,
   CircleDollarSign,
+  Music,
+  Download,
 } from "lucide-react";
 import type { SystemAppId } from "./windowStore";
 import { ChatApp } from "../apps/chat/ChatApp";
@@ -41,6 +44,7 @@ import { ApisApp } from "../apps/apis/ApisApp";
 import { FilesApp } from "../apps/files/FilesApp";
 import { NotesApp } from "../apps/notes/NotesApp";
 import { EmailApp } from "../apps/email/EmailApp";
+import { CalendarApp } from "../apps/calendar/CalendarApp";
 import { TasksApp } from "../apps/tasks/TasksApp";
 import { ContactsApp } from "../apps/contacts/ContactsApp";
 import { GroupsApp } from "../apps/groups/GroupsApp";
@@ -54,6 +58,8 @@ import { OnboardingApp } from "../apps/onboarding/OnboardingApp";
 import { MapsApp } from "../apps/maps/MapsApp";
 import { PayApp } from "../apps/pay/PayApp";
 import { MemoryApp } from "../apps/memory/MemoryApp";
+import { MusicApp } from "../apps/music/MusicApp";
+import { DownloadsApp } from "../apps/downloads/DownloadsApp";
 
 export interface SystemAppDef {
   id: SystemAppId;
@@ -73,9 +79,12 @@ export const SYSTEM_APPS: SystemAppDef[] = [
   { id: "automations", title: "Automations", icon: CalendarClock, component: AutomationsApp },
   { id: "files", title: "Drive", icon: HardDrive, component: FilesApp },
   { id: "maps", title: "Maps", icon: Map, component: MapsApp },
+  { id: "music", title: "Music", icon: Music, component: MusicApp },
+  { id: "downloads", title: "Downloads", icon: Download, component: DownloadsApp },
   { id: "pay", title: "Pay", icon: CircleDollarSign, component: PayApp },
   { id: "notes", title: "Notes", icon: StickyNote, component: NotesApp },
   { id: "email", title: "Email", icon: Mail, component: EmailApp },
+  { id: "calendar", title: "Calendar", icon: CalendarDays, component: CalendarApp },
   { id: "tasks", title: "Tasks", icon: CheckSquare, component: TasksApp },
   { id: "contacts", title: "Contacts", icon: Contact, component: ContactsApp },
   { id: "groups", title: "Groups", icon: UsersRound, component: GroupsApp },

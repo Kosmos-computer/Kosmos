@@ -18,9 +18,12 @@ export type SystemAppId =
   | "files"
   | "notes"
   | "email"
+  | "calendar"
   | "tasks"
   | "contacts"
   | "maps"
+  | "music"
+  | "downloads"
   | "pay"
   | "groups"
   | "social"
@@ -161,6 +164,7 @@ const DEFAULT_SIZES: Record<string, { w: number; h: number }> = {
   "system:skills": { w: 760, h: 620 },
   "system:automations": { w: 760, h: 620 },
   "system:files": { w: 1080, h: 680 },
+  "system:downloads": { w: 980, h: 640 },
   "system:maps": { w: 1180, h: 760 },
   "system:sheets": { w: 1180, h: 760 },
   "system:terminal": { w: 640, h: 440 },

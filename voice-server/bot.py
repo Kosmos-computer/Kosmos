@@ -28,7 +28,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-from fastapi import HTTPException, Response
+from fastapi import File, HTTPException, Response, UploadFile
 from loguru import logger
 from pydantic import BaseModel
 
@@ -168,11 +168,8 @@ def build_tts(config: dict[str, Any]):
     raise ValueError(f"Unknown TTS engine: {engine!r} (expected kokoro | piper)")
 
 
-# ── Read-aloud (one-shot TTS, outside the conversational pipeline) ──────────
-# The Chat app's per-message "Read aloud" button hits this directly: no STT,
-# no LLM, no WebRTC turn-taking — just text in, a WAV file out, synthesized
-# with whatever engine/voice voice.config.json configures for live
-# conversation, so read-aloud and the voice assistant always sound the same.
+# Read-aloud (one-shot TTS) and dictation (one-shot STT) sit outside the
+# conversational pipeline — see /api/tts and /api/stt below.
 
 
 class TtsRequest(BaseModel):
@@ -263,6 +260,95 @@ async def synthesize_speech(req: TtsRequest) -> Response:
     except Exception as err:
         raise HTTPException(status_code=500, detail=str(err)) from err
     return Response(content=wav_bytes, media_type="audio/wav")
+
+
+# ── Dictation (one-shot STT, outside the conversational pipeline) ───────────
+# Notes dictation in the browser hits this when Web Speech API is unavailable:
+# record audio in the client, convert to 16 kHz mono WAV, POST here, get text.
+
+
+def _read_wav_mono(wav_bytes: bytes) -> tuple[np.ndarray, int]:
+    with wave.open(io.BytesIO(wav_bytes), "rb") as wf:
+        frames = wf.readframes(wf.getnframes())
+        channels = wf.getnchannels()
+        sample_width = wf.getsampwidth()
+        if sample_width != 2:
+            raise ValueError(f"Unsupported WAV sample width: {sample_width}")
+        samples = np.frombuffer(frames, dtype=np.int16).astype(np.float32) / 32768.0
+        if channels > 1:
+            samples = samples.reshape(-1, channels).mean(axis=1)
+        return samples, wf.getframerate()
+
+
+def _resample_linear(samples: np.ndarray, src_rate: int, dst_rate: int) -> np.ndarray:
+    if src_rate == dst_rate:
+        return samples
+    duration = len(samples) / src_rate
+    dst_length = max(1, int(round(duration * dst_rate)))
+    src_times = np.linspace(0.0, duration, num=len(samples), endpoint=False)
+    dst_times = np.linspace(0.0, duration, num=dst_length, endpoint=False)
+    return np.interp(dst_times, src_times, samples).astype(np.float32)
+
+
+def _resolve_mlx_model(stt_cfg: dict[str, Any]) -> str:
+    raw_model = stt_cfg.get("model", "large-v3-turbo")
+    if "/" in raw_model:
+        return raw_model
+    from pipecat.services.whisper.stt import MLXModel
+
+    try:
+        return MLXModel[raw_model.upper().replace("-", "_")].value
+    except KeyError as err:
+        valid = ", ".join(m.name.lower().replace("_", "-") for m in MLXModel)
+        raise ValueError(f"Unknown MLX Whisper model {raw_model!r} (expected {valid})") from err
+
+
+def _transcribe_wav(wav_bytes: bytes, config: dict[str, Any]) -> str:
+    samples, sample_rate = _read_wav_mono(wav_bytes)
+    samples = _resample_linear(samples, sample_rate, 16_000)
+    stt_cfg = config.get("stt", {})
+    engine = stt_cfg.get("engine", "whisper-mlx")
+    language_code = stt_cfg.get("language", "en") or None
+
+    if engine == "whisper-mlx":
+        import mlx_whisper
+
+        model = _resolve_mlx_model(stt_cfg)
+        logger.info(f"Dictation STT: whisper-mlx model {model}")
+        result = mlx_whisper.transcribe(
+            samples,
+            path_or_hf_repo=model,
+            language=language_code,
+        )
+        return str(result.get("text", "")).strip()
+
+    if engine == "faster-whisper":
+        from faster_whisper import WhisperModel
+
+        model_name = stt_cfg.get("model", "base")
+        logger.info(f"Dictation STT: faster-whisper model {model_name}")
+        whisper = WhisperModel(model_name)
+        segments, _info = whisper.transcribe(
+            samples,
+            language=language_code,
+        )
+        return " ".join(segment.text.strip() for segment in segments).strip()
+
+    raise ValueError(f"Unknown STT engine: {engine!r} (expected whisper-mlx | faster-whisper)")
+
+
+@voice_app.post("/api/stt")
+async def transcribe_speech(file: UploadFile = File(...)) -> dict[str, str]:
+    wav_bytes = await file.read()
+    if not wav_bytes:
+        raise HTTPException(status_code=400, detail="audio file is required")
+    try:
+        text = await asyncio.to_thread(_transcribe_wav, wav_bytes, load_config())
+    except HTTPException:
+        raise
+    except Exception as err:
+        raise HTTPException(status_code=500, detail=str(err)) from err
+    return {"text": text}
 
 
 def build_brain(config: dict[str, Any]):

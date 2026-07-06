@@ -9,12 +9,14 @@ import {
   type Editor,
   type JSONContent,
 } from "@arco/editor-kit";
-import { Sparkles, Square, Volume2 } from "lucide-react";
+import { Mic, Sparkles, Square, Volume2 } from "lucide-react";
 import { EditorToolbar } from "../../components/patterns/EditorToolbar";
 import { NoteAiComposer } from "./NoteAiComposer";
 import { NoteCodeEditor } from "./NoteCodeEditor";
+import { NoteDictationBar } from "./NoteDictationBar";
 import { hasEditorSelection } from "./noteEditorText";
 import { useNoteAiAssist } from "./useNoteAiAssist";
+import { useNoteDictation } from "./useNoteDictation";
 import { useNoteReadAloud } from "./useNoteReadAloud";
 import type { NoteEditorViewMode } from "./types";
 
@@ -32,11 +34,19 @@ export function NoteRichEditor({
   const [editor, setEditor] = useState<Editor | null>(null);
   const toolbar = useEditorToolbar(editor, viewMode === "edit");
   const readAloud = useNoteReadAloud(editor);
+  const dictation = useNoteDictation(editor);
   const aiAssist = useNoteAiAssist(editor);
   const hasSelection = editor ? hasEditorSelection(editor) : false;
 
   const bubbleMenuActions = useMemo<BubbleMenuExtraAction[]>(
     () => [
+      {
+        id: "dictate",
+        label: dictation.active ? "Stop dictation" : "Dictate selection",
+        icon: Mic,
+        active: dictation.active,
+        onClick: () => void dictation.toggle(),
+      },
       {
         id: "read-aloud",
         label: readAloud.status === "idle" ? "Read selection aloud" : "Stop reading",
@@ -53,7 +63,7 @@ export function NoteRichEditor({
         onClick: () => aiAssist.openComposer("selection"),
       },
     ],
-    [aiAssist.open, aiAssist.openComposer, readAloud.status, readAloud.toggle],
+    [aiAssist.open, aiAssist.openComposer, dictation.active, dictation.toggle, readAloud.status, readAloud.toggle],
   );
 
   if (viewMode === "code") {
@@ -84,9 +94,13 @@ export function NoteRichEditor({
             onRedo={() => editor.chain().focus().redo().run()}
             readAloudStatus={readAloud.status}
             onReadAloud={readAloud.toggle}
+            dictationActive={dictation.active}
+            dictationAvailable={dictation.available}
+            onDictation={() => void dictation.toggle()}
             aiOpen={aiAssist.open}
             onAiAssist={() => (aiAssist.open ? aiAssist.closeComposer() : aiAssist.openComposer())}
           />
+          <NoteDictationBar status={dictation.status} interim={dictation.interim} engine={dictation.engine} />
           <NoteAiComposer
             open={aiAssist.open}
             prompt={aiAssist.prompt}
@@ -100,7 +114,7 @@ export function NoteRichEditor({
             onClose={aiAssist.closeComposer}
           />
           <p className="arco-notes__editor-hint">
-            Type <kbd>/</kbd> for blocks · select text for formatting · use AI or read aloud from the toolbar
+            Type <kbd>/</kbd> for blocks · <kbd>Mic</kbd> to dictate · select text for formatting, AI, or read aloud
           </p>
         </div>
       ) : null}

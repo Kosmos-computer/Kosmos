@@ -6,7 +6,9 @@
   "description": "Arco OS — a generative AI operating system prototype. Desktop shell + agent that builds adaptive live apps.",
   "workspaces": [
     "model-manager",
-    "packages/app-sdk"
+    "packages/app-sdk",
+    "packages/editor-kit",
+    "apps/docs"
   ],
   "scripts": {
     "models": "npm run dev -w model-manager",
@@ -16,7 +18,8 @@
     "dev:server": "tsx watch server/index.ts",
     "dev:web": "vite",
     "voice": "cd voice-server && .venv/bin/python bot.py --host localhost --port 4620",
-    "build": "vite build",
+    "build:apps": "npm run build -w @arco/docs-app",
+    "build": "npm run build:apps && vite build",
     "start": "NODE_ENV=production tsx server/index.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.server.json"
   },

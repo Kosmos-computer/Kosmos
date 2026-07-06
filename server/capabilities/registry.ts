@@ -11,7 +11,9 @@ import fs from "node:fs";
 import path from "node:path";
 import type { CalendarEventInput } from "../../shared/capabilities/calendar.js";
 import { CALENDAR_CONTRACT_ID } from "../../shared/capabilities/calendar.js";
-import { FILES_CONTRACT_ID, type FileCreateInput } from "../../shared/capabilities/files.js";
+import { DOCS_CONTRACT_ID, EMPTY_DOC_JSON } from "../../shared/capabilities/docs.js";
+import { DOC_MIME, FILES_CONTRACT_ID, type FileCreateInput } from "../../shared/capabilities/files.js";
+import { exportDocToMarkdown } from "../../shared/docFormat.js";
 import { VOICE_CONTRACT_ID } from "../../shared/capabilities/voice.js";
 import { intentMeta } from "../../shared/capabilities/index.js";
 import { calendarService } from "../services/calendarService.js";
@@ -24,6 +26,7 @@ const PROVIDERS_FILE = path.join(dataDirs.root, "capability-providers.json");
 const DEFAULT_PROVIDERS: Record<string, string> = {
   [CALENDAR_CONTRACT_ID]: "system",
   [FILES_CONTRACT_ID]: "system",
+  [DOCS_CONTRACT_ID]: "system",
   [VOICE_CONTRACT_ID]: "system",
 };
 
@@ -87,6 +90,44 @@ const systemHandlers: Record<string, IntentHandler> = {
   "files.content.read": (p) => filesService.readContent(String(p.id ?? "")),
   "files.content.write": (p) =>
     filesService.writeContent(String(p.id ?? ""), String(p.content ?? "")),
+
+  // os.docs@1 — thin wrappers over the file store
+  "docs.create": (p) => {
+    const name = String(p.name ?? "Untitled");
+    const contentObj =
+      typeof p.content === "object" && p.content !== null ? p.content : EMPTY_DOC_JSON;
+    return filesService.create({
+      name,
+      kind: "file",
+      mimeType: DOC_MIME,
+      parentId: p.parentId == null ? null : String(p.parentId),
+      content: JSON.stringify(contentObj),
+    });
+  },
+  "docs.open": async (p) => {
+    const file = filesService.readContent(String(p.id ?? ""));
+    let doc: unknown;
+    try {
+      doc = JSON.parse(file.content);
+    } catch {
+      throw new Error("Document content is not valid JSON");
+    }
+    return { ...file, doc };
+  },
+  "docs.export": async (p) => {
+    const file = filesService.readContent(String(p.id ?? ""));
+    const format = String(p.format ?? "json");
+    if (format === "markdown") {
+      let doc: unknown;
+      try {
+        doc = JSON.parse(file.content);
+      } catch {
+        throw new Error("Document content is not valid JSON");
+      }
+      return { id: file.id, name: file.name, format, content: exportDocToMarkdown(doc as never) };
+    }
+    return { id: file.id, name: file.name, format: "json", content: file.content };
+  },
 
   // os.voice@1 — the session itself is desktop-owned (the browser holds the
   // microphone), so start/stop can only be initiated from the shell. status

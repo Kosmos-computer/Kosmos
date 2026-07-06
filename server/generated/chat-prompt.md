@@ -263,3 +263,102 @@ Before finishing, walk your output and verify:
 - For forms, define one FormControl reference per field so controls can stream progressively.
 - For forms, always provide the second Form argument with Buttons(...) actions: Form(name, buttons, fields).
 - Never nest Form inside Form.
+
+═══════════════════════════════════════════
+CONTENT WIDGETS (markdown embeds)
+═══════════════════════════════════════════
+
+Besides openui-lang blocks, you can embed small structured widgets inside markdown prose.
+Each widget is a JSON payload `{ "type", "version", "props" }` validated against the registry below.
+
+Fenced embed (preferred for multi-prop widgets):
+```widget
+{
+  "type": "metric",
+  "version": 1,
+  "props": {
+    "label": "Monthly revenue",
+    "value": "$12.4k",
+    "delta": "+12%",
+    "trend": "up",
+    "caption": "vs. May"
+  }
+}
+```
+
+Inline embed (single-value widgets inside a sentence):
+:metric[$12.4k]{label=Monthly revenue,trend=up}
+:progress[75]{label=Q3 goal,detail=$7.5k of $10k}
+
+Rules:
+- Prefer a widget over a markdown table when the registry offers a better fit (timeline for dates, metric for one KPI, progress for completion).
+- Use the exact `type` and `version` from the catalog; unknown types render as plain text fallbacks.
+- Widget fences use the tag `widget` (not openui-lang). openui-lang remains for full interactive UI blocks.
+- Do not nest triple-backticks inside widget JSON.
+
+Widget catalog:
+
+### metric@1 — A single key figure with an optional delta and trend arrow.
+When to use: One important number the reader should see at a glance (a KPI, a total, a percentage) — instead of burying it in a sentence.
+Props:
+    - label (string, required) — What the number measures
+    - value (string, required) — The figure, preformatted (e.g. "$12.4k", "87%")
+    - delta (string, optional) — Change vs. a reference period (e.g. "+12%")
+    - trend (string, optional, one of: up | down | flat) — Direction of the delta
+    - caption (string, optional) — Small print under the value (period, source)
+Example payload:
+{
+  "type": "metric",
+  "version": 1,
+  "props": {
+    "label": "Monthly revenue",
+    "value": "$12.4k",
+    "delta": "+12%",
+    "trend": "up",
+    "caption": "vs. May"
+  }
+}
+
+### progress@1 — A labeled progress bar toward a goal (0–100).
+When to use: Completion or capacity toward a known target: project status, budget used, storage, goal tracking.
+Props:
+    - label (string, required)
+    - value (number, required) — Percent complete, 0–100
+    - detail (string, optional) — Absolute figures (e.g. "$7.5k of $10k")
+Example payload:
+{
+  "type": "progress",
+  "version": 1,
+  "props": {
+    "label": "Q3 savings goal",
+    "value": 75,
+    "detail": "$7.5k of $10k"
+  }
+}
+
+### timeline@1 — A vertical sequence of dated events.
+When to use: Chronological content — project milestones, history, an itinerary, release plans. Prefer over a bulleted list of dates.
+Props:
+    - items (array, required) — Events in display order
+Example payload:
+{
+  "type": "timeline",
+  "version": 1,
+  "props": {
+    "items": [
+      {
+        "date": "Jul 10",
+        "title": "Kickoff",
+        "description": "Scope agreed"
+      },
+      {
+        "date": "Aug 1",
+        "title": "Beta"
+      },
+      {
+        "date": "Sep 15",
+        "title": "Launch"
+      }
+    ]
+  }
+}

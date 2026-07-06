@@ -17,6 +17,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { generateWidgetPromptSection } from "../shared/widgets/prompt.js";
 import {
   openuiAdditionalRules,
   openuiChatAdditionalRules,
@@ -96,8 +97,10 @@ const chatPrompt = chatPromptRaw
   .replace(/\nProps marked `\$binding<type>` accept[^\n]*\n/g, "\n")
   .replace(/\$binding<([^>]+)>/g, "$1");
 
-writeFileSync(join(generatedDir, "chat-prompt.md"), chatPrompt.trimEnd() + "\n", "utf8");
-console.log(`✓ server/generated/chat-prompt.md (${chatPrompt.length} chars)`);
+const widgetSection = generateWidgetPromptSection();
+const chatPromptFull = `${chatPrompt.trimEnd()}\n\n${widgetSection}\n`;
+writeFileSync(join(generatedDir, "chat-prompt.md"), chatPromptFull, "utf8");
+console.log(`✓ server/generated/chat-prompt.md (${chatPromptFull.length} chars, incl. widgets)`);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 2. App prompt — durable apps with live data. Full reactive surface.

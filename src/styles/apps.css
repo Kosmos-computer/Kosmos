@@ -358,9 +358,16 @@
   padding: var(--arco-space-l);
 }
 
-.arco-chat__user {
+.arco-chat__user-row {
   align-self: flex-end;
   max-width: 82%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.arco-chat__user {
   padding: 8px 14px;
   border-radius: 16px 16px 4px 16px;
   background: var(--arco-accent);
@@ -375,6 +382,78 @@
   display: flex;
   flex-direction: column;
   gap: var(--arco-space-s);
+}
+
+.arco-chat__footer {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  min-height: 18px;
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+}
+.arco-chat__footer--end {
+  justify-content: flex-end;
+}
+.arco-chat__footer--start {
+  justify-content: flex-start;
+}
+
+.arco-chat__timestamp {
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity var(--arco-dur-fast);
+}
+
+.arco-chat__bubble-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border-radius: var(--arco-radius-s);
+  color: var(--arco-text-tertiary);
+  opacity: 0;
+  transition: opacity var(--arco-dur-fast), color var(--arco-dur-fast), background var(--arco-dur-fast);
+}
+.arco-chat__bubble-action:hover {
+  background: var(--arco-bg-hover);
+  color: var(--arco-text-primary);
+}
+
+.arco-spin {
+  animation: arco-spin 0.8s linear infinite;
+}
+@keyframes arco-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.arco-chat__user-row:hover .arco-chat__timestamp,
+.arco-chat__user-row:focus-within .arco-chat__timestamp,
+.arco-chat__assistant:hover .arco-chat__timestamp,
+.arco-chat__assistant:focus-within .arco-chat__timestamp,
+.arco-chat__user-row:hover .arco-chat__bubble-action,
+.arco-chat__user-row:focus-within .arco-chat__bubble-action,
+.arco-chat__assistant:hover .arco-chat__bubble-action,
+.arco-chat__assistant:focus-within .arco-chat__bubble-action {
+  opacity: 1;
+}
+
+/* Not-yet-wired actions (edit, restore, regenerate, feedback, share, fork):
+   stay dimmer than the active actions even when revealed, and don't react
+   to hover, so they read as present-but-inert rather than clickable. */
+.arco-chat__bubble-action--ghost {
+  cursor: default;
+}
+.arco-chat__bubble-action--ghost:hover {
+  background: none;
+  color: var(--arco-text-tertiary);
+}
+.arco-chat__user-row:hover .arco-chat__bubble-action--ghost,
+.arco-chat__user-row:focus-within .arco-chat__bubble-action--ghost,
+.arco-chat__assistant:hover .arco-chat__bubble-action--ghost,
+.arco-chat__assistant:focus-within .arco-chat__bubble-action--ghost {
+  opacity: 0.35;
 }
 
 .arco-chat__markdown {
@@ -418,6 +497,37 @@
   font-size: var(--arco-text-sm);
 }
 
+.arco-chat__error-text {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.arco-chat__error-text--clamped {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
+.arco-chat__error-toggle {
+  display: block;
+  margin-top: var(--arco-space-xs);
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: var(--arco-text-xs);
+  text-decoration: underline;
+  cursor: pointer;
+  opacity: 0.9;
+}
+
+.arco-chat__error-toggle:hover {
+  opacity: 1;
+}
+
 .arco-chat__working {
   font-size: var(--arco-text-sm);
   color: var(--arco-text-tertiary);
@@ -425,13 +535,65 @@
 }
 
 .arco-voicebar {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--arco-space-m);
   padding: var(--arco-space-s) var(--arco-space-m);
-  border-top: 1px solid var(--arco-border);
-  background: var(--arco-bg-sunk);
+  background: var(--arco-bg-surface-solid);
   flex-shrink: 0;
+}
+
+.arco-voicebar__controls {
+  position: absolute;
+  top: var(--arco-space-xs);
+  right: var(--arco-space-xs);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--arco-dur-fast) var(--arco-ease);
+}
+
+.arco-voicebar:hover .arco-voicebar__controls,
+.arco-voicebar:focus-within .arco-voicebar__controls {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.arco-voicebar__control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: var(--arco-radius-s);
+  background: transparent;
+  color: var(--arco-text-tertiary);
+  cursor: pointer;
+}
+
+.arco-voicebar__control:hover {
+  background: var(--arco-bg-hover);
+  color: var(--arco-text-secondary);
+}
+
+.arco-voicebar__control--close:hover {
+  color: var(--arco-danger);
+}
+
+.arco-voicebar__face {
+  flex-shrink: 0;
+}
+
+.arco-voicebar__face--minimized {
+  font-size: 8px;
+}
+
+.arco-voicebar__face--expanded {
+  font-size: 22px;
 }
 
 .arco-voicebar__body {
@@ -452,6 +614,42 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.arco-voicebar--minimized {
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-xs) var(--arco-space-m);
+}
+
+.arco-voicebar--minimized .arco-voicebar__body {
+  flex: 0 1 auto;
+}
+
+.arco-voicebar--expanded {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--arco-space-l);
+  padding: var(--arco-space-xl) var(--arco-space-l);
+  margin-bottom: var(--arco-space-m);
+  border-radius: var(--arco-radius-l);
+  text-align: center;
+}
+
+.arco-voicebar--expanded .arco-voicebar__body {
+  flex: none;
+  max-width: 36rem;
+}
+
+.arco-voicebar--expanded .arco-voicebar__state {
+  font-size: var(--arco-text-sm);
+}
+
+.arco-voicebar--expanded .arco-voicebar__transcript {
+  font-size: var(--arco-text-md);
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
 }
 
 .arco-chat__composer {

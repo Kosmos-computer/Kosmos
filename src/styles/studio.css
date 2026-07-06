@@ -27,11 +27,20 @@
   background: var(--arco-bg-sunk);
 }
 
-.arco-sidenav__toolbar {
+.arco-sidenav__brand-row {
   flex-shrink: 0;
   display: flex;
-  justify-content: flex-end;
-  padding: var(--arco-space-xs) var(--arco-space-s) 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-s) var(--arco-space-s) 0;
+}
+
+.arco-sidenav__brand {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  color: var(--arco-text-primary);
 }
 
 .arco-sidenav__header {
@@ -113,6 +122,29 @@
   color: var(--arco-text-secondary);
 }
 
+.arco-sidenav__sectionactions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.arco-sidenav__filtericon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--arco-radius-s);
+  color: var(--arco-text-tertiary);
+  transition: background var(--arco-dur-fast), color var(--arco-dur-fast);
+}
+.arco-sidenav__filtericon:hover,
+.arco-sidenav__filtericon[aria-expanded="true"] {
+  background: var(--arco-bg-hover);
+  color: var(--arco-text-secondary);
+}
+
 .arco-sidenav__items {
   display: flex;
   flex-direction: column;
@@ -126,24 +158,107 @@
 }
 
 .arco-sidenav__group {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--arco-space-2xs);
+}
+.arco-sidenav__group--dragging {
+  opacity: 0.45;
+}
+
+.arco-sidenav__groupdrop {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--arco-accent);
+  pointer-events: none;
+  z-index: 1;
+}
+.arco-sidenav__groupdrop--before {
+  top: -1px;
+}
+.arco-sidenav__groupdrop--after {
+  bottom: -1px;
 }
 
 .arco-sidenav__groupheader {
   display: flex;
   align-items: center;
-  gap: var(--arco-space-s);
-  padding: 0 var(--arco-space-s);
+  gap: 2px;
   min-width: 0;
-  color: var(--arco-text-primary);
+  padding: 0 2px;
+  border-radius: var(--arco-radius-s);
+  transition: background var(--arco-dur-fast);
+}
+.arco-sidenav__groupheader:hover,
+.arco-sidenav__groupheader:focus-within {
+  background: var(--arco-bg-hover);
+}
+
+.arco-sidenav__grouptoggle {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-xs);
+  padding: 4px 6px;
+  color: var(--arco-text-secondary);
   font-size: var(--arco-text-sm);
   font-weight: 500;
+  text-align: left;
+  cursor: grab;
+  transition: color var(--arco-dur-fast);
 }
-.arco-sidenav__groupheader svg {
+.arco-sidenav__grouptoggle:active {
+  cursor: grabbing;
+}
+.arco-sidenav__groupheader:hover .arco-sidenav__grouptoggle,
+.arco-sidenav__groupheader:focus-within .arco-sidenav__grouptoggle {
+  color: var(--arco-text-primary);
+}
+
+.arco-sidenav__groupicon {
   flex-shrink: 0;
   color: var(--arco-text-tertiary);
+}
+
+.arco-sidenav__groupadd {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  margin-right: 2px;
+  color: var(--arco-text-tertiary);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--arco-dur-fast), color var(--arco-dur-fast);
+}
+.arco-sidenav__groupheader:hover .arco-sidenav__groupadd,
+.arco-sidenav__groupheader:focus-within .arco-sidenav__groupadd {
+  opacity: 1;
+  pointer-events: auto;
+}
+.arco-sidenav__groupadd:hover {
+  color: var(--arco-text-primary);
+}
+
+.arco-sidenav__groupmore {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 6px 8px;
+  font-size: var(--arco-text-xs);
+  text-align: left;
+  color: var(--arco-text-tertiary);
+}
+.arco-sidenav__groupmoreicon {
+  flex-shrink: 0;
+}
+.arco-sidenav__groupmore:hover {
+  color: var(--arco-text-secondary);
 }
 
 .arco-sidenav__grouplabel {
@@ -175,12 +290,22 @@
   background: var(--arco-accent-soft);
 }
 
+.arco-sidenav__itembody {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-xs);
+  padding: 6px 8px;
+  text-align: left;
+  cursor: pointer;
+}
+
 .arco-sidenav__itemtitle {
   flex: 1;
   min-width: 0;
-  padding: 6px 8px;
   font-size: var(--arco-text-sm);
-  text-align: left;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -193,28 +318,61 @@
   color: var(--arco-text-tertiary);
 }
 
-/* Delete overlays the timestamp: invisible until hover, but still focusable
-   so keyboard users can tab to it (focus-visible reveals it). */
-.arco-sidenav__itemdelete {
+/* Pin + delete overlay the timestamp: invisible until hover, but still
+   focusable so keyboard users can tab to them (focus-visible reveals them).
+   A pinned row keeps its (filled) pin icon visible at rest. */
+.arco-sidenav__itemactions {
   position: absolute;
   right: 2px;
   display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  /* Pass clicks through to the row button except on visible action controls. */
+  pointer-events: none;
+}
+
+.arco-sidenav__itempin,
+.arco-sidenav__itemdelete {
+  display: inline-flex;
   padding: 6px;
+  border-radius: var(--arco-radius-s);
   color: var(--arco-text-tertiary);
   opacity: 0;
   pointer-events: none;
+}
+.arco-sidenav__item--pinned .arco-sidenav__itemtime {
+  visibility: hidden;
 }
 .arco-sidenav__item:hover .arco-sidenav__itemtime,
 .arco-sidenav__item:focus-within .arco-sidenav__itemtime {
   visibility: hidden;
 }
+.arco-sidenav__item:hover .arco-sidenav__itempin,
 .arco-sidenav__item:hover .arco-sidenav__itemdelete,
-.arco-sidenav__itemdelete:focus-visible {
+.arco-sidenav__itempin:focus-visible,
+.arco-sidenav__itemdelete:focus-visible,
+.arco-sidenav__itempin--active {
   opacity: 1;
   pointer-events: auto;
 }
 .arco-sidenav__itemdelete:hover {
   color: var(--arco-danger);
+}
+.arco-sidenav__itempin:hover,
+.arco-sidenav__itempin--active {
+  color: var(--arco-accent);
+}
+
+.arco-sidenav__pinnedsection {
+  margin-bottom: var(--arco-space-s);
+  padding-bottom: var(--arco-space-s);
+  border-bottom: 1px solid var(--arco-border);
+}
+
+.arco-sidenav__sectiontitle--icon {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--arco-space-xs);
 }
 
 .arco-sidenav__footer {
@@ -281,6 +439,9 @@
   max-width: 740px;
   margin: 0 auto;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-m);
 }
 
 .arco-face-widget.arco-studio__emptyface {
@@ -293,6 +454,60 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
+}
+
+/* Conversation title bar — agent-canvas ConversationName row. */
+.arco-studio__convbar {
+  flex-shrink: 0;
+  padding-block: var(--arco-space-s);
+  padding-inline: var(--arco-space-l);
+  border-bottom: 1px solid var(--arco-border);
+}
+
+.arco-studio__convheader {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-2xs);
+  min-width: 0;
+  width: 100%;
+  max-width: 740px;
+  margin-inline: auto;
+}
+
+.arco-studio__convtitle {
+  margin: 0;
+  min-width: 0;
+  max-width: calc(100% - 28px);
+  font-size: var(--arco-text-base, 14px);
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--arco-fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: default;
+}
+
+.arco-studio__convtitle-input {
+  min-width: 0;
+  max-width: calc(100% - 28px);
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-weight: 500;
+  color: var(--arco-fg);
+  outline: none;
+  field-sizing: content;
+}
+
+.arco-studio__convmenu {
+  flex-shrink: 0;
+  color: var(--arco-fg-muted);
+}
+
+.arco-studio__convmenu:hover {
+  color: var(--arco-fg);
 }
 
 /* ── Collapsed drawer rails ─────────────────────────────────────────────── */
@@ -309,6 +524,13 @@
 
 .arco-studio__rail--left {
   border-right: 1px solid var(--arco-border);
+}
+
+.arco-studio__railbrand {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: var(--arco-text-primary);
 }
 
 .arco-studio__rail--right {

@@ -14,8 +14,8 @@ import { SmallWebRTCTransport } from "@pipecat-ai/small-webrtc-transport";
 import type { VoiceEvent, VoiceState } from "@shared/capabilities/voice";
 
 /** The Pipecat voice server (voice-server/). Same-machine by design. */
-const VOICE_SERVER_URL: string =
-  (import.meta.env.VITE_VOICE_SERVER_URL as string | undefined) ?? "http://localhost:4620";
+export const VOICE_SERVER_URL: string =
+  (import.meta.env.VITE_VOICE_SERVER_URL as string | undefined) ?? "http://localhost:4630";
 
 type VoiceListener = (event: VoiceEvent) => void;
 type TrackListener = (track: MediaStreamTrack | null) => void;
@@ -56,7 +56,9 @@ class VoiceClient {
       const res = await fetch(`${VOICE_SERVER_URL}/status`, {
         signal: AbortSignal.timeout(1500),
       });
-      return res.ok;
+      if (!res.ok) return false;
+      const body = (await res.json()) as { status?: string };
+      return body.status === "ready";
     } catch {
       return false;
     }

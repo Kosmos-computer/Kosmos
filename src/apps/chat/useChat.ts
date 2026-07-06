@@ -11,8 +11,8 @@ import { handleShellEvent } from "../../os/osActions";
 import { useOsStore } from "../../os/osStore";
 
 export type ChatItem =
-  | { kind: "user"; id: string; text: string }
-  | { kind: "assistant"; id: string; text: string; streaming: boolean }
+  | { kind: "user"; id: string; text: string; timestamp?: string }
+  | { kind: "assistant"; id: string; text: string; streaming: boolean; timestamp?: string }
   | {
       kind: "tool";
       id: string;
@@ -46,6 +46,12 @@ export type ChatItem =
     }
   | { kind: "status"; id: string; text: string };
 
+/** Live token/time readout for the in-flight turn — shown beside the "Working…" status. */
+export interface TurnMeta {
+  startedAt: number;
+  totalTokens: number;
+}
+
 let itemCounter = 0;
 function nextId(): string {
   return `item_${++itemCounter}`;
@@ -56,10 +62,16 @@ function sessionToItems(session: Session): ChatItem[] {
   const toolItems = new Map<string, Extract<ChatItem, { kind: "tool" }>>();
   for (const m of session.messages) {
     if (m.role === "user") {
-      items.push({ kind: "user", id: nextId(), text: m.content });
+      items.push({ kind: "user", id: nextId(), text: m.content, timestamp: m.timestamp });
     } else if (m.role === "assistant") {
       if (m.content.trim()) {
-        items.push({ kind: "assistant", id: nextId(), text: m.content, streaming: false });
+        items.push({
+          kind: "assistant",
+          id: nextId(),
+          text: m.content,
+          streaming: false,
+          timestamp: m.timestamp,
+        });
       }
       for (const tc of m.toolCalls ?? []) {
         let args: Record<string, unknown> = {};
@@ -86,13 +98,16 @@ function sessionToItems(session: Session): ChatItem[] {
   return items;
 }
 
-export function useChat() {
+export function useChat(opts?: { activeProjectId?: string | null }) {
   const [items, setItems] = useState<ChatItem[]>([]);
   const [sessionId, setSessionId] = useState<string | undefined>(undefined);
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [streaming, setStreaming] = useState(false);
+  const [turnMeta, setTurnMeta] = useState<TurnMeta | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const setAgentBusy = useOsStore((s) => s.setAgentBusy);
+
+  const activeProjectId = opts?.activeProjectId ?? null;
 
   const refreshSessions = useCallback(async () => {
     try {
@@ -110,6 +125,7 @@ export function useChat() {
     const session = await api.getSession(id);
     setSessionId(session.id);
     setItems(sessionToItems(session));
+    return session;
   }, []);
 
   const newChat = useCallback(() => {
@@ -126,14 +142,28 @@ export function useChat() {
     [sessionId, newChat, refreshSessions],
   );
 
+  const renameSession = useCallback(
+    async (id: string, title: string) => {
+      const trimmed = title.trim();
+      if (!trimmed) return;
+      await api.updateSessionTitle(id, trimmed);
+      void refreshSessions();
+    },
+    [refreshSessions],
+  );
+
   const send = useCallback(
     async (text: string, opts?: { mode?: "agent" | "ask" }) => {
       const trimmed = text.trim();
       if (!trimmed || streaming) return;
 
-      setItems((prev) => [...prev, { kind: "user", id: nextId(), text: trimmed }]);
+      setItems((prev) => [
+        ...prev,
+        { kind: "user", id: nextId(), text: trimmed, timestamp: new Date().toISOString() },
+      ]);
       setStreaming(true);
       setAgentBusy(true);
+      setTurnMeta({ startedAt: Date.now(), totalTokens: 0 });
       const abort = new AbortController();
       abortRef.current = abort;
 
@@ -154,7 +184,13 @@ export function useChat() {
               }
               return [
                 ...prev,
-                { kind: "assistant", id: nextId(), text: event.delta, streaming: true },
+                {
+                  kind: "assistant",
+                  id: nextId(),
+                  text: event.delta,
+                  streaming: true,
+                  timestamp: new Date().toISOString(),
+                },
               ];
             });
             break;
@@ -209,13 +245,18 @@ export function useChat() {
           case "error":
             setItems((prev) => [...prev, { kind: "error", id: nextId(), text: event.message }]);
             break;
+          case "usage":
+            setTurnMeta((prev) =>
+              prev ? { ...prev, totalTokens: event.totalTokens } : prev,
+            );
+            break;
           default:
             break;
         }
       };
 
       try {
-        await streamChat(trimmed, sessionId, onEvent, abort.signal, opts?.mode);
+        await streamChat(trimmed, sessionId, onEvent, abort.signal, opts?.mode, activeProjectId);
       } catch (err) {
         if (!abort.signal.aborted) {
           setItems((prev) => [
@@ -239,7 +280,7 @@ export function useChat() {
         void refreshSessions();
       }
     },
-    [sessionId, streaming, refreshSessions, setAgentBusy],
+    [sessionId, streaming, refreshSessions, setAgentBusy, activeProjectId],
   );
 
   const stop = useCallback(() => {
@@ -255,7 +296,10 @@ export function useChat() {
       case "userTranscript": {
         const text = event.transcript.text.trim();
         if (event.transcript.final && text) {
-          setItems((prev) => [...prev, { kind: "user", id: nextId(), text }]);
+          setItems((prev) => [
+            ...prev,
+            { kind: "user", id: nextId(), text, timestamp: new Date().toISOString() },
+          ]);
         }
         break;
       }
@@ -267,7 +311,10 @@ export function useChat() {
           if (last?.kind === "assistant" && last.streaming) {
             return [...prev.slice(0, -1), { ...last, text: `${last.text} ${text}` }];
           }
-          return [...prev, { kind: "assistant", id: nextId(), text, streaming: true }];
+          return [
+            ...prev,
+            { kind: "assistant", id: nextId(), text, streaming: true, timestamp: new Date().toISOString() },
+          ];
         });
         break;
       }
@@ -291,11 +338,13 @@ export function useChat() {
     sessionId,
     sessions,
     streaming,
+    turnMeta,
     send,
     stop,
     loadSession,
     newChat,
     removeSession,
+    renameSession,
     applyVoiceEvent,
   };
 }

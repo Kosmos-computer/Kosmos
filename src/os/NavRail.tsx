@@ -18,6 +18,7 @@ import { useWindowStore } from "./windowStore";
 import { useShellApps, type ShellAppEntry } from "./shellApps";
 import { addPinned, normalizePinned, removePinned, reorderPinned, splitByPinned } from "./pinnedApps";
 import { useAppPinDrag } from "./useAppPinDrag";
+import { NavBrandMark } from "./NavBrandMark";
 
 function NavItem({
   entry,
@@ -141,9 +142,7 @@ export function NavRail() {
       aria-label="Apps"
     >
       <div className="arco-navrail__brand-row">
-        <span className="arco-navrail__brand" aria-hidden="true">
-          A
-        </span>
+        <NavBrandMark />
         <button
           className="arco-navrail__toggle"
           onClick={() => setExpanded(!expanded)}

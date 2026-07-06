@@ -46,8 +46,8 @@ export interface ChatToolCall {
 }
 
 export type ChatMessage =
-  | { role: "user"; content: string }
-  | { role: "assistant"; content: string; toolCalls?: ChatToolCall[] }
+  | { role: "user"; content: string; timestamp?: string }
+  | { role: "assistant"; content: string; toolCalls?: ChatToolCall[]; timestamp?: string }
   | { role: "tool"; toolCallId: string; name: string; content: string };
 
 export interface Session {
@@ -59,6 +59,8 @@ export interface Session {
    * channel (one session per chat, resumed across messages).
    */
   kind: "chat" | "automation" | "channel";
+  /** Open-folder workspace this thread belongs to; null/omitted = sandbox. */
+  projectId?: string | null;
   messages: ChatMessage[];
   createdAt: string;
   updatedAt: string;
@@ -117,6 +119,8 @@ export type AgentEvent =
       options?: ConfirmOption[];
     }
   | { type: "confirm_resolved"; confirmId: string; approved: boolean }
+  /** Cumulative token usage for the turn so far, emitted after each completion. */
+  | { type: "usage"; promptTokens: number; completionTokens: number; totalTokens: number }
   | { type: "apps_changed" }
   | { type: "automations_changed" }
   /**

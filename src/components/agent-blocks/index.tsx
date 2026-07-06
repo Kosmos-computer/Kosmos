@@ -1,7 +1,48 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { ChevronRight, List, Terminal } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { SpriteWorkingMark } from "../SpriteWorkingMark";
+
+/** "37m 47s" below an hour, "1h 02m" at/above it, "8s" under a minute. */
+function formatElapsed(ms: number): string {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  if (h > 0) return `${h}h ${String(m).padStart(2, "0")}m`;
+  if (m > 0) return `${m}m ${String(s).padStart(2, "0")}s`;
+  return `${s}s`;
+}
+
+/** "6.0k tokens" above 1000, plain count below. */
+function formatTokenCount(tokens: number): string {
+  const label = tokens >= 1000 ? `${(tokens / 1000).toFixed(1)}k` : String(tokens);
+  return `${label} token${tokens === 1 ? "" : "s"}`;
+}
+
+export interface TurnMeterProps {
+  /** Turn start time, as returned by Date.now(). */
+  startedAt: number;
+  totalTokens: number;
+  className?: string;
+}
+
+/** Live "37m 47s · 6.0k tokens" readout — ticks every second while mounted. */
+export function TurnMeter({ startedAt, totalTokens, className = "" }: TurnMeterProps) {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <span className={["arco-agent-turnmeter", className].filter(Boolean).join(" ")}>
+      {formatElapsed(now - startedAt)}
+      {totalTokens > 0 ? ` · ${formatTokenCount(totalTokens)}` : ""}
+    </span>
+  );
+}
 
 export type AgentThoughtDuration = number | "brief";
 
@@ -9,6 +50,8 @@ export interface AgentThoughtBlockProps {
   duration?: AgentThoughtDuration;
   label?: string;
   defaultOpen?: boolean;
+  /** Rendered at the right edge of the trigger row (e.g. a live TurnMeter). */
+  meta?: ReactNode;
   children: ReactNode;
   className?: string;
 }
@@ -24,6 +67,7 @@ export function AgentThoughtBlock({
   duration,
   label,
   defaultOpen = true,
+  meta,
   children,
   className = "",
 }: AgentThoughtBlockProps) {
@@ -47,7 +91,8 @@ export function AgentThoughtBlock({
             .filter(Boolean)
             .join(" ")}
         />
-        {displayLabel}
+        <span className="arco-agent-thought__label">{displayLabel}</span>
+        {meta ? <span className="arco-agent-thought__meta">{meta}</span> : null}
       </button>
       {open ? <div className="arco-agent-thought__body">{children}</div> : null}
     </div>
@@ -170,15 +215,18 @@ export function AgentTodoCard({ items, className = "" }: AgentTodoCardProps) {
 
 export interface AgentStatusLineProps {
   children: ReactNode;
+  /** Rendered at the right edge (e.g. a live TurnMeter). */
+  meta?: ReactNode;
   className?: string;
 }
 
 /** Inline agent activity status (streaming, connecting, etc.). */
-export function AgentStatusLine({ children, className = "" }: AgentStatusLineProps) {
+export function AgentStatusLine({ children, meta, className = "" }: AgentStatusLineProps) {
   return (
     <div className={["arco-agent-status", className].filter(Boolean).join(" ")}>
       <SpriteWorkingMark />
-      <span>{children}</span>
+      <span className="arco-agent-status__label">{children}</span>
+      {meta ? <span className="arco-agent-status__meta">{meta}</span> : null}
     </div>
   );
 }

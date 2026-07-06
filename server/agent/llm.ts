@@ -13,6 +13,15 @@ import type { Settings } from "../../shared/types.js";
 
 export type LlmMessage = ChatCompletionMessageParam;
 
+/**
+ * Caps a single completion so a local model stuck in a repetition loop
+ * (e.g. re-emitting the same widget-DSL line forever) can't balloon a
+ * tool-call argument into a payload so large it breaks the backend's own
+ * JSON encoding — llama-server has been seen returning a raw 500 with a
+ * C++ JSON parser exception in that case instead of failing cleanly.
+ */
+const MAX_COMPLETION_TOKENS = 4096;
+
 export interface LlmToolDef {
   name: string;
   description: string;
@@ -25,9 +34,16 @@ export interface AccumulatedToolCall {
   arguments: string;
 }
 
+export interface TokenUsage {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+}
+
 export interface LlmTurn {
   text: string;
   toolCalls: AccumulatedToolCall[];
+  usage?: TokenUsage;
 }
 
 export interface StreamTurnOptions {
@@ -56,20 +72,36 @@ export async function streamTurn(opts: StreamTurnOptions): Promise<LlmTurn> {
     function: { name: t.name, description: t.description, parameters: t.parameters },
   }));
 
-  const stream = await client.chat.completions.create(
-    {
-      model: opts.settings.model,
-      messages: opts.messages,
-      tools,
-      stream: true,
-    },
-    { signal: opts.signal },
-  );
+  const stream = await client.chat.completions
+    .create(
+      {
+        model: opts.settings.model,
+        messages: opts.messages,
+        tools,
+        stream: true,
+        max_tokens: MAX_COMPLETION_TOKENS,
+        // Ask OpenAI-compatible backends to append a final usage-only chunk
+        // so the UI can show live token counts alongside the elapsed timer.
+        stream_options: { include_usage: true },
+      },
+      { signal: opts.signal },
+    )
+    .catch((err) => {
+      throw new Error(describeCompletionError(err));
+    });
 
   let text = "";
   const calls: AccumulatedToolCall[] = [];
+  let usage: TokenUsage | undefined;
 
   for await (const chunk of stream) {
+    if (chunk.usage) {
+      usage = {
+        promptTokens: chunk.usage.prompt_tokens,
+        completionTokens: chunk.usage.completion_tokens,
+        totalTokens: chunk.usage.total_tokens,
+      };
+    }
     const delta = chunk.choices?.[0]?.delta;
     if (!delta) continue;
     if (delta.content) {
@@ -85,7 +117,26 @@ export async function streamTurn(opts: StreamTurnOptions): Promise<LlmTurn> {
     }
   }
 
-  return { text, toolCalls: calls.filter(Boolean) };
+  return { text, toolCalls: calls.filter(Boolean), usage };
+}
+
+/**
+ * Local llama.cpp-style backends sometimes fail mid-generation (e.g. a
+ * repetition loop breaks their own grammar-constrained JSON encoder) and
+ * return a raw 500 whose body is a C++ JSON parser exception rather than a
+ * normal API error. Recognize that shape and give the user something
+ * actionable instead of the raw parser dump.
+ */
+function describeCompletionError(err: unknown): string {
+  const message = err instanceof Error ? err.message : String(err);
+  if (/json\.exception\.parse_error/.test(message)) {
+    return (
+      "The local model got stuck generating a response (likely a repetition " +
+      "loop) and produced output its own server couldn't parse. Try again, " +
+      "rephrase the request, or switch to a different model in Settings."
+    );
+  }
+  return message;
 }
 
 // ── Mock provider ────────────────────────────────────────────────────────────
@@ -130,13 +181,21 @@ async function streamText(text: string, onDelta: (d: string) => void): Promise<v
   }
 }
 
+/** No real API call to report usage from — approximate at ~4 chars/token so the mock provider still exercises the token readout. */
+function estimateUsage(messages: LlmMessage[], completion: string): TokenUsage {
+  const promptChars = messages.reduce((sum, m) => sum + (typeof m.content === "string" ? m.content.length : 0), 0);
+  const promptTokens = Math.max(1, Math.round(promptChars / 4));
+  const completionTokens = Math.max(1, Math.round(completion.length / 4));
+  return { promptTokens, completionTokens, totalTokens: promptTokens + completionTokens };
+}
+
 async function mockTurn(opts: StreamTurnOptions): Promise<LlmTurn> {
   const last = opts.messages[opts.messages.length - 1];
 
   // Tool results already in the transcript → close out the run.
   if (last?.role === "tool") {
     await streamText(MOCK_FINAL, opts.onTextDelta);
-    return { text: MOCK_FINAL, toolCalls: [] };
+    return { text: MOCK_FINAL, toolCalls: [], usage: estimateUsage(opts.messages, MOCK_FINAL) };
   }
 
   const intro =
@@ -145,6 +204,7 @@ async function mockTurn(opts: StreamTurnOptions): Promise<LlmTurn> {
 
   return {
     text: intro,
+    usage: estimateUsage(opts.messages, intro),
     toolCalls: [
       {
         id: "mock_db_schema",

@@ -49,10 +49,13 @@ interface OsStore {
   shellConfirms: ShellConfirm[];
   /** Shell layout: desktop windows vs chromeless full-screen apps. */
   shellView: ShellView;
+  /** Custom nav rail brand image (data URL). Null shows the default logo mark. */
+  navBrandImage: string | null;
 
   setTheme: (theme: Theme) => void;
   setWallpaper: (wallpaper: WallpaperId) => void;
   setAuthWallpaper: (authWallpaper: AuthWallpaperId) => void;
+  setNavBrandImage: (image: string | null) => void;
   notify: (message: string) => void;
   dismissNotification: (id: string) => void;
   refreshApps: () => Promise<void>;
@@ -89,6 +92,7 @@ export const useOsStore = create<OsStore>((set) => ({
   dockPinnedIds: loadPinnedIds("arco:dock-pinned"),
   shellConfirms: [],
   shellView: localStorage.getItem("arco:shell-view") === "app" ? "app" : "desktop",
+  navBrandImage: localStorage.getItem("arco:nav-brand-image"),
 
   setTheme: (theme) => {
     localStorage.setItem("arco:theme", theme);
@@ -104,6 +108,12 @@ export const useOsStore = create<OsStore>((set) => ({
   setAuthWallpaper: (authWallpaper) => {
     localStorage.setItem("arco:auth-wallpaper", authWallpaper);
     set({ authWallpaper });
+  },
+
+  setNavBrandImage: (image) => {
+    if (image) localStorage.setItem("arco:nav-brand-image", image);
+    else localStorage.removeItem("arco:nav-brand-image");
+    set({ navBrandImage: image });
   },
 
   notify: (message) => {

@@ -20,12 +20,15 @@ Kokoro, Silero, Smart Turn v3) into `~/.cache`.
 
 ```bash
 npm run voice          # from the repo root, or:
-.venv/bin/python bot.py --host localhost --port 4620
+.venv/bin/python bot.py --host localhost --port 4630
 ```
 
 The Arco shell's mic button (Chat app) lights up when the server is healthy
-(`GET http://localhost:4620/status`). A standalone debug client is also
-served at `http://localhost:4620/client`.
+(`GET http://localhost:4630/status` returns `{"status":"ready",...}`). A
+standalone debug client is also served at `http://localhost:4630/client`.
+
+Port **4630** is chosen to avoid colliding with Arco Models (model-manager
+dev server on **4620**).
 
 ## Swapping engines
 

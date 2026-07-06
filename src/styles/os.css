@@ -110,6 +110,131 @@
   box-shadow: 0 0 0 1px var(--arco-border);
 }
 
+/* ── Hover menu bar (App View top-edge reveal) ───────────────────────────── */
+
+.arco-hover-menubar {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: var(--arco-z-chrome);
+  pointer-events: none;
+}
+
+.arco-hover-menubar--peaked {
+  height: 56px;
+}
+
+.arco-hover-menubar--open {
+  inset: 0;
+  z-index: var(--arco-z-overlay);
+}
+
+.arco-hover-menubar__zone {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  pointer-events: auto;
+}
+
+.arco-hover-menubar--peaked .arco-hover-menubar__zone,
+.arco-hover-menubar--open .arco-hover-menubar__zone {
+  inset: 0;
+  height: auto;
+}
+
+.arco-hover-menubar__tray {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  padding: var(--arco-space-s) var(--arco-space-m) 0;
+  transform: translateY(calc(-100% - 12px));
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform var(--arco-dur-fast) var(--arco-ease),
+    opacity var(--arco-dur-fast) var(--arco-ease);
+}
+
+.arco-hover-menubar__peak {
+  flex-shrink: 0;
+  width: min(240px, 42vw);
+  height: 2px;
+  margin: 0 auto var(--arco-space-xs);
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--arco-border-strong) 18%,
+    var(--arco-border-strong) 82%,
+    transparent 100%
+  );
+  opacity: 0;
+  transform: scaleX(0.35);
+  transition:
+    opacity var(--arco-dur-fast) var(--arco-ease),
+    transform var(--arco-dur-fast) var(--arco-ease),
+    margin var(--arco-dur-fast) var(--arco-ease),
+    height var(--arco-dur-fast) var(--arco-ease);
+}
+
+.arco-hover-menubar__tray--peaked,
+.arco-hover-menubar__tray--open {
+  transition:
+    transform var(--arco-dur-med) var(--arco-ease),
+    opacity var(--arco-dur-med) var(--arco-ease);
+}
+
+.arco-hover-menubar__tray--peaked .arco-hover-menubar__peak,
+.arco-hover-menubar__tray--open .arco-hover-menubar__peak {
+  transition:
+    opacity var(--arco-dur-med) var(--arco-ease),
+    transform var(--arco-dur-med) var(--arco-ease),
+    margin var(--arco-dur-med) var(--arco-ease),
+    height var(--arco-dur-med) var(--arco-ease);
+}
+
+.arco-hover-menubar__tray--peaked {
+  transform: translateY(calc(-100% + 2px));
+  opacity: 1;
+}
+
+.arco-hover-menubar__tray--peaked .arco-hover-menubar__peak {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+.arco-hover-menubar__tray--open {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+  padding-top: 0;
+}
+
+.arco-hover-menubar__tray--open .arco-hover-menubar__peak {
+  opacity: 0;
+  height: 0;
+  margin-bottom: 0;
+  transform: scaleX(0.35);
+}
+
+.arco-hover-menubar__tray .arco-menubar {
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
+}
+
+.arco-desktop--app-view {
+  --arco-menubar-offset: 0px;
+}
+
+.arco-desktop--app-view .arco-navrail {
+  top: var(--arco-menubar-offset, 0px);
+}
+
 /* ── Nav rail ─────────────────────────────────────────────────────────────── */
 /* Left column for app switching (ported from UI Experiments NavRail).
    Collapsed: 56px icon strip. Expanded: icon + label rows. The desktop sets
@@ -144,6 +269,10 @@
   flex-shrink: 0;
 }
 
+.arco-navrail:not(.arco-navrail--expanded) .arco-navrail__brand-row {
+  justify-content: center;
+}
+
 .arco-navrail__brand {
   display: flex;
   align-items: center;
@@ -151,12 +280,22 @@
   width: 32px;
   height: 32px;
   border-radius: var(--arco-radius-s);
-  background: var(--arco-accent);
-  color: var(--arco-text-inverted);
-  font-weight: 700;
-  font-size: var(--arco-text-md);
+  background: #fff;
+  color: var(--arco-text-primary);
   flex-shrink: 0;
+  overflow: hidden;
   transition: opacity var(--arco-dur-fast);
+}
+
+.arco-navrail__brand-mark {
+  width: 22px;
+  height: auto;
+}
+
+.arco-navrail__brand-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .arco-navrail__toggle {
@@ -177,8 +316,8 @@
 /* Collapsed: the toggle hides behind the brand mark and appears on hover. */
 .arco-navrail:not(.arco-navrail--expanded) .arco-navrail__toggle {
   position: absolute;
-  inset: 0 auto 0 4px;
-  margin: auto 0;
+  inset: 0;
+  margin: auto;
   opacity: 0;
 }
 .arco-navrail:not(.arco-navrail--expanded) .arco-navrail__brand-row:hover .arco-navrail__brand,

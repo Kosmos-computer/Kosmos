@@ -2,32 +2,42 @@
  * Shared chat thread renderer — used by Chat and Studio so message blocks
  * stay consistent as new agent block types are added.
  */
-import type { ChatItem } from "../../apps/chat/useChat";
+import type { ChatItem, TurnMeta } from "../../apps/chat/useChat";
 import { AssistantBlock } from "../../apps/chat/AssistantBlock";
 import { ToolCard } from "../../apps/chat/ToolCard";
 import { ConfirmCard } from "../../apps/chat/ConfirmCard";
+import { ChatBubbleFooter } from "./ChatBubbleFooter";
+import { ChatErrorBlock } from "./ChatErrorBlock";
 import {
   AgentActionBlock,
   AgentStatusLine,
   AgentThoughtBlock,
   AgentTodoCard,
+  TurnMeter,
 } from "../agent-blocks";
 
 export interface ChatThreadProps {
   items: ChatItem[];
   streaming?: boolean;
+  /** Live token/time readout for the in-flight turn, shown beside "Working…". */
+  turnMeta?: TurnMeta | null;
   onFollowUp?: (text: string) => void;
 }
 
-export function ChatThread({ items, streaming, onFollowUp }: ChatThreadProps) {
+export function ChatThread({ items, streaming, turnMeta, onFollowUp }: ChatThreadProps) {
+  const meta = streaming && turnMeta ? (
+    <TurnMeter startedAt={turnMeta.startedAt} totalTokens={turnMeta.totalTokens} />
+  ) : undefined;
+
   return (
     <>
       {items.map((item) => {
         switch (item.kind) {
           case "user":
             return (
-              <div key={item.id} className="arco-chat__user">
-                {item.text}
+              <div key={item.id} className="arco-chat__user-row">
+                <div className="arco-chat__user">{item.text}</div>
+                <ChatBubbleFooter text={item.text} timestamp={item.timestamp} align="end" variant="user" />
               </div>
             );
           case "assistant":
@@ -56,16 +66,16 @@ export function ChatThread({ items, streaming, onFollowUp }: ChatThreadProps) {
           case "todo":
             return <AgentTodoCard key={item.id} items={item.items} />;
           case "status":
-            return <AgentStatusLine key={item.id}>{item.text}</AgentStatusLine>;
-          case "error":
             return (
-              <div key={item.id} className="arco-chat__error">
+              <AgentStatusLine key={item.id} meta={meta}>
                 {item.text}
-              </div>
+              </AgentStatusLine>
             );
+          case "error":
+            return <ChatErrorBlock key={item.id} text={item.text} />;
         }
       })}
-      {streaming ? <AgentStatusLine>Working…</AgentStatusLine> : null}
+      {streaming ? <AgentStatusLine meta={meta}>Working…</AgentStatusLine> : null}
     </>
   );
 }

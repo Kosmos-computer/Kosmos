@@ -113,17 +113,23 @@ export function ChatApp() {
               if (el) followRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
             }}
           >
+            {voice.active && <VoiceBar voice={voice} placement="thread" />}
             {chat.items.length === 0 && (
               <EmptyState title="Ask Arco to build something">
                 “Build me a system monitor” · “Track my reading list” · “Dashboard of this repo”
               </EmptyState>
             )}
-            <ChatThread items={chat.items} streaming={chat.streaming} onFollowUp={submit} />
+            <ChatThread
+              items={chat.items}
+              streaming={chat.streaming}
+              turnMeta={chat.turnMeta}
+              onFollowUp={submit}
+            />
           </div>
         }
       />
 
-      {voice.active && <VoiceBar voice={voice} />}
+      {voice.active && <VoiceBar voice={voice} placement="dock" />}
 
       <div className="arco-composer-dock">
         <Composer

@@ -3,7 +3,7 @@
  * A deliberate contrast to matrix-os's 2k-line Desktop.tsx — every concern
  * lives in its own module and this file just composes them.
  */
-import { useEffect, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { Bell } from "lucide-react";
 import { useOsStore } from "./osStore";
 import { useWindowStore } from "./windowStore";
@@ -11,6 +11,7 @@ import { MenuBar } from "./MenuBar";
 import { NavRail } from "./NavRail";
 import { Dock } from "./Dock";
 import { HoverDock } from "./HoverDock";
+import { HoverMenuBar } from "./HoverMenuBar";
 import { WindowFrame } from "./WindowFrame";
 import { systemApp } from "./systemApps";
 import { connectShellEvents } from "./shellEvents";
@@ -90,6 +91,7 @@ export function Desktop() {
   const refreshApps = useOsStore((s) => s.refreshApps);
   const windows = useWindowStore((s) => s.windows);
   const open = useWindowStore((s) => s.open);
+  const [menuBarOpen, setMenuBarOpen] = useState(false);
 
   useEffect(() => {
     void refreshApps();
@@ -110,23 +112,36 @@ export function Desktop() {
     };
   }, [refreshApps, open]);
 
+  const appView = shellView === "app";
+
+  useEffect(() => {
+    if (!appView) setMenuBarOpen(false);
+  }, [appView]);
+
   const focusedId = [...windows.filter((w) => !w.minimized)].sort((a, b) => b.z - a.z)[0]?.id;
 
   return (
     <div
-      className={["arco-desktop", shellView === "app" && "arco-desktop--app-view"].filter(Boolean).join(" ")}
+      className={["arco-desktop", appView && "arco-desktop--app-view"].filter(Boolean).join(" ")}
       // Maximized windows read this to sit flush against the rail edge.
-      style={{ "--arco-nav-width": navExpanded ? "200px" : "56px" } as CSSProperties}
+      style={
+        {
+          "--arco-nav-width": navExpanded ? "200px" : "56px",
+          ...(appView && { "--arco-menubar-offset": menuBarOpen ? "34px" : "0px" }),
+        } as CSSProperties
+      }
     >
       <WallpaperBackdrop />
-      <MenuBar />
+      <HoverMenuBar enabled={appView} onOpenChange={setMenuBarOpen}>
+        <MenuBar />
+      </HoverMenuBar>
       <NavRail />
       {windows.map((win) => (
         <WindowFrame key={win.id} win={win} focused={win.id === focusedId}>
           <WindowContent winId={win.id} />
         </WindowFrame>
       ))}
-      <HoverDock enabled={shellView === "app"}>
+      <HoverDock enabled={appView}>
         <Dock />
       </HoverDock>
       <Notifications />

@@ -1,24 +1,25 @@
 /**
- * StudioSidebar — the Agent Studio conversation rail ported from the
- * agent-studio design: "New chat" action, quick links, a Conversations
- * section with a Recent/Grouped view filter, and a user footer.
- *
- * Native adaptations: quick links open real system apps (Automations for
- * "Scheduled", the Apps library for "Plugins") and "Search" reveals an
- * inline title filter; the design's project grouping maps to recency
- * buckets because Arco sessions carry no project field.
+ * StudioSidebar — Agent Studio conversation rail (agent-canvas semantics):
+ * filter views, workspace-folder groups with drag reorder, collapse, and +
+ * on each group to start a chat in that folder/repo.
  */
-import { useMemo, useState } from "react";
-import { Calendar, ChevronDown, Folder, LayoutGrid, PanelLeft, Plus, Search, Trash2 } from "lucide-react";
-import type { SessionSummary } from "@shared/types";
-import { Menu } from "../../components/Menu";
+import { useEffect, useMemo, useState } from "react";
+import { Calendar, LayoutGrid, PanelLeft, Pin, Plus, Search, Trash2 } from "lucide-react";
+import type { Project, SessionSummary } from "@shared/types";
 import { useAuthStore } from "../../os/auth/authStore";
 import { useWindowStore } from "../../os/windowStore";
 import { systemApp } from "../../os/systemApps";
-
-// ---------------------------------------------------------------------------
-// Relative time + recency buckets
-// ---------------------------------------------------------------------------
+import { StudioConversationGroups } from "./StudioConversationGroups";
+import { StudioSidebarFilterMenu } from "./StudioSidebarFilterMenu";
+import { StudioLogoMark } from "../../components/StudioLogoMark";
+import {
+  applyGroupOrder,
+  excludePinnedSessions,
+  groupSessionsByProject,
+  resolvePinnedSessions,
+  sortSessions,
+} from "./sidebarGrouping";
+import { useSidebarPreferencesStore } from "./sidebarPreferencesStore";
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
@@ -35,74 +36,87 @@ export function relativeTime(iso: string, now = Date.now()): string {
   return `${Math.floor(elapsed / (365 * DAY))}y`;
 }
 
-function recencyBucket(iso: string, now = Date.now()): string {
-  const elapsed = now - Date.parse(iso);
-  if (!Number.isFinite(elapsed) || elapsed < DAY) return "Today";
-  if (elapsed < 2 * DAY) return "Yesterday";
-  if (elapsed < 7 * DAY) return "This week";
-  if (elapsed < 30 * DAY) return "This month";
-  return "Older";
-}
-
-const BUCKET_ORDER = ["Today", "Yesterday", "This week", "This month", "Older"];
-
-// ---------------------------------------------------------------------------
-// Sidebar
-// ---------------------------------------------------------------------------
-
-type ListView = "recent" | "grouped";
-
 export interface StudioSidebarProps {
   sessions: SessionSummary[];
+  projects: Project[];
   activeSessionId?: string;
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
   onNewChat: () => void;
+  onNewChatInProject: (projectId: string | null) => void;
   onClose?: () => void;
 }
 
 export function StudioSidebar({
   sessions,
+  projects,
   activeSessionId,
   onSelect,
   onDelete,
   onNewChat,
+  onNewChatInProject,
   onClose,
 }: StudioSidebarProps) {
-  const [listView, setListView] = useState<ListView>("recent");
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
   const user = useAuthStore((s) => s.user);
   const openWindow = useWindowStore((s) => s.open);
+
+  const organizeMode = useSidebarPreferencesStore((s) => s.organizeMode);
+  const sortField = useSidebarPreferencesStore((s) => s.sortField);
+  const groupOrder = useSidebarPreferencesStore((s) => s.groupOrder);
+  const collapsedGroups = useSidebarPreferencesStore((s) => s.collapsedGroups);
+  const expandedPreviews = useSidebarPreferencesStore((s) => s.expandedPreviews);
+  const pinnedSessionIds = useSidebarPreferencesStore((s) => s.pinnedSessionIds);
+  const setOrganizeMode = useSidebarPreferencesStore((s) => s.setOrganizeMode);
+  const setSortField = useSidebarPreferencesStore((s) => s.setSortField);
+  const setGroupOrder = useSidebarPreferencesStore((s) => s.setGroupOrder);
+  const toggleGroupCollapsed = useSidebarPreferencesStore((s) => s.toggleGroupCollapsed);
+  const toggleGroupPreview = useSidebarPreferencesStore((s) => s.toggleGroupPreview);
+  const togglePinned = useSidebarPreferencesStore((s) => s.togglePinned);
+  const prunePinned = useSidebarPreferencesStore((s) => s.prunePinned);
 
   const openSystem = (app: "automations" | "apps") =>
     openWindow({ type: "system", app }, systemApp(app).title);
 
   const visibleSessions = useMemo(() => {
     const normalized = query.trim().toLowerCase();
-    if (!normalized) return sessions;
-    return sessions.filter((s) => s.title.toLowerCase().includes(normalized));
+    const base = sessions.filter((s) => s.kind === "chat" || s.kind === "channel");
+    if (!normalized) return base;
+    return base.filter((s) => s.title.toLowerCase().includes(normalized));
   }, [sessions, query]);
 
-  const groups = useMemo(() => {
-    if (listView !== "grouped") return [];
-    const byBucket = new Map<string, SessionSummary[]>();
-    for (const session of visibleSessions) {
-      const bucket = recencyBucket(session.updatedAt);
-      const list = byBucket.get(bucket);
-      if (list) list.push(session);
-      else byBucket.set(bucket, [session]);
-    }
-    return BUCKET_ORDER.filter((b) => byBucket.has(b)).map((b) => ({
-      label: b,
-      items: byBucket.get(b)!,
-    }));
-  }, [listView, visibleSessions]);
+  useEffect(() => {
+    prunePinned(sessions.map((s) => s.id));
+  }, [sessions, prunePinned]);
+
+  const pinnedSessions = useMemo(
+    () => resolvePinnedSessions(pinnedSessionIds, visibleSessions),
+    [pinnedSessionIds, visibleSessions],
+  );
+
+  const unpinnedSessions = useMemo(
+    () => excludePinnedSessions(visibleSessions, pinnedSessionIds),
+    [visibleSessions, pinnedSessionIds],
+  );
+
+  const recentSessions = useMemo(
+    () => sortSessions(unpinnedSessions, sortField),
+    [unpinnedSessions, sortField],
+  );
+
+  const groupedSessions = useMemo(() => {
+    const groups = groupSessionsByProject(unpinnedSessions, projects, sortField, {
+      sandbox: "Sandbox",
+    });
+    return applyGroupOrder(groups, groupOrder);
+  }, [unpinnedSessions, projects, sortField, groupOrder]);
 
   return (
     <aside className="arco-sidenav" aria-label="Conversations">
-      {onClose && (
-        <div className="arco-sidenav__toolbar">
+      <div className="arco-sidenav__brand-row">
+        <StudioLogoMark className="arco-sidenav__brand" title="" />
+        {onClose ? (
           <button
             type="button"
             className="arco-btn arco-btn--icon"
@@ -112,10 +126,9 @@ export function StudioSidebar({
           >
             <PanelLeft size={14} />
           </button>
-        </div>
-      )}
+        ) : null}
+      </div>
 
-      {/* ── Header: primary action + quick links ─────────────────────────── */}
       <div className="arco-sidenav__header">
         <button className="arco-btn arco-sidenav__primary" onClick={onNewChat}>
           <Plus size={14} /> New chat
@@ -159,69 +172,79 @@ export function StudioSidebar({
         )}
       </div>
 
-      {/* ── Conversations section ─────────────────────────────────────────── */}
       <div className="arco-sidenav__scroll arco-scroll">
+        {pinnedSessions.length > 0 && (
+          <div className="arco-sidenav__pinnedsection">
+            <div className="arco-sidenav__sectionheader">
+              <span className="arco-sidenav__sectiontitle arco-sidenav__sectiontitle--icon">
+                <Pin size={12} aria-hidden="true" /> Pinned
+              </span>
+            </div>
+            <div className="arco-sidenav__items">
+              {pinnedSessions.map((session) => (
+                <SessionRow
+                  key={session.id}
+                  session={session}
+                  active={session.id === activeSessionId}
+                  pinned
+                  onSelect={onSelect}
+                  onDelete={onDelete}
+                  onTogglePin={() => togglePinned(session.id)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="arco-sidenav__sectionheader">
           <span className="arco-sidenav__sectiontitle">Conversations</span>
-          <Menu
-            side="bottom"
-            align="end"
-            aria-label="Conversation list view"
-            items={[
-              { id: "recent", label: "Recent", checked: listView === "recent", onSelect: () => setListView("recent") },
-              { id: "grouped", label: "Grouped", checked: listView === "grouped", onSelect: () => setListView("grouped") },
-            ]}
-            trigger={
-              <button type="button" className="arco-sidenav__filter" aria-label="Conversation list view">
-                {listView === "recent" ? "Recent" : "Grouped"}
-                <ChevronDown size={11} aria-hidden="true" />
-              </button>
-            }
-          />
+          <div className="arco-sidenav__sectionactions">
+            <StudioSidebarFilterMenu
+              organizeMode={organizeMode}
+              sortField={sortField}
+              onOrganizeModeChange={setOrganizeMode}
+              onSortFieldChange={setSortField}
+            />
+          </div>
         </div>
 
         {visibleSessions.length === 0 && (
           <div className="arco-empty">{query ? "No matching conversations" : "No sessions yet"}</div>
         )}
 
-        {listView === "recent" ? (
+        {organizeMode === "recent" ? (
           <div className="arco-sidenav__items">
-            {visibleSessions.map((session) => (
+            {recentSessions.map((session) => (
               <SessionRow
                 key={session.id}
                 session={session}
                 active={session.id === activeSessionId}
                 onSelect={onSelect}
                 onDelete={onDelete}
+                onTogglePin={() => togglePinned(session.id)}
               />
             ))}
           </div>
         ) : (
-          <div className="arco-sidenav__groups">
-            {groups.map((group) => (
-              <div key={group.label} className="arco-sidenav__group">
-                <div className="arco-sidenav__groupheader">
-                  <Folder size={14} aria-hidden="true" />
-                  <span className="arco-sidenav__grouplabel">{group.label}</span>
-                </div>
-                <div className="arco-sidenav__groupitems">
-                  {group.items.map((session) => (
-                    <SessionRow
-                      key={session.id}
-                      session={session}
-                      active={session.id === activeSessionId}
-                      onSelect={onSelect}
-                      onDelete={onDelete}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+          <StudioConversationGroups
+            groups={groupedSessions}
+            groupOrder={groupOrder}
+            collapsedGroups={collapsedGroups}
+            expandedPreviews={expandedPreviews}
+            activeSessionId={activeSessionId}
+            onGroupOrderChange={setGroupOrder}
+            onToggleCollapsed={toggleGroupCollapsed}
+            onTogglePreview={toggleGroupPreview}
+            onNewChatInGroup={onNewChatInProject}
+            onSelect={onSelect}
+            onDelete={onDelete}
+            renderRow={(props) => (
+              <SessionRow {...props} session={props.session} onTogglePin={() => togglePinned(props.session.id)} />
+            )}
+          />
         )}
       </div>
 
-      {/* ── User footer ───────────────────────────────────────────────────── */}
       {user && (
         <div className="arco-sidenav__footer">
           <span className="arco-sidenav__avatar" aria-hidden="true">
@@ -246,38 +269,70 @@ function initials(name: string): string {
     .join("");
 }
 
-/** One conversation row: title, relative timestamp, hover-revealed delete. */
 function SessionRow({
   session,
   active,
+  pinned = false,
   onSelect,
   onDelete,
+  onTogglePin,
 }: {
   session: SessionSummary;
   active: boolean;
+  pinned?: boolean;
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
+  onTogglePin?: () => void;
 }) {
   return (
-    <div className={`arco-sidenav__item ${active ? "arco-sidenav__item--active" : ""}`}>
+    <div
+      className={[
+        "arco-sidenav__item",
+        active && "arco-sidenav__item--active",
+        pinned && "arco-sidenav__item--pinned",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
       <button
         type="button"
-        className="arco-sidenav__itemtitle"
+        className="arco-sidenav__itembody"
         aria-current={active || undefined}
         onClick={() => onSelect(session.id)}
       >
-        {session.kind === "automation" ? "⚙ " : ""}
-        {session.title}
+        <span className="arco-sidenav__itemtitle">
+          {session.kind === "automation" ? "⚙ " : ""}
+          {session.title}
+        </span>
+        <span className="arco-sidenav__itemtime">{relativeTime(session.updatedAt)}</span>
       </button>
-      <span className="arco-sidenav__itemtime">{relativeTime(session.updatedAt)}</span>
-      <button
-        type="button"
-        className="arco-sidenav__itemdelete"
-        aria-label={`Delete session ${session.title}`}
-        onClick={() => onDelete(session.id)}
-      >
-        <Trash2 size={12} />
-      </button>
+      <div className="arco-sidenav__itemactions">
+        {onTogglePin && (
+          <button
+            type="button"
+            className={`arco-sidenav__itempin ${pinned ? "arco-sidenav__itempin--active" : ""}`}
+            aria-pressed={pinned}
+            aria-label={pinned ? `Unpin ${session.title}` : `Pin ${session.title}`}
+            onClick={(event) => {
+              event.stopPropagation();
+              onTogglePin();
+            }}
+          >
+            <Pin size={12} fill={pinned ? "currentColor" : "none"} />
+          </button>
+        )}
+        <button
+          type="button"
+          className="arco-sidenav__itemdelete"
+          aria-label={`Delete session ${session.title}`}
+          onClick={(event) => {
+            event.stopPropagation();
+            onDelete(session.id);
+          }}
+        >
+          <Trash2 size={12} />
+        </button>
+      </div>
     </div>
   );
 }

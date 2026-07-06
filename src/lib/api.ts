@@ -133,6 +133,12 @@ export const api = {
   getSession: (id: string) => fetch(`/api/sessions/${id}`).then((r) => json<Session>(r)),
   deleteSession: (id: string) =>
     fetch(`/api/sessions/${id}`, { method: "DELETE" }).then((r) => json<{ ok: true }>(r)),
+  updateSessionTitle: (id: string, title: string) =>
+    fetch(`/api/sessions/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title }),
+    }).then((r) => json<Session>(r)),
 
   // Automations — `deliver: null` in a patch clears the delivery target.
   listAutomations: () => fetch("/api/automations").then((r) => json<Automation[]>(r)),
@@ -455,11 +461,17 @@ export async function streamChat(
   onEvent: (event: AgentEvent) => void,
   signal?: AbortSignal,
   mode?: "agent" | "ask",
+  projectId?: string | null,
 ): Promise<void> {
   const res = await fetch("/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, sessionId, ...(mode ? { mode } : {}) }),
+    body: JSON.stringify({
+      message,
+      sessionId,
+      ...(mode ? { mode } : {}),
+      projectId: projectId ?? null,
+    }),
     signal,
   });
   if (!res.ok || !res.body) {

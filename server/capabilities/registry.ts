@@ -31,7 +31,7 @@ const DEFAULT_PROVIDERS: Record<string, string> = {
 };
 
 /** Where the Pipecat voice service listens (voice-server/bot.py). */
-const VOICE_SERVER_URL = process.env.VOICE_SERVER_URL ?? "http://localhost:4620";
+const VOICE_SERVER_URL = process.env.VOICE_SERVER_URL ?? "http://localhost:4630";
 
 export function getProviders(): Record<string, string> {
   try {
@@ -138,7 +138,11 @@ const systemHandlers: Record<string, IntentHandler> = {
         signal: AbortSignal.timeout(2_000),
       });
       if (!res.ok) return { available: false, reason: `voice server responded ${res.status}` };
-      return { available: true, ...((await res.json().catch(() => ({}))) as object) };
+      const body = (await res.json().catch(() => null)) as { status?: string } | null;
+      if (body?.status !== "ready") {
+        return { available: false, reason: "voice server status is not ready" };
+      }
+      return { available: true, ...body };
     } catch {
       return { available: false, reason: "voice server unreachable" };
     }

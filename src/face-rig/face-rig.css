@@ -17,13 +17,13 @@
   position: relative;
   width: 4.8em;
   height: 4.8em;
-  border-radius: 38%;
-  background: var(--arco-accent);
+  border-radius: 18%;
+  background: var(--arco-face-bg, var(--arco-text-secondary));
   transition: background 200ms ease;
 }
 
 .arco-face[data-speaking="idle"] .arco-face__head {
-  background: var(--arco-text-tertiary);
+  background: var(--arco-face-bg, var(--arco-text-tertiary));
 }
 
 /* Eyes */
@@ -31,10 +31,10 @@
 .arco-face__eye {
   position: absolute;
   top: 32%;
-  width: 0.9em;
-  height: 1.1em;
-  border-radius: 50%;
-  background: var(--arco-text-inverted);
+  width: 1.05em;
+  height: 0.72em;
+  border-radius: 0.18em;
+  background: var(--arco-face-feature, var(--arco-bg-surface-solid));
   overflow: hidden;
   animation: arco-face-blink 4.6s infinite;
 }
@@ -51,11 +51,11 @@
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 0.45em;
-  height: 0.45em;
-  margin: -0.225em 0 0 -0.225em;
-  border-radius: 50%;
-  background: var(--arco-bg-desktop);
+  width: 0.52em;
+  height: 0.36em;
+  margin: -0.18em 0 0 -0.26em;
+  border-radius: 0.1em;
+  background: var(--arco-face-feature, var(--arco-bg-surface-solid));
   transition: transform 300ms ease;
 }
 
@@ -65,12 +65,12 @@
 }
 
 .arco-face[data-expression="thinking"] .arco-face__eye {
-  height: 0.85em;
+  height: 0.58em;
 }
 
 /* Attentive: eyes open a touch wider. */
 .arco-face[data-expression="attentive"] .arco-face__eye {
-  height: 1.25em;
+  height: 0.82em;
 }
 
 /* Mouth — openness rides --face-mouth-open via transform only. */
@@ -78,12 +78,12 @@
 .arco-face__mouth {
   position: absolute;
   left: 50%;
-  bottom: 22%;
+  bottom: 16%;
   width: 1.6em;
   height: 1.1em;
   margin-left: -0.8em;
   border-radius: 0.35em 0.35em 0.8em 0.8em;
-  background: var(--arco-text-inverted);
+  background: var(--arco-face-feature, var(--arco-bg-surface-solid));
   transform-origin: center top;
   transform: scaleY(calc(0.12 + var(--face-mouth-open) * 0.88));
   transition: transform 40ms linear;

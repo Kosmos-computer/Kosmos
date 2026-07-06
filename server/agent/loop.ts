@@ -88,6 +88,7 @@ export async function runAgentTurn(opts: RunTurnOptions): Promise<string> {
     interactive: opts.interactive ?? false,
   };
   let finalText = "";
+  const usage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
 
   // Assembled once per turn, not per iteration: MCP/app tool sets don't
   // change mid-turn, and re-listing remote servers on every loop pass would
@@ -110,6 +111,13 @@ export async function runAgentTurn(opts: RunTurnOptions): Promise<string> {
       onTextDelta: (delta) => opts.emit({ type: "text_delta", delta }),
       signal: opts.signal,
     });
+
+    if (turn.usage) {
+      usage.promptTokens += turn.usage.promptTokens;
+      usage.completionTokens += turn.usage.completionTokens;
+      usage.totalTokens += turn.usage.totalTokens;
+      opts.emit({ type: "usage", ...usage });
+    }
 
     const assistantMessage: ChatMessage = {
       role: "assistant",

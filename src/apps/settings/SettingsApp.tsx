@@ -20,6 +20,7 @@ import { SkillsSection } from "./SkillsSection";
 import { ToolsSection } from "./ToolsSection";
 import { WALLPAPER_GROUPS, type WallpaperId } from "../../os/wallpaper/wallpapers";
 import { AUTH_WALLPAPER_GROUPS, type AuthWallpaperId } from "../../os/wallpaper/authWallpapers";
+import { FACE_BG_OPTIONS, FaceWidget, isCustomFaceBg, useFacePreferencesStore } from "../../face-rig";
 import {
   SettingsChipRow,
   SettingsFieldRow,
@@ -31,6 +32,7 @@ import {
 } from "../../components/patterns";
 import { Button, Chip, EmptyState, Input } from "../../components/ui";
 import { SettingsNav } from "./SettingsNav";
+import { NavBrandMark } from "../../os/NavBrandMark";
 import {
   DEFAULT_SETTINGS_SECTION,
   settingsSectionLabel,
@@ -48,8 +50,13 @@ const PROVIDERS: { id: LlmProvider; label: string }[] = [
   { id: "custom", label: "Custom endpoint" },
 ];
 
+const NAV_BRAND_MAX_BYTES = 512 * 1024;
+
 export function SettingsApp() {
-  const { theme, setTheme, wallpaper, setWallpaper, authWallpaper, setAuthWallpaper } = useOsStore();
+  const { theme, setTheme, wallpaper, setWallpaper, authWallpaper, setAuthWallpaper, navBrandImage, setNavBrandImage, notify } =
+    useOsStore();
+  const faceBg = useFacePreferencesStore((s) => s.faceBg);
+  const setFaceBg = useFacePreferencesStore((s) => s.setFaceBg);
   const canManageUsers = useCan("users:manage");
   const canWriteSettings = useCan("settings:write");
   const [settings, setSettings] = useState<Settings | null>(null);
@@ -231,7 +238,7 @@ export function SettingsApp() {
 
           {activeSection === "appearance" && (
             <SettingsPage>
-              <SettingsSection intro="Theme and background for the desktop and sign-in screen.">
+              <SettingsSection intro="Theme, assistant face, and background for the desktop and sign-in screen.">
                 <SettingsStack>
                   <SettingsFieldRow label="Theme">
                     <SettingsChipRow>
@@ -241,6 +248,81 @@ export function SettingsApp() {
                         </Chip>
                       ))}
                     </SettingsChipRow>
+                  </SettingsFieldRow>
+                  <SettingsFieldRow
+                    label="Assistant face"
+                    hint="Background color for the Arco face in voice chat."
+                    alignTop
+                  >
+                    <div className="arco-settings-face-color">
+                      <div className="arco-face-color-grid">
+                        {FACE_BG_OPTIONS.map((option) => (
+                          <button
+                            key={option.id}
+                            type="button"
+                            className={`arco-face-color-swatch ${faceBg === option.id ? "arco-face-color-swatch--active" : ""}`}
+                            onClick={() => setFaceBg(option.id)}
+                            aria-pressed={faceBg === option.id}
+                            aria-label={`${option.label} face background`}
+                          >
+                            <span
+                              className={`arco-face-color-swatch__preview ${option.preview ? "" : "arco-face-color-swatch__preview--mono"}`}
+                              style={option.preview ? { background: option.preview } : undefined}
+                            />
+                            <span className="arco-face-color-swatch__label">{option.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                      <label className="arco-settings-face-color__custom">
+                        <span className="arco-settings-face-color__custom-label">Custom</span>
+                        <input
+                          type="color"
+                          className="arco-settings-face-color__input"
+                          value={isCustomFaceBg(faceBg) ? faceBg : "#7c9dff"}
+                          onChange={(e) => setFaceBg(e.target.value)}
+                          aria-label="Custom face background color"
+                        />
+                      </label>
+                      <FaceWidget className="arco-settings-face-color__preview" />
+                    </div>
+                  </SettingsFieldRow>
+                  <SettingsFieldRow label="Nav brand" hint="Shown at the top of the left nav rail." alignTop>
+                    <div className="arco-settings-nav-brand">
+                      <NavBrandMark />
+                      <div className="arco-settings-nav-brand__actions">
+                        <label className="arco-btn arco-settings-nav-brand__upload">
+                          Choose image
+                          <input
+                            type="file"
+                            accept="image/*"
+                            hidden
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              e.target.value = "";
+                              if (!file) return;
+                              if (!file.type.startsWith("image/")) {
+                                notify("Choose an image file.");
+                                return;
+                              }
+                              if (file.size > NAV_BRAND_MAX_BYTES) {
+                                notify("Image must be 512 KB or smaller.");
+                                return;
+                              }
+                              const reader = new FileReader();
+                              reader.onload = () => {
+                                if (typeof reader.result === "string") setNavBrandImage(reader.result);
+                              };
+                              reader.readAsDataURL(file);
+                            }}
+                          />
+                        </label>
+                        {navBrandImage ? (
+                          <Button variant="ghost" onClick={() => setNavBrandImage(null)}>
+                            Reset to default
+                          </Button>
+                        ) : null}
+                      </div>
+                    </div>
                   </SettingsFieldRow>
                   {WALLPAPER_GROUPS.map((group) => (
                     <SettingsFieldRow key={group.label} label={group.label} alignTop>

@@ -6,6 +6,7 @@ import { useCallback } from "react";
 import type { ActionEvent } from "@openuidev/react-lang";
 import type { ChatItem } from "./useChat";
 import { RichMarkdown } from "../../components/richmarkdown/RichMarkdown";
+import { ChatBubbleFooter } from "../../components/chat/ChatBubbleFooter";
 
 interface Props {
   item: Extract<ChatItem, { kind: "assistant" }>;
@@ -33,6 +34,9 @@ export function AssistantBlock({ item, onFollowUp }: Props) {
           onAction: handleAction,
         }}
       />
+      {!item.streaming && (
+        <ChatBubbleFooter text={item.text} timestamp={item.timestamp} align="start" variant="assistant" />
+      )}
     </div>
   );
 }

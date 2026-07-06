@@ -23,7 +23,7 @@
     "dev:site": "concurrently -n www,docs -c green,blue \"npm run dev:www\" \"npm run dev:arco-docs\"",
     "dev:server": "tsx watch server/index.ts",
     "dev:web": "vite",
-    "voice": "cd voice-server && .venv/bin/python bot.py --host localhost --port 4620",
+    "voice": "cd voice-server && .venv/bin/python bot.py --host localhost --port 4630",
     "build:apps": "npm run build -w @arco/docs-app",
     "build:www": "npm run build -w @kosmos/www",
     "build:arco-docs": "npm run build -w @arco/docs-site",

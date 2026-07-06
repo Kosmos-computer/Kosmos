@@ -5,7 +5,7 @@ import react from "@vitejs/plugin-react";
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 
-// Port 4620 keeps clear of Arco's server (4600) and web (4610).
+// Port 4620 keeps clear of Arco's server (4600), web (4610), and voice (4630).
 export default defineConfig({
   plugins: [react()],
   resolve: {

@@ -9,6 +9,21 @@
       try {
         var t = localStorage.getItem("arco:theme") || "dark";
         document.documentElement.dataset.theme = t;
+        var fb = localStorage.getItem("arco:face-bg") || "mono";
+        if (fb !== "mono") {
+          var rootStyle = document.documentElement.style;
+          if (fb === "accent") {
+            rootStyle.setProperty("--arco-face-bg", "var(--arco-accent)");
+            rootStyle.setProperty("--arco-face-feature", "var(--arco-text-inverted)");
+            rootStyle.setProperty("--arco-face-pupil", "var(--arco-bg-desktop)");
+            document.documentElement.dataset.faceBg = "accent";
+          } else {
+            rootStyle.setProperty("--arco-face-bg", fb);
+            rootStyle.setProperty("--arco-face-feature", "#ffffff");
+            rootStyle.setProperty("--arco-face-pupil", "rgba(0, 0, 0, 0.62)");
+            document.documentElement.dataset.faceBg = "custom";
+          }
+        }
       } catch (e) {}
     </script>
   </head>

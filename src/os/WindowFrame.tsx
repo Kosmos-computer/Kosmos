@@ -98,9 +98,11 @@ export function WindowFrame({ win, focused, children }: Props) {
   const style = win.maximized || appView
     ? {
         left: "var(--arco-nav-width, 0px)",
-        top: MENUBAR_HEIGHT,
+        top: appView ? "var(--arco-menubar-offset, 0px)" : MENUBAR_HEIGHT,
         width: "calc(100vw - var(--arco-nav-width, 0px))",
-        height: `calc(100vh - ${MENUBAR_HEIGHT}px)`,
+        height: appView
+          ? "calc(100vh - var(--arco-menubar-offset, 0px))"
+          : `calc(100vh - ${MENUBAR_HEIGHT}px)`,
         borderRadius: 0,
         zIndex: win.z,
       }

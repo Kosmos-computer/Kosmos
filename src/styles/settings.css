@@ -348,6 +348,100 @@
   margin-top: 0;
 }
 
+.arco-settings-nav-brand {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--arco-space-m);
+}
+
+.arco-settings-nav-brand__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--arco-space-s);
+}
+
+.arco-settings-nav-brand__upload {
+  cursor: pointer;
+}
+
+.arco-settings-face-color {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--arco-space-m);
+}
+
+.arco-face-color-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--arco-space-s);
+}
+
+.arco-face-color-swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--arco-space-xs);
+  padding: var(--arco-space-xs);
+  border: 1px solid transparent;
+  border-radius: var(--arco-radius-s);
+  background: transparent;
+  cursor: pointer;
+}
+
+.arco-face-color-swatch:hover {
+  background: var(--arco-bg-hover);
+}
+
+.arco-face-color-swatch--active {
+  border-color: var(--arco-accent);
+  background: var(--arco-accent-soft);
+}
+
+.arco-face-color-swatch__preview {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--arco-border);
+}
+
+.arco-face-color-swatch__preview--mono {
+  background:
+    linear-gradient(135deg, var(--arco-text-tertiary) 0 45%, var(--arco-bg-surface-solid) 45% 100%);
+}
+
+.arco-face-color-swatch__label {
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-secondary);
+}
+
+.arco-settings-face-color__custom {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+}
+
+.arco-settings-face-color__custom-label {
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-secondary);
+}
+
+.arco-settings-face-color__input {
+  width: 36px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-s);
+  background: transparent;
+  cursor: pointer;
+}
+
+.arco-settings-face-color__preview {
+  font-size: 16px;
+}
+
 /* ── Settings-scoped overrides (no boxed cards, Longformer-flat) ─────────── */
 
 .arco-settings-shell .arco-form,

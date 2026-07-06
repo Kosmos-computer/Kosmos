@@ -27,12 +27,14 @@ import { useVoice, voiceClient } from "../../voice";
 import { FaceWidget } from "../../face-rig";
 import { Composer } from "../../components/composer/Composer";
 import { ComposerNotice } from "../../components/composer/ComposerNotice";
+import { StudioLogoMark } from "../../components/StudioLogoMark";
 import { contextPercent, type UsageStats } from "../../components/composer/UsagePopover";
 import { useStudioStore } from "./studioStore";
 import { useResizableSplit } from "./useResizableSplit";
 import { useModelSelection } from "./useModelSelection";
 import { ProjectPicker } from "./ProjectPicker";
 import { StudioSidebar } from "./StudioSidebar";
+import { StudioConversationHeader } from "./StudioConversationHeader";
 import { FilesTab } from "./tabs/FilesTab";
 import { GitTab } from "./tabs/GitTab";
 import { TerminalTab } from "./tabs/TerminalTab";
@@ -87,7 +89,9 @@ function estimateUsage(items: ReturnType<typeof useChat>["items"]): UsageStats {
 }
 
 export function StudioApp() {
-  const chat = useChat();
+  const projectsInfo = useStudioStore((s) => s.projectsInfo);
+  const switchProject = useStudioStore((s) => s.switchProject);
+  const chat = useChat({ activeProjectId: projectsInfo.activeId });
   const voice = useVoice();
   const [draft, setDraft] = useState("");
   const [mode, setMode] = useState("agent");
@@ -165,6 +169,38 @@ export function StudioApp() {
   const noticeKey = chat.sessionId ?? "new";
   const showLimitNotice = usagePercent >= 90 && noticeDismissedFor !== noticeKey;
   const isEmpty = chat.items.length === 0;
+  const activeSessionTitle = useMemo(() => {
+    if (!chat.sessionId) return "New chat";
+    return chat.sessions.find((s) => s.id === chat.sessionId)?.title ?? "New chat";
+  }, [chat.sessionId, chat.sessions]);
+
+  const selectSession = useCallback(
+    (id: string) => {
+      void (async () => {
+        try {
+          const session = await chat.loadSession(id);
+          const targetProjectId = session.projectId ?? null;
+          if (targetProjectId !== projectsInfo.activeId) {
+            try {
+              await switchProject(targetProjectId);
+            } catch {
+              // Stale or removed project — thread is already open.
+            }
+          }
+        } catch {
+          // Session fetch failed — leave the current thread as-is.
+        }
+      })();
+    },
+    [chat.loadSession, projectsInfo.activeId, switchProject],
+  );
+
+  const newChatInProject = useCallback(
+    (projectId: string | null) => {
+      void switchProject(projectId).then(() => chat.newChat());
+    },
+    [chat, switchProject],
+  );
 
   const composer = (
     <Composer
@@ -210,14 +246,17 @@ export function StudioApp() {
         {navOpen ? (
           <StudioSidebar
             sessions={chat.sessions}
+            projects={projectsInfo.projects}
             activeSessionId={chat.sessionId}
-            onSelect={(id) => void chat.loadSession(id)}
+            onSelect={selectSession}
             onDelete={(id) => void chat.removeSession(id)}
             onNewChat={chat.newChat}
+            onNewChatInProject={newChatInProject}
             onClose={() => setNavOpen(false)}
           />
         ) : (
           <div className="arco-studio__rail arco-studio__rail--left" aria-label="Conversations">
+            <StudioLogoMark className="arco-studio__railbrand" title="" />
             <button
               type="button"
               className="arco-btn arco-btn--icon"
@@ -242,6 +281,21 @@ export function StudioApp() {
             </div>
           ) : (
             <>
+              <div className="arco-studio__convbar">
+                <StudioConversationHeader
+                  sessionId={chat.sessionId}
+                  title={activeSessionTitle}
+                  onRename={
+                    chat.sessionId
+                      ? (title) => chat.renameSession(chat.sessionId!, title)
+                      : undefined
+                  }
+                  onNewChat={chat.newChat}
+                  onDelete={
+                    chat.sessionId ? () => chat.removeSession(chat.sessionId!) : undefined
+                  }
+                />
+              </div>
               <div
                 ref={scrollRef}
                 className="arco-chat__thread arco-scroll"
@@ -250,8 +304,14 @@ export function StudioApp() {
                   if (el) followRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
                 }}
               >
+                {voice.active && <VoiceBar voice={voice} placement="thread" />}
                 <div className="arco-studio__content-inner">
-                  <ChatThread items={chat.items} streaming={chat.streaming} onFollowUp={submit} />
+                  <ChatThread
+                    items={chat.items}
+                    streaming={chat.streaming}
+                    turnMeta={chat.turnMeta}
+                    onFollowUp={submit}
+                  />
                 </div>
               </div>
               <div className="arco-composer-dock">
@@ -260,7 +320,7 @@ export function StudioApp() {
             </>
           )}
 
-          {voice.active && <VoiceBar voice={voice} />}
+          {voice.active && <VoiceBar voice={voice} placement="dock" />}
         </section>
 
         {/* ── Divider + right drawer ───────────────────────────────────── */}

@@ -20,6 +20,13 @@
   text-align: left;
 }
 
+.arco-agent-thought__meta {
+  margin-left: auto;
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+  white-space: nowrap;
+}
+
 .arco-agent-thought__trigger:hover,
 .arco-agent-action__header:hover {
   background: var(--arco-bg-hover);
@@ -154,6 +161,17 @@
   gap: var(--arco-space-s);
   font-size: var(--arco-text-xs);
   color: var(--arco-text-tertiary);
+}
+
+.arco-agent-status__label {
+  flex-shrink: 0;
+}
+
+.arco-agent-status__meta,
+.arco-agent-turnmeter {
+  margin-left: auto;
+  color: var(--arco-text-tertiary);
+  white-space: nowrap;
 }
 
 .sprite-working-mark {

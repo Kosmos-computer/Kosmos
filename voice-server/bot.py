@@ -16,15 +16,21 @@ Every stage is chosen by voice.config.json; swapping engines (Kokoro→Piper,
 Ollama→Arco agent) is a config edit, not a code change. Models auto-download
 to ~/.cache on first run.
 
-Run:  .venv/bin/python bot.py --host localhost --port 4620
+Run:  .venv/bin/python bot.py --host localhost --port 4630
 """
 
+import asyncio
+import io
 import json
 import os
+import wave
 from pathlib import Path
 from typing import Any
 
+import numpy as np
+from fastapi import HTTPException, Response
 from loguru import logger
+from pydantic import BaseModel
 
 from pipecat.audio.turn.smart_turn.local_smart_turn_v3 import LocalSmartTurnAnalyzerV3
 from pipecat.audio.vad.silero import SileroVADAnalyzer
@@ -39,6 +45,7 @@ from pipecat.processors.aggregators.llm_response_universal import (
     LLMUserAggregatorParams,
 )
 from pipecat.processors.frameworks.rtvi import RTVIObserver, RTVIProcessor
+from pipecat.runner.run import app as voice_app
 from pipecat.runner.types import RunnerArguments
 from pipecat.runner.utils import create_transport
 from pipecat.services.openai.llm import OpenAILLMService
@@ -159,6 +166,103 @@ def build_tts(config: dict[str, Any]):
 
         return PiperTTSService(base_url=tts_cfg.get("piperBaseUrl", "http://localhost:5000"))
     raise ValueError(f"Unknown TTS engine: {engine!r} (expected kokoro | piper)")
+
+
+# ── Read-aloud (one-shot TTS, outside the conversational pipeline) ──────────
+# The Chat app's per-message "Read aloud" button hits this directly: no STT,
+# no LLM, no WebRTC turn-taking — just text in, a WAV file out, synthesized
+# with whatever engine/voice voice.config.json configures for live
+# conversation, so read-aloud and the voice assistant always sound the same.
+
+
+class TtsRequest(BaseModel):
+    text: str
+
+
+_kokoro: Any = None
+
+
+def _get_kokoro():
+    """Lazily construct (and cache) the kokoro-onnx engine, downloading model
+    files on first use exactly like KokoroTTSService does inside the live
+    pipeline — so the two paths share one on-disk cache."""
+    global _kokoro
+    if _kokoro is None:
+        import requests
+        from kokoro_onnx import Kokoro
+
+        from pipecat.services.kokoro.tts import KOKORO_CACHE_DIR, KOKORO_MODEL_URL, KOKORO_VOICES_URL
+
+        KOKORO_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        model_file = KOKORO_CACHE_DIR / "kokoro-v1.0.onnx"
+        voices_file = KOKORO_CACHE_DIR / "voices-v1.0.bin"
+        for url, dest in ((KOKORO_MODEL_URL, model_file), (KOKORO_VOICES_URL, voices_file)):
+            if not dest.exists():
+                logger.info(f"Downloading {url} to {dest}...")
+                resp = requests.get(url, stream=True, timeout=300)
+                resp.raise_for_status()
+                with open(dest, "wb") as f:
+                    for chunk in resp.iter_content(chunk_size=8192):
+                        f.write(chunk)
+        _kokoro = Kokoro(str(model_file), str(voices_file))
+    return _kokoro
+
+
+def _synthesize_kokoro(text: str, tts_cfg: dict[str, Any]) -> bytes:
+    """Blocking (CPU/ONNX-bound) synthesis — run this off the event loop."""
+    from pipecat.services.kokoro.tts import language_to_kokoro_language
+
+    kokoro = _get_kokoro()
+    voice = tts_cfg.get("voice", "af_heart")
+    language = parse_language(tts_cfg.get("language", "en")) or Language.EN
+    samples, sample_rate = kokoro.create(
+        text, voice=voice, lang=language_to_kokoro_language(language)
+    )
+
+    pcm = (samples * 32767).astype(np.int16).tobytes()
+    buf = io.BytesIO()
+    with wave.open(buf, "wb") as wav_file:
+        wav_file.setnchannels(1)
+        wav_file.setsampwidth(2)
+        wav_file.setframerate(sample_rate)
+        wav_file.writeframes(pcm)
+    return buf.getvalue()
+
+
+async def _synthesize_piper(text: str, tts_cfg: dict[str, Any]) -> bytes:
+    import aiohttp
+
+    base_url = tts_cfg.get("piperBaseUrl", "http://localhost:5000")
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            base_url, json={"text": text, "voice": tts_cfg.get("voice")}
+        ) as resp:
+            if resp.status != 200:
+                detail = await resp.text()
+                raise RuntimeError(f"Piper TTS error ({resp.status}): {detail}")
+            return await resp.read()
+
+
+@voice_app.post("/api/tts")
+async def synthesize_speech(req: TtsRequest) -> Response:
+    text = req.text.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="text is required")
+
+    tts_cfg = load_config().get("tts", {})
+    engine = tts_cfg.get("engine", "kokoro")
+    try:
+        if engine == "kokoro":
+            wav_bytes = await asyncio.to_thread(_synthesize_kokoro, text, tts_cfg)
+        elif engine == "piper":
+            wav_bytes = await _synthesize_piper(text, tts_cfg)
+        else:
+            raise HTTPException(status_code=400, detail=f"Unknown TTS engine: {engine!r}")
+    except HTTPException:
+        raise
+    except Exception as err:
+        raise HTTPException(status_code=500, detail=str(err)) from err
+    return Response(content=wav_bytes, media_type="audio/wav")
 
 
 def build_brain(config: dict[str, Any]):

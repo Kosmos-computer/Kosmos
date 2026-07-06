@@ -104,14 +104,19 @@ app.post("/api/chat", requireCap("chat"), async (c) => {
     message: string;
     /** "ask" runs the turn with write tools removed (answer-only). */
     mode?: "agent" | "ask";
+    /** Workspace folder for new sessions (null = sandbox). */
+    projectId?: string | null;
   };
   const message = (body.message ?? "").trim();
   if (!message) return c.json({ error: "message is required" }, 400);
 
-  const session = body.sessionId
+  let session = body.sessionId
     ? await sessionStore.get(body.sessionId)
-    : await sessionStore.create("chat", "New chat");
+    : await sessionStore.create("chat", "New chat", { projectId: body.projectId ?? null });
   if (!session) return c.json({ error: "Session not found" }, 404);
+  if (body.sessionId && session.projectId == null) {
+    session = await sessionStore.tagProjectIfMissing(session, body.projectId ?? null);
+  }
 
   return streamSSE(c, async (stream) => {
     // Queue writes so terminal events (error/done) flush before close — a bare
@@ -182,6 +187,18 @@ app.get("/api/sessions/:id", async (c) => {
 app.delete("/api/sessions/:id", requireCap("chat"), async (c) => {
   await sessionStore.delete(c.req.param("id"));
   return c.json({ ok: true });
+});
+
+app.patch("/api/sessions/:id", requireCap("chat"), async (c) => {
+  const body = (await c.req.json()) as { title?: string };
+  const title = (body.title ?? "").trim();
+  if (!title) return c.json({ error: "title is required" }, 400);
+  try {
+    const session = await sessionStore.updateTitle(c.req.param("id"), title);
+    return c.json(session);
+  } catch {
+    return c.json({ error: "Not found" }, 404);
+  }
 });
 
 // ── Apps ─────────────────────────────────────────────────────────────────────

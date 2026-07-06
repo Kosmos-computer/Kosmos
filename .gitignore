@@ -1,5 +1,7 @@
 node_modules/
 dist/
+apps/desktop/dist/
+apps/desktop/release/
 data/
 .env
 *.log

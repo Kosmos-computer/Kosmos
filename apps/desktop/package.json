@@ -1,0 +1,60 @@
+{
+  "name": "@arco/desktop",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Arco OS desktop shell — Electron wrapper around the Node server and Vite-built UI.",
+  "type": "module",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "npm run build && electron .",
+    "dev": "npm run build && electron . --dev",
+    "pack": "npm run build && electron-builder --dir",
+    "dist": "npm run build && electron-builder",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "build": {
+    "appId": "com.arco.os",
+    "productName": "Arco OS",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../..",
+        "to": "arco",
+        "filter": [
+          "dist/**/*",
+          "server/**/*",
+          "shared/**/*",
+          "packages/**/*",
+          "apps/**/*",
+          "skills/**/*",
+          "package.json",
+          "node_modules/**/*"
+        ]
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": ["dmg", "zip"]
+    },
+    "win": {
+      "target": ["nsis"]
+    },
+    "linux": {
+      "target": ["AppImage"]
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "electron": "^35.0.0",
+    "electron-builder": "^25.1.8",
+    "typescript": "^5.8.0"
+  }
+}

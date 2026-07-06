@@ -1,10 +1,13 @@
 /**
  * Files — the agent's workspace browser: directory listing, file viewer with
  * inline editing (the same files generated apps read via Query("read")).
+ * Markdown files get an Edit / Preview toggle through the shared RichMarkdown
+ * pipeline.
  */
-import { useCallback, useEffect, useState } from "react";
-import { ArrowLeft, FileText, Folder, Save } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ArrowLeft, Eye, FileText, Folder, Pencil, Save } from "lucide-react";
 import type { WorkspaceEntry } from "@shared/types";
+import { RichMarkdown } from "../../components/richmarkdown/RichMarkdown";
 import { api } from "../../lib/api";
 
 function formatSize(bytes: number): string {
@@ -13,12 +16,24 @@ function formatSize(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
+function isMarkdownPath(path: string): boolean {
+  return path.toLowerCase().endsWith(".md");
+}
+
+type FileViewMode = "edit" | "preview";
+
 export function FilesApp() {
   const [dir, setDir] = useState(".");
   const [entries, setEntries] = useState<WorkspaceEntry[]>([]);
   const [file, setFile] = useState<{ path: string; content: string } | null>(null);
+  const [viewMode, setViewMode] = useState<FileViewMode>("edit");
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const markdownFile = useMemo(
+    () => (file && isMarkdownPath(file.path) ? file : null),
+    [file],
+  );
 
   const refresh = useCallback(async (path: string) => {
     try {
@@ -40,6 +55,7 @@ export function FilesApp() {
       } else {
         const data = await api.readFile(entry.path);
         setFile(data);
+        setViewMode(isMarkdownPath(data.path) ? "preview" : "edit");
         setDirty(false);
       }
     },
@@ -67,19 +83,45 @@ export function FilesApp() {
           <span style={{ flex: 1, fontFamily: "var(--arco-font-mono)", fontSize: "var(--arco-text-sm)" }}>
             {file.path}
           </span>
+          {markdownFile ? (
+            <div className="arco-chip-row">
+              <button
+                type="button"
+                className={`arco-chip${viewMode === "edit" ? " arco-chip--active" : ""}`}
+                aria-pressed={viewMode === "edit"}
+                onClick={() => setViewMode("edit")}
+              >
+                <Pencil size={12} /> Edit
+              </button>
+              <button
+                type="button"
+                className={`arco-chip${viewMode === "preview" ? " arco-chip--active" : ""}`}
+                aria-pressed={viewMode === "preview"}
+                onClick={() => setViewMode("preview")}
+              >
+                <Eye size={12} /> Preview
+              </button>
+            </div>
+          ) : null}
           <button className="arco-btn arco-btn--primary" disabled={!dirty || saving} onClick={() => void save()}>
             <Save size={13} /> {saving ? "Saving…" : "Save"}
           </button>
         </div>
-        <textarea
-          className="arco-code-editor arco-scroll"
-          value={file.content}
-          onChange={(e) => {
-            setFile((f) => (f ? { ...f, content: e.target.value } : f));
-            setDirty(true);
-          }}
-          spellCheck={false}
-        />
+        {markdownFile && viewMode === "preview" ? (
+          <div className="arco-panel arco-scroll" style={{ padding: "var(--arco-space-m)" }}>
+            <RichMarkdown text={file.content} />
+          </div>
+        ) : (
+          <textarea
+            className="arco-code-editor arco-scroll"
+            value={file.content}
+            onChange={(e) => {
+              setFile((f) => (f ? { ...f, content: e.target.value } : f));
+              setDirty(true);
+            }}
+            spellCheck={false}
+          />
+        )}
       </div>
     );
   }

@@ -15,6 +15,7 @@ import "./styles/apps.css";
 import "./styles/composer.css";
 import "./styles/studio.css";
 import "./styles/adaptive.css";
+import "./styles/richmarkdown.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

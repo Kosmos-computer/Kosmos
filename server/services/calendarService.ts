@@ -13,7 +13,7 @@ import crypto from "node:crypto";
 import Database from "better-sqlite3";
 import type { CalendarEvent, CalendarEventInput } from "../../shared/capabilities/calendar.js";
 import { dataDirs } from "../env.js";
-import { bus } from "../bus.js";
+import { announceAppEvent } from "../bus.js";
 
 /**
  * Pilot event topic: every write announces "calendar.changed" on the bus so
@@ -21,7 +21,7 @@ import { bus } from "../bus.js";
  * to agent- or app-made changes without polling.
  */
 function announceChange(): void {
-  bus.emit("app-event:calendar.changed", { appId: "system" });
+  announceAppEvent("calendar.changed", { appId: "system" });
 }
 
 let db: Database.Database | null = null;

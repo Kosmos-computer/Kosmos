@@ -6,3 +6,15 @@
 import { EventEmitter } from "node:events";
 
 export const bus = new EventEmitter();
+
+/**
+ * Announce a platform event topic (e.g. "files.changed", "calendar.changed").
+ * Two audiences, one call:
+ *  - `app-event:<topic>` for in-process subscribers (services, supervisors)
+ *  - `shell_event` so every connected desktop hears it over /api/shell-events
+ *    and can forward it into app windows whose manifests subscribe to it
+ */
+export function announceAppEvent(topic: string, detail: { appId: string; payload?: unknown }): void {
+  bus.emit(`app-event:${topic}`, detail);
+  bus.emit("shell_event", { type: "app_event", topic });
+}

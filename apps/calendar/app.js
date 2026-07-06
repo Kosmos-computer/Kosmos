@@ -224,6 +224,12 @@ document.getElementById("today").addEventListener("click", () => {
 });
 document.getElementById("new-event").addEventListener("click", () => openDialog(null));
 
+// ── Live updates ──────────────────────────────────────────────────────────────
+
+// Agent- or app-made changes announce calendar.changed; re-query so the
+// grid reflects events created outside this window (chat, automations).
+os.events.on("calendar.changed", () => void loadEvents());
+
 // ── Boot ──────────────────────────────────────────────────────────────────────
 
 const weekdaysRow = document.getElementById("weekdays");

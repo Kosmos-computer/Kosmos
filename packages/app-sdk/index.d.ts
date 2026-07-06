@@ -23,6 +23,10 @@ export interface AppClient {
   shell: {
     notify: (message: string) => Promise<void>;
   };
+  /** Platform events — only topics the manifest subscribes to arrive. */
+  events: {
+    on: (topic: string, fn: () => void) => () => void;
+  };
   theme: {
     readonly current: AppTheme;
     onChange: (fn: (theme: AppTheme) => void) => () => void;

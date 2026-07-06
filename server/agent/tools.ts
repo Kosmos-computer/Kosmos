@@ -730,6 +730,146 @@ export const agentTools: AgentTool[] = [
       ),
   },
 
+  // ── User documents (os.files@1 — contract-level, provider-agnostic) ────────
+  //
+  // The OS document store behind Drive/Docs — NOT the coding workspace
+  // (read_file/write_file work on the active project's disk). Documents here
+  // have ids, folders, trash, and show up live in the Drive app.
+  {
+    name: "docs_list",
+    description:
+      "List the user's documents/folders in the OS file store (what the Drive app shows). Pass parentId to enter a folder, or query to search by name. This is NOT the coding workspace — use list_files for project source.",
+    parameters: {
+      type: "object",
+      properties: {
+        parentId: { type: "string", description: "Folder id to list; omit for the root" },
+        query: { type: "string", description: "Search all documents by name instead of listing a folder" },
+      },
+    },
+    execute: async (args, ctx) =>
+      typeof args.query === "string" && args.query.trim()
+        ? agentInvokeIntent("files.search", { query: args.query }, "Search documents", ctx)
+        : agentInvokeIntent(
+            "files.list",
+            typeof args.parentId === "string" ? { parentId: args.parentId } : {},
+            "List documents",
+            ctx,
+          ),
+  },
+  {
+    name: "docs_read",
+    description:
+      "Read a document's text content from the OS file store by id (get ids from docs_list).",
+    parameters: {
+      type: "object",
+      properties: { id: { type: "string" } },
+      required: ["id"],
+    },
+    execute: async (args, ctx) =>
+      agentInvokeIntent("files.content.read", args, "Read document", ctx),
+  },
+  {
+    name: "docs_create",
+    description:
+      "Create a document or folder in the OS file store (appears in Drive). Pauses for user approval. For documents, pass content and a mimeType (text/plain, text/markdown, …).",
+    parameters: {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        kind: { type: "string", enum: ["file", "folder"] },
+        parentId: { type: "string", description: "Destination folder id; omit for the root" },
+        mimeType: { type: "string", description: "Defaults to text/plain" },
+        content: { type: "string", description: "Initial text content (files only)" },
+      },
+      required: ["name", "kind"],
+    },
+    execute: async (args, ctx) =>
+      agentInvokeIntent(
+        "files.create",
+        args,
+        `Create ${String(args.kind ?? "file")} "${String(args.name ?? "")}" in documents`,
+        ctx,
+      ),
+  },
+  {
+    name: "docs_write",
+    description:
+      "Replace a document's text content in the OS file store by id. Pauses for user approval.",
+    parameters: {
+      type: "object",
+      properties: {
+        id: { type: "string" },
+        content: { type: "string", description: "Full replacement content" },
+      },
+      required: ["id", "content"],
+    },
+    execute: async (args, ctx) =>
+      agentInvokeIntent(
+        "files.content.write",
+        args,
+        `Overwrite document ${String(args.id ?? "")}`,
+        ctx,
+      ),
+  },
+  {
+    name: "docs_manage",
+    description:
+      "Manage a document/folder in the OS file store: rename, move, star, trash, restore, or permanently delete. Pauses for user approval.",
+    parameters: {
+      type: "object",
+      properties: {
+        action: {
+          type: "string",
+          enum: ["rename", "move", "star", "unstar", "trash", "restore", "delete"],
+        },
+        id: { type: "string" },
+        name: { type: "string", description: "New name (rename)" },
+        parentId: { type: "string", description: "Destination folder id (move); omit for the root" },
+      },
+      required: ["action", "id"],
+    },
+    execute: async (args, ctx) => {
+      const id = String(args.id ?? "");
+      switch (args.action) {
+        case "rename":
+          return agentInvokeIntent(
+            "files.rename",
+            { id, name: args.name },
+            `Rename document ${id} → "${String(args.name ?? "")}"`,
+            ctx,
+          );
+        case "move":
+          return agentInvokeIntent(
+            "files.move",
+            { id, parentId: typeof args.parentId === "string" ? args.parentId : null },
+            `Move document ${id}`,
+            ctx,
+          );
+        case "star":
+        case "unstar":
+          return agentInvokeIntent(
+            "files.star",
+            { id, starred: args.action === "star" },
+            `${args.action === "star" ? "Star" : "Unstar"} document ${id}`,
+            ctx,
+          );
+        case "trash":
+          return agentInvokeIntent("files.trash", { id }, `Move document ${id} to trash`, ctx);
+        case "restore":
+          return agentInvokeIntent("files.restore", { id }, `Restore document ${id}`, ctx);
+        case "delete":
+          return agentInvokeIntent(
+            "files.delete",
+            { id },
+            `Permanently delete document ${id}`,
+            ctx,
+          );
+        default:
+          return { error: `Unknown action: ${String(args.action)}` };
+      }
+    },
+  },
+
   // ── Skills (demand-paged knowledge) ─────────────────────────────────────────
   {
     name: "read_skill",

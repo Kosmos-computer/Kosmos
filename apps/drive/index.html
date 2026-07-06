@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Drive</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="drv-header">
+        <nav class="drv-tabs" aria-label="Views">
+          <button id="tab-files" class="drv-tab drv-tab--active" type="button">Files</button>
+          <button id="tab-starred" class="drv-tab" type="button">Starred</button>
+          <button id="tab-trash" class="drv-tab" type="button">Trash</button>
+        </nav>
+        <input
+          id="search"
+          class="drv-search"
+          type="search"
+          placeholder="Search documents…"
+          aria-label="Search documents"
+        />
+        <button id="new-folder" class="drv-btn" type="button">New folder</button>
+        <button id="new-file" class="drv-btn drv-btn--primary" type="button">New file</button>
+      </header>
+
+      <nav id="breadcrumbs" class="drv-crumbs" aria-label="Location"></nav>
+
+      <div id="list" class="drv-list" role="list"></div>
+      <div id="empty" class="drv-empty" hidden>Nothing here yet.</div>
+      <div class="drv-error" id="error" hidden></div>
+    </div>
+
+    <!-- Text file viewer/editor -->
+    <dialog id="file-dialog" class="drv-dialog">
+      <div class="drv-dialog__head">
+        <h2 id="file-dialog-title"></h2>
+        <span id="file-dialog-meta" class="drv-dialog__meta"></span>
+      </div>
+      <textarea id="file-content" spellcheck="false"></textarea>
+      <div class="drv-dialog__actions">
+        <span style="flex: 1"></span>
+        <button type="button" id="file-cancel" class="drv-btn">Close</button>
+        <button type="button" id="file-save" class="drv-btn drv-btn--primary">Save</button>
+      </div>
+    </dialog>
+
+    <!-- Folder picker for Move -->
+    <dialog id="move-dialog" class="drv-dialog drv-dialog--narrow">
+      <h2>Move to…</h2>
+      <div id="move-list" class="drv-move-list"></div>
+      <div class="drv-dialog__actions">
+        <span style="flex: 1"></span>
+        <button type="button" id="move-cancel" class="drv-btn">Cancel</button>
+      </div>
+    </dialog>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

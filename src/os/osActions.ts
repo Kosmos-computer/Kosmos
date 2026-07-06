@@ -9,6 +9,7 @@ import { useOsStore } from "./osStore";
 import { useWindowStore } from "./windowStore";
 import { SYSTEM_APPS } from "./systemApps";
 import { executeCursorCommand } from "./cursor/uiDriver";
+import { publishAppEvent } from "./appEventBus";
 import { useStudioStore } from "../apps/studio/studioStore";
 import { STUDIO_TITLE } from "../apps/studio/studioMeta";
 
@@ -28,6 +29,12 @@ export function handleShellEvent(event: AgentEvent): void {
 
     case "automations_changed":
       // The Automations app polls; nothing shell-global to do.
+      break;
+
+    case "app_event":
+      // Platform topic (files.changed, calendar.changed, …) — fan out to
+      // open AppHost windows, which forward to subscribing app iframes.
+      publishAppEvent({ topic: event.topic });
       break;
 
     case "cursor_request":

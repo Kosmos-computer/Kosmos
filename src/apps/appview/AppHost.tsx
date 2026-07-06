@@ -13,6 +13,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { RotateCw, ShieldAlert } from "lucide-react";
 import type { AppHostMessage } from "@shared/manifest";
 import { api } from "../../lib/api";
+import { onAppEvent } from "../../os/appEventBus";
 import { useOsStore } from "../../os/osStore";
 import { AppSurface } from "./AppSurface";
 
@@ -95,6 +96,16 @@ export function AppHost({ appId }: { appId: string }) {
   useEffect(() => {
     pushTheme();
   }, [pushTheme]);
+
+  // Forward platform events (files.changed, …) into the iframe — but only
+  // topics the manifest subscribes to; everything else stays invisible.
+  useEffect(() => {
+    const subscribed = app?.manifest.events?.subscribes ?? [];
+    if (subscribed.length === 0) return;
+    return onAppEvent(({ topic }) => {
+      if (subscribed.includes(topic)) postToApp({ appBridge: true, type: "event", topic });
+    });
+  }, [app?.manifest.events?.subscribes, postToApp, app]);
 
   useEffect(() => {
     if (!app || !token) return;

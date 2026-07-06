@@ -178,4 +178,9 @@ export type AppHostMessage =
   /** Host → app: RPC response. */
   | { appBridge: true; type: "response"; id: number; ok: boolean; result?: unknown; error?: string }
   /** Host → app: theme tokens (on ready and on every theme change). */
-  | { appBridge: true; type: "theme"; theme: string; tokens: Record<string, string> };
+  | { appBridge: true; type: "theme"; theme: string; tokens: Record<string, string> }
+  /**
+   * Host → app: a platform event topic the app's manifest subscribes to
+   * fired. No payload — the app re-queries through its own grants.
+   */
+  | { appBridge: true; type: "event"; topic: string };

@@ -11,5 +11,6 @@
     { "kind": "contract", "id": "os.calendar@1", "access": "read" },
     { "kind": "contract", "id": "os.calendar@1", "access": "write" },
     { "kind": "shell", "features": ["notify"] }
-  ]
+  ],
+  "events": { "subscribes": ["calendar.changed"] }
 }

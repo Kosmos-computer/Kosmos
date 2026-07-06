@@ -1,0 +1,327 @@
+/*
+ * Drive app styles — same discipline as the calendar reference app: every
+ * color/size references the --os-* tokens the AppHost forwards, with
+ * fallbacks so the app still works standalone.
+ */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  font-family: var(--os-font-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+  font-size: var(--os-text-md, 14px);
+  color: var(--os-text-primary, #eef1f6);
+  background: var(--os-bg-surface-solid, #181b22);
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 12px;
+  gap: 10px;
+}
+
+/* ── Header ── */
+.drv-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.drv-tabs {
+  display: flex;
+  gap: 2px;
+  background: var(--os-bg-sunk, rgba(12, 14, 18, 0.4));
+  border-radius: var(--os-radius-s, 6px);
+  padding: 2px;
+}
+
+.drv-tab {
+  font: inherit;
+  font-size: var(--os-text-sm, 12.5px);
+  color: var(--os-text-secondary, #a8b0bf);
+  background: transparent;
+  border: none;
+  border-radius: var(--os-radius-s, 6px);
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.drv-tab--active {
+  color: var(--os-text-primary, #eef1f6);
+  background: var(--os-bg-hover, rgba(255, 255, 255, 0.08));
+}
+
+.drv-search {
+  flex: 1;
+  min-width: 140px;
+  font: inherit;
+  font-size: var(--os-text-sm, 12.5px);
+  color: var(--os-text-primary, #eef1f6);
+  background: var(--os-bg-sunk, rgba(12, 14, 18, 0.6));
+  border: 1px solid var(--os-border, rgba(255, 255, 255, 0.09));
+  border-radius: var(--os-radius-s, 6px);
+  padding: 5px 10px;
+}
+
+.drv-search:focus {
+  outline: none;
+  border-color: var(--os-accent, #7c9dff);
+}
+
+/* ── Buttons ── */
+.drv-btn {
+  font: inherit;
+  font-size: var(--os-text-sm, 12.5px);
+  color: var(--os-text-primary, #eef1f6);
+  background: var(--os-bg-hover, rgba(255, 255, 255, 0.06));
+  border: 1px solid var(--os-border, rgba(255, 255, 255, 0.09));
+  border-radius: var(--os-radius-s, 6px);
+  padding: 5px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.drv-btn:hover {
+  background: var(--os-bg-active, rgba(255, 255, 255, 0.1));
+}
+
+.drv-btn--primary {
+  background: var(--os-accent, #7c9dff);
+  border-color: transparent;
+  color: var(--os-text-inverted, #10131a);
+  font-weight: 600;
+}
+
+.drv-btn--primary:hover {
+  background: var(--os-accent-strong, #5b82ff);
+}
+
+.drv-btn--ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--os-text-tertiary, #6d7585);
+  padding: 3px 7px;
+}
+
+.drv-btn--ghost:hover {
+  color: var(--os-text-primary, #eef1f6);
+  background: var(--os-bg-hover, rgba(255, 255, 255, 0.06));
+}
+
+/* ── Breadcrumbs ── */
+.drv-crumbs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--os-text-sm, 12.5px);
+  min-height: 22px;
+}
+
+.drv-crumb {
+  font: inherit;
+  font-size: var(--os-text-sm, 12.5px);
+  color: var(--os-accent, #7c9dff);
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.drv-crumb:hover {
+  background: var(--os-bg-hover, rgba(255, 255, 255, 0.06));
+}
+
+.drv-crumbs__sep {
+  color: var(--os-text-tertiary, #6d7585);
+}
+
+.drv-crumbs__here {
+  color: var(--os-text-secondary, #a8b0bf);
+  padding: 2px 4px;
+}
+
+/* ── List ── */
+.drv-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+}
+
+.drv-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: var(--os-radius-s, 6px);
+}
+
+.drv-row:hover {
+  background: var(--os-bg-hover, rgba(255, 255, 255, 0.05));
+}
+
+.drv-row__main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 7px 10px;
+  cursor: pointer;
+  min-width: 0;
+  border-radius: var(--os-radius-s, 6px);
+}
+
+.drv-row__icon {
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.drv-row__name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--os-text-md, 13.5px);
+}
+
+.drv-row__star {
+  color: var(--os-warning, #e8b34a);
+  margin-left: 6px;
+  font-size: var(--os-text-xs, 11px);
+}
+
+.drv-row__meta {
+  color: var(--os-text-tertiary, #6d7585);
+  font-size: var(--os-text-xs, 11px);
+  flex-shrink: 0;
+}
+
+.drv-row__actions {
+  display: flex;
+  gap: 2px;
+  padding-right: 6px;
+  opacity: 0;
+}
+
+.drv-row:hover .drv-row__actions,
+.drv-row:focus-within .drv-row__actions {
+  opacity: 1;
+}
+
+/* ── Empty & errors ── */
+.drv-empty {
+  padding: 40px 0;
+  text-align: center;
+  color: var(--os-text-tertiary, #6d7585);
+  font-size: var(--os-text-sm, 12.5px);
+}
+
+.drv-error {
+  padding: 8px 12px;
+  font-size: var(--os-text-sm, 12.5px);
+  color: var(--os-danger, #e5737d);
+  background: var(--os-danger-soft, rgba(229, 115, 125, 0.14));
+  border: 1px solid var(--os-danger, #e5737d);
+  border-radius: var(--os-radius-s, 6px);
+}
+
+/* ── Dialogs ── */
+.drv-dialog {
+  width: min(640px, 92vw);
+  border: 1px solid var(--os-border-strong, rgba(255, 255, 255, 0.16));
+  border-radius: var(--os-radius-l, 14px);
+  background: var(--os-bg-elevated, #262a34);
+  color: var(--os-text-primary, #eef1f6);
+  padding: 18px;
+}
+
+.drv-dialog--narrow {
+  width: min(380px, 90vw);
+}
+
+.drv-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.drv-dialog h2 {
+  margin: 0;
+  font-size: var(--os-text-lg, 16px);
+}
+
+.drv-dialog__head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.drv-dialog__meta {
+  color: var(--os-text-tertiary, #6d7585);
+  font-size: var(--os-text-xs, 11px);
+}
+
+#file-content {
+  width: 100%;
+  height: min(50vh, 420px);
+  resize: vertical;
+  font-family: var(--os-font-mono, ui-monospace, "SF Mono", Menlo, monospace);
+  font-size: var(--os-text-sm, 12.5px);
+  color: var(--os-text-primary, #eef1f6);
+  background: var(--os-bg-sunk, rgba(12, 14, 18, 0.6));
+  border: 1px solid var(--os-border, rgba(255, 255, 255, 0.09));
+  border-radius: var(--os-radius-s, 6px);
+  padding: 10px;
+}
+
+#file-content:focus {
+  outline: none;
+  border-color: var(--os-accent, #7c9dff);
+}
+
+.drv-dialog__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* ── Move dialog ── */
+.drv-move-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 10px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.drv-move-option {
+  font: inherit;
+  font-size: var(--os-text-sm, 12.5px);
+  color: var(--os-text-primary, #eef1f6);
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: var(--os-radius-s, 6px);
+  padding: 7px 10px;
+  cursor: pointer;
+}
+
+.drv-move-option:hover {
+  background: var(--os-bg-hover, rgba(255, 255, 255, 0.06));
+}

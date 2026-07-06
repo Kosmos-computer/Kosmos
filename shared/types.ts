@@ -117,6 +117,13 @@ export type AgentEvent =
   | { type: "confirm_resolved"; confirmId: string; approved: boolean }
   | { type: "apps_changed" }
   | { type: "automations_changed" }
+  /**
+   * A platform event topic fired (e.g. "files.changed"). Broadcast to every
+   * desktop over /api/shell-events; the shell forwards it into installed-app
+   * windows whose manifests subscribe to the topic. Payloads deliberately
+   * don't ride along — subscribers re-query through their own grants.
+   */
+  | { type: "app_event"; topic: string }
   | { type: "done" }
   | { type: "error"; message: string };
 

@@ -22,6 +22,7 @@ export function createAppClient() {
   let seq = 0;
   let theme = { theme: "dark", tokens: {} };
   const themeListeners = new Set();
+  const eventListeners = new Map(); // topic → Set<fn>
 
   window.addEventListener("message", (event) => {
     const msg = event.data;
@@ -36,6 +37,8 @@ export function createAppClient() {
       theme = { theme: msg.theme, tokens: msg.tokens || {} };
       applyTheme(theme);
       for (const fn of themeListeners) fn(theme);
+    } else if (msg.type === "event") {
+      for (const fn of eventListeners.get(msg.topic) ?? []) fn();
     }
   });
 
@@ -74,6 +77,18 @@ export function createAppClient() {
     /** Shell affordances, checked against grants in the host. */
     shell: {
       notify: (message) => call("shell.notify", { message }),
+    },
+    /**
+     * Platform events. Only topics declared in the manifest's
+     * events.subscribes ever arrive; handlers get no payload — re-query
+     * through intents instead (grants stay the single permission gate).
+     */
+    events: {
+      on(topic, fn) {
+        if (!eventListeners.has(topic)) eventListeners.set(topic, new Set());
+        eventListeners.get(topic).add(fn);
+        return () => eventListeners.get(topic)?.delete(fn);
+      },
     },
     /** Current shell theme + change subscription. */
     theme: {

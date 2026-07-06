@@ -11,9 +11,11 @@ import fs from "node:fs";
 import path from "node:path";
 import type { CalendarEventInput } from "../../shared/capabilities/calendar.js";
 import { CALENDAR_CONTRACT_ID } from "../../shared/capabilities/calendar.js";
+import { FILES_CONTRACT_ID, type FileCreateInput } from "../../shared/capabilities/files.js";
 import { VOICE_CONTRACT_ID } from "../../shared/capabilities/voice.js";
 import { intentMeta } from "../../shared/capabilities/index.js";
 import { calendarService } from "../services/calendarService.js";
+import { filesService } from "../services/filesService.js";
 import { dataDirs } from "../env.js";
 
 const PROVIDERS_FILE = path.join(dataDirs.root, "capability-providers.json");
@@ -21,6 +23,7 @@ const PROVIDERS_FILE = path.join(dataDirs.root, "capability-providers.json");
 /** contractId → providing appId, or "system" for the built-in service. */
 const DEFAULT_PROVIDERS: Record<string, string> = {
   [CALENDAR_CONTRACT_ID]: "system",
+  [FILES_CONTRACT_ID]: "system",
   [VOICE_CONTRACT_ID]: "system",
 };
 
@@ -63,6 +66,27 @@ const systemHandlers: Record<string, IntentHandler> = {
     return calendarService.update(String(id ?? ""), patch as Partial<CalendarEventInput>);
   },
   "calendar.event.delete": (p) => ({ deleted: calendarService.delete(String(p.id ?? "")) }),
+
+  // os.files@1 — the OS-owned virtual file store (server/services/filesService.ts)
+  "files.list": (p) =>
+    filesService.list({
+      ...(p.parentId !== undefined ? { parentId: p.parentId === null ? null : String(p.parentId) } : {}),
+      ...(typeof p.trashed === "boolean" ? { trashed: p.trashed } : {}),
+      ...(typeof p.starred === "boolean" ? { starred: p.starred } : {}),
+    }),
+  "files.get": (p) => filesService.get(String(p.id ?? "")),
+  "files.search": (p) => filesService.search(String(p.query ?? "")),
+  "files.create": (p) => filesService.create(p as unknown as FileCreateInput),
+  "files.rename": (p) => filesService.rename(String(p.id ?? ""), String(p.name ?? "")),
+  "files.move": (p) =>
+    filesService.move(String(p.id ?? ""), p.parentId == null ? null : String(p.parentId)),
+  "files.star": (p) => filesService.star(String(p.id ?? ""), p.starred === true),
+  "files.trash": (p) => filesService.trash(String(p.id ?? "")),
+  "files.restore": (p) => filesService.restore(String(p.id ?? "")),
+  "files.delete": (p) => ({ deleted: filesService.delete(String(p.id ?? "")) }),
+  "files.content.read": (p) => filesService.readContent(String(p.id ?? "")),
+  "files.content.write": (p) =>
+    filesService.writeContent(String(p.id ?? ""), String(p.content ?? "")),
 
   // os.voice@1 — the session itself is desktop-owned (the browser holds the
   // microphone), so start/stop can only be initiated from the shell. status

@@ -62,11 +62,14 @@ import { externalClients } from "./platform/externalClients.js";
 import { skillStore } from "./skills/skillStore.js";
 import { bus } from "./bus.js";
 import { shellClientConnected } from "./shellChannel.js";
+import { filesService } from "./services/filesService.js";
+import type { FileCreateInput } from "../shared/capabilities/files.js";
 
 const execFileAsync = promisify(execFile);
 
 ensureDataDirs();
 installedAppStore.ensureSeeds();
+filesService.ensureSeeds();
 // Skills: static seeds from ./skills, plus the generated OpenUI app-authoring
 // guide as a gating skill (it left the always-on system prompt in Phase C).
 skillStore.ensureSeeds(path.resolve("skills"));
@@ -336,6 +339,111 @@ app.put("/api/files/content", requireCap("files:write"), async (c) => {
   await fs.mkdir(path.dirname(abs), { recursive: true });
   await fs.writeFile(abs, body.content, "utf-8");
   return c.json({ ok: true });
+});
+
+// ── Drive (os.files@1 — the OS document store) ───────────────────────────────
+
+app.get("/api/drive/entries", requireCap("files:read"), (c) => {
+  const starred = c.req.query("starred") === "true";
+  const trashed = c.req.query("trashed") === "true";
+  const parentIdRaw = c.req.query("parentId");
+  const parentId =
+    parentIdRaw === undefined ? undefined : parentIdRaw === "null" || parentIdRaw === "" ? null : parentIdRaw;
+  return c.json(filesService.list({ parentId, trashed, starred }));
+});
+
+app.get("/api/drive/recent", requireCap("files:read"), (c) => {
+  const limit = Number(c.req.query("limit") ?? "20");
+  return c.json(filesService.recent(Number.isFinite(limit) ? limit : 20));
+});
+
+app.get("/api/drive/search", requireCap("files:read"), (c) => {
+  const query = c.req.query("q") ?? "";
+  return c.json(filesService.search(query));
+});
+
+app.get("/api/drive/entries/:id", requireCap("files:read"), (c) => {
+  try {
+    return c.json(filesService.get(c.req.param("id")));
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 404);
+  }
+});
+
+app.get("/api/drive/content/:id", requireCap("files:read"), (c) => {
+  try {
+    return c.json(filesService.readContent(c.req.param("id")));
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 404);
+  }
+});
+
+app.get("/api/drive/blob/:id", requireCap("files:read"), (c) => {
+  try {
+    const { entry, data } = filesService.readBlob(c.req.param("id"));
+    return c.body(new Uint8Array(data), 200, {
+      "Content-Type": entry.mimeType,
+      "Content-Length": String(data.length),
+      "Content-Disposition": `inline; filename="${entry.name.replace(/"/g, "")}"`,
+    });
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 404);
+  }
+});
+
+app.put("/api/drive/content/:id", requireCap("files:write"), async (c) => {
+  const body = (await c.req.json()) as { content: string };
+  try {
+    return c.json(filesService.writeContent(c.req.param("id"), body.content ?? ""));
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 400);
+  }
+});
+
+app.post("/api/drive/entries", requireCap("files:write"), async (c) => {
+  try {
+    const body = (await c.req.json()) as FileCreateInput;
+    return c.json(filesService.create(body), 201);
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 400);
+  }
+});
+
+app.patch("/api/drive/entries/:id", requireCap("files:write"), async (c) => {
+  const id = c.req.param("id");
+  const body = (await c.req.json()) as { name?: string; starred?: boolean; parentId?: string | null };
+  try {
+    if (body.name !== undefined) filesService.rename(id, body.name);
+    if (body.starred !== undefined) filesService.star(id, body.starred);
+    if (body.parentId !== undefined) filesService.move(id, body.parentId);
+    return c.json(filesService.get(id));
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 400);
+  }
+});
+
+app.post("/api/drive/entries/:id/trash", requireCap("files:write"), (c) => {
+  try {
+    return c.json(filesService.trash(c.req.param("id")));
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 400);
+  }
+});
+
+app.post("/api/drive/entries/:id/restore", requireCap("files:write"), (c) => {
+  try {
+    return c.json(filesService.restore(c.req.param("id")));
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 400);
+  }
+});
+
+app.delete("/api/drive/entries/:id", requireCap("files:write"), (c) => {
+  try {
+    return c.json({ deleted: filesService.delete(c.req.param("id")) });
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 400);
+  }
 });
 
 // ── Projects (open folders) ──────────────────────────────────────────────────

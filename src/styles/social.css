@@ -1,0 +1,230 @@
+/* Social — federated feed workspace */
+
+.arco-social {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+  background: var(--arco-bg-surface-solid);
+}
+
+.arco-social__rail {
+  width: 56px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-s) 0;
+  background: var(--arco-bg-elevated);
+  border-right: 1px solid var(--arco-border);
+}
+
+.arco-social__rail-tile {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: var(--arco-radius-m);
+  background: var(--social-accent, var(--arco-accent));
+  color: #fff;
+  font-size: var(--arco-text-xs);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.arco-social__rail-tile--active {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.arco-social__rail-tile--disconnected {
+  opacity: 0.45;
+}
+
+.arco-social__rail-tile--add {
+  background: transparent;
+  border: 1px dashed var(--arco-border);
+  color: var(--arco-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.arco-social__feed-column {
+  flex: 1;
+  min-width: 0;
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--arco-border);
+}
+
+.arco-social__feed-header {
+  padding: var(--arco-space-m) var(--arco-space-l);
+  border-bottom: 1px solid var(--arco-border);
+}
+
+.arco-social__feed-header h1 {
+  margin: 0 0 var(--arco-space-s);
+  font-size: var(--arco-text-lg);
+}
+
+.arco-social__tabs {
+  display: flex;
+  gap: var(--arco-space-xs);
+}
+
+.arco-social__tab--active {
+  outline: 2px solid var(--arco-accent);
+  outline-offset: 1px;
+}
+
+.arco-social__connect-banner {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--arco-space-xl);
+}
+
+.arco-social__connect-banner .arco-empty {
+  text-align: center;
+  max-width: 24rem;
+}
+
+.arco-social__connect-banner p {
+  margin: 0 0 var(--arco-space-m);
+  color: var(--arco-text-secondary);
+}
+
+.arco-social__composer {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-m) var(--arco-space-l);
+  border-bottom: 1px solid var(--arco-border);
+}
+
+.arco-social__composer .arco-input-wrap {
+  flex: 1;
+}
+
+.arco-social__feed {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.arco-social__post {
+  display: flex;
+  gap: var(--arco-space-m);
+  padding: var(--arco-space-m) var(--arco-space-l);
+  border-bottom: 1px solid var(--arco-border);
+}
+
+.arco-social__post-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.arco-social__post-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--arco-space-xs);
+  margin-bottom: var(--arco-space-xs);
+  font-size: var(--arco-text-sm);
+}
+
+.arco-social__handle,
+.arco-social__dot,
+.arco-social__post-header time {
+  color: var(--arco-text-tertiary);
+}
+
+.arco-social__verified {
+  color: var(--arco-accent);
+  font-size: 12px;
+}
+
+.arco-social__post-body p {
+  margin: 0 0 var(--arco-space-s);
+  line-height: 1.5;
+}
+
+.arco-social__post-stats {
+  display: flex;
+  gap: var(--arco-space-l);
+  color: var(--arco-text-tertiary);
+  font-size: var(--arco-text-sm);
+}
+
+.arco-social__post-stats span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.arco-social__sidebar {
+  flex: 1;
+  min-width: 280px;
+  max-width: 360px;
+  padding: var(--arco-space-m);
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-m);
+}
+
+.arco-social__panel {
+  padding: var(--arco-space-m);
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-l);
+  background: var(--arco-bg-surface);
+}
+
+.arco-social__panel h2 {
+  margin: 0 0 var(--arco-space-m);
+  font-size: var(--arco-text-md);
+}
+
+.arco-social__panel ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-m);
+}
+
+.arco-social__panel li span {
+  display: block;
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+}
+
+.arco-social__panel li strong {
+  display: block;
+}
+
+.arco-social__panel li small {
+  color: var(--arco-text-tertiary);
+  font-size: var(--arco-text-xs);
+}
+
+.arco-social__suggestions li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--arco-space-s);
+}
+
+.arco-social__suggestions li span {
+  font-size: var(--arco-text-sm);
+}
+
+@media (max-width: 767px) {
+  .arco-social__sidebar {
+    display: none;
+  }
+}

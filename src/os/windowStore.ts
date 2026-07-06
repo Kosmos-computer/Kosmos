@@ -5,17 +5,29 @@
  * app restores where the user left it.
  */
 import { create } from "zustand";
+import { syncNativeClose, syncNativeFocus, syncNativeOpen } from "./nativeAppWindows";
 
 export type SystemAppId =
   | "chat"
   | "studio"
   | "apps"
   | "skills"
+  | "keywallet"
+  | "apis"
   | "automations"
   | "files"
   | "notes"
+  | "email"
+  | "tasks"
+  | "contacts"
+  | "groups"
+  | "social"
+  | "sheets"
+  | "generator"
   | "terminal"
-  | "settings";
+  | "settings"
+  | "startup"
+  | "onboarding";
 
 export type WindowKind =
   | { type: "system"; app: SystemAppId }
@@ -54,6 +66,24 @@ export function windowKey(kind: WindowKind): string {
     case "installed":
       return `installed:${kind.appId}`;
   }
+}
+
+/** Inverse of windowKey — used by standalone Electron app windows. */
+export function parseWindowKey(key: string): WindowKind | null {
+  if (key.startsWith("system:")) {
+    const app = key.slice("system:".length) as SystemAppId;
+    return { type: "system", app };
+  }
+  if (key.startsWith("generated:")) {
+    return { type: "generated", appId: key.slice("generated:".length) };
+  }
+  if (key.startsWith("web:")) {
+    return { type: "web", webAppId: key.slice("web:".length) };
+  }
+  if (key.startsWith("installed:")) {
+    return { type: "installed", appId: key.slice("installed:".length) };
+  }
+  return null;
 }
 
 interface PersistedLayout {
@@ -127,9 +157,11 @@ const DEFAULT_SIZES: Record<string, { w: number; h: number }> = {
   "system:apps": { w: 760, h: 560 },
   "system:skills": { w: 760, h: 620 },
   "system:automations": { w: 760, h: 620 },
-  "system:files": { w: 680, h: 520 },
+  "system:files": { w: 1080, h: 680 },
+  "system:sheets": { w: 1180, h: 760 },
   "system:terminal": { w: 640, h: 440 },
   "system:settings": { w: 560, h: 620 },
+  "system:startup": { w: 980, h: 720 },
 };
 
 const MENUBAR_HEIGHT = 34;
@@ -187,7 +219,7 @@ interface WindowStore {
   nextZ: number;
 
   open: (kind: WindowKind, title: string) => void;
-  close: (id: string) => void;
+  close: (id: string, options?: { fromNative?: boolean }) => void;
   focus: (id: string) => void;
   toggleMinimize: (id: string) => void;
   toggleMaximize: (id: string) => void;
@@ -233,9 +265,10 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
       persist(next);
       return next;
     });
+    syncNativeOpen(id, title);
   },
 
-  close: (id) => {
+  close: (id, options) => {
     set((state) => {
       const win = state.windows.find((w) => w.id === id);
       const next = {
@@ -248,6 +281,7 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
       persist(next);
       return next;
     });
+    if (!options?.fromNative) syncNativeClose(id);
   },
 
   focus: (id) => {
@@ -266,6 +300,7 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
       persist(next);
       return next;
     });
+    syncNativeFocus(id);
   },
 
   toggleMinimize: (id) => {

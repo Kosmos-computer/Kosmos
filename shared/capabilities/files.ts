@@ -28,6 +28,19 @@ export const FOLDER_MIME = "inode/directory";
 export const DOC_MIME = "application/x-os-doc+json";
 export const SHEET_MIME = "application/x-os-sheet+json";
 export const SLIDES_MIME = "application/x-os-slides+json";
+export const TASK_MIME = "application/x-os-task+json";
+export const SCHEDULE_MIME = "application/x-os-schedule+json";
+export const PDF_MIME = "application/pdf";
+
+/** Blobs that must not be round-tripped as UTF-8 text. */
+export function isBinaryMime(mimeType: string): boolean {
+  return (
+    mimeType === PDF_MIME ||
+    mimeType.startsWith("image/") ||
+    mimeType.startsWith("video/") ||
+    mimeType.startsWith("audio/")
+  );
+}
 
 export interface FileEntry {
   id: string;
@@ -51,6 +64,8 @@ export interface FileCreateInput {
   mimeType?: string;
   /** Initial text content for files. */
   content?: string;
+  /** Base64-encoded binary content for PDFs, images, etc. */
+  contentBase64?: string;
 }
 
 /** Intent ids and their access class — the grant/audit units of the contract. */

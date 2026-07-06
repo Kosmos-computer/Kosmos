@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 import { AuthGate } from "./os/auth/AuthGate";
 import { Desktop } from "./os/Desktop";
 import { MobileShell } from "./os/MobileShell";
+import { StandaloneAppWindow } from "./os/StandaloneAppWindow";
+import { getStandaloneWindowKey } from "./os/nativeAppWindows";
 
 function useIsMobile(): boolean {
   const [mobile, setMobile] = useState(() => window.matchMedia("(max-width: 767px)").matches);
@@ -19,6 +21,16 @@ function useIsMobile(): boolean {
 }
 
 export default function App() {
+  const standaloneKey = getStandaloneWindowKey();
   const isMobile = useIsMobile();
-  return <AuthGate>{isMobile ? <MobileShell /> : <Desktop />}</AuthGate>;
+
+  if (standaloneKey) {
+    return <StandaloneAppWindow windowKey={standaloneKey} />;
+  }
+
+  return (
+    <AuthGate>
+      {isMobile ? <MobileShell /> : <Desktop />}
+    </AuthGate>
+  );
 }

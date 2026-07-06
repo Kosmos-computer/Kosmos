@@ -92,16 +92,17 @@ function useIdleLock(enabled: boolean) {
 // The gate
 // ---------------------------------------------------------------------------
 
-export function AuthGate({ children }: { children: ReactNode }) {
+export function AuthGate({ children, standalone = false }: { children: ReactNode; standalone?: boolean }) {
   const phase = useAuthStore((s) => s.phase);
   const init = useAuthStore((s) => s.init);
   const [bootElapsed, setBootElapsed] = useState(false);
+  const minBootMs = standalone ? 0 : MIN_BOOT_MS;
 
   useEffect(() => {
     void init();
-    const t = setTimeout(() => setBootElapsed(true), MIN_BOOT_MS);
+    const t = setTimeout(() => setBootElapsed(true), minBootMs);
     return () => clearTimeout(t);
-  }, [init]);
+  }, [init, minBootMs]);
 
   useIdleLock(phase === "ready");
 

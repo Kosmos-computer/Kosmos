@@ -9,11 +9,22 @@ import {
   PanelsTopLeft,
   LayoutGrid,
   CalendarClock,
-  FolderOpen,
+  HardDrive,
   SquareTerminal,
   Settings as SettingsIcon,
   StickyNote,
   Layers,
+  Wallet,
+  Plug,
+  Rocket,
+  Mail,
+  CheckSquare,
+  Contact,
+  Table,
+  Code2,
+  GraduationCap,
+  UsersRound,
+  Share2,
 } from "lucide-react";
 import type { SystemAppId } from "./windowStore";
 import { ChatApp } from "../apps/chat/ChatApp";
@@ -22,10 +33,21 @@ import { STUDIO_ID, STUDIO_TITLE } from "../apps/studio/studioMeta";
 import { AppsLibrary } from "../apps/library/AppsLibrary";
 import { AutomationsApp } from "../apps/automations/AutomationsApp";
 import { SkillsApp } from "../apps/skills/SkillsApp";
+import { KeyWalletApp } from "../apps/key-wallet/KeyWalletApp";
+import { ApisApp } from "../apps/apis/ApisApp";
 import { FilesApp } from "../apps/files/FilesApp";
 import { NotesApp } from "../apps/notes/NotesApp";
+import { EmailApp } from "../apps/email/EmailApp";
+import { TasksApp } from "../apps/tasks/TasksApp";
+import { ContactsApp } from "../apps/contacts/ContactsApp";
+import { GroupsApp } from "../apps/groups/GroupsApp";
+import { SocialApp } from "../apps/social/SocialApp";
+import { SheetsApp } from "../apps/sheets/SheetsApp";
+import { GeneratorApp } from "../apps/generator/GeneratorApp";
 import { TerminalApp } from "../apps/terminal/TerminalApp";
 import { SettingsApp } from "../apps/settings/SettingsApp";
+import { StartupApp } from "../apps/startup/StartupApp";
+import { OnboardingApp } from "../apps/onboarding/OnboardingApp";
 
 export interface SystemAppDef {
   id: SystemAppId;
@@ -39,11 +61,22 @@ export const SYSTEM_APPS: SystemAppDef[] = [
   { id: STUDIO_ID, title: STUDIO_TITLE, icon: PanelsTopLeft, component: StudioApp },
   { id: "apps", title: "Apps", icon: LayoutGrid, component: AppsLibrary },
   { id: "skills", title: "Skills", icon: Layers, component: SkillsApp },
+  { id: "keywallet", title: "Key Wallet", icon: Wallet, component: KeyWalletApp },
+  { id: "apis", title: "APIs", icon: Plug, component: ApisApp },
   { id: "automations", title: "Automations", icon: CalendarClock, component: AutomationsApp },
-  { id: "files", title: "Files", icon: FolderOpen, component: FilesApp },
+  { id: "files", title: "Drive", icon: HardDrive, component: FilesApp },
   { id: "notes", title: "Notes", icon: StickyNote, component: NotesApp },
+  { id: "email", title: "Email", icon: Mail, component: EmailApp },
+  { id: "tasks", title: "Tasks", icon: CheckSquare, component: TasksApp },
+  { id: "contacts", title: "Contacts", icon: Contact, component: ContactsApp },
+  { id: "groups", title: "Groups", icon: UsersRound, component: GroupsApp },
+  { id: "social", title: "Social", icon: Share2, component: SocialApp },
+  { id: "sheets", title: "Sheets", icon: Table, component: SheetsApp },
+  { id: "generator", title: "Generator", icon: Code2, component: GeneratorApp },
   { id: "terminal", title: "Terminal", icon: SquareTerminal, component: TerminalApp },
   { id: "settings", title: "Settings", icon: SettingsIcon, component: SettingsApp },
+  { id: "startup", title: "Setup", icon: Rocket, component: StartupApp },
+  { id: "onboarding", title: "Onboarding", icon: GraduationCap, component: OnboardingApp },
 ];
 
 export function systemApp(id: SystemAppId): SystemAppDef {

@@ -502,6 +502,19 @@
   min-height: 0;
 }
 
+.arco-preview-pane {
+  display: flex;
+  flex-shrink: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+.arco-preview-pane__content {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
 /* ── Column resize handle (shared) ─────────────────────────────────────────
    Overlaps adjacent panes (negative margin) so the 1px grip sits on the
    seam with no dead space — used by SidebarPane, Agent Studio, etc. */

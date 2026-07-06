@@ -7,12 +7,14 @@ import type { LlmProvider, Settings } from "@shared/types";
 import { ACP_PRESETS, PROVIDER_PRESETS } from "@shared/types";
 import { api } from "../../lib/api";
 import { useCan } from "../../os/auth/authStore";
-import { useOsStore } from "../../os/osStore";
+import { useOsStore, type AppWindowHost } from "../../os/osStore";
+import { isArcoDesktop } from "../../lib/desktopBridge";
 import { PasswordSection } from "./PasswordSection";
 import { UsersSection } from "./UsersSection";
 import { AppsSection } from "./AppsSection";
 import { AgentSection } from "./AgentSection";
 import { ChannelsSection } from "./ChannelsSection";
+import { ConnectedAccountsSection } from "./ConnectedAccountsSection";
 import { ExternalAccessSection } from "./ExternalAccessSection";
 import { McpServersSection } from "./McpServersSection";
 import { ProvidersSection } from "./ProvidersSection";
@@ -37,8 +39,8 @@ import {
   DEFAULT_SETTINGS_SECTION,
   settingsSectionLabel,
   visibleSettingsNavGroups,
-  type SettingsSectionId,
 } from "./settingsSections";
+import { useSettingsStore } from "./settingsStore";
 
 const PROVIDERS: { id: LlmProvider; label: string }[] = [
   { id: "mock", label: "Mock (no key needed)" },
@@ -53,15 +55,17 @@ const PROVIDERS: { id: LlmProvider; label: string }[] = [
 const NAV_BRAND_MAX_BYTES = 512 * 1024;
 
 export function SettingsApp() {
-  const { theme, setTheme, wallpaper, setWallpaper, authWallpaper, setAuthWallpaper, navBrandImage, setNavBrandImage, notify } =
+  const { theme, setTheme, wallpaper, setWallpaper, authWallpaper, setAuthWallpaper, navBrandImage, setNavBrandImage, appWindowHost, setAppWindowHost, notify } =
     useOsStore();
   const faceBg = useFacePreferencesStore((s) => s.faceBg);
   const setFaceBg = useFacePreferencesStore((s) => s.setFaceBg);
   const canManageUsers = useCan("users:manage");
   const canWriteSettings = useCan("settings:write");
   const [settings, setSettings] = useState<Settings | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
-  const [activeSection, setActiveSection] = useState<SettingsSectionId>(DEFAULT_SETTINGS_SECTION);
+  const activeSection = useSettingsStore((s) => s.activeSection);
+  const setActiveSection = useSettingsStore((s) => s.setActiveSection);
   const [sidebarWidth, setSidebarWidth] = useState(220);
 
   const navGroups = useMemo(
@@ -69,8 +73,17 @@ export function SettingsApp() {
     [canWriteSettings, canManageUsers],
   );
 
+  const refreshSettings = async () => {
+    try {
+      setLoadError(null);
+      setSettings(await api.getSettings());
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Failed to load settings");
+    }
+  };
+
   useEffect(() => {
-    void api.getSettings().then(setSettings);
+    void refreshSettings();
   }, []);
 
   useEffect(() => {
@@ -79,6 +92,17 @@ export function SettingsApp() {
       setActiveSection(visible[0] ?? DEFAULT_SETTINGS_SECTION);
     }
   }, [navGroups, activeSection]);
+
+  if (loadError) {
+    return (
+      <EmptyState title="Could not load settings">
+        {loadError}
+        <Button variant="primary" onClick={() => void refreshSettings()}>
+          Retry
+        </Button>
+      </EmptyState>
+    );
+  }
 
   if (!settings) return <EmptyState>Loading settings…</EmptyState>;
 
@@ -249,6 +273,29 @@ export function SettingsApp() {
                       ))}
                     </SettingsChipRow>
                   </SettingsFieldRow>
+                  {isArcoDesktop() && (
+                    <SettingsFieldRow
+                      label="App windows"
+                      hint="In Desktop view, open each app in its own window or inside the main Arco window."
+                    >
+                      <SettingsChipRow>
+                        {(
+                          [
+                            { id: "embedded", label: "Inside main window" },
+                            { id: "native", label: "Separate windows" },
+                          ] as const
+                        ).map((option) => (
+                          <Chip
+                            key={option.id}
+                            active={appWindowHost === option.id}
+                            onClick={() => setAppWindowHost(option.id as AppWindowHost)}
+                          >
+                            {option.label}
+                          </Chip>
+                        ))}
+                      </SettingsChipRow>
+                    </SettingsFieldRow>
+                  )}
                   <SettingsFieldRow
                     label="Assistant face"
                     hint="Background color for the Arco face in voice chat."
@@ -381,6 +428,7 @@ export function SettingsApp() {
           {activeSection === "mcp" && <McpServersSection />}
           {activeSection === "skills" && <SkillsSection />}
           {activeSection === "channels" && <ChannelsSection />}
+          {activeSection === "accounts" && <ConnectedAccountsSection />}
           {activeSection === "permissions" && canWriteSettings && <AgentSection />}
           {activeSection === "providers" && <ProvidersSection />}
           {activeSection === "external" && <ExternalAccessSection />}

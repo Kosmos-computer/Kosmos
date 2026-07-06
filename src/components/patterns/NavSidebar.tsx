@@ -27,9 +27,13 @@ export interface NavSidebarSection {
 
 export interface NavSidebarProps {
   header?: ReactNode;
+  /** Replaces the default primary button when set (e.g. a dropdown menu). */
+  primarySlot?: ReactNode;
   primaryAction?: { label: string; icon?: LucideIcon; onClick?: () => void };
   quickLinks?: NavSidebarQuickLink[];
   sections: NavSidebarSection[];
+  /** When set, replaces the default section list in the scroll area. */
+  scrollContent?: ReactNode;
   footer?: ReactNode;
   className?: string;
 }
@@ -46,9 +50,11 @@ export function NavSidebarSectionHeader({ title }: { title?: string }) {
 /** Workspace sidebar — primary action, quick links, grouped sections, footer. */
 export function NavSidebar({
   header,
+  primarySlot,
   primaryAction,
   quickLinks,
   sections,
+  scrollContent,
   footer,
   className = "",
 }: NavSidebarProps) {
@@ -57,9 +63,11 @@ export function NavSidebar({
     <div className={["arco-nav-sidebar", className].filter(Boolean).join(" ")}>
       {header ? <div className="arco-nav-sidebar__header-slot">{header}</div> : null}
 
-      {(primaryAction || quickLinks) && (
+      {(primarySlot || primaryAction || quickLinks) && (
         <div className="arco-nav-sidebar__header">
-          {primaryAction ? (
+          {primarySlot ? (
+            primarySlot
+          ) : primaryAction ? (
             <button type="button" className="arco-btn arco-nav-sidebar__primary" onClick={primaryAction.onClick}>
               {PrimaryIcon ? <PrimaryIcon size={15} strokeWidth={1.75} /> : null}
               {primaryAction.label}
@@ -86,26 +94,28 @@ export function NavSidebar({
       )}
 
       <div className="arco-nav-sidebar__scroll arco-scroll">
-        <div className="arco-nav-sidebar__sections">
-          {sections.map((section) => (
-            <div key={section.id}>
-              <NavSidebarSectionHeader title={section.title} />
-              <div className="arco-nav-sidebar__section-items">
-                {section.items?.map((item) => (
-                  <ListItem
-                    key={item.id}
-                    className="arco-nav-sidebar__nav-item"
-                    leading={item.leading}
-                    label={item.label}
-                    trailing={item.trailing}
-                    active={item.active}
-                    onClick={item.onClick}
-                  />
-                ))}
+        {scrollContent ?? (
+          <div className="arco-nav-sidebar__sections">
+            {sections.map((section) => (
+              <div key={section.id}>
+                <NavSidebarSectionHeader title={section.title} />
+                <div className="arco-nav-sidebar__section-items">
+                  {section.items?.map((item) => (
+                    <ListItem
+                      key={item.id}
+                      className="arco-nav-sidebar__nav-item"
+                      leading={item.leading}
+                      label={item.label}
+                      trailing={item.trailing}
+                      active={item.active}
+                      onClick={item.onClick}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {footer ? <div className="arco-nav-sidebar__footer">{footer}</div> : null}

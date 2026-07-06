@@ -30,6 +30,17 @@ const BLOCK_LABELS: Record<BlockFormat, string> = {
 
 export interface EditorToolbarProps {
   className?: string;
+  blockFormat?: BlockFormat;
+  onBlockFormatChange?: (format: BlockFormat) => void;
+  activeMarks?: TextMark[];
+  onToggleMark?: (mark: TextMark) => void;
+  onInsertLink?: () => void;
+  align?: TextAlign;
+  onAlignChange?: (align: TextAlign) => void;
+  canUndo?: boolean;
+  canRedo?: boolean;
+  onUndo?: () => void;
+  onRedo?: () => void;
 }
 
 function ToolButton({
@@ -62,11 +73,54 @@ function ToolButton({
   );
 }
 
-/** Document formatting toolbar — stub controls until editor wiring. */
-export function EditorToolbar({ className = "" }: EditorToolbarProps) {
-  const [blockFormat, setBlockFormat] = useState<BlockFormat>("paragraph");
-  const [marks, setMarks] = useState<Set<TextMark>>(() => new Set());
-  const [align, setAlign] = useState<TextAlign>("left");
+/** Document formatting toolbar — controlled when handlers are passed, otherwise local demo state. */
+export function EditorToolbar({
+  className = "",
+  blockFormat: blockFormatProp,
+  onBlockFormatChange,
+  activeMarks,
+  onToggleMark,
+  onInsertLink,
+  align: alignProp,
+  onAlignChange,
+  canUndo,
+  canRedo,
+  onUndo,
+  onRedo,
+}: EditorToolbarProps) {
+  const [localBlockFormat, setLocalBlockFormat] = useState<BlockFormat>("paragraph");
+  const [localMarks, setLocalMarks] = useState<Set<TextMark>>(() => new Set());
+  const [localAlign, setLocalAlign] = useState<TextAlign>("left");
+
+  const controlled = Boolean(onBlockFormatChange || onToggleMark || onAlignChange || onUndo || onRedo);
+  const blockFormat = blockFormatProp ?? localBlockFormat;
+  const align = alignProp ?? localAlign;
+  const marks = activeMarks ?? localMarks;
+
+  const setBlockFormat = (format: BlockFormat) => {
+    if (onBlockFormatChange) onBlockFormatChange(format);
+    else setLocalBlockFormat(format);
+  };
+
+  const setAlign = (value: TextAlign) => {
+    if (onAlignChange) onAlignChange(value);
+    else setLocalAlign(value);
+  };
+
+  const toggleMark = (mark: TextMark) => {
+    if (onToggleMark) {
+      onToggleMark(mark);
+      return;
+    }
+    setLocalMarks((prev) => {
+      const next = new Set(prev);
+      if (next.has(mark)) next.delete(mark);
+      else next.add(mark);
+      return next;
+    });
+  };
+
+  const hasMark = (mark: TextMark) => (marks instanceof Set ? marks.has(mark) : marks.includes(mark));
 
   const blockItems: MenuItem[] = (Object.keys(BLOCK_LABELS) as BlockFormat[]).map((format) => ({
     id: format,
@@ -74,15 +128,6 @@ export function EditorToolbar({ className = "" }: EditorToolbarProps) {
     checked: blockFormat === format,
     onSelect: () => setBlockFormat(format),
   }));
-
-  const toggleMark = (mark: TextMark) => {
-    setMarks((prev) => {
-      const next = new Set(prev);
-      if (next.has(mark)) next.delete(mark);
-      else next.add(mark);
-      return next;
-    });
-  };
 
   return (
     <div
@@ -106,30 +151,30 @@ export function EditorToolbar({ className = "" }: EditorToolbarProps) {
       <span className="arco-editor-toolbar__divider" role="separator" aria-orientation="vertical" />
 
       <div className="arco-editor-toolbar__group">
-        <ToolButton label="Bold" pressed={marks.has("bold")} onClick={() => toggleMark("bold")}>
+        <ToolButton label="Bold" pressed={hasMark("bold")} onClick={() => toggleMark("bold")}>
           <Bold size={15} strokeWidth={1.75} />
         </ToolButton>
-        <ToolButton label="Italic" pressed={marks.has("italic")} onClick={() => toggleMark("italic")}>
+        <ToolButton label="Italic" pressed={hasMark("italic")} onClick={() => toggleMark("italic")}>
           <Italic size={15} strokeWidth={1.75} />
         </ToolButton>
-        <ToolButton label="Underline" pressed={marks.has("underline")} onClick={() => toggleMark("underline")}>
+        <ToolButton label="Underline" pressed={hasMark("underline")} onClick={() => toggleMark("underline")}>
           <Underline size={15} strokeWidth={1.75} />
         </ToolButton>
         <ToolButton
           label="Strikethrough"
-          pressed={marks.has("strikethrough")}
+          pressed={hasMark("strikethrough")}
           onClick={() => toggleMark("strikethrough")}
         >
           <Strikethrough size={15} strokeWidth={1.75} />
         </ToolButton>
-        <ToolButton label="Inline code" pressed={marks.has("code")} onClick={() => toggleMark("code")}>
+        <ToolButton label="Inline code" pressed={hasMark("code")} onClick={() => toggleMark("code")}>
           <Code size={15} strokeWidth={1.75} />
         </ToolButton>
       </div>
 
       <span className="arco-editor-toolbar__divider" role="separator" aria-orientation="vertical" />
 
-      <ToolButton label="Link">
+      <ToolButton label="Link" onClick={onInsertLink}>
         <Link2 size={15} strokeWidth={1.75} />
       </ToolButton>
 
@@ -150,10 +195,18 @@ export function EditorToolbar({ className = "" }: EditorToolbarProps) {
       <span className="arco-editor-toolbar__spacer" />
 
       <div className="arco-editor-toolbar__group">
-        <ToolButton label="Undo" disabled>
+        <ToolButton
+          label="Undo"
+          disabled={controlled ? !canUndo : true}
+          onClick={onUndo}
+        >
           <Undo2 size={15} strokeWidth={1.75} />
         </ToolButton>
-        <ToolButton label="Redo" disabled>
+        <ToolButton
+          label="Redo"
+          disabled={controlled ? !canRedo : true}
+          onClick={onRedo}
+        >
           <Redo2 size={15} strokeWidth={1.75} />
         </ToolButton>
       </div>

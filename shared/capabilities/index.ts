@@ -7,6 +7,7 @@
 import { CALENDAR_CONTRACT_ID, CALENDAR_INTENTS, CALENDAR_INTENT_SCHEMAS } from "./calendar.js";
 import { DOCS_CONTRACT_ID, DOCS_INTENTS, DOCS_INTENT_SCHEMAS } from "./docs.js";
 import { FILES_CONTRACT_ID, FILES_INTENTS, FILES_INTENT_SCHEMAS } from "./files.js";
+import { SHEETS_CONTRACT_ID, SHEETS_INTENTS, SHEETS_INTENT_SCHEMAS } from "./sheets.js";
 import { VOICE_CONTRACT_ID, VOICE_INTENTS, VOICE_INTENT_SCHEMAS } from "./voice.js";
 
 export type IntentAccess = "read" | "write";
@@ -16,6 +17,7 @@ export const CONTRACTS: Record<string, Record<string, IntentAccess>> = {
   [CALENDAR_CONTRACT_ID]: CALENDAR_INTENTS,
   [FILES_CONTRACT_ID]: FILES_INTENTS,
   [DOCS_CONTRACT_ID]: DOCS_INTENTS,
+  [SHEETS_CONTRACT_ID]: SHEETS_INTENTS,
   [VOICE_CONTRACT_ID]: VOICE_INTENTS,
 };
 
@@ -24,6 +26,7 @@ export const INTENT_SCHEMAS: Record<string, Record<string, unknown>> = {
   ...CALENDAR_INTENT_SCHEMAS,
   ...FILES_INTENT_SCHEMAS,
   ...DOCS_INTENT_SCHEMAS,
+  ...SHEETS_INTENT_SCHEMAS,
   ...VOICE_INTENT_SCHEMAS,
 };
 

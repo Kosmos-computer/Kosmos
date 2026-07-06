@@ -14,6 +14,9 @@ export type Theme = "dark" | "light";
 /** Desktop = floating windows with titlebar chrome. App = full-screen apps without window controls. */
 export type ShellView = "desktop" | "app";
 
+/** Where app windows render in the desktop Electron shell. */
+export type AppWindowHost = "embedded" | "native";
+
 export interface OsNotification {
   id: string;
   message: string;
@@ -49,6 +52,8 @@ interface OsStore {
   shellConfirms: ShellConfirm[];
   /** Shell layout: desktop windows vs chromeless full-screen apps. */
   shellView: ShellView;
+  /** Desktop app only: embed apps in the shell or open native Electron windows. */
+  appWindowHost: AppWindowHost;
   /** Custom nav rail brand image (data URL). Null shows the default logo mark. */
   navBrandImage: string | null;
 
@@ -64,6 +69,7 @@ interface OsStore {
   setNavPinnedIds: (updater: string[] | ((prev: string[]) => string[])) => void;
   setDockPinnedIds: (updater: string[] | ((prev: string[]) => string[])) => void;
   setShellView: (view: ShellView) => void;
+  setAppWindowHost: (host: AppWindowHost) => void;
   addShellConfirm: (confirm: ShellConfirm) => void;
   removeShellConfirm: (confirmId: string) => void;
 }
@@ -92,6 +98,7 @@ export const useOsStore = create<OsStore>((set) => ({
   dockPinnedIds: loadPinnedIds("arco:dock-pinned"),
   shellConfirms: [],
   shellView: localStorage.getItem("arco:shell-view") === "app" ? "app" : "desktop",
+  appWindowHost: localStorage.getItem("arco:app-window-host") === "native" ? "native" : "embedded",
   navBrandImage: localStorage.getItem("arco:nav-brand-image"),
 
   setTheme: (theme) => {
@@ -180,5 +187,10 @@ export const useOsStore = create<OsStore>((set) => ({
   setShellView: (shellView) => {
     localStorage.setItem("arco:shell-view", shellView);
     set({ shellView });
+  },
+
+  setAppWindowHost: (appWindowHost) => {
+    localStorage.setItem("arco:app-window-host", appWindowHost);
+    set({ appWindowHost });
   },
 }));

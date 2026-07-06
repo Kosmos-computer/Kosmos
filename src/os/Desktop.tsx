@@ -13,14 +13,17 @@ import { Dock } from "./Dock";
 import { HoverDock } from "./HoverDock";
 import { HoverMenuBar } from "./HoverMenuBar";
 import { WindowFrame } from "./WindowFrame";
-import { systemApp } from "./systemApps";
+import { BentoDrawer } from "./bento/BentoDrawer";
 import { connectShellEvents } from "./shellEvents";
-import { AppSurface } from "../apps/appview/AppSurface";
-import { WebAppSurface } from "../apps/appview/WebAppSurface";
-import { AppHost } from "../apps/appview/AppHost";
+import { WindowContentById } from "./windowContent";
 import { AgentCursor } from "./cursor/AgentCursor";
 import { ConfirmCard } from "../apps/chat/ConfirmCard";
 import { WallpaperBackdrop } from "./wallpaper/WallpaperBackdrop";
+import {
+  initNativeAppWindowBridge,
+  migrateAppWindowHost,
+  shouldUseNativeAppWindows,
+} from "./nativeAppWindows";
 
 function Notifications() {
   const notifications = useOsStore((s) => s.notifications);
@@ -70,28 +73,19 @@ function ShellConfirms() {
 }
 
 function WindowContent({ winId }: { winId: string }) {
-  const win = useWindowStore((s) => s.windows.find((w) => w.id === winId));
-  if (!win) return null;
-  if (win.kind.type === "system") {
-    const Component = systemApp(win.kind.app).component;
-    return <Component />;
-  }
-  if (win.kind.type === "web") {
-    return <WebAppSurface webAppId={win.kind.webAppId} />;
-  }
-  if (win.kind.type === "installed") {
-    return <AppHost appId={win.kind.appId} />;
-  }
-  return <AppSurface appId={win.kind.appId} />;
+  return <WindowContentById winId={winId} />;
 }
 
 export function Desktop() {
   const navExpanded = useOsStore((s) => s.navExpanded);
   const shellView = useOsStore((s) => s.shellView);
+  const appWindowHost = useOsStore((s) => s.appWindowHost);
   const refreshApps = useOsStore((s) => s.refreshApps);
   const windows = useWindowStore((s) => s.windows);
   const open = useWindowStore((s) => s.open);
   const [menuBarOpen, setMenuBarOpen] = useState(false);
+  const nativeHost = shouldUseNativeAppWindows();
+  const embeddedWindows = nativeHost ? [] : windows;
 
   useEffect(() => {
     void refreshApps();
@@ -99,6 +93,7 @@ export function Desktop() {
     if (useWindowStore.getState().windows.length === 0) {
       open({ type: "system", app: "chat" }, "Chat");
     }
+    const disconnectNative = initNativeAppWindowBridge();
     // Agent turns that run outside a chat stream (voice) drive the desktop
     // through the shell-events channel.
     const disconnect = connectShellEvents();
@@ -109,8 +104,13 @@ export function Desktop() {
     return () => {
       window.removeEventListener("focus", onFocus);
       disconnect();
+      disconnectNative();
     };
   }, [refreshApps, open]);
+
+  useEffect(() => {
+    migrateAppWindowHost(appWindowHost, shellView);
+  }, [appWindowHost, shellView]);
 
   const appView = shellView === "app";
 
@@ -118,7 +118,7 @@ export function Desktop() {
     if (!appView) setMenuBarOpen(false);
   }, [appView]);
 
-  const focusedId = [...windows.filter((w) => !w.minimized)].sort((a, b) => b.z - a.z)[0]?.id;
+  const focusedId = [...embeddedWindows.filter((w) => !w.minimized)].sort((a, b) => b.z - a.z)[0]?.id;
 
   return (
     <div
@@ -136,16 +136,19 @@ export function Desktop() {
         <MenuBar />
       </HoverMenuBar>
       <NavRail />
-      {windows.map((win) => (
-        <WindowFrame key={win.id} win={win} focused={win.id === focusedId}>
-          <WindowContent winId={win.id} />
-        </WindowFrame>
-      ))}
+      <div className="arco-window-layer">
+        {embeddedWindows.map((win) => (
+          <WindowFrame key={win.id} win={win} focused={win.id === focusedId}>
+            <WindowContent winId={win.id} />
+          </WindowFrame>
+        ))}
+      </div>
       <HoverDock enabled={appView}>
         <Dock />
       </HoverDock>
       <Notifications />
       <ShellConfirms />
+      <BentoDrawer />
       <AgentCursor />
     </div>
   );

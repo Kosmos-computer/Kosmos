@@ -15,9 +15,14 @@ import Database from "better-sqlite3";
 import {
   FILES_CHANGED_TOPIC,
   FOLDER_MIME,
+  isBinaryMime,
   type FileCreateInput,
   type FileEntry,
 } from "../../shared/capabilities/files.js";
+import {
+  DRIVE_SEED_FILES,
+  DRIVE_SEED_FOLDERS,
+} from "../seeds/driveSeedData.js";
 import { dataDirs } from "../env.js";
 import { announceAppEvent } from "../bus.js";
 
@@ -25,6 +30,8 @@ import { announceAppEvent } from "../bus.js";
 const MAX_CONTENT_BYTES = 10 * 1024 * 1024;
 
 const BLOBS_DIR = path.join(dataDirs.root, "files");
+const SEED_PDF_PATH = path.join(import.meta.dirname, "../seeds/arco-test.pdf");
+const SEED_PDF_NAME = "Arco Sample.pdf";
 
 function announceChange(): void {
   announceAppEvent(FILES_CHANGED_TOPIC, { appId: "system" });
@@ -101,6 +108,117 @@ function subtreeIds(id: string): string[] {
   return out;
 }
 
+function seedEntryExists(name: string, parentId: string | null): boolean {
+  const row = getDb()
+    .prepare(
+      `SELECT id FROM files
+       WHERE name = ? AND trashed = 0
+         AND ((parentId IS NULL AND ? IS NULL) OR parentId = ?)
+       LIMIT 1`,
+    )
+    .get(name, parentId, parentId) as { id: string } | undefined;
+  return Boolean(row);
+}
+
+function insertSeedFile(entry: FileEntry, content?: Buffer | string): void {
+  getDb()
+    .prepare(
+      `INSERT INTO files (id, name, parentId, mimeType, size, starred, trashed, createdAt, updatedAt)
+       VALUES ($id, $name, $parentId, $mimeType, $size, $starred, 0, $createdAt, $updatedAt)`,
+    )
+    .run({
+      id: entry.id,
+      name: entry.name,
+      parentId: entry.parentId,
+      mimeType: entry.mimeType,
+      size: entry.size,
+      starred: entry.starred ? 1 : 0,
+      createdAt: entry.createdAt,
+      updatedAt: entry.updatedAt,
+    });
+  if (content !== undefined) {
+    if (Buffer.isBuffer(content)) fs.writeFileSync(blobPath(entry.id), content);
+    else fs.writeFileSync(blobPath(entry.id), content, "utf-8");
+  }
+}
+
+function insertSeedFolder(name: string, parentId: string | null): FileEntry {
+  const now = new Date().toISOString();
+  const entry: FileEntry = {
+    id: crypto.randomUUID(),
+    name,
+    parentId,
+    mimeType: FOLDER_MIME,
+    size: 0,
+    starred: false,
+    trashed: false,
+    createdAt: now,
+    updatedAt: now,
+  };
+  insertSeedFile(entry);
+  return entry;
+}
+
+function findFolderId(name: string, parentId: string | null): string | undefined {
+  const row = getDb()
+    .prepare(
+      `SELECT id FROM files
+       WHERE name = ? AND mimeType = ? AND trashed = 0
+         AND ((parentId IS NULL AND ? IS NULL) OR parentId = ?)
+       LIMIT 1`,
+    )
+    .get(name, FOLDER_MIME, parentId, parentId) as { id: string } | undefined;
+  return row?.id;
+}
+
+function seedDriveCatalog(): void {
+  const folderIds = new Map<string, string>();
+
+  for (const folder of DRIVE_SEED_FOLDERS) {
+    const parentId = folder.parent ? (folderIds.get(folder.parent) ?? null) : null;
+    const path = folder.parent ? `${folder.parent}/${folder.name}` : folder.name;
+    if (folder.parent && !parentId) continue;
+
+    const existingId = findFolderId(folder.name, parentId);
+    if (existingId) {
+      folderIds.set(path, existingId);
+      continue;
+    }
+
+    const created = insertSeedFolder(folder.name, parentId);
+    folderIds.set(path, created.id);
+  }
+
+  let seeded = 0;
+  for (const file of DRIVE_SEED_FILES) {
+    const parentId = file.folder ? (folderIds.get(file.folder) ?? null) : null;
+    if (file.folder && !parentId) continue;
+    if (seedEntryExists(file.name, parentId)) continue;
+
+    const content = file.content;
+    const size = Buffer.byteLength(content, "utf-8");
+    const now = new Date().toISOString();
+    const entry: FileEntry = {
+      id: crypto.randomUUID(),
+      name: file.name,
+      parentId,
+      mimeType: file.mimeType,
+      size,
+      starred: Boolean(file.starred),
+      trashed: false,
+      createdAt: now,
+      updatedAt: now,
+    };
+    insertSeedFile(entry, content);
+    seeded += 1;
+  }
+
+  if (seeded > 0) {
+    announceChange();
+    console.log(`[files] seeded ${seeded} Drive sample file(s)`);
+  }
+}
+
 export const filesService = {
   list(params: { parentId?: string | null; trashed?: boolean; starred?: boolean } = {}): FileEntry[] {
     const dbh = getDb();
@@ -140,6 +258,16 @@ export const filesService = {
     return rows.map(toEntry);
   },
 
+  /** Non-folder entries sorted by last update — the Drive "Recent" view. */
+  recent(limit = 20): FileEntry[] {
+    const rows = getDb()
+      .prepare(
+        "SELECT * FROM files WHERE trashed = 0 AND mimeType != ? ORDER BY updatedAt DESC LIMIT ?",
+      )
+      .all(FOLDER_MIME, limit) as FileRow[];
+    return rows.map(toEntry);
+  },
+
   create(input: FileCreateInput): FileEntry {
     const name = input.name?.trim();
     if (!name) throw new Error("name is required");
@@ -147,8 +275,18 @@ export const filesService = {
     requireFolder(parentId);
 
     const isFolder = input.kind === "folder";
+    const mimeType = isFolder ? FOLDER_MIME : input.mimeType?.trim() || "text/plain";
     const content = isFolder ? undefined : (input.content ?? "");
-    const size = content !== undefined ? Buffer.byteLength(content, "utf-8") : 0;
+    const contentBase64 = isFolder ? undefined : input.contentBase64;
+    let size = 0;
+    let blob: Buffer | string | undefined;
+    if (contentBase64 !== undefined) {
+      blob = Buffer.from(contentBase64, "base64");
+      size = blob.length;
+    } else if (content !== undefined) {
+      blob = content;
+      size = Buffer.byteLength(content, "utf-8");
+    }
     if (size > MAX_CONTENT_BYTES) throw new Error("Content exceeds the 10 MB limit");
 
     const now = new Date().toISOString();
@@ -156,7 +294,7 @@ export const filesService = {
       id: crypto.randomUUID(),
       name,
       parentId,
-      mimeType: isFolder ? FOLDER_MIME : input.mimeType?.trim() || "text/plain",
+      mimeType,
       size,
       starred: false,
       trashed: false,
@@ -177,7 +315,10 @@ export const filesService = {
         createdAt: entry.createdAt,
         updatedAt: entry.updatedAt,
       });
-    if (content !== undefined) fs.writeFileSync(blobPath(entry.id), content, "utf-8");
+    if (blob !== undefined) {
+      if (Buffer.isBuffer(blob)) fs.writeFileSync(blobPath(entry.id), blob);
+      else fs.writeFileSync(blobPath(entry.id), blob, "utf-8");
+    }
     announceChange();
     return entry;
   },
@@ -257,6 +398,9 @@ export const filesService = {
   readContent(id: string): { id: string; name: string; mimeType: string; content: string } {
     const entry = requireEntry(id);
     if (entry.mimeType === FOLDER_MIME) throw new Error("Folders have no content");
+    if (isBinaryMime(entry.mimeType)) {
+      throw new Error(`Binary content must be fetched via blob endpoint: ${entry.mimeType}`);
+    }
     let content = "";
     try {
       content = fs.readFileSync(blobPath(id), "utf-8");
@@ -266,9 +410,22 @@ export const filesService = {
     return { id: entry.id, name: entry.name, mimeType: entry.mimeType, content };
   },
 
+  readBlob(id: string): { entry: FileEntry; data: Buffer } {
+    const entry = requireEntry(id);
+    if (entry.mimeType === FOLDER_MIME) throw new Error("Folders have no content");
+    let data = Buffer.alloc(0);
+    try {
+      data = fs.readFileSync(blobPath(id));
+    } catch {
+      // Entry exists but blob was never written — treat as empty.
+    }
+    return { entry, data };
+  },
+
   writeContent(id: string, content: string): FileEntry {
     const entry = requireEntry(id);
     if (entry.mimeType === FOLDER_MIME) throw new Error("Folders have no content");
+    if (isBinaryMime(entry.mimeType)) throw new Error(`Binary content is read-only: ${entry.mimeType}`);
     const size = Buffer.byteLength(content, "utf-8");
     if (size > MAX_CONTENT_BYTES) throw new Error("Content exceeds the 10 MB limit");
     fs.writeFileSync(blobPath(id), content, "utf-8");
@@ -278,4 +435,51 @@ export const filesService = {
     announceChange();
     return requireEntry(id);
   },
+
+  /** Idempotent sample content for Drive — PDF smoke test + office-suite catalog. */
+  ensureSeeds(): void {
+    seedPdf();
+    seedDriveCatalog();
+  },
 };
+
+function seedPdf(): void {
+  const existing = getDb()
+    .prepare("SELECT id FROM files WHERE name = ? AND parentId IS NULL AND trashed = 0 LIMIT 1")
+    .get(SEED_PDF_NAME) as { id: string } | undefined;
+  if (existing) return;
+  if (!fs.existsSync(SEED_PDF_PATH)) {
+    console.warn(`[files] missing seed PDF at ${SEED_PDF_PATH}`);
+    return;
+  }
+  const data = fs.readFileSync(SEED_PDF_PATH);
+  const now = new Date().toISOString();
+  const entry: FileEntry = {
+    id: crypto.randomUUID(),
+    name: SEED_PDF_NAME,
+    parentId: null,
+    mimeType: "application/pdf",
+    size: data.length,
+    starred: true,
+    trashed: false,
+    createdAt: now,
+    updatedAt: now,
+  };
+  getDb()
+    .prepare(
+      `INSERT INTO files (id, name, parentId, mimeType, size, starred, trashed, createdAt, updatedAt)
+       VALUES ($id, $name, $parentId, $mimeType, $size, 1, 0, $createdAt, $updatedAt)`,
+    )
+    .run({
+      id: entry.id,
+      name: entry.name,
+      parentId: entry.parentId,
+      mimeType: entry.mimeType,
+      size: entry.size,
+      createdAt: entry.createdAt,
+      updatedAt: entry.updatedAt,
+    });
+  fs.writeFileSync(blobPath(entry.id), data);
+  announceChange();
+  console.log(`[files] seeded ${SEED_PDF_NAME}`);
+}

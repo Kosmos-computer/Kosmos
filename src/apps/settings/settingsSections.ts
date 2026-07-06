@@ -4,6 +4,7 @@ import {
   Bot,
   Globe,
   Layers,
+  Link2,
   Lock,
   Palette,
   Plug,
@@ -23,6 +24,7 @@ export type SettingsSectionId =
   | "mcp"
   | "skills"
   | "channels"
+  | "accounts"
   | "permissions"
   | "providers"
   | "external"
@@ -70,6 +72,7 @@ export const SETTINGS_NAV_GROUPS: SettingsNavGroup[] = [
     title: "Integrations",
     items: [
       { id: "channels", label: "Channels", icon: Plug },
+      { id: "accounts", label: "Connected accounts", icon: Link2 },
       { id: "external", label: "External access", icon: Globe },
       { id: "providers", label: "Default providers", icon: Shield },
     ],

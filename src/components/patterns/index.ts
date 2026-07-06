@@ -39,6 +39,8 @@ export {
   type SidebarUserFooterProps,
 } from "./NavSidebar";
 export { SidebarPane, type SidebarPaneProps } from "./SidebarPane";
+export { PreviewPane, type PreviewPaneProps } from "./PreviewPane";
+export { ConnectServiceModal, type ConnectServiceModalProps } from "./ConnectServiceModal";
 export { useColumnResize, type UseColumnResizeOptions } from "./useColumnResize";
 export {
   ModuleCardGrid,
@@ -49,3 +51,14 @@ export {
   ModuleSection,
   ModuleToolbar,
 } from "./ModuleDashboard";
+export { OnboardingWidget } from "./OnboardingWidget";
+export {
+  type OnboardingStep,
+  type OnboardingVariant,
+  type OnboardingWidgetProps,
+} from "./onboardingTypes";
+export {
+  useOnboardingFlow,
+  type OnboardingFlowViewModel,
+  type UseOnboardingFlowOptions,
+} from "./useOnboardingFlow";

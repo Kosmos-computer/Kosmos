@@ -1,16 +1,6 @@
-import { NodeViewWrapper } from "@tiptap/react";
+import { NodeViewWrapper, type ReactNodeViewProps } from "@tiptap/react";
 import { widgetDef } from "@shared/widgets/registry";
 import { validateWidget } from "@shared/widgets/validate";
-
-interface Props {
-  node: {
-    attrs: {
-      widgetType: string;
-      version: number;
-      props: Record<string, unknown>;
-    };
-  };
-}
 
 function trendGlyph(trend?: unknown): string {
   if (trend === "up") return "↑";
@@ -19,11 +9,16 @@ function trendGlyph(trend?: unknown): string {
   return "";
 }
 
-export function WidgetNodeView({ node }: Props) {
+export function WidgetNodeView({ node }: ReactNodeViewProps) {
+  const attrs = node.attrs as {
+    widgetType: string;
+    version: number;
+    props: Record<string, unknown>;
+  };
   const payload = {
-    type: node.attrs.widgetType,
-    version: node.attrs.version,
-    props: node.attrs.props ?? {},
+    type: attrs.widgetType,
+    version: attrs.version,
+    props: attrs.props ?? {},
   };
   const result = validateWidget(payload);
 

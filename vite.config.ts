@@ -7,6 +7,10 @@ export default defineConfig({
   resolve: {
     alias: {
       "@shared": fileURLToPath(new URL("./shared", import.meta.url)),
+      "@arco/editor-kit/styles.css": fileURLToPath(
+        new URL("./packages/editor-kit/src/editor.css", import.meta.url),
+      ),
+      "@arco/editor-kit": fileURLToPath(new URL("./packages/editor-kit/src/index.ts", import.meta.url)),
     },
   },
   server: {
@@ -26,6 +30,9 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
+  },
+  optimizeDeps: {
+    exclude: ["pdfjs-dist"],
   },
   build: {
     outDir: "dist",

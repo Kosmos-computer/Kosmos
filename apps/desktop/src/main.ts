@@ -1,6 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { app, BrowserWindow, shell } from "electron";
+import { registerAppWindowIpc } from "./appWindows.js";
 import { desktopDataDir, repoRoot } from "./paths.js";
 import { attachServerLogging, startServerProcess, waitForUrl } from "./serverProcess.js";
 
@@ -86,6 +87,11 @@ if (!gotLock) {
   app.whenReady().then(async () => {
     try {
       await ensureServer();
+      registerAppWindowIpc(
+        shellUrl,
+        () => preloadPath,
+        () => mainWindow,
+      );
       createWindow();
     } catch (err) {
       console.error("[arco-desktop] failed to start:", err);

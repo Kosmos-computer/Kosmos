@@ -1,9 +1,7 @@
 import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Placeholder from "@tiptap/extension-placeholder";
 import type { JSONContent } from "@tiptap/core";
 import { useEffect } from "react";
-import { ArcoWidget } from "./extensions/arcoWidget";
+import { createEditorExtensions } from "./createExtensions";
 
 export interface DocEditorProps {
   content: JSONContent;
@@ -19,11 +17,7 @@ export function DocEditor({
   editable = true,
 }: DocEditorProps) {
   const editor = useEditor({
-    extensions: [
-      StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
-      Placeholder.configure({ placeholder }),
-      ArcoWidget,
-    ],
+    extensions: createEditorExtensions({ placeholder, widgets: true, slashCommands: true }),
     content,
     editable,
     onUpdate: ({ editor: ed }) => onChange?.(ed.getJSON()),

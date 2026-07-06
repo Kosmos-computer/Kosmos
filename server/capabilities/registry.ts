@@ -12,7 +12,8 @@ import path from "node:path";
 import type { CalendarEventInput } from "../../shared/capabilities/calendar.js";
 import { CALENDAR_CONTRACT_ID } from "../../shared/capabilities/calendar.js";
 import { DOCS_CONTRACT_ID, EMPTY_DOC_JSON } from "../../shared/capabilities/docs.js";
-import { DOC_MIME, FILES_CONTRACT_ID, type FileCreateInput } from "../../shared/capabilities/files.js";
+import { DOC_MIME, FILES_CONTRACT_ID, SHEET_MIME, type FileCreateInput } from "../../shared/capabilities/files.js";
+import { EMPTY_SHEET_JSON, SHEETS_CONTRACT_ID } from "../../shared/capabilities/sheets.js";
 import { exportDocToMarkdown } from "../../shared/docFormat.js";
 import { VOICE_CONTRACT_ID } from "../../shared/capabilities/voice.js";
 import { intentMeta } from "../../shared/capabilities/index.js";
@@ -27,6 +28,7 @@ const DEFAULT_PROVIDERS: Record<string, string> = {
   [CALENDAR_CONTRACT_ID]: "system",
   [FILES_CONTRACT_ID]: "system",
   [DOCS_CONTRACT_ID]: "system",
+  [SHEETS_CONTRACT_ID]: "system",
   [VOICE_CONTRACT_ID]: "system",
 };
 
@@ -127,6 +129,30 @@ const systemHandlers: Record<string, IntentHandler> = {
       return { id: file.id, name: file.name, format, content: exportDocToMarkdown(doc as never) };
     }
     return { id: file.id, name: file.name, format: "json", content: file.content };
+  },
+
+  // os.sheets@1 — thin wrappers over the file store
+  "sheets.create": (p) => {
+    const name = String(p.name ?? "Untitled");
+    const contentObj =
+      typeof p.content === "object" && p.content !== null ? p.content : EMPTY_SHEET_JSON;
+    return filesService.create({
+      name,
+      kind: "file",
+      mimeType: SHEET_MIME,
+      parentId: p.parentId == null ? null : String(p.parentId),
+      content: JSON.stringify(contentObj),
+    });
+  },
+  "sheets.open": async (p) => {
+    const file = filesService.readContent(String(p.id ?? ""));
+    let workbook: unknown;
+    try {
+      workbook = JSON.parse(file.content);
+    } catch {
+      throw new Error("Spreadsheet content is not valid JSON");
+    }
+    return { ...file, workbook };
   },
 
   // os.voice@1 — the session itself is desktop-owned (the browser holds the

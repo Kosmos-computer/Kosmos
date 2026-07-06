@@ -1,63 +1,77 @@
-import { Folder, Globe, LayoutGrid, Notebook, Plus, Search } from "lucide-react";
+import { Plus, Search } from "lucide-react";
+import { Input } from "../../components/ui";
 import { NavSidebar, SidebarUserFooter } from "../../components/patterns";
-import type { NoteNavPage, NotesView } from "./types";
-
-function pageIcon(icon: NoteNavPage["icon"]) {
-  const Icon = icon === "folder" ? Folder : Notebook;
-  return <Icon size={14} strokeWidth={1.75} />;
-}
+import type { NavDropPosition } from "./notesNavUtils";
+import { NotesNavTree } from "./NotesNavTree";
+import type { NoteNavSection } from "./types";
 
 export function NotesSidebar({
   sections,
-  view,
   userName,
+  searchQuery,
+  searchOpen,
+  onSearchQueryChange,
+  onToggleSearch,
   onSelectPage,
   onCreatePage,
-  onViewChange,
+  onCreateFolder,
+  onMoveNavItem,
+  onToggleFolder,
 }: {
-  sections: {
-    ideas: (NoteNavPage & { active?: boolean })[];
-    recents: (NoteNavPage & { active?: boolean })[];
-    private: (NoteNavPage & { active?: boolean })[];
-    teamspaces: (NoteNavPage & { active?: boolean })[];
-  };
-  view: NotesView;
+  sections: NoteNavSection[];
   userName: string;
+  searchQuery: string;
+  searchOpen: boolean;
+  onSearchQueryChange: (query: string) => void;
+  onToggleSearch: () => void;
   onSelectPage: (id: string) => void;
-  onCreatePage: () => void;
-  onViewChange: (view: NotesView) => void;
+  onCreatePage: (sectionId: string, parentFolderId: string | null) => void;
+  onCreateFolder: (sectionId: string, parentFolderId: string | null) => void;
+  onMoveNavItem: (draggedId: string, targetId: string, position: NavDropPosition) => void;
+  onToggleFolder: (folderId: string) => void;
 }) {
-  const toItems = (pages: (NoteNavPage & { active?: boolean })[]) =>
-    pages.map((page) => ({
-      id: page.id,
-      label: page.label,
-      leading: pageIcon(page.icon),
-      trailing: page.meta,
-      active: page.active,
-      onClick: () => onSelectPage(page.id),
-    }));
-
   return (
     <NavSidebar
-      primaryAction={{ label: "New page", icon: Plus, onClick: onCreatePage }}
+      header={
+        searchOpen ? (
+          <Input
+            autoFocus
+            value={searchQuery}
+            placeholder="Search notes…"
+            aria-label="Search notes"
+            onChange={(event) => onSearchQueryChange(event.target.value)}
+          />
+        ) : null
+      }
+      primaryAction={{
+        label: "New page",
+        icon: Plus,
+        onClick: () => onCreatePage("private", null),
+      }}
       quickLinks={[
-        { id: "search", label: "Search", icon: Search },
-        { id: "home", label: "Home", icon: LayoutGrid },
         {
-          id: "graph",
-          label: "Graph view",
-          icon: Globe,
-          active: view === "graph",
-          onClick: () => onViewChange(view === "graph" ? "editor" : "graph"),
+          id: "search",
+          label: "Search",
+          icon: Search,
+          active: searchOpen,
+          onClick: onToggleSearch,
         },
       ]}
-      sections={[
-        { id: "ideas", title: "Ideas", items: toItems(sections.ideas) },
-        { id: "recents", title: "Recents", items: toItems(sections.recents) },
-        { id: "private", title: "Private", items: toItems(sections.private) },
-        { id: "teamspaces", title: "Teamspaces", items: toItems(sections.teamspaces) },
-      ]}
+      sections={[]}
+      scrollContent={
+        <div className="arco-nav-sidebar__sections arco-notes-nav">
+          <NotesNavTree
+            sections={sections}
+            onSelectPage={onSelectPage}
+            onCreatePage={onCreatePage}
+            onCreateFolder={onCreateFolder}
+            onMoveItem={onMoveNavItem}
+            onToggleFolder={onToggleFolder}
+          />
+        </div>
+      }
       footer={<SidebarUserFooter name={userName} meta="Arco · Notes" />}
+      className="arco-notes-sidebar"
     />
   );
 }

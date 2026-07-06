@@ -30,8 +30,8 @@
     "build:arco-docs": "npm run build -w @arco/docs-site",
     "build": "npm run build:apps && npm run build:www && npm run build:arco-docs && vite build",
     "desktop": "npm run build && npm run start -w @arco/desktop",
-    "desktop:dev": "npm run dev -w @arco/desktop",
-    "desktop:dev:all": "concurrently -n server,web,desktop -c yellow,cyan,magenta \"npm run dev:server\" \"npm run dev:web\" \"npm run desktop:dev\"",
+    "desktop:dev": "concurrently -n web,desktop -c cyan,magenta \"npm run dev:web\" \"npm run dev -w @arco/desktop\"",
+    "desktop:dev:all": "concurrently -n server,web,desktop -c yellow,cyan,magenta \"npm run dev:server\" \"npm run dev:web\" \"npm run dev -w @arco/desktop\"",
     "start": "NODE_ENV=production tsx server/index.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.server.json"
   },
@@ -55,6 +55,7 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-markdown": "^10.1.0",
+    "react-pdf": "^10.4.1",
     "remark-gfm": "^4.0.1",
     "zod": "^4.0.0",
     "zustand": "^4.5.5"

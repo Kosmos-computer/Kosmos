@@ -73,3 +73,55 @@
 .ek-widget__timeline-desc { font-size: 0.85rem; color: var(--os-text-secondary, #b0b3b8); }
 .ek-widget--fallback { border-style: dashed; }
 .ek-widget__error { color: var(--os-warning, #f0ad4e); font-size: 0.85rem; }
+
+.ek-slash-menu-host {
+  pointer-events: auto;
+}
+
+.ek-slash-menu {
+  min-width: 220px;
+  max-width: 320px;
+  max-height: 280px;
+  overflow: auto;
+  padding: var(--os-space-xs, 4px);
+  border: 1px solid var(--os-border, #333);
+  border-radius: var(--os-radius-m, 8px);
+  background: var(--os-bg-raised, #22262b);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 35%);
+}
+
+.ek-slash-menu__empty {
+  padding: var(--os-space-s, 8px) var(--os-space-m, 12px);
+  color: var(--os-text-tertiary, #888);
+  font-size: var(--os-text-sm, 13px);
+}
+
+.ek-slash-menu__item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: var(--os-space-s, 8px) var(--os-space-m, 12px);
+  border: none;
+  border-radius: var(--os-radius-s, 6px);
+  background: transparent;
+  color: var(--os-text-primary, #e8eaed);
+  text-align: left;
+  cursor: pointer;
+}
+
+.ek-slash-menu__item:hover,
+.ek-slash-menu__item--active {
+  background: var(--os-bg-sunk, #1a1d21);
+}
+
+.ek-slash-menu__label {
+  font-size: var(--os-text-sm, 13px);
+  font-weight: 600;
+}
+
+.ek-slash-menu__hint {
+  font-size: var(--os-text-xs, 12px);
+  color: var(--os-text-tertiary, #888);
+}

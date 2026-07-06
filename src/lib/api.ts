@@ -35,6 +35,7 @@ import type {
   WebAppLaunchStatus,
   WorkspaceEntry,
 } from "@shared/types";
+import type { FileCreateInput, FileEntry } from "@shared/capabilities/files";
 import type { InstalledAppInfo, GrantState } from "@shared/manifest";
 
 /** One contract's provider assignment + who could provide it. */
@@ -182,6 +183,68 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ path, content }),
     }).then((r) => json<{ ok: true }>(r)),
+
+  // Drive (os.files@1)
+  listDriveEntries: (params: { parentId?: string | null; trashed?: boolean; starred?: boolean } = {}) => {
+    const qs = new URLSearchParams();
+    if (params.parentId !== undefined) qs.set("parentId", params.parentId ?? "null");
+    if (params.trashed) qs.set("trashed", "true");
+    if (params.starred) qs.set("starred", "true");
+    const query = qs.toString();
+    return fetch(`/api/drive/entries${query ? `?${query}` : ""}`).then((r) => json<FileEntry[]>(r));
+  },
+  listDriveRecent: (limit = 20) =>
+    fetch(`/api/drive/recent?limit=${limit}`).then((r) => json<FileEntry[]>(r)),
+  searchDrive: (query: string) =>
+    fetch(`/api/drive/search?q=${encodeURIComponent(query)}`).then((r) => json<FileEntry[]>(r)),
+  getDriveEntry: (id: string) =>
+    fetch(`/api/drive/entries/${encodeURIComponent(id)}`).then((r) => json<FileEntry>(r)),
+  readDriveContent: (id: string) =>
+    fetch(`/api/drive/content/${encodeURIComponent(id)}`).then((r) =>
+      json<{ id: string; name: string; content: string; mimeType: string }>(r),
+    ),
+  driveBlobUrl: (id: string) => `/api/drive/blob/${encodeURIComponent(id)}`,
+  fetchDriveBlob: async (id: string) => {
+    const res = await fetch(`/api/drive/blob/${encodeURIComponent(id)}`);
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      throw new Error(`${res.status} ${res.statusText}${body ? `: ${body.slice(0, 200)}` : ""}`);
+    }
+    return res.blob();
+  },
+  writeDriveContent: (id: string, content: string) =>
+    fetch(`/api/drive/content/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content }),
+    }).then((r) => json<FileEntry>(r)),
+  createDriveEntry: (input: FileCreateInput) =>
+    fetch("/api/drive/entries", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    }).then((r) => json<FileEntry>(r)),
+  patchDriveEntry: (
+    id: string,
+    patch: { name?: string; starred?: boolean; parentId?: string | null },
+  ) =>
+    fetch(`/api/drive/entries/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    }).then((r) => json<FileEntry>(r)),
+  trashDriveEntry: (id: string) =>
+    fetch(`/api/drive/entries/${encodeURIComponent(id)}/trash`, { method: "POST" }).then((r) =>
+      json<FileEntry>(r),
+    ),
+  restoreDriveEntry: (id: string) =>
+    fetch(`/api/drive/entries/${encodeURIComponent(id)}/restore`, { method: "POST" }).then((r) =>
+      json<FileEntry>(r),
+    ),
+  deleteDriveEntry: (id: string) =>
+    fetch(`/api/drive/entries/${encodeURIComponent(id)}`, { method: "DELETE" }).then((r) =>
+      json<{ deleted: boolean }>(r),
+    ),
 
   // Terminal
   exec: (command: string) =>

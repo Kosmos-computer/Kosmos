@@ -1,7 +1,11 @@
-/** Top chrome: brand + agent status dot, focused window title, shell view toggle, clock, theme toggle, lock. */
-import { useEffect, useState } from "react";
-import { AppWindow, Lock, Monitor, Moon, Sun } from "lucide-react";
-import { useAuthStore } from "./auth/authStore";
+/** Top chrome: settings menu, focused window title, shell view toggle, bento drawer, clock, theme toggle, lock. */
+import { useEffect, useMemo, useState } from "react";
+import { AppWindow, LayoutGrid, Lock, Monitor, Moon, Settings, Sun } from "lucide-react";
+import { Menu, type MenuItem } from "../components/Menu";
+import { openSettingsApp } from "../apps/settings/settingsStore";
+import { visibleSettingsNavGroups } from "../apps/settings/settingsSections";
+import { useCan, useAuthStore } from "./auth/authStore";
+import { useBentoStore } from "./bento/bentoStore";
 import { useOsStore } from "./osStore";
 import { useWindowStore } from "./windowStore";
 
@@ -21,11 +25,28 @@ function useClock(): string {
 }
 
 export function MenuBar() {
-  const { theme, setTheme, agentBusy, shellView, setShellView } = useOsStore();
+  const { theme, setTheme, shellView, setShellView } = useOsStore();
+  const bentoOpen = useBentoStore((s) => s.open);
+  const toggleBento = useBentoStore((s) => s.toggleOpen);
   const user = useAuthStore((s) => s.user);
   const lock = useAuthStore((s) => s.lock);
+  const canManageUsers = useCan("users:manage");
+  const canWriteSettings = useCan("settings:write");
   const windows = useWindowStore((s) => s.windows);
   const clock = useClock();
+
+  const settingsMenuItems = useMemo<MenuItem[]>(() => {
+    const groups = visibleSettingsNavGroups({ canWriteSettings, canManageUsers });
+    return groups.flatMap((group, groupIndex) =>
+      group.items.map((item, itemIndex) => ({
+        id: item.id,
+        label: item.label,
+        icon: item.icon,
+        separatorAbove: groupIndex > 0 && itemIndex === 0,
+        onSelect: () => openSettingsApp(item.id),
+      })),
+    );
+  }, [canWriteSettings, canManageUsers]);
 
   const focused = windows
     .filter((w) => !w.minimized)
@@ -33,15 +54,32 @@ export function MenuBar() {
 
   return (
     <header className="arco-menubar">
-      <span className="arco-menubar__brand">
-        <span
-          className={`arco-menubar__brand-dot ${agentBusy ? "arco-menubar__brand-dot--busy" : ""}`}
-          title={agentBusy ? "Agent working" : "Agent idle"}
-        />
-        Arco OS
-      </span>
+      <Menu
+        trigger={
+          <button
+            type="button"
+            className="arco-menubar__icon-btn"
+            aria-label="Settings"
+            title="Settings"
+          >
+            <Settings size={14} />
+          </button>
+        }
+        items={settingsMenuItems}
+        aria-label="Settings"
+      />
       <span className="arco-menubar__title">{focused?.title ?? ""}</span>
       <div className="arco-menubar__right">
+        <button
+          type="button"
+          className={`arco-menubar__icon-btn${bentoOpen ? " arco-menubar__icon-btn--active" : ""}`}
+          onClick={toggleBento}
+          aria-label={bentoOpen ? "Close bento drawer" : "Open bento drawer"}
+          aria-pressed={bentoOpen}
+          title="Bento widgets"
+        >
+          <LayoutGrid size={14} />
+        </button>
         <div
           className="arco-menubar__view-toggle"
           role="group"

@@ -1,0 +1,250 @@
+/* Email workspace */
+
+.arco-email {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+  background: var(--arco-bg-surface-solid);
+}
+
+.arco-email__workspace {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  overflow: hidden;
+}
+
+.arco-email__list-pane {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--arco-bg-surface-solid);
+}
+
+.arco-email__list-header,
+.arco-email__list-toolbar {
+  flex-shrink: 0;
+  padding: var(--arco-space-m);
+  border-bottom: 1px solid var(--arco-border);
+}
+
+.arco-email__list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--arco-space-s);
+}
+
+.arco-email__list-title {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  font-weight: 600;
+  color: var(--arco-text-primary);
+}
+
+.arco-email__list-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-s);
+}
+
+.arco-email__search {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+}
+
+.arco-email__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--arco-space-xs);
+}
+
+.arco-email__thread-list {
+  flex: 1;
+  min-height: 0;
+}
+
+.arco-email__thread {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--arco-space-s);
+  width: 100%;
+  padding: var(--arco-space-m);
+  border: none;
+  border-bottom: 1px solid var(--arco-border);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.arco-email__thread:hover,
+.arco-email__thread--active {
+  background: var(--arco-bg-hover);
+}
+
+.arco-email__thread--active {
+  background: var(--arco-bg-selected);
+}
+
+.arco-email__thread-star button {
+  display: flex;
+  color: var(--arco-text-tertiary);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.arco-email__star--active {
+  color: var(--arco-warning);
+}
+
+.arco-email__thread-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.arco-email__thread-top {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--arco-space-s);
+}
+
+.arco-email__thread-sender {
+  font-weight: 600;
+  color: var(--arco-text-primary);
+}
+
+.arco-email__thread-time,
+.arco-email__thread-preview {
+  color: var(--arco-text-tertiary);
+  font-size: var(--arco-text-sm);
+}
+
+.arco-email__thread-subject {
+  color: var(--arco-text-secondary);
+  font-size: var(--arco-text-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arco-email__thread--unread .arco-email__thread-sender,
+.arco-email__thread--unread .arco-email__thread-subject {
+  color: var(--arco-text-primary);
+}
+
+.arco-email__unread-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--arco-accent);
+  margin-top: 6px;
+}
+
+.arco-email__reading {
+  flex: 1;
+  min-width: 0;
+  padding: var(--arco-space-xl);
+}
+
+.arco-email__reading--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.arco-email__reading-subject {
+  margin: 0 0 var(--arco-space-l);
+  font-size: var(--arco-text-xl);
+  color: var(--arco-text-primary);
+}
+
+.arco-email__message {
+  margin-bottom: var(--arco-space-l);
+  padding-bottom: var(--arco-space-l);
+  border-bottom: 1px solid var(--arco-border);
+}
+
+.arco-email__message-header {
+  display: flex;
+  gap: var(--arco-space-s);
+  margin-bottom: var(--arco-space-m);
+}
+
+.arco-email__message-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.arco-email__message-meta span {
+  color: var(--arco-text-tertiary);
+  font-size: var(--arco-text-sm);
+}
+
+.arco-email__message-body p {
+  margin: 0 0 var(--arco-space-s);
+  color: var(--arco-text-secondary);
+  line-height: 1.6;
+}
+
+.arco-email__reply-bar {
+  display: flex;
+  gap: var(--arco-space-s);
+  margin-top: var(--arco-space-l);
+}
+
+.arco-email__compose-backdrop {
+  position: fixed;
+  inset: 0;
+  background: color-mix(in srgb, var(--arco-bg-base) 40%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 40;
+}
+
+.arco-email__compose {
+  width: min(560px, calc(100vw - 32px));
+  background: var(--arco-bg-surface-solid);
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-l);
+  box-shadow: var(--arco-shadow-window);
+}
+
+.arco-email__compose-header,
+.arco-email__compose-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--arco-space-m);
+}
+
+.arco-email__compose-header {
+  border-bottom: 1px solid var(--arco-border);
+}
+
+.arco-email__compose-header h2 {
+  margin: 0;
+  font-size: var(--arco-text-md);
+}
+
+.arco-email__compose-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-m);
+}
+
+.arco-email__compose-body {
+  min-height: 160px;
+  resize: vertical;
+}

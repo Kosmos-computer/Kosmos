@@ -1,162 +1,71 @@
 /**
- * Files — the agent's workspace browser: directory listing, file viewer with
- * inline editing (the same files generated apps read via Query("read")).
- * Markdown files get an Edit / Preview toggle through the shared RichMarkdown
- * pipeline.
+ * Drive — Finder-style browser over the OS file store (os.files@1).
+ * Workspace project files remain in Studio → Files tab (/api/files).
  */
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Eye, FileText, Folder, Pencil, Save } from "lucide-react";
-import type { WorkspaceEntry } from "@shared/types";
-import { RichMarkdown } from "../../components/richmarkdown/RichMarkdown";
-import { api } from "../../lib/api";
-
-function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-}
-
-function isMarkdownPath(path: string): boolean {
-  return path.toLowerCase().endsWith(".md");
-}
-
-type FileViewMode = "edit" | "preview";
+import { useCallback } from "react";
+import { FileEditorView } from "./FileEditorView";
+import { FilesWorkspace } from "./FilesWorkspace";
+import { PdfReaderView } from "./PdfReaderView";
+import { useDrive } from "./useDrive";
+import type { DriveFileItem } from "./types";
 
 export function FilesApp() {
-  const [dir, setDir] = useState(".");
-  const [entries, setEntries] = useState<WorkspaceEntry[]>([]);
-  const [file, setFile] = useState<{ path: string; content: string } | null>(null);
-  const [viewMode, setViewMode] = useState<FileViewMode>("edit");
-  const [dirty, setDirty] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const drive = useDrive();
 
-  const markdownFile = useMemo(
-    () => (file && isMarkdownPath(file.path) ? file : null),
-    [file],
-  );
-
-  const refresh = useCallback(async (path: string) => {
-    try {
-      setEntries(await api.listFiles(path));
-      setDir(path);
-    } catch {
-      // Directory may have been deleted — stay put.
-    }
-  }, []);
-
-  useEffect(() => {
-    void refresh(".");
-  }, [refresh]);
-
-  const openEntry = useCallback(
-    async (entry: WorkspaceEntry) => {
-      if (entry.type === "dir") {
-        void refresh(entry.path);
-      } else {
-        const data = await api.readFile(entry.path);
-        setFile(data);
-        setViewMode(isMarkdownPath(data.path) ? "preview" : "edit");
-        setDirty(false);
-      }
+  const handleSelectFile = useCallback(
+    (file: DriveFileItem | null) => {
+      drive.setSelectedId(file?.id ?? null);
     },
-    [refresh],
+    [drive],
   );
 
-  const save = useCallback(async () => {
-    if (!file) return;
-    setSaving(true);
-    try {
-      await api.writeFile(file.path, file.content);
-      setDirty(false);
-    } finally {
-      setSaving(false);
-    }
-  }, [file]);
+  const handleToggleStar = useCallback(
+    (id: string) => {
+      void drive.toggleStar(id);
+    },
+    [drive],
+  );
 
-  if (file) {
+  if (drive.pdfFile) {
+    return <PdfReaderView file={drive.pdfFile} onBack={() => drive.setPdfFile(null)} />;
+  }
+
+  if (drive.editorFile) {
     return (
-      <div className="arco-panel" style={{ gap: 8 }}>
-        <div className="arco-panel__header">
-          <button className="arco-btn" onClick={() => setFile(null)}>
-            <ArrowLeft size={13} /> Back
-          </button>
-          <span style={{ flex: 1, fontFamily: "var(--arco-font-mono)", fontSize: "var(--arco-text-sm)" }}>
-            {file.path}
-          </span>
-          {markdownFile ? (
-            <div className="arco-chip-row">
-              <button
-                type="button"
-                className={`arco-chip${viewMode === "edit" ? " arco-chip--active" : ""}`}
-                aria-pressed={viewMode === "edit"}
-                onClick={() => setViewMode("edit")}
-              >
-                <Pencil size={12} /> Edit
-              </button>
-              <button
-                type="button"
-                className={`arco-chip${viewMode === "preview" ? " arco-chip--active" : ""}`}
-                aria-pressed={viewMode === "preview"}
-                onClick={() => setViewMode("preview")}
-              >
-                <Eye size={12} /> Preview
-              </button>
-            </div>
-          ) : null}
-          <button className="arco-btn arco-btn--primary" disabled={!dirty || saving} onClick={() => void save()}>
-            <Save size={13} /> {saving ? "Saving…" : "Save"}
-          </button>
-        </div>
-        {markdownFile && viewMode === "preview" ? (
-          <div className="arco-panel arco-scroll" style={{ padding: "var(--arco-space-m)" }}>
-            <RichMarkdown text={file.content} />
-          </div>
-        ) : (
-          <textarea
-            className="arco-code-editor arco-scroll"
-            value={file.content}
-            onChange={(e) => {
-              setFile((f) => (f ? { ...f, content: e.target.value } : f));
-              setDirty(true);
-            }}
-            spellCheck={false}
-          />
-        )}
-      </div>
+      <FileEditorView
+        file={drive.editorFile}
+        onBack={() => drive.setEditorFile(null)}
+        onSave={drive.saveEditor}
+      />
     );
   }
 
   return (
-    <div className="arco-panel arco-scroll">
-      <div className="arco-panel__header">
-        <strong style={{ fontFamily: "var(--arco-font-mono)", fontSize: "var(--arco-text-sm)" }}>
-          workspace/{dir === "." ? "" : dir}
-        </strong>
-        {dir !== "." && (
-          <button
-            className="arco-btn"
-            onClick={() => void refresh(dir.split("/").slice(0, -1).join("/") || ".")}
-          >
-            <ArrowLeft size={13} /> Up
-          </button>
-        )}
-      </div>
-      {entries.length === 0 && (
-        <div className="arco-empty">Empty — the agent writes scripts and data here.</div>
-      )}
-      {entries.map((entry) => (
-        <button key={entry.path} className="arco-listrow arco-listrow--button" onClick={() => void openEntry(entry)}>
-          {entry.type === "dir" ? (
-            <Folder size={15} style={{ color: "var(--arco-accent)" }} />
-          ) : (
-            <FileText size={15} style={{ color: "var(--arco-text-tertiary)" }} />
-          )}
-          <span style={{ flex: 1, textAlign: "left", fontSize: "var(--arco-text-sm)" }}>{entry.name}</span>
-          <span className="arco-listrow__sub">
-            {entry.type === "file" ? formatSize(entry.size) : ""}
-          </span>
-        </button>
-      ))}
-    </div>
+    <FilesWorkspace
+      location={drive.location}
+      onLocationChange={drive.setLocation}
+      files={drive.files}
+      breadcrumb={drive.breadcrumb}
+      searchQuery={drive.searchQuery}
+      onSearchChange={drive.setSearchQuery}
+      viewMode={drive.viewMode}
+      onViewModeChange={drive.setViewMode}
+      selectedId={drive.selectedId}
+      onSelectFile={handleSelectFile}
+      previewText={drive.previewText}
+      loading={drive.loading}
+      error={drive.error}
+      sidebarWidth={drive.sidebarWidth}
+      onSidebarWidthChange={drive.setSidebarWidth}
+      previewWidth={drive.previewWidth}
+      onPreviewWidthChange={drive.setPreviewWidth}
+      onOpenFile={(file) => void drive.openFile(file)}
+      onOpenFileEditor={(file) => void drive.openFileEditor(file)}
+      onToggleStar={handleToggleStar}
+      onCreateNew={(type) => void drive.createNew(type)}
+      onTrashFile={(id) => void drive.trashFile(id)}
+      onRestoreFile={(id) => void drive.restoreFile(id)}
+      onDeleteForever={(id) => void drive.deleteForever(id)}
+    />
   );
 }

@@ -22,34 +22,11 @@
   backdrop-filter: var(--arco-backdrop-blur);
   -webkit-backdrop-filter: var(--arco-backdrop-blur);
   border-bottom: 1px solid var(--arco-border);
-  z-index: var(--arco-z-chrome);
+  z-index: var(--arco-z-overlay);
+  overflow: visible;
   font-size: var(--arco-text-sm);
   color: var(--arco-text-secondary);
   user-select: none;
-}
-
-.arco-menubar__brand {
-  font-weight: 700;
-  color: var(--arco-text-primary);
-  letter-spacing: 0.02em;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.arco-menubar__brand-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--arco-accent);
-  transition: background var(--arco-dur-med);
-}
-.arco-menubar__brand-dot--busy {
-  background: var(--arco-success);
-  animation: arco-pulse 1.2s ease-in-out infinite;
-}
-@keyframes arco-pulse {
-  50% { opacity: 0.35; }
 }
 
 .arco-menubar__title {
@@ -150,6 +127,7 @@
   display: flex;
   flex-direction: column;
   padding: var(--arco-space-s) var(--arco-space-m) 0;
+  overflow: visible;
   transform: translateY(calc(-100% - 12px));
   opacity: 0;
   pointer-events: none;
@@ -742,6 +720,17 @@
 
 /* ── Windows ──────────────────────────────────────────────────────────────── */
 
+.arco-window-layer {
+  position: absolute;
+  inset: 0;
+  z-index: var(--arco-z-windows);
+  pointer-events: none;
+}
+
+.arco-window-layer > .arco-window {
+  pointer-events: auto;
+}
+
 .arco-window {
   position: absolute;
   display: flex;
@@ -942,4 +931,21 @@
   border-radius: 16px;
   background: var(--arco-bg-surface);
   border: 1px solid var(--arco-border);
+}
+
+/* ── Standalone Electron app windows ───────────────────────────────────────── */
+
+.arco-standalone-window {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--arco-bg-desktop);
+  color: var(--arco-text-primary);
+  overflow: hidden;
+}
+
+.arco-standalone-window > * {
+  flex: 1;
+  min-height: 0;
 }

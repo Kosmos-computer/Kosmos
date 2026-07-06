@@ -1,0 +1,599 @@
+/* Tasks workspace */
+
+.arco-tasks {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+  background: var(--arco-bg-surface-solid);
+}
+
+.arco-tasks__calendar-wrap {
+  height: 100%;
+  padding: var(--arco-space-m);
+}
+
+.arco-tasks__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.arco-tasks__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--arco-space-m);
+  padding: var(--arco-space-m) var(--arco-space-l);
+  border-bottom: 1px solid var(--arco-border);
+  font-weight: 600;
+  color: var(--arco-text-primary);
+}
+
+.arco-tasks__header-title {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  min-width: 0;
+}
+
+.arco-tasks__header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  flex-shrink: 0;
+}
+
+.arco-tasks__scroll {
+  flex: 1;
+  min-height: 0;
+  padding: var(--arco-space-l);
+}
+
+.arco-tasks__scroll .arco-empty__actions {
+  margin-top: var(--arco-space-s);
+}
+
+.arco-tasks__group + .arco-tasks__group {
+  margin-top: var(--arco-space-l);
+}
+
+.arco-tasks__group-header {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  margin-bottom: var(--arco-space-s);
+  font-size: var(--arco-text-sm);
+  font-weight: 600;
+  color: var(--arco-text-secondary);
+}
+
+.arco-task-row {
+  display: flex;
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-s);
+  border-radius: var(--arco-radius-m);
+}
+
+.arco-task-row:hover {
+  background: var(--arco-bg-hover);
+}
+
+.arco-task-row--selected {
+  background: var(--arco-accent-soft);
+}
+
+.arco-task-row--selected:hover {
+  background: var(--arco-accent-soft);
+}
+
+.arco-task-row__check {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-s);
+  background: var(--arco-bg-raised);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--arco-success);
+  flex-shrink: 0;
+}
+
+.arco-task-row__check--done {
+  background: color-mix(in srgb, var(--arco-success) 16%, transparent);
+  border-color: var(--arco-success);
+}
+
+.arco-task-row__body {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.arco-task-row__title {
+  color: var(--arco-text-primary);
+  font-weight: 500;
+}
+
+.arco-task-row__desc {
+  margin-top: 2px;
+  color: var(--arco-text-tertiary);
+  font-size: var(--arco-text-sm);
+}
+
+.arco-task-row__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--arco-space-s);
+  margin-top: var(--arco-space-xs);
+  color: var(--arco-text-tertiary);
+  font-size: var(--arco-text-xs);
+}
+
+.arco-task-row__assignee {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--arco-space-xs);
+}
+
+.arco-task-assign {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-s);
+}
+
+.arco-task-assign .arco-task-modal__label {
+  margin: 0;
+}
+
+.arco-task-assign__person {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-s);
+}
+
+.arco-task-assign__person-input {
+  display: flex;
+  align-items: stretch;
+  gap: var(--arco-space-xs);
+}
+
+.arco-task-assign__person-input .arco-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.arco-task-assign__toggle {
+  flex-shrink: 0;
+}
+
+.arco-task-assign__chevron--open {
+  transform: rotate(180deg);
+}
+
+.arco-task-assign__list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 12rem;
+  overflow: auto;
+  padding: var(--arco-space-xs);
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-m);
+  background: var(--arco-bg-raised);
+}
+
+.arco-task-assign__empty {
+  margin: 0;
+  padding: var(--arco-space-s);
+  color: var(--arco-text-tertiary);
+  font-size: var(--arco-text-sm);
+}
+
+.arco-task-assign__option {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  width: 100%;
+  padding: var(--arco-space-s);
+  border: none;
+  border-radius: var(--arco-radius-s);
+  background: transparent;
+  color: var(--arco-text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.arco-task-assign__option:hover,
+.arco-task-assign__option:focus-visible {
+  background: var(--arco-bg-hover);
+}
+
+.arco-task-assign__option--selected {
+  background: var(--arco-accent-soft);
+}
+
+.arco-task-assign__option-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.arco-task-assign__option-main strong {
+  font-weight: 600;
+  font-size: var(--arco-text-sm);
+}
+
+.arco-task-assign__option-main span {
+  color: var(--arco-text-tertiary);
+  font-size: var(--arco-text-xs);
+}
+
+.arco-task-assign__option--custom {
+  color: var(--arco-text-secondary);
+  font-size: var(--arco-text-sm);
+}
+
+.arco-task-assign__summary {
+  margin: 0;
+  color: var(--arco-text-tertiary);
+  font-size: var(--arco-text-xs);
+}
+
+.arco-task-modal__chips .arco-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--arco-space-xs);
+}
+
+/* Mini calendar (shared with planner later) */
+
+.arco-mini-calendar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-s);
+}
+
+.arco-mini-calendar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.arco-mini-calendar__title {
+  font-weight: 600;
+  color: var(--arco-text-primary);
+  font-size: var(--arco-text-sm);
+}
+
+.arco-mini-calendar__today {
+  align-self: flex-start;
+}
+
+.arco-mini-calendar__weekdays,
+.arco-mini-calendar__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.arco-mini-calendar__weekdays span {
+  text-align: center;
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+}
+
+.arco-mini-calendar__day {
+  aspect-ratio: 1;
+  border: none;
+  border-radius: var(--arco-radius-s);
+  background: transparent;
+  color: var(--arco-text-secondary);
+  font-size: var(--arco-text-sm);
+  cursor: pointer;
+}
+
+.arco-mini-calendar__day:hover {
+  background: var(--arco-bg-hover);
+}
+
+.arco-mini-calendar__day--selected {
+  background: var(--arco-accent);
+  color: var(--arco-text-inverted);
+}
+
+.arco-mini-calendar__day--highlighted:not(.arco-mini-calendar__day--selected) {
+  box-shadow: inset 0 0 0 1px var(--arco-accent);
+}
+
+.arco-mini-calendar__day--empty {
+  pointer-events: none;
+}
+
+/* Add-task modal */
+
+.arco-task-modal__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--arco-z-modal, 1200);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--arco-space-l);
+  background: color-mix(in srgb, var(--arco-bg-base) 40%, transparent);
+  backdrop-filter: blur(6px);
+}
+
+.arco-task-modal {
+  width: min(100%, 480px);
+  max-height: min(90vh, 640px);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-l);
+  background: var(--arco-bg-surface-solid);
+  box-shadow: var(--arco-shadow-lg, 0 24px 48px rgb(0 0 0 / 18%));
+}
+
+.arco-task-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--arco-space-m);
+  padding: var(--arco-space-m) var(--arco-space-l);
+  border-bottom: 1px solid var(--arco-border);
+}
+
+.arco-task-modal__title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+}
+
+.arco-task-modal__title-row h2 {
+  margin: 0;
+  font-size: var(--arco-text-lg);
+  font-weight: 600;
+}
+
+.arco-task-modal__body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--arco-space-l);
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-l);
+}
+
+.arco-task-modal__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-s);
+}
+
+.arco-task-modal__label {
+  margin: 0;
+  font-size: var(--arco-text-sm);
+  font-weight: 600;
+  color: var(--arco-text-secondary);
+}
+
+.arco-task-modal__textarea {
+  min-height: 5rem;
+  resize: vertical;
+}
+
+.arco-task-modal__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--arco-space-xs);
+}
+
+.arco-task-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-m) var(--arco-space-l);
+  border-top: 1px solid var(--arco-border);
+}
+
+/* Task detail drawer */
+
+.arco-task-drawer {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--arco-border);
+  background: var(--arco-bg-surface-solid);
+}
+
+.arco-task-drawer__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--arco-space-m);
+  padding: var(--arco-space-m) var(--arco-space-l);
+  border-bottom: 1px solid var(--arco-border);
+}
+
+.arco-task-drawer__header-main {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--arco-space-s);
+  min-width: 0;
+}
+
+.arco-task-drawer__title {
+  margin: 0;
+  font-size: var(--arco-text-lg);
+  font-weight: 600;
+  color: var(--arco-text-primary);
+  line-height: 1.35;
+}
+
+.arco-task-drawer__body {
+  flex: 1;
+  min-height: 0;
+  padding: var(--arco-space-l);
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-l);
+}
+
+.arco-task-drawer__meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-s);
+}
+
+.arco-task-drawer__meta-row {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  color: var(--arco-text-secondary);
+  font-size: var(--arco-text-sm);
+}
+
+.arco-task-drawer__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-s);
+}
+
+.arco-task-drawer__section-label {
+  margin: 0;
+  font-size: var(--arco-text-xs);
+  font-weight: 600;
+  color: var(--arco-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.arco-task-drawer__description {
+  margin: 0;
+  color: var(--arco-text-secondary);
+  font-size: var(--arco-text-sm);
+  line-height: 1.55;
+}
+
+.arco-task-drawer__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-m) var(--arco-space-l);
+  border-top: 1px solid var(--arco-border);
+}
+
+/* Task history */
+
+.arco-task-history__empty {
+  margin: 0;
+  color: var(--arco-text-tertiary);
+  font-size: var(--arco-text-sm);
+}
+
+.arco-task-history__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-s);
+}
+
+.arco-task-history__item {
+  padding: var(--arco-space-s);
+  border-radius: var(--arco-radius-m);
+  background: var(--arco-bg-raised);
+}
+
+.arco-task-history__item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--arco-space-s);
+  font-size: var(--arco-text-sm);
+}
+
+.arco-task-history__item-head time {
+  color: var(--arco-text-tertiary);
+  font-size: var(--arco-text-xs);
+  white-space: nowrap;
+}
+
+.arco-task-history__item-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: var(--arco-space-xs);
+}
+
+.arco-task-history__task-title {
+  color: var(--arco-text-secondary);
+  font-size: var(--arco-text-sm);
+}
+
+.arco-task-history__detail {
+  color: var(--arco-text-tertiary);
+  font-size: var(--arco-text-xs);
+}
+
+.arco-task-history-panel__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--arco-z-modal, 1200);
+  display: flex;
+  justify-content: flex-end;
+  background: color-mix(in srgb, var(--arco-bg-base) 40%, transparent);
+  backdrop-filter: blur(6px);
+}
+
+.arco-task-history-panel {
+  width: min(100%, 420px);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--arco-border);
+  background: var(--arco-bg-surface-solid);
+  box-shadow: var(--arco-shadow-lg, 0 24px 48px rgb(0 0 0 / 18%));
+}
+
+.arco-task-history-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--arco-space-m);
+  padding: var(--arco-space-m) var(--arco-space-l);
+  border-bottom: 1px solid var(--arco-border);
+}
+
+.arco-task-history-panel__header h2 {
+  margin: 0;
+  font-size: var(--arco-text-lg);
+  font-weight: 600;
+}
+
+.arco-task-history-panel__subtitle {
+  margin: var(--arco-space-xs) 0 0;
+  color: var(--arco-text-tertiary);
+  font-size: var(--arco-text-sm);
+}
+
+.arco-task-history-panel__body {
+  flex: 1;
+  min-height: 0;
+  padding: var(--arco-space-l);
+}

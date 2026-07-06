@@ -9,11 +9,12 @@
  * match the OS theme. Declarative-tier entries render through the existing
  * OpenUI surface instead — same manifest, different container.
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RotateCw, ShieldAlert } from "lucide-react";
 import type { AppHostMessage, AppToolbarSlot } from "@shared/manifest";
 import { api } from "../../lib/api";
 import { onAppEvent } from "../../os/appEventBus";
+import { installedLaunchKey, useDocumentLaunchStore } from "../../os/documentLaunchStore";
 import { primeComposer } from "../chat/composerBus";
 import { useWindowStore, windowKey } from "../../os/windowStore";
 import { useOsStore } from "../../os/osStore";
@@ -70,6 +71,9 @@ export function AppHost({ appId }: { appId: string }) {
   const app = useOsStore((s) => s.installedApps.find((e) => e.manifest.id === appId));
   const theme = useOsStore((s) => s.theme);
   const notify = useOsStore((s) => s.notify);
+  const [launchFileId] = useState(
+    () => useDocumentLaunchStore.getState().consume(installedLaunchKey(appId)) ?? undefined,
+  );
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [token, setToken] = useState<string | null>(null);
   const [frameTick, setFrameTick] = useState(0);
@@ -77,12 +81,22 @@ export function AppHost({ appId }: { appId: string }) {
   const [toolbarSlots, setToolbarSlots] = useState<AppToolbarSlot[]>([]);
 
   const entry = app?.manifest.entry;
-  const src =
+  const baseSrc =
     entry?.kind === "bundle"
       ? `/apps/${entry.path}/index.html`
       : entry?.kind === "url"
         ? entry.url
         : null;
+
+  const src = useMemo(() => {
+    if (!baseSrc || !launchFileId) return baseSrc;
+    const url = baseSrc.startsWith("/")
+      ? new URL(baseSrc, window.location.origin)
+      : new URL(baseSrc);
+    url.searchParams.set("fileId", launchFileId);
+    url.hash = `file=${encodeURIComponent(launchFileId)}`;
+    return url.pathname + url.search + url.hash;
+  }, [baseSrc, launchFileId]);
 
   useEffect(() => {
     if (!app || entry?.kind === "openui") return;

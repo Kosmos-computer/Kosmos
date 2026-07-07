@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { AuthGate } from "./os/auth/AuthGate";
 import { Desktop } from "./os/Desktop";
 import { ElectronShell } from "./os/ElectronShell";
+import { EmbedAppShell, readEmbedLaunch } from "./os/EmbedAppShell";
 import { MobileShell } from "./os/MobileShell";
 import { StandaloneAppWindow } from "./os/StandaloneAppWindow";
 import { CommandPalette } from "./os/CommandPalette";
@@ -25,11 +26,22 @@ function useIsMobile(): boolean {
 export default function App() {
   const standaloneKey = getStandaloneWindowKey();
   const isMobile = useIsMobile();
+  const embedLaunch = typeof window !== "undefined" ? readEmbedLaunch() : null;
 
   if (standaloneKey) {
     return (
       <ElectronShell windowKey={standaloneKey}>
         <StandaloneAppWindow windowKey={standaloneKey} />
+      </ElectronShell>
+    );
+  }
+
+  if (embedLaunch) {
+    return (
+      <ElectronShell>
+        <AuthGate>
+          <EmbedAppShell />
+        </AuthGate>
       </ElectronShell>
     );
   }

@@ -6,7 +6,7 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { Bell } from "lucide-react";
 import { useOsStore } from "./osStore";
-import { useWindowStore } from "./windowStore";
+import { useWindowStore, type SystemAppId } from "./windowStore";
 import { MenuBar } from "./MenuBar";
 import { NavRail } from "./NavRail";
 import { Dock } from "./Dock";
@@ -15,6 +15,8 @@ import { HoverMenuBar } from "./HoverMenuBar";
 import { WindowFrame } from "./WindowFrame";
 import { BentoDrawer } from "./bento/BentoDrawer";
 import { connectShellEvents } from "./shellEvents";
+import { parseLaunchAppParam } from "@shared/launchApp";
+import { systemApp } from "./systemApps";
 import { WindowContentById } from "./windowContent";
 import { AgentCursor } from "./cursor/AgentCursor";
 import { MusicShell } from "../apps/music/MusicShell";
@@ -93,9 +95,18 @@ export function Desktop() {
 
   useEffect(() => {
     void refreshApps();
-    // First boot with an empty desktop → open Chat, the OS's front door.
     if (useWindowStore.getState().windows.length === 0) {
-      open({ type: "system", app: "chat" }, "Chat");
+      const launchId = parseLaunchAppParam(window.location.search);
+      if (launchId) {
+        try {
+          const def = systemApp(launchId as SystemAppId);
+          open({ type: "system", app: def.id }, def.title);
+        } catch {
+          open({ type: "system", app: "chat" }, "Chat");
+        }
+      } else {
+        open({ type: "system", app: "chat" }, "Chat");
+      }
     }
     const disconnectNative = initNativeAppWindowBridge();
     // Agent turns that run outside a chat stream (voice) drive the desktop

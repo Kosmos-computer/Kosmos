@@ -40,6 +40,7 @@ export const SYSTEM_APP_CATALOG: SystemAppCatalogEntry[] = [
   { id: "generator", title: "Generator" },
   { id: "imagegen", title: "Image Gen" },
   { id: "terminal", title: "Terminal" },
+  { id: "models", title: "Models" },
   { id: "settings", title: "Settings" },
   { id: "startup", title: "Setup" },
   { id: "onboarding", title: "Onboarding" },

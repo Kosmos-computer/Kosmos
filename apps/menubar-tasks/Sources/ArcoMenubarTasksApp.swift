@@ -12,8 +12,12 @@ struct ArcoMenubarTasksApp: App {
         MenuBarExtra {
             TasksMenuView(model: model)
         } label: {
-            Text(model.menuBarLabel)
-                .font(.system(size: 13, weight: .medium))
+            Label {
+                Text("Arco Tasks")
+            } icon: {
+                Image(systemName: "checklist")
+            }
+            .labelStyle(.titleAndIcon)
         }
         .menuBarExtraStyle(.window)
     }

@@ -17,3 +17,7 @@ model-manager/src-tauri/gen/
 # Voice server (Python)
 voice-server/.venv/
 __pycache__/
+
+# Menubar tasks (Swift) build artifacts
+apps/menubar-tasks/.build/
+apps/menubar-tasks/ArcoMenubarTasks.app/

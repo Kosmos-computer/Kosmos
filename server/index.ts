@@ -128,6 +128,7 @@ import {
   transcribePodcastEpisode,
 } from "./services/podcastTranscriptService.js";
 import { transcriptionRoutes } from "./routes/transcription.js";
+import { usageRoutes } from "./routes/usage.js";
 import { startTranscriptionSupervisor } from "./transcription/supervisor.js";
 import { listRemoteVideos, listRemotePodcastEpisodes } from "./services/mediaRemoteService.js";
 import type { FileCreateInput } from "../shared/capabilities/files.js";
@@ -184,6 +185,8 @@ app.use("/api/*", requireAuth);
 app.route("/v1", openaiCompatRoutes);
 
 app.route("/api/transcription", transcriptionRoutes);
+
+app.route("/api/usage", usageRoutes);
 
 // ── Chat ─────────────────────────────────────────────────────────────────────
 

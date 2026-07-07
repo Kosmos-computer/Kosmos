@@ -46,6 +46,7 @@ export type SettingsSectionId =
   | "permissions"
   | "providers"
   | "external"
+  | "usage"
   | "password"
   | "users";
 
@@ -154,6 +155,7 @@ export const SETTINGS_NAV_GROUPS: SettingsNavGroup[] = [
     title: "Account",
     items: [
       { id: "permissions", label: "Agent permissions", icon: Shield, requiresWrite: true },
+      { id: "usage", label: "Usage & credits", icon: CreditCard },
       { id: "password", label: "Password", icon: Lock },
       { id: "users", label: "Users", icon: Users, requiresUsersManage: true },
     ],

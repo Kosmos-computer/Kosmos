@@ -10,6 +10,9 @@ data/
 # Private planning notes — keep local, never push
 docs/saas-plan.md
 
+# Per-tenant provisioning output — contains LiteLLM virtual keys
+deploy/fly/tenants/
+
 # Tauri (model-manager)
 model-manager/src-tauri/target/
 model-manager/src-tauri/gen/

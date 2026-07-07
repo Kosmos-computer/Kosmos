@@ -40,6 +40,7 @@ import type {
   ImageGenSize,
   ImageGenStyle,
   Settings,
+  UsageResponse,
   CursorConnectionStatus,
   CursorModelInfo,
   OpenRouterModelInfo,
@@ -664,6 +665,8 @@ export const api = {
 
   // Settings
   getSettings: () => fetch("/api/settings").then((r) => json<Settings>(r)),
+  getUsage: (refresh = false) =>
+    fetch(`/api/usage${refresh ? "?refresh=1" : ""}`).then((r) => json<UsageResponse>(r)),
   saveSettings: (patch: Partial<Settings>) =>
     fetch("/api/settings", {
       method: "PUT",

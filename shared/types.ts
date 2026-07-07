@@ -660,6 +660,30 @@ export interface OpenRouterModelInfo {
 /** Default Cursor model when none is configured. */
 export const CURSOR_DEFAULT_MODEL = "composer-2.5";
 
+/** Cumulative local token meter (data/usage.json) — all completions since first boot. */
+export interface LocalUsageTotals {
+  since: string;
+  updatedAt: string;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  turns: number;
+}
+
+/** Credit standing from a LiteLLM-style gateway's /key/info. Null budget = uncapped key. */
+export interface GatewayCredits {
+  spend: number;
+  maxBudget: number | null;
+  remaining: number | null;
+  keyAlias?: string;
+}
+
+/** GET /api/usage — local meter always present; credits only behind a gateway. */
+export interface UsageResponse {
+  local: LocalUsageTotals;
+  credits: GatewayCredits | null;
+}
+
 /** One built-in agent tool as listed by GET /api/agent-tools. */
 export interface AgentToolInfo {
   name: string;

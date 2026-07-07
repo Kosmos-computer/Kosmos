@@ -12,7 +12,7 @@ import { SYSTEM_APPS } from "./systemApps";
 import { executeCursorCommand } from "./cursor/uiDriver";
 import { publishAppEvent } from "./appEventBus";
 import { useStudioStore } from "../apps/studio/studioStore";
-import { STUDIO_TITLE } from "../apps/studio/studioMeta";
+import { systemAppTitle } from "./systemAppTitles";
 
 /** Open any resolved app id — system, generated, or installed. */
 function openAppById(appId: string): void {
@@ -24,7 +24,7 @@ function openAppById(appId: string): void {
   const systemId = resolveSystemAppId(wanted);
   const sys = systemId ? SYSTEM_APPS.find((a) => a.id === systemId) : undefined;
   if (sys) {
-    wm.open({ type: "system", app: sys.id }, sys.title);
+    wm.open({ type: "system", app: sys.id }, systemAppTitle(sys.id));
     return;
   }
 
@@ -96,7 +96,7 @@ export function handleShellEvent(event: AgentEvent): void {
         // circular-import TDZ crash (systemApps → app components → osActions).
         const def = SYSTEM_APPS.find((a) => a.id === action.app);
         if (def) {
-          wm.open({ type: "system", app: def.id }, def.title);
+          wm.open({ type: "system", app: def.id }, systemAppTitle(def.id));
         } else {
           // Older callers may still send open_system for installed apps like
           // "docs" — treat the id as an open_app target instead of no-op'ing.
@@ -121,7 +121,7 @@ export function handleShellEvent(event: AgentEvent): void {
       } else if (action.action === "open_workspace_tab") {
         // Tab/path state was already set by the studio store's ingest above;
         // here we just make sure the Studio window is visible.
-        wm.open({ type: "system", app: "studio" }, STUDIO_TITLE);
+        wm.open({ type: "system", app: "studio" }, systemAppTitle("studio"));
       }
       break;
     }

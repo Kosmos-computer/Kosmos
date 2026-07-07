@@ -8,7 +8,7 @@ import { Calendar, LayoutGrid, Layers, PanelLeft, Pin, Plus, Search, Trash2 } fr
 import type { Project, SessionSummary } from "@shared/types";
 import { useAuthStore } from "../../os/auth/authStore";
 import { useWindowStore } from "../../os/windowStore";
-import { systemApp } from "../../os/systemApps";
+import { systemAppTitle } from "../../os/systemAppTitles";
 import { StudioConversationGroups } from "./StudioConversationGroups";
 import { StudioSidebarFilterMenu } from "./StudioSidebarFilterMenu";
 import { StudioLogoMark } from "../../components/StudioLogoMark";
@@ -77,7 +77,7 @@ export function StudioSidebar({
   const prunePinned = useSidebarPreferencesStore((s) => s.prunePinned);
 
   const openSystem = (app: "automations" | "apps" | "skills") =>
-    openWindow({ type: "system", app }, systemApp(app).title);
+    openWindow({ type: "system", app }, systemAppTitle(app));
 
   const visibleSessions = useMemo(() => {
     const normalized = query.trim().toLowerCase();

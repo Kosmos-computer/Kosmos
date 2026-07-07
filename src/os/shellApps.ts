@@ -5,6 +5,7 @@
  * pinned-id order (see pinnedApps.ts) instead of hardcoding sections.
  */
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Globe, type LucideIcon } from "lucide-react";
 import { useOsStore } from "./osStore";
 import { windowKey, type WindowKind } from "./windowStore";
@@ -20,6 +21,7 @@ export interface ShellAppEntry {
 }
 
 export function useShellApps(): ShellAppEntry[] {
+  const { t } = useTranslation();
   const apps = useOsStore((s) => s.apps);
   const webApps = useOsStore((s) => s.webApps);
   // Select the raw (store-stable) array and filter inside the memo below —
@@ -33,7 +35,7 @@ export function useShellApps(): ShellAppEntry[] {
 
     for (const def of SYSTEM_APPS) {
       const kind: WindowKind = { type: "system", app: def.id };
-      entries.push({ id: windowKey(kind), title: def.title, icon: def.icon, kind, generated: false });
+      entries.push({ id: windowKey(kind), title: t(def.titleKey), icon: def.icon, kind, generated: false });
     }
     for (const entry of installedApps) {
       const kind: WindowKind = { type: "installed", appId: entry.manifest.id };
@@ -55,5 +57,5 @@ export function useShellApps(): ShellAppEntry[] {
     }
 
     return entries;
-  }, [apps, webApps, installedAppsRaw]);
+  }, [apps, webApps, installedAppsRaw, t]);
 }

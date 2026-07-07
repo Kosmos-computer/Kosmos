@@ -3,6 +3,7 @@
  * API keys persist server-side and come back masked.
  */
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { LlmProvider, Settings } from "@shared/types";
 import { ACP_PRESETS, PROVIDER_PRESETS } from "@shared/types";
 import { api } from "../../lib/api";
@@ -62,6 +63,8 @@ import { useSettingsStore } from "./settingsStore";
 import { ACCOUNT_STUB_SECTION_IDS } from "./settingsStubMock";
 import { SettingsStubPane } from "./SettingsStubSection";
 import { useSettingsStub } from "./useSettingsStub";
+import { applyArcoLocale, AvailableLanguages, DEFAULT_LOCALE } from "../../i18n";
+import { I18nKey } from "../../i18n/declaration";
 
 const PROVIDERS: { id: LlmProvider; label: string }[] = [
   { id: "mock", label: "Mock (no key needed)" },
@@ -76,6 +79,7 @@ const PROVIDERS: { id: LlmProvider; label: string }[] = [
 const NAV_BRAND_MAX_BYTES = 512 * 1024;
 
 export function SettingsApp() {
+  const { t } = useTranslation();
   const {
     theme,
     setTheme,
@@ -174,6 +178,7 @@ export function SettingsApp() {
     const result = await api.saveSettings(settings);
     setSettings(result);
     setSaved(true);
+    await applyArcoLocale(result.locale ?? DEFAULT_LOCALE);
     useSettingsStore.getState().bumpSettingsRevision();
   };
 
@@ -373,6 +378,22 @@ export function SettingsApp() {
             <SettingsPage>
               <SettingsSection intro="Theme, typography, spacing, assistant face, and background for the desktop and sign-in screen.">
                 <SettingsStack>
+                  <SettingsFieldRow label={t(I18nKey.SETTINGS$LANGUAGE)} hint={t(I18nKey.SETTINGS$LANGUAGE_HINT)}>
+                    <SettingsChipRow>
+                      {AvailableLanguages.map((lang) => (
+                        <Chip
+                          key={lang.value}
+                          active={(settings.locale ?? DEFAULT_LOCALE) === lang.value}
+                          onClick={() => {
+                            update({ locale: lang.value });
+                            void applyArcoLocale(lang.value);
+                          }}
+                        >
+                          {lang.label}
+                        </Chip>
+                      ))}
+                    </SettingsChipRow>
+                  </SettingsFieldRow>
                   <SettingsFieldRow label="Theme">
                     <SettingsChipRow>
                       {(["dark", "light"] as const).map((t) => (

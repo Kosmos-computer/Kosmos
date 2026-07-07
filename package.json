@@ -14,13 +14,14 @@
   "scripts": {
     "models": "npm run dev -w model-manager",
     "generate": "tsx scripts/generate-prompts.ts",
-    "predev": "npm run build:apps",
+    "predev": "npm run make-i18n && npm run build:apps",
     "dev": "concurrently -n server,web -c yellow,cyan \"npm run dev:server\" \"npm run dev:web\"",
     "dev:all": "concurrently -n server,web,voice -c yellow,cyan,magenta \"npm run dev:server\" \"npm run dev:web\" \"npm run voice\"",
     "dev:server": "tsx watch server/index.ts",
     "dev:web": "vite",
     "voice": "cd voice-server && .venv/bin/python bot.py --host localhost --port 4630",
     "build:apps": "npm run build -w @arco/docs-app",
+    "prebuild": "npm run make-i18n",
     "build": "npm run build:apps && vite build",
     "desktop": "npm run build && npm run start -w @arco/desktop",
     "dist:desktop": "npm run generate && npm run build && npm run dist -w @arco/desktop",
@@ -33,7 +34,10 @@
     "setup": "tsx scripts/setup.mts",
     "setup:check": "tsx scripts/setup.mts --check",
     "postinstall": "tsx scripts/postinstall.mts",
-    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.server.json",
+    "typecheck": "npm run make-i18n && tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.server.json",
+    "lint": "eslint src",
+    "make-i18n": "node scripts/make-i18n-translations.cjs",
+    "check-translation-completeness": "node scripts/check-translation-completeness.cjs",
     "test": "tsx --test server/automations/*.test.ts server/stores/automationStore.test.ts"
   },
   "dependencies": {
@@ -50,6 +54,9 @@
     "@zed-industries/agent-client-protocol": "^0.4.5",
     "better-sqlite3": "^12.0.0",
     "hono": "^4.12.0",
+    "i18next": "^26.3.4",
+    "i18next-browser-languagedetector": "^8.2.1",
+    "i18next-http-backend": "^4.0.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.575.0",
     "monaco-editor": "^0.55.1",
@@ -57,6 +64,7 @@
     "openai": "^6.22.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-i18next": "^17.0.8",
     "react-markdown": "^10.1.0",
     "react-pdf": "^10.4.1",
     "remark-gfm": "^4.0.1",
@@ -64,6 +72,7 @@
     "zustand": "^4.5.5"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
     "@types/better-sqlite3": "^7.6.13",
     "@types/leaflet": "^1.9.21",
     "@types/node": "^22.15.0",
@@ -71,8 +80,14 @@
     "@types/react-dom": "^19.1.0",
     "@vitejs/plugin-react": "^4.5.0",
     "concurrently": "^9.2.0",
+    "eslint": "^9.39.4",
+    "eslint-plugin-i18next": "^6.1.4",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^16.5.0",
     "tsx": "^4.19.0",
     "typescript": "^5.8.0",
+    "typescript-eslint": "^8.59.2",
     "vite": "^6.3.0"
   },
   "engines": {

@@ -53,6 +53,7 @@ const DEFAULT_SETTINGS: Settings = {
   cursorModel: process.env.CURSOR_MODEL ?? "composer-2.5",
   cursorRuntime: "local",
   cursorRepoUrl: "",
+  locale: "en",
 };
 
 function applyLlmEnvOverrides(settings: Settings): Settings {

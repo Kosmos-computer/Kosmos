@@ -11,6 +11,7 @@ import { MobileShell } from "./os/MobileShell";
 import { StandaloneAppWindow } from "./os/StandaloneAppWindow";
 import { CommandPalette } from "./os/CommandPalette";
 import { getStandaloneWindowKey } from "./os/nativeAppWindows";
+import { I18nLocaleSync } from "./i18n/I18nLocaleSync";
 
 function useIsMobile(): boolean {
   const [mobile, setMobile] = useState(() => window.matchMedia("(max-width: 767px)").matches);
@@ -39,6 +40,7 @@ export default function App() {
   if (embedLaunch) {
     return (
       <ElectronShell>
+        <I18nLocaleSync />
         <AuthGate>
           <EmbedAppShell />
         </AuthGate>
@@ -48,6 +50,7 @@ export default function App() {
 
   return (
     <ElectronShell>
+      <I18nLocaleSync />
       <AuthGate>
         {isMobile ? <MobileShell /> : <Desktop />}
         <CommandPalette />

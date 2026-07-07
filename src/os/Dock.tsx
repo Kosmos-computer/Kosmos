@@ -7,8 +7,10 @@
  * every app with a checkmark for what's currently pinned.
  */
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { LayoutGrid, Plus, Trash2 } from "lucide-react";
 import { Menu } from "../components/Menu";
+import { I18nKey } from "../i18n/declaration";
 import { useOsStore } from "./osStore";
 import { useWindowStore } from "./windowStore";
 import { useShellApps, type ShellAppEntry } from "./shellApps";
@@ -41,6 +43,7 @@ function DockItem({
   onSelect: () => void;
   onRemove: () => void;
 }) {
+  const { t } = useTranslation();
   const Icon = entry.icon;
   const [ctxOpen, setCtxOpen] = useState(false);
 
@@ -79,10 +82,10 @@ function DockItem({
         onOpenChange={setCtxOpen}
         trigger={<span aria-hidden="true" />}
         className="arco-itemctx"
-        aria-label={`${entry.title} options`}
+        aria-label={t(I18nKey.OS$DOCK_OPTIONS, { title: entry.title })}
         side="top"
         items={[
-          { id: "remove", label: "Remove from Dock", icon: Trash2, danger: true, onSelect: onRemove },
+          { id: "remove", label: t(I18nKey.OS$DOCK_REMOVE), icon: Trash2, danger: true, onSelect: onRemove },
         ]}
       />
     </div>
@@ -90,6 +93,7 @@ function DockItem({
 }
 
 export function Dock() {
+  const { t } = useTranslation();
   const dockPinnedIds = useOsStore((s) => s.dockPinnedIds);
   const setDockPinnedIds = useOsStore((s) => s.setDockPinnedIds);
   const entries = useShellApps();
@@ -144,17 +148,17 @@ export function Dock() {
         <Menu
           className="arco-dock__all-apps"
           trigger={
-            <button className="arco-dock__item arco-dock__item--all-apps" aria-label="View all apps">
+            <button className="arco-dock__item arco-dock__item--all-apps" aria-label={t(I18nKey.OS$DOCK_VIEW_ALL)}>
               <LayoutGrid size={20} strokeWidth={1.8} />
               {overflowPinned.length > 0 && (
                 <span className="arco-dock__overflow-count" aria-hidden="true">
                   {overflowPinned.length}
                 </span>
               )}
-              <span className="arco-dock__tooltip">View all apps</span>
+              <span className="arco-dock__tooltip">{t(I18nKey.OS$DOCK_VIEW_ALL)}</span>
             </button>
           }
-          aria-label="View all apps"
+          aria-label={t(I18nKey.OS$DOCK_VIEW_ALL)}
           searchPlaceholder="Search apps"
           side="top"
           align="end"
@@ -174,12 +178,12 @@ export function Dock() {
         <Menu
           className="arco-dock__more-apps"
           trigger={
-            <button className="arco-dock__item arco-dock__item--add" aria-label="More apps">
+            <button className="arco-dock__item arco-dock__item--add" aria-label={t(I18nKey.OS$DOCK_MORE_APPS)}>
               <Plus size={20} strokeWidth={1.8} />
-              <span className="arco-dock__tooltip">More apps</span>
+              <span className="arco-dock__tooltip">{t(I18nKey.OS$DOCK_MORE_APPS)}</span>
             </button>
           }
-          aria-label="More apps"
+          aria-label={t(I18nKey.OS$DOCK_MORE_APPS)}
           searchPlaceholder="Search apps"
           side="top"
           align="end"

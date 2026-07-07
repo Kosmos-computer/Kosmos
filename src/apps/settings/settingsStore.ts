@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { useWindowStore } from "../../os/windowStore";
+import { systemAppTitle } from "../../os/systemAppTitles";
 import { DEFAULT_SETTINGS_SECTION, type SettingsSectionId } from "./settingsSections";
 
 interface SettingsStore {
@@ -19,5 +20,5 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
 
 export function openSettingsApp(section?: SettingsSectionId): void {
   if (section) useSettingsStore.getState().setActiveSection(section);
-  useWindowStore.getState().open({ type: "system", app: "settings" }, "Settings");
+  useWindowStore.getState().open({ type: "system", app: "settings" }, systemAppTitle("settings"));
 }

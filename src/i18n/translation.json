@@ -1,0 +1,548 @@
+{
+  "COMMON$BACK": {
+    "en": "Back",
+    "es": "Atrás",
+    "de": "Zurück",
+    "ja": "戻る",
+    "zh-CN": "返回"
+  },
+  "COMMON$CONTINUE": {
+    "en": "Continue",
+    "es": "Continuar",
+    "de": "Weiter",
+    "ja": "続ける",
+    "zh-CN": "继续"
+  },
+  "COMMON$SAVE": {
+    "en": "Save",
+    "es": "Guardar",
+    "de": "Speichern",
+    "ja": "保存",
+    "zh-CN": "保存"
+  },
+  "COMMON$SETTINGS": {
+    "en": "Settings",
+    "es": "Ajustes",
+    "de": "Einstellungen",
+    "ja": "設定",
+    "zh-CN": "设置"
+  },
+  "INSTALL$WELCOME_LEAD": {
+    "en": "Welcome to Arco",
+    "es": "Bienvenido a Arco",
+    "de": "Willkommen bei Arco",
+    "ja": "Arco へようこそ",
+    "zh-CN": "欢迎使用 Arco"
+  },
+  "INSTALL$WELCOME_SUBTITLE": {
+    "en": "Set up models and your owner account — you can change everything later in Settings.",
+    "es": "Configura modelos y tu cuenta de propietario; podrás cambiarlo todo más tarde en Ajustes.",
+    "de": "Richte Modelle und dein Owner-Konto ein — alles lässt sich später in den Einstellungen ändern.",
+    "ja": "モデルとオーナーアカウントを設定します。後から設定で変更できます。",
+    "zh-CN": "设置模型和所有者账户 — 之后可在设置中更改一切。"
+  },
+  "INSTALL$GET_STARTED": {
+    "en": "Get started",
+    "es": "Comenzar",
+    "de": "Loslegen",
+    "ja": "始める",
+    "zh-CN": "开始"
+  },
+  "INSTALL$STEP_PROGRESS": {
+    "en": "Step {{step}} of {{total}}",
+    "es": "Paso {{step}} de {{total}}",
+    "de": "Schritt {{step}} von {{total}}",
+    "ja": "ステップ {{step}} / {{total}}",
+    "zh-CN": "第 {{step}} 步，共 {{total}} 步"
+  },
+  "INSTALL$CHECKS_TITLE_PACKAGED": {
+    "en": "Installation incomplete",
+    "es": "Instalación incompleta",
+    "de": "Installation unvollständig",
+    "ja": "インストールが未完了です",
+    "zh-CN": "安装未完成"
+  },
+  "INSTALL$CHECKS_TITLE_DEV": {
+    "en": "Finish setup on this machine",
+    "es": "Completa la configuración en este equipo",
+    "de": "Setup auf diesem Gerät abschließen",
+    "ja": "このマシンでセットアップを完了してください",
+    "zh-CN": "请在此设备上完成设置"
+  },
+  "INSTALL$CHECKS_LEAD_PACKAGED": {
+    "en": "This build is missing required components. Download a fresh release or rebuild with npm run dist:desktop.",
+    "es": "A esta compilación le faltan componentes necesarios. Descarga una versión nueva o recompila con npm run dist:desktop.",
+    "de": "In diesem Build fehlen erforderliche Komponenten. Lade eine neue Version herunter oder baue mit npm run dist:desktop neu.",
+    "ja": "このビルドには必要なコンポーネントがありません。新しいリリースをダウンロードするか npm run dist:desktop で再ビルドしてください。",
+    "zh-CN": "此构建缺少必要组件。请下载新版本或使用 npm run dist:desktop 重新构建。"
+  },
+  "INSTALL$CHECKS_LEAD_DEV_PREFIX": {
+    "en": "From the repo root, run",
+    "es": "Desde la raíz del repositorio, ejecuta",
+    "de": "Führe im Repository-Root aus",
+    "ja": "リポジトリのルートで",
+    "zh-CN": "在仓库根目录运行"
+  },
+  "INSTALL$CHECKS_LEAD_DEV_SUFFIX": {
+    "en": ", then refresh.",
+    "es": " y luego actualiza la página.",
+    "de": " aus und lade dann neu.",
+    "ja": " を実行してから更新してください。",
+    "zh-CN": "，然后刷新页面。"
+  },
+  "INSTALL$MODEL_PATH_TITLE": {
+    "en": "How should Arco run models?",
+    "es": "¿Cómo debe ejecutar Arco los modelos?",
+    "de": "Wie soll Arco Modelle ausführen?",
+    "ja": "Arco はどのようにモデルを実行しますか？",
+    "zh-CN": "Arco 应如何运行模型？"
+  },
+  "INSTALL$MODEL_PATH_SUBTITLE": {
+    "en": "Pick a default for the agent. Mock mode works with no API key.",
+    "es": "Elige un valor predeterminado para el agente. El modo simulado no requiere clave API.",
+    "de": "Wähle einen Standard für den Agenten. Der Mock-Modus funktioniert ohne API-Schlüssel.",
+    "ja": "エージェントのデフォルトを選んでください。モックモードは API キー不要です。",
+    "zh-CN": "为代理选择默认方式。模拟模式无需 API 密钥。"
+  },
+  "INSTALL$MODEL_PATH_MOCK_LABEL": {
+    "en": "Try offline (mock)",
+    "es": "Probar sin conexión (simulado)",
+    "de": "Offline testen (Mock)",
+    "ja": "オフラインで試す（モック）",
+    "zh-CN": "离线试用（模拟）"
+  },
+  "INSTALL$MODEL_PATH_MOCK_HINT": {
+    "en": "Scripted demo — no API key",
+    "es": "Demo guiada — sin clave API",
+    "de": "Skriptierte Demo — kein API-Schlüssel",
+    "ja": "スクリプトデモ — API キー不要",
+    "zh-CN": "脚本演示 — 无需 API 密钥"
+  },
+  "INSTALL$MODEL_PATH_CLOUD_LABEL": {
+    "en": "Cloud API",
+    "es": "API en la nube",
+    "de": "Cloud-API",
+    "ja": "クラウド API",
+    "zh-CN": "云端 API"
+  },
+  "INSTALL$MODEL_PATH_CLOUD_HINT": {
+    "en": "OpenAI, Anthropic, OpenRouter…",
+    "es": "OpenAI, Anthropic, OpenRouter…",
+    "de": "OpenAI, Anthropic, OpenRouter…",
+    "ja": "OpenAI、Anthropic、OpenRouter…",
+    "zh-CN": "OpenAI、Anthropic、OpenRouter…"
+  },
+  "INSTALL$MODEL_PATH_LOCAL_LABEL": {
+    "en": "Local models",
+    "es": "Modelos locales",
+    "de": "Lokale Modelle",
+    "ja": "ローカルモデル",
+    "zh-CN": "本地模型"
+  },
+  "INSTALL$MODEL_PATH_LOCAL_HINT": {
+    "en": "Arco Models + llama-server",
+    "es": "Arco Models + llama-server",
+    "de": "Arco Models + llama-server",
+    "ja": "Arco Models + llama-server",
+    "zh-CN": "Arco Models + llama-server"
+  },
+  "INSTALL$MODEL_PATH_OLLAMA_LABEL": {
+    "en": "Ollama",
+    "es": "Ollama",
+    "de": "Ollama",
+    "ja": "Ollama",
+    "zh-CN": "Ollama"
+  },
+  "INSTALL$MODEL_PATH_OLLAMA_HINT": {
+    "en": "Use an existing Ollama install",
+    "es": "Usa una instalación existente de Ollama",
+    "de": "Vorhandene Ollama-Installation nutzen",
+    "ja": "既存の Ollama インストールを使用",
+    "zh-CN": "使用已有的 Ollama 安装"
+  },
+  "INSTALL$PROVIDER_TITLE": {
+    "en": "Connect a cloud provider",
+    "es": "Conectar un proveedor en la nube",
+    "de": "Cloud-Anbieter verbinden",
+    "ja": "クラウドプロバイダーに接続",
+    "zh-CN": "连接云端提供商"
+  },
+  "INSTALL$PROVIDER_SUBTITLE": {
+    "en": "Keys stay on this machine. You can skip the key and add it in Settings later.",
+    "es": "Las claves permanecen en este equipo. Puedes omitir la clave y añadirla después en Ajustes.",
+    "de": "Schlüssel bleiben auf diesem Gerät. Du kannst den Schlüssel überspringen und später in den Einstellungen hinzufügen.",
+    "ja": "キーはこのマシンに保存されます。後から設定で追加することもできます。",
+    "zh-CN": "密钥保留在本机。可稍后在设置中添加。"
+  },
+  "INSTALL$PROVIDER_LABEL": {
+    "en": "Provider",
+    "es": "Proveedor",
+    "de": "Anbieter",
+    "ja": "プロバイダー",
+    "zh-CN": "提供商"
+  },
+  "INSTALL$API_KEY_LABEL": {
+    "en": "API key (optional now)",
+    "es": "Clave API (opcional por ahora)",
+    "de": "API-Schlüssel (optional)",
+    "ja": "API キー（任意）",
+    "zh-CN": "API 密钥（可选）"
+  },
+  "INSTALL$API_KEY_PLACEHOLDER": {
+    "en": "sk-…",
+    "es": "sk-…",
+    "de": "sk-…",
+    "ja": "sk-…",
+    "zh-CN": "sk-…"
+  },
+  "INSTALL$ACCOUNT_TITLE": {
+    "en": "Create owner account",
+    "es": "Crear cuenta de propietario",
+    "de": "Owner-Konto erstellen",
+    "ja": "オーナーアカウントを作成",
+    "zh-CN": "创建所有者账户"
+  },
+  "INSTALL$ACCOUNT_SUBTITLE": {
+    "en": "Secure this instance — additional users can be added later.",
+    "es": "Protege esta instancia; podrás añadir más usuarios después.",
+    "de": "Diese Instanz absichern — weitere Benutzer können später hinzugefügt werden.",
+    "ja": "このインスタンスを保護します。追加ユーザーは後から登録できます。",
+    "zh-CN": "保护此实例 — 可稍后添加其他用户。"
+  },
+  "INSTALL$USERNAME_LABEL": {
+    "en": "Username",
+    "es": "Nombre de usuario",
+    "de": "Benutzername",
+    "ja": "ユーザー名",
+    "zh-CN": "用户名"
+  },
+  "INSTALL$DISPLAY_NAME_LABEL": {
+    "en": "Display name (optional)",
+    "es": "Nombre visible (opcional)",
+    "de": "Anzeigename (optional)",
+    "ja": "表示名（任意）",
+    "zh-CN": "显示名称（可选）"
+  },
+  "INSTALL$PASSWORD_LABEL": {
+    "en": "Password",
+    "es": "Contraseña",
+    "de": "Passwort",
+    "ja": "パスワード",
+    "zh-CN": "密码"
+  },
+  "INSTALL$CONFIRM_PASSWORD_LABEL": {
+    "en": "Confirm password",
+    "es": "Confirmar contraseña",
+    "de": "Passwort bestätigen",
+    "ja": "パスワード確認",
+    "zh-CN": "确认密码"
+  },
+  "INSTALL$PASSWORD_MISMATCH": {
+    "en": "Passwords do not match",
+    "es": "Las contraseñas no coinciden",
+    "de": "Passwörter stimmen nicht überein",
+    "ja": "パスワードが一致しません",
+    "zh-CN": "密码不匹配"
+  },
+  "INSTALL$CREATING": {
+    "en": "Creating…",
+    "es": "Creando…",
+    "de": "Wird erstellt…",
+    "ja": "作成中…",
+    "zh-CN": "创建中…"
+  },
+  "INSTALL$FINISH_SETUP": {
+    "en": "Finish setup",
+    "es": "Finalizar configuración",
+    "de": "Setup abschließen",
+    "ja": "セットアップを完了",
+    "zh-CN": "完成设置"
+  },
+  "SETTINGS$LANGUAGE": {
+    "en": "Language",
+    "es": "Idioma",
+    "de": "Sprache",
+    "ja": "言語",
+    "zh-CN": "语言"
+  },
+  "SETTINGS$LANGUAGE_HINT": {
+    "en": "Language for menus, buttons, and system apps. Chat responses follow the model.",
+    "es": "Idioma para menús, botones y apps del sistema. Las respuestas del chat siguen al modelo.",
+    "de": "Sprache für Menüs, Schaltflächen und System-Apps. Chat-Antworten folgen dem Modell.",
+    "ja": "メニュー、ボタン、システムアプリの言語。チャット応答はモデルに従います。",
+    "zh-CN": "菜单、按钮和系统应用的语言。聊天回复由模型决定。"
+  },
+  "OS$DOCK_REMOVE": {
+    "en": "Remove from Dock",
+    "es": "Quitar del Dock",
+    "de": "Aus dem Dock entfernen",
+    "ja": "Dock から削除",
+    "zh-CN": "从程序坞移除"
+  },
+  "OS$DOCK_OPTIONS": {
+    "en": "{{title}} options",
+    "es": "Opciones de {{title}}",
+    "de": "{{title}}-Optionen",
+    "ja": "{{title}} のオプション",
+    "zh-CN": "{{title}} 选项"
+  },
+  "OS$APP_CHAT": {
+    "en": "Chat",
+    "es": "Chat",
+    "de": "Chat",
+    "ja": "チャット",
+    "zh-CN": "聊天"
+  },
+  "OS$APP_STUDIO": {
+    "en": "Agent Studio",
+    "es": "Agent Studio",
+    "de": "Agent Studio",
+    "ja": "Agent Studio",
+    "zh-CN": "Agent Studio"
+  },
+  "OS$APP_APPS": {
+    "en": "Apps",
+    "es": "Apps",
+    "de": "Apps",
+    "ja": "アプリ",
+    "zh-CN": "应用"
+  },
+  "OS$APP_SKILLS": {
+    "en": "Skills",
+    "es": "Skills",
+    "de": "Skills",
+    "ja": "スキル",
+    "zh-CN": "技能"
+  },
+  "OS$APP_MEMORY": {
+    "en": "Memory",
+    "es": "Memoria",
+    "de": "Speicher",
+    "ja": "メモリ",
+    "zh-CN": "记忆"
+  },
+  "OS$APP_KEY_WALLET": {
+    "en": "Key Wallet",
+    "es": "Cartera de claves",
+    "de": "Schlüssel-Wallet",
+    "ja": "キーウォレット",
+    "zh-CN": "密钥钱包"
+  },
+  "OS$APP_APIS": {
+    "en": "APIs",
+    "es": "APIs",
+    "de": "APIs",
+    "ja": "API",
+    "zh-CN": "API"
+  },
+  "OS$APP_AUTOMATIONS": {
+    "en": "Automations",
+    "es": "Automatizaciones",
+    "de": "Automationen",
+    "ja": "自動化",
+    "zh-CN": "自动化"
+  },
+  "OS$APP_DRIVE": {
+    "en": "Drive",
+    "es": "Drive",
+    "de": "Drive",
+    "ja": "ドライブ",
+    "zh-CN": "云盘"
+  },
+  "OS$APP_MAPS": {
+    "en": "Maps",
+    "es": "Mapas",
+    "de": "Karten",
+    "ja": "マップ",
+    "zh-CN": "地图"
+  },
+  "OS$APP_SEARCH": {
+    "en": "Search",
+    "es": "Buscar",
+    "de": "Suche",
+    "ja": "検索",
+    "zh-CN": "搜索"
+  },
+  "OS$APP_LONGFORMER": {
+    "en": "Longformer",
+    "es": "Longformer",
+    "de": "Longformer",
+    "ja": "Longformer",
+    "zh-CN": "Longformer"
+  },
+  "OS$APP_KAMIJI": {
+    "en": "Kamiji",
+    "es": "Kamiji",
+    "de": "Kamiji",
+    "ja": "Kamiji",
+    "zh-CN": "Kamiji"
+  },
+  "OS$APP_MUSIC": {
+    "en": "Music",
+    "es": "Música",
+    "de": "Musik",
+    "ja": "ミュージック",
+    "zh-CN": "音乐"
+  },
+  "OS$APP_VIDEO": {
+    "en": "Video",
+    "es": "Video",
+    "de": "Video",
+    "ja": "ビデオ",
+    "zh-CN": "视频"
+  },
+  "OS$APP_MEET": {
+    "en": "Meet",
+    "es": "Meet",
+    "de": "Meet",
+    "ja": "Meet",
+    "zh-CN": "会议"
+  },
+  "OS$APP_PODCASTS": {
+    "en": "Podcasts",
+    "es": "Podcasts",
+    "de": "Podcasts",
+    "ja": "ポッドキャスト",
+    "zh-CN": "播客"
+  },
+  "OS$APP_DOWNLOADS": {
+    "en": "Downloads",
+    "es": "Descargas",
+    "de": "Downloads",
+    "ja": "ダウンロード",
+    "zh-CN": "下载"
+  },
+  "OS$APP_PAY": {
+    "en": "Pay",
+    "es": "Pay",
+    "de": "Pay",
+    "ja": "Pay",
+    "zh-CN": "支付"
+  },
+  "OS$APP_NOTES": {
+    "en": "Notes",
+    "es": "Notas",
+    "de": "Notizen",
+    "ja": "メモ",
+    "zh-CN": "笔记"
+  },
+  "OS$APP_EMAIL": {
+    "en": "Email",
+    "es": "Correo",
+    "de": "E-Mail",
+    "ja": "メール",
+    "zh-CN": "邮件"
+  },
+  "OS$APP_CALENDAR": {
+    "en": "Calendar",
+    "es": "Calendario",
+    "de": "Kalender",
+    "ja": "カレンダー",
+    "zh-CN": "日历"
+  },
+  "OS$APP_TASKS": {
+    "en": "Tasks",
+    "es": "Tareas",
+    "de": "Aufgaben",
+    "ja": "タスク",
+    "zh-CN": "任务"
+  },
+  "OS$APP_CONTACTS": {
+    "en": "Contacts",
+    "es": "Contactos",
+    "de": "Kontakte",
+    "ja": "連絡先",
+    "zh-CN": "联系人"
+  },
+  "OS$APP_GROUPS": {
+    "en": "Groups",
+    "es": "Grupos",
+    "de": "Gruppen",
+    "ja": "グループ",
+    "zh-CN": "群组"
+  },
+  "OS$APP_MESSENGER": {
+    "en": "Messenger",
+    "es": "Messenger",
+    "de": "Messenger",
+    "ja": "メッセンジャー",
+    "zh-CN": "消息"
+  },
+  "OS$APP_SOCIAL": {
+    "en": "Social",
+    "es": "Social",
+    "de": "Social",
+    "ja": "ソーシャル",
+    "zh-CN": "社交"
+  },
+  "OS$APP_SHEETS": {
+    "en": "Sheets",
+    "es": "Hojas",
+    "de": "Tabellen",
+    "ja": "シート",
+    "zh-CN": "表格"
+  },
+  "OS$APP_GENERATOR": {
+    "en": "Generator",
+    "es": "Generador",
+    "de": "Generator",
+    "ja": "ジェネレーター",
+    "zh-CN": "生成器"
+  },
+  "OS$APP_IMAGE_GEN": {
+    "en": "Image Gen",
+    "es": "Generador de imágenes",
+    "de": "Bildgenerator",
+    "ja": "画像生成",
+    "zh-CN": "图像生成"
+  },
+  "OS$APP_TERMINAL": {
+    "en": "Terminal",
+    "es": "Terminal",
+    "de": "Terminal",
+    "ja": "ターミナル",
+    "zh-CN": "终端"
+  },
+  "OS$APP_MODELS": {
+    "en": "Models",
+    "es": "Modelos",
+    "de": "Modelle",
+    "ja": "モデル",
+    "zh-CN": "模型"
+  },
+  "OS$APP_SETTINGS": {
+    "en": "Settings",
+    "es": "Ajustes",
+    "de": "Einstellungen",
+    "ja": "設定",
+    "zh-CN": "设置"
+  },
+  "OS$APP_SETUP": {
+    "en": "Setup",
+    "es": "Configuración",
+    "de": "Setup",
+    "ja": "セットアップ",
+    "zh-CN": "设置向导"
+  },
+  "OS$APP_ONBOARDING": {
+    "en": "Onboarding",
+    "es": "Introducción",
+    "de": "Einführung",
+    "ja": "オンボーディング",
+    "zh-CN": "入门"
+  },
+  "OS$DOCK_VIEW_ALL": {
+    "en": "View all apps",
+    "es": "Ver todas las apps",
+    "de": "Alle Apps anzeigen",
+    "ja": "すべてのアプリを表示",
+    "zh-CN": "查看所有应用"
+  },
+  "OS$DOCK_MORE_APPS": {
+    "en": "More apps",
+    "es": "Más apps",
+    "de": "Weitere Apps",
+    "ja": "その他のアプリ",
+    "zh-CN": "更多应用"
+  }
+}

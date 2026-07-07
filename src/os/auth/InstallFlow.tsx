@@ -3,7 +3,8 @@
  * provider choice to owner account creation. Replaces the bare SetupScreen
  * while needsSetup is true.
  */
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { ArcoLogo } from "../../components/ArcoLogo";
 import { Button, Chip, Input } from "../../components/ui";
 import type { InstallStatus, LlmProvider, Settings } from "@shared/types";
@@ -11,22 +12,10 @@ import { PROVIDER_PRESETS } from "@shared/types";
 import { api } from "../../lib/api";
 import { useAuthStore } from "./authStore";
 import { AuthWallpaperBackdrop } from "../wallpaper/AuthWallpaperBackdrop";
+import { I18nKey } from "../../i18n/declaration";
 
 type InstallStep = "welcome" | "model-path" | "provider" | "account";
 type ModelPath = "mock" | "cloud" | "local" | "ollama";
-
-const MODEL_PATHS: { id: ModelPath; label: string; hint: string }[] = [
-  { id: "mock", label: "Try offline (mock)", hint: "Scripted demo — no API key" },
-  { id: "cloud", label: "Cloud API", hint: "OpenAI, Anthropic, OpenRouter…" },
-  { id: "local", label: "Local models", hint: "Arco Models + llama-server" },
-  { id: "ollama", label: "Ollama", hint: "Use an existing Ollama install" },
-];
-
-const CLOUD_PROVIDERS: { id: Exclude<LlmProvider, "custom" | "mock" | "local" | "ollama">; label: string }[] = [
-  { id: "openai", label: "OpenAI" },
-  { id: "anthropic", label: "Anthropic" },
-  { id: "openrouter", label: "OpenRouter" },
-];
 
 function InstallCard({ children }: { children: React.ReactNode }) {
   return (
@@ -43,8 +32,9 @@ function InstallCard({ children }: { children: React.ReactNode }) {
 }
 
 function StepProgress({ step, total }: { step: number; total: number }) {
+  const { t } = useTranslation();
   return (
-    <div className="arco-install__progress" aria-label={`Step ${step} of ${total}`}>
+    <div className="arco-install__progress" aria-label={t(I18nKey.INSTALL$STEP_PROGRESS, { step, total })}>
       {Array.from({ length: total }, (_, index) => (
         <span
           key={index}
@@ -57,6 +47,7 @@ function StepProgress({ step, total }: { step: number; total: number }) {
 }
 
 function InstallChecks({ status }: { status: InstallStatus | null }) {
+  const { t } = useTranslation();
   if (!status || status.ready) return null;
   const failing = status.checks.filter((check) => check.required && !check.ok);
   if (failing.length === 0) return null;
@@ -66,14 +57,17 @@ function InstallChecks({ status }: { status: InstallStatus | null }) {
   return (
     <div className="arco-install__checks" role="status">
       <div className="arco-install__checks-title">
-        {packaged ? "Installation incomplete" : "Finish setup on this machine"}
+        {packaged ? t(I18nKey.INSTALL$CHECKS_TITLE_PACKAGED) : t(I18nKey.INSTALL$CHECKS_TITLE_DEV)}
       </div>
       <p className="arco-install__checks-lead">
         {packaged ? (
-          "This build is missing required components. Download a fresh release or rebuild with npm run dist:desktop."
+          t(I18nKey.INSTALL$CHECKS_LEAD_PACKAGED)
         ) : (
           <>
-            From the repo root, run <code>npm run setup</code>, then refresh.
+            {t(I18nKey.INSTALL$CHECKS_LEAD_DEV_PREFIX)}{" "}
+            {/* eslint-disable-next-line i18next/no-literal-string -- shell command */}
+            <code>npm run setup</code>
+            {t(I18nKey.INSTALL$CHECKS_LEAD_DEV_SUFFIX)}
           </>
         )}
       </p>
@@ -109,9 +103,32 @@ function settingsForPath(path: ModelPath, cloudProvider: LlmProvider, apiKey: st
 }
 
 export function InstallFlow() {
+  const { t } = useTranslation();
   const setup = useAuthStore((s) => s.setup);
   const clearError = useAuthStore((s) => s.clearError);
   const error = useAuthStore((s) => s.error);
+
+  const modelPaths = useMemo(
+    () =>
+      [
+        { id: "mock" as const, label: t(I18nKey.INSTALL$MODEL_PATH_MOCK_LABEL), hint: t(I18nKey.INSTALL$MODEL_PATH_MOCK_HINT) },
+        { id: "cloud" as const, label: t(I18nKey.INSTALL$MODEL_PATH_CLOUD_LABEL), hint: t(I18nKey.INSTALL$MODEL_PATH_CLOUD_HINT) },
+        { id: "local" as const, label: t(I18nKey.INSTALL$MODEL_PATH_LOCAL_LABEL), hint: t(I18nKey.INSTALL$MODEL_PATH_LOCAL_HINT) },
+        { id: "ollama" as const, label: t(I18nKey.INSTALL$MODEL_PATH_OLLAMA_LABEL), hint: t(I18nKey.INSTALL$MODEL_PATH_OLLAMA_HINT) },
+      ] satisfies { id: ModelPath; label: string; hint: string }[],
+    [t],
+  );
+
+  const cloudProviders = useMemo(
+    () =>
+      [
+        // Brand names — intentionally not localized.
+        { id: "openai" as const, label: "OpenAI" },
+        { id: "anthropic" as const, label: "Anthropic" },
+        { id: "openrouter" as const, label: "OpenRouter" },
+      ] satisfies { id: Exclude<LlmProvider, "custom" | "mock" | "local" | "ollama">; label: string }[],
+    [],
+  );
 
   const [step, setStep] = useState<InstallStep>("welcome");
   const [installStatus, setInstallStatus] = useState<InstallStatus | null>(null);
@@ -143,7 +160,7 @@ export function InstallFlow() {
   const submitAccount = async (e: FormEvent) => {
     e.preventDefault();
     if (password !== confirm) {
-      setLocalError("Passwords do not match");
+      setLocalError(t(I18nKey.INSTALL$PASSWORD_MISMATCH));
       return;
     }
     setLocalError(null);
@@ -165,14 +182,12 @@ export function InstallFlow() {
       {step === "welcome" && (
         <>
           <div className="arco-authscreen__header">
-            <div className="arco-authscreen__lead">Welcome to Arco</div>
-            <div className="arco-authscreen__subtitle">
-              Set up models and your owner account — you can change everything later in Settings.
-            </div>
+            <div className="arco-authscreen__lead">{t(I18nKey.INSTALL$WELCOME_LEAD)}</div>
+            <div className="arco-authscreen__subtitle">{t(I18nKey.INSTALL$WELCOME_SUBTITLE)}</div>
           </div>
           <InstallChecks status={installStatus} />
           <Button variant="primary" style={{ justifyContent: "center" }} onClick={() => setStep("model-path")}>
-            Get started
+            {t(I18nKey.INSTALL$GET_STARTED)}
           </Button>
         </>
       )}
@@ -180,11 +195,11 @@ export function InstallFlow() {
       {step === "model-path" && (
         <>
           <div className="arco-authscreen__header">
-            <div className="arco-authscreen__title">How should Arco run models?</div>
-            <div className="arco-authscreen__subtitle">Pick a default for the agent. Mock mode works with no API key.</div>
+            <div className="arco-authscreen__title">{t(I18nKey.INSTALL$MODEL_PATH_TITLE)}</div>
+            <div className="arco-authscreen__subtitle">{t(I18nKey.INSTALL$MODEL_PATH_SUBTITLE)}</div>
           </div>
           <div className="arco-startup-preview__path-grid">
-            {MODEL_PATHS.map((option) => (
+            {modelPaths.map((option) => (
               <button
                 key={option.id}
                 type="button"
@@ -199,10 +214,10 @@ export function InstallFlow() {
           </div>
           <div className="arco-startup-preview__actions">
             <Button variant="ghost" onClick={() => setStep("welcome")}>
-              Back
+              {t(I18nKey.COMMON$BACK)}
             </Button>
             <Button variant="primary" onClick={goNextFromModelPath}>
-              Continue
+              {t(I18nKey.COMMON$CONTINUE)}
             </Button>
           </div>
         </>
@@ -211,8 +226,8 @@ export function InstallFlow() {
       {step === "provider" && (
         <>
           <div className="arco-authscreen__header">
-            <div className="arco-authscreen__title">Connect a cloud provider</div>
-            <div className="arco-authscreen__subtitle">Keys stay on this machine. You can skip the key and add it in Settings later.</div>
+            <div className="arco-authscreen__title">{t(I18nKey.INSTALL$PROVIDER_TITLE)}</div>
+            <div className="arco-authscreen__subtitle">{t(I18nKey.INSTALL$PROVIDER_SUBTITLE)}</div>
           </div>
           <form
             className="arco-authscreen__form"
@@ -222,9 +237,9 @@ export function InstallFlow() {
             }}
           >
             <div>
-              <label className="arco-label">Provider</label>
+              <label className="arco-label">{t(I18nKey.INSTALL$PROVIDER_LABEL)}</label>
               <div className="arco-startup-preview__chips">
-                {CLOUD_PROVIDERS.map((entry) => (
+                {cloudProviders.map((entry) => (
                   <Chip
                     key={entry.id}
                     active={cloudProvider === entry.id}
@@ -237,23 +252,23 @@ export function InstallFlow() {
             </div>
             <div>
               <label className="arco-label" htmlFor="install-api-key">
-                API key (optional now)
+                {t(I18nKey.INSTALL$API_KEY_LABEL)}
               </label>
               <Input
                 id="install-api-key"
                 width="auto"
                 type="password"
-                placeholder="sk-…"
+                placeholder={t(I18nKey.INSTALL$API_KEY_PLACEHOLDER)}
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
               />
             </div>
             <div className="arco-startup-preview__actions">
               <Button type="button" variant="ghost" onClick={() => setStep("model-path")}>
-                Back
+                {t(I18nKey.COMMON$BACK)}
               </Button>
               <Button type="submit" variant="primary">
-                Continue
+                {t(I18nKey.COMMON$CONTINUE)}
               </Button>
             </div>
           </form>
@@ -264,13 +279,13 @@ export function InstallFlow() {
         <>
           <div className="arco-authscreen__header">
             <div className="arco-authscreen__mark" />
-            <div className="arco-authscreen__title">Create owner account</div>
-            <div className="arco-authscreen__subtitle">Secure this instance — additional users can be added later.</div>
+            <div className="arco-authscreen__title">{t(I18nKey.INSTALL$ACCOUNT_TITLE)}</div>
+            <div className="arco-authscreen__subtitle">{t(I18nKey.INSTALL$ACCOUNT_SUBTITLE)}</div>
           </div>
           <form className="arco-authscreen__form" onSubmit={(e) => void submitAccount(e)}>
             <div>
               <label className="arco-label" htmlFor="install-username">
-                Username
+                {t(I18nKey.INSTALL$USERNAME_LABEL)}
               </label>
               <Input
                 id="install-username"
@@ -284,7 +299,7 @@ export function InstallFlow() {
             </div>
             <div>
               <label className="arco-label" htmlFor="install-display">
-                Display name (optional)
+                {t(I18nKey.INSTALL$DISPLAY_NAME_LABEL)}
               </label>
               <Input
                 id="install-display"
@@ -295,7 +310,7 @@ export function InstallFlow() {
             </div>
             <div>
               <label className="arco-label" htmlFor="install-password">
-                Password
+                {t(I18nKey.INSTALL$PASSWORD_LABEL)}
               </label>
               <Input
                 id="install-password"
@@ -310,7 +325,7 @@ export function InstallFlow() {
             </div>
             <div>
               <label className="arco-label" htmlFor="install-confirm">
-                Confirm password
+                {t(I18nKey.INSTALL$CONFIRM_PASSWORD_LABEL)}
               </label>
               <Input
                 id="install-confirm"
@@ -338,10 +353,10 @@ export function InstallFlow() {
                 variant="ghost"
                 onClick={() => setStep(modelPath === "cloud" ? "provider" : "model-path")}
               >
-                Back
+                {t(I18nKey.COMMON$BACK)}
               </Button>
               <Button variant="primary" type="submit" disabled={busy}>
-                {busy ? "Creating…" : "Finish setup"}
+                {busy ? t(I18nKey.INSTALL$CREATING) : t(I18nKey.INSTALL$FINISH_SETUP)}
               </Button>
             </div>
           </form>

@@ -17,6 +17,7 @@ import { BentoDrawer } from "./bento/BentoDrawer";
 import { connectShellEvents } from "./shellEvents";
 import { parseLaunchAppParam } from "@shared/launchApp";
 import { systemApp } from "./systemApps";
+import { systemAppTitle } from "./systemAppTitles";
 import { WindowContentById } from "./windowContent";
 import { AgentCursor } from "./cursor/AgentCursor";
 import { MusicShell } from "../apps/music/MusicShell";
@@ -100,12 +101,12 @@ export function Desktop() {
       if (launchId) {
         try {
           const def = systemApp(launchId as SystemAppId);
-          open({ type: "system", app: def.id }, def.title);
+          open({ type: "system", app: def.id }, systemAppTitle(def.id));
         } catch {
-          open({ type: "system", app: "chat" }, "Chat");
+          open({ type: "system", app: "chat" }, systemAppTitle("chat"));
         }
       } else {
-        open({ type: "system", app: "chat" }, "Chat");
+        open({ type: "system", app: "chat" }, systemAppTitle("chat"));
       }
     }
     const disconnectNative = initNativeAppWindowBridge();

@@ -635,6 +635,8 @@ export interface Settings {
   cursorRuntime: CursorRuntime;
   /** GitHub repo URL for cloud Cursor agents. */
   cursorRepoUrl: string;
+  /** UI locale — BCP-47 tag, e.g. en, es, de, ja, zh-CN. */
+  locale: string;
   /**
    * Built-in agent tools hidden from the model (Settings → Agent tools).
    * Mirrors McpServerConfig.disabledTools: the tool is removed from the

@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import { bootstrapElectronShell } from "./os/bootstrapElectronShell";
+import { waitForI18n } from "./i18n";
 
 bootstrapElectronShell();
 
@@ -56,8 +57,13 @@ import "./styles/onboarding.css";
 import "./styles/adaptive.css";
 import "./styles/richmarkdown.css";
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+async function bootstrap() {
+  await waitForI18n();
+  createRoot(document.getElementById("root")!).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  );
+}
+
+void bootstrap();

@@ -1,10 +1,12 @@
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { parseWindowKey } from "./windowStore";
-import { SYSTEM_APPS } from "./systemApps";
+import { systemAppTitle } from "./systemAppTitles";
 import { useOsStore } from "./osStore";
 
 /** Resolve a human title for standalone Electron app windows. */
 export function useStandaloneWindowTitle(windowKey: string): string {
+  const { i18n } = useTranslation();
   const apps = useOsStore((s) => s.apps);
   const webApps = useOsStore((s) => s.webApps);
   const installedApps = useOsStore((s) => s.installedApps);
@@ -15,7 +17,7 @@ export function useStandaloneWindowTitle(windowKey: string): string {
 
     switch (kind.type) {
       case "system":
-        return SYSTEM_APPS.find((app) => app.id === kind.app)?.title ?? kind.app;
+        return systemAppTitle(kind.app);
       case "generated":
         return apps.find((app) => app.id === kind.appId)?.title ?? "App";
       case "web":
@@ -25,5 +27,5 @@ export function useStandaloneWindowTitle(windowKey: string): string {
           installedApps.find((entry) => entry.manifest.id === kind.appId)?.manifest.name ?? "App"
         );
     }
-  }, [windowKey, apps, webApps, installedApps]);
+  }, [windowKey, apps, webApps, installedApps, i18n.language]);
 }

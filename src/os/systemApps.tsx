@@ -42,9 +42,10 @@ import {
   Boxes,
 } from "lucide-react";
 import type { SystemAppId } from "./windowStore";
+import { I18nKey } from "../i18n/declaration";
 import { ChatApp } from "../apps/chat/ChatApp";
 import { StudioApp } from "../apps/studio/StudioApp";
-import { STUDIO_ID, STUDIO_TITLE } from "../apps/studio/studioMeta";
+import { STUDIO_ID } from "../apps/studio/studioMeta";
 import { AppsLibrary } from "../apps/library/AppsLibrary";
 import { AutomationsApp } from "../apps/automations/AutomationsApp";
 import { SkillsApp } from "../apps/skills/SkillsApp";
@@ -81,47 +82,47 @@ import { KamijiApp } from "../apps/kamiji/KamijiApp";
 
 export interface SystemAppDef {
   id: SystemAppId;
-  title: string;
+  titleKey: I18nKey;
   icon: LucideIcon;
   component: ComponentType;
 }
 
 export const SYSTEM_APPS: SystemAppDef[] = [
-  { id: "chat", title: "Chat", icon: MessageSquare, component: ChatApp },
-  { id: STUDIO_ID, title: STUDIO_TITLE, icon: PanelsTopLeft, component: StudioApp },
-  { id: "apps", title: "Apps", icon: LayoutGrid, component: AppsLibrary },
-  { id: "skills", title: "Skills", icon: Layers, component: SkillsApp },
-  { id: "memory", title: "Memory", icon: Brain, component: MemoryApp },
-  { id: "keywallet", title: "Key Wallet", icon: Wallet, component: KeyWalletApp },
-  { id: "apis", title: "APIs", icon: Plug, component: ApisApp },
-  { id: "automations", title: "Automations", icon: CalendarClock, component: AutomationsApp },
-  { id: "files", title: "Drive", icon: HardDrive, component: FilesApp },
-  { id: "maps", title: "Maps", icon: Map, component: MapsApp },
-  { id: "search", title: "Search", icon: Search, component: SearchApp },
-  { id: "longformer", title: "Longformer", icon: FileText, component: LongformerApp },
-  { id: "kamiji", title: "Kamiji", icon: Egg, component: KamijiApp },
-  { id: "music", title: "Music", icon: Music, component: MusicApp },
-  { id: "video", title: "Video", icon: PlaySquare, component: VideoApp },
-  { id: "meet", title: "Meet", icon: Video, component: MeetApp },
-  { id: "podcast", title: "Podcasts", icon: Headphones, component: PodcastApp },
-  { id: "downloads", title: "Downloads", icon: Download, component: DownloadsApp },
-  { id: "pay", title: "Pay", icon: CircleDollarSign, component: PayApp },
-  { id: "notes", title: "Notes", icon: StickyNote, component: NotesApp },
-  { id: "email", title: "Email", icon: Mail, component: EmailApp },
-  { id: "calendar", title: "Calendar", icon: CalendarDays, component: CalendarApp },
-  { id: "tasks", title: "Tasks", icon: CheckSquare, component: TasksApp },
-  { id: "contacts", title: "Contacts", icon: Contact, component: ContactsApp },
-  { id: "groups", title: "Groups", icon: UsersRound, component: GroupsApp },
-  { id: "messenger", title: "Messenger", icon: MessagesSquare, component: MessengerApp },
-  { id: "social", title: "Social", icon: Share2, component: SocialApp },
-  { id: "sheets", title: "Sheets", icon: Table, component: SheetsApp },
-  { id: "generator", title: "Generator", icon: Code2, component: GeneratorApp },
-  { id: "imagegen", title: "Image Gen", icon: ImageIcon, component: ImageGenApp },
-  { id: "terminal", title: "Terminal", icon: SquareTerminal, component: TerminalApp },
-  { id: "models", title: "Models", icon: Boxes, component: ModelsApp },
-  { id: "settings", title: "Settings", icon: SettingsIcon, component: SettingsApp },
-  { id: "startup", title: "Setup", icon: Rocket, component: StartupApp },
-  { id: "onboarding", title: "Onboarding", icon: GraduationCap, component: OnboardingApp },
+  { id: "chat", titleKey: I18nKey.OS$APP_CHAT, icon: MessageSquare, component: ChatApp },
+  { id: STUDIO_ID, titleKey: I18nKey.OS$APP_STUDIO, icon: PanelsTopLeft, component: StudioApp },
+  { id: "apps", titleKey: I18nKey.OS$APP_APPS, icon: LayoutGrid, component: AppsLibrary },
+  { id: "skills", titleKey: I18nKey.OS$APP_SKILLS, icon: Layers, component: SkillsApp },
+  { id: "memory", titleKey: I18nKey.OS$APP_MEMORY, icon: Brain, component: MemoryApp },
+  { id: "keywallet", titleKey: I18nKey.OS$APP_KEY_WALLET, icon: Wallet, component: KeyWalletApp },
+  { id: "apis", titleKey: I18nKey.OS$APP_APIS, icon: Plug, component: ApisApp },
+  { id: "automations", titleKey: I18nKey.OS$APP_AUTOMATIONS, icon: CalendarClock, component: AutomationsApp },
+  { id: "files", titleKey: I18nKey.OS$APP_DRIVE, icon: HardDrive, component: FilesApp },
+  { id: "maps", titleKey: I18nKey.OS$APP_MAPS, icon: Map, component: MapsApp },
+  { id: "search", titleKey: I18nKey.OS$APP_SEARCH, icon: Search, component: SearchApp },
+  { id: "longformer", titleKey: I18nKey.OS$APP_LONGFORMER, icon: FileText, component: LongformerApp },
+  { id: "kamiji", titleKey: I18nKey.OS$APP_KAMIJI, icon: Egg, component: KamijiApp },
+  { id: "music", titleKey: I18nKey.OS$APP_MUSIC, icon: Music, component: MusicApp },
+  { id: "video", titleKey: I18nKey.OS$APP_VIDEO, icon: PlaySquare, component: VideoApp },
+  { id: "meet", titleKey: I18nKey.OS$APP_MEET, icon: Video, component: MeetApp },
+  { id: "podcast", titleKey: I18nKey.OS$APP_PODCASTS, icon: Headphones, component: PodcastApp },
+  { id: "downloads", titleKey: I18nKey.OS$APP_DOWNLOADS, icon: Download, component: DownloadsApp },
+  { id: "pay", titleKey: I18nKey.OS$APP_PAY, icon: CircleDollarSign, component: PayApp },
+  { id: "notes", titleKey: I18nKey.OS$APP_NOTES, icon: StickyNote, component: NotesApp },
+  { id: "email", titleKey: I18nKey.OS$APP_EMAIL, icon: Mail, component: EmailApp },
+  { id: "calendar", titleKey: I18nKey.OS$APP_CALENDAR, icon: CalendarDays, component: CalendarApp },
+  { id: "tasks", titleKey: I18nKey.OS$APP_TASKS, icon: CheckSquare, component: TasksApp },
+  { id: "contacts", titleKey: I18nKey.OS$APP_CONTACTS, icon: Contact, component: ContactsApp },
+  { id: "groups", titleKey: I18nKey.OS$APP_GROUPS, icon: UsersRound, component: GroupsApp },
+  { id: "messenger", titleKey: I18nKey.OS$APP_MESSENGER, icon: MessagesSquare, component: MessengerApp },
+  { id: "social", titleKey: I18nKey.OS$APP_SOCIAL, icon: Share2, component: SocialApp },
+  { id: "sheets", titleKey: I18nKey.OS$APP_SHEETS, icon: Table, component: SheetsApp },
+  { id: "generator", titleKey: I18nKey.OS$APP_GENERATOR, icon: Code2, component: GeneratorApp },
+  { id: "imagegen", titleKey: I18nKey.OS$APP_IMAGE_GEN, icon: ImageIcon, component: ImageGenApp },
+  { id: "terminal", titleKey: I18nKey.OS$APP_TERMINAL, icon: SquareTerminal, component: TerminalApp },
+  { id: "models", titleKey: I18nKey.OS$APP_MODELS, icon: Boxes, component: ModelsApp },
+  { id: "settings", titleKey: I18nKey.OS$APP_SETTINGS, icon: SettingsIcon, component: SettingsApp },
+  { id: "startup", titleKey: I18nKey.OS$APP_SETUP, icon: Rocket, component: StartupApp },
+  { id: "onboarding", titleKey: I18nKey.OS$APP_ONBOARDING, icon: GraduationCap, component: OnboardingApp },
 ];
 
 export function systemApp(id: SystemAppId): SystemAppDef {

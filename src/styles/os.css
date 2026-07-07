@@ -1112,6 +1112,36 @@
 
 /* ── Electron shell ────────────────────────────────────────────────────────── */
 
+/* Custom window chrome: the desktop main process opens frameless windows and
+   the shell draws this bar in their place. */
+.arco-electron-shell {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.arco-electron-shell__content {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  /* Contain the shell's fixed-position layers (.arco-desktop, .arco-mobile-shell)
+     so they fill this area instead of covering the titlebar. */
+  contain: layout paint;
+}
+
+.arco-electron-titlebar {
+  -webkit-app-region: drag;
+  background: var(--arco-bg-chrome);
+  backdrop-filter: var(--arco-backdrop-blur);
+  -webkit-backdrop-filter: var(--arco-backdrop-blur);
+  flex-shrink: 0;
+}
+
+.arco-electron-titlebar .arco-window__controls {
+  -webkit-app-region: no-drag;
+}
+
 html[data-electron] .arco-authgate {
   box-sizing: border-box;
   min-height: 100%;

@@ -1,0 +1,5 @@
+mutation updatePodiumPackage($podiumPackageGuid: String!, $userEmail: String, $audioStored: Boolean) {
+  updatePodiumPackage(podiumPackageGuid: $podiumPackageGuid, userEmail: $userEmail, audioStored: $audioStored) {
+    ok
+  }
+}

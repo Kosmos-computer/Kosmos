@@ -1,7 +1,7 @@
 import { Loader2, Sparkles } from "lucide-react";
 import { Button } from "../../components/ui";
 import type { ArtifactKind } from "./types";
-import type { LongformerViewModel } from "./useLongformerStub";
+import type { LongformerViewModel } from "./longformerStore";
 import type { TranscriptDetail } from "./types";
 
 const ARTIFACT_OPTIONS: { kind: ArtifactKind; label: string }[] = [

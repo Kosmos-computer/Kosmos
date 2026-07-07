@@ -1,6 +1,6 @@
 import { Plus } from "lucide-react";
 import { Button, Switch } from "../../components/ui";
-import type { LongformerViewModel } from "./useLongformerStub";
+import type { LongformerViewModel } from "./longformerStore";
 import type { TranscriptDetail } from "./types";
 import { formatDuration } from "./types";
 

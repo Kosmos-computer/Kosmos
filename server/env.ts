@@ -49,6 +49,10 @@ const DEFAULT_SETTINGS: Settings = {
   wallpaper: "aurora",
   agent: "builtin",
   acpCommand: "",
+  cursorApiKey: process.env.CURSOR_API_KEY ?? "",
+  cursorModel: process.env.CURSOR_MODEL ?? "composer-2.5",
+  cursorRuntime: "local",
+  cursorRepoUrl: "",
 };
 
 function applyLlmEnvOverrides(settings: Settings): Settings {
@@ -64,7 +68,14 @@ function applyLlmEnvOverrides(settings: Settings): Settings {
   }
   if (process.env.LLM_MODEL?.trim()) settings.model = process.env.LLM_MODEL.trim();
   if (process.env.LLM_API_KEY !== undefined) settings.apiKey = process.env.LLM_API_KEY;
+  if (process.env.CURSOR_API_KEY !== undefined) settings.cursorApiKey = process.env.CURSOR_API_KEY;
+  if (process.env.CURSOR_MODEL?.trim()) settings.cursorModel = process.env.CURSOR_MODEL.trim();
   return settings;
+}
+
+/** Resolved Cursor API key — settings first, then CURSOR_API_KEY env. */
+export function resolveCursorApiKey(settings: Settings): string {
+  return settings.cursorApiKey.trim() || process.env.CURSOR_API_KEY?.trim() || "";
 }
 
 export function loadSettings(): Settings {
@@ -88,6 +99,7 @@ export function maskSettings(s: Settings): Settings {
   return {
     ...s,
     apiKey: s.apiKey ? `••••${s.apiKey.slice(-4)}` : "",
+    cursorApiKey: s.cursorApiKey ? `••••${s.cursorApiKey.slice(-4)}` : "",
   };
 }
 

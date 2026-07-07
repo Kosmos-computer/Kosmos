@@ -77,6 +77,10 @@ resolves each.
   one owner — build it once in Phase 3 below.
 - **`os.files@1` is the load-bearing dependency of two docs** (office-suite
   Step 0; rich-widgets Phases 3–6 assume it). It is Phase 1 here.
+- **`transcription-plan.md`** (audio content pipeline: STT, chapters, Longformer)
+  parallels memory-plan's job + capability pattern; soft-depends on `os.files@1`
+  for blob storage (v1 uses `data/transcripts/`). Can run in parallel with
+  Phases 1–2 — owns `server/transcription/`, `shared/transcription/`.
 - The extensibility plan's §1 audit table and the office-suite plan's
   "current platform state" snapshot are both dated snapshots — treat this
   roadmap as the living status page instead.
@@ -203,6 +207,15 @@ source for bound widgets.
 - Open-standards publishing (per `open-standards-map.md`): only once Module
   1's four artifacts (spec, schemas, reference impl, conformance suite) can
   actually ship — not before Phase 5 stabilizes the widget/content model.
+
+### Parallel track — Transcription pipeline  *(transcription-plan.md)*
+
+Migrate Podium/Fathom's audio pipeline into Arco: async jobs, structured
+transcripts, AI chapters/summaries, Longformer editor backend. Partial plumbing
+exists (podcast flat STT, Longformer UI mock). Phases T0–T2 can start
+alongside Phase 1–2; enrichment (T3) needs agent tool registry.
+
+*Details: `transcription-plan.md` §10.*
 
 ### Parallel track — SaaS  *(saas-plan.md)*
 

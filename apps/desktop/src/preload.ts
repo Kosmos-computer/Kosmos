@@ -1,11 +1,6 @@
 import { contextBridge, ipcRenderer } from "electron";
 import { DESKTOP_IPC, type OpenAppWindowPayload, type TitleBarTheme } from "./ipc.js";
 
-document.documentElement.dataset.electron = "true";
-document.documentElement.dataset.platform = process.platform;
-document.documentElement.classList.add("arco-electron");
-document.body.classList.add("arco-electron");
-
 contextBridge.exposeInMainWorld("arcoDesktop", {
   isDesktop: true,
   platform: process.platform,

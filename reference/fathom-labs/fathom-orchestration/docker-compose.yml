@@ -1,0 +1,103 @@
+version: '3.4'
+
+services:
+  worker_default:
+    build: .
+    command: /app/start-worker.sh default
+    volumes:
+      - .:/app
+    privileged: true
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+    depends_on:
+      - redis
+  
+  worker_episodes:
+    build: .
+    command: /app/start-worker.sh episode_processing
+    volumes:
+      - .:/app
+    privileged: true
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+    depends_on:
+      - redis
+
+  worker_podcasts:
+    build: .
+    command: /app/start-worker.sh podcast_processing
+    volumes:
+      - .:/app
+    privileged: true
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+    depends_on:
+      - redis
+
+  worker_podium_packages:
+    build: .
+    command: /app/start-worker.sh podium_package_processing
+    volumes:
+      - .:/app
+    privileged: true
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+    depends_on:
+      - redis
+
+  scheduler:
+    build: .
+    command: /app/start-scheduler.sh
+    ports:
+      - "80:80"
+    volumes:
+      - .:/app
+    privileged: true
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+    depends_on:
+      - redis
+
+  web:
+    build: .
+    command: /app/start-admin.sh
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+    privileged: true
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:latest
+    restart: always
+    ports:
+      - '6379:6379'
+    command: redis-server
+    volumes: 
+      - redis:/data
+
+volumes:
+  redis:
+    driver: local

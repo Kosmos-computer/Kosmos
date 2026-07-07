@@ -1,5 +1,5 @@
 import { Volume2 } from "lucide-react";
-import type { LongformerViewModel } from "./useLongformerStub";
+import type { LongformerViewModel } from "./longformerStore";
 import type { TranscriptDetail } from "./types";
 
 interface LongformerTranscriptPaneProps {

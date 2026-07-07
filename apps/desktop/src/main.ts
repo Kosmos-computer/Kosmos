@@ -11,7 +11,7 @@ import { titleBarWindowOptions } from "./titleBar.js";
 const DEV_SHELL = process.argv.includes("--dev");
 const SERVER_PORT = Number(process.env.ARCO_PORT ?? 4600);
 const DEV_URL = process.env.ARCO_DEV_URL ?? "http://localhost:4610";
-const preloadPath = path.join(path.dirname(fileURLToPath(import.meta.url)), "preload.js");
+const preloadPath = path.join(path.dirname(fileURLToPath(import.meta.url)), "preload.cjs");
 
 let mainWindow: BrowserWindow | null = null;
 let serverProcess: ReturnType<typeof startServerProcess> | null = null;

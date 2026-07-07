@@ -2,6 +2,8 @@ import { useCallback, useMemo, useState } from "react";
 import {
   DEFAULT_SEARCH_FILTERS,
   DEFAULT_SEARCH_TABS,
+  normalizeBrowserUrl,
+  looksLikeUrl,
   type SearchTabId,
 } from "../../components/patterns/search";
 import {
@@ -127,6 +129,19 @@ export function useSearch() {
     [runSearch],
   );
 
+  const submitInput = useCallback(
+    (term?: string) => {
+      const next = (term ?? draft).trim();
+      if (!next) return;
+      if (looksLikeUrl(next)) {
+        openResult(normalizeBrowserUrl(next));
+        return;
+      }
+      void runSearch(next);
+    },
+    [draft, openResult, runSearch],
+  );
+
   return {
     view,
     query,
@@ -158,6 +173,7 @@ export function useSearch() {
     browseUrl,
     setBrowseUrl,
     runSearch,
+    submitInput,
     openResult,
     goHome,
     goResults,

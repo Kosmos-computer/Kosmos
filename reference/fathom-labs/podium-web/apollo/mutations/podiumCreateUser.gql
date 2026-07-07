@@ -1,0 +1,6 @@
+mutation podiumCreateUser($email: String!, $password: String!, $alternateEmail: String) {
+  podiumCreateUser(podiumUser: { email: $email, password: $password, alternateEmail: $alternateEmail }) 
+  {
+    ok
+  }
+}

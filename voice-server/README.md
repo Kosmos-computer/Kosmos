@@ -60,4 +60,4 @@ face rig are unaffected.
 | Route | Purpose |
 |-------|---------|
 | `POST /api/tts` | Read-aloud — JSON `{ "text": "..." }` → WAV |
-| `POST /api/stt` | Notes dictation fallback — multipart `file` (16 kHz mono WAV) → `{ "text": "..." }` |
+| `POST /api/stt` | Transcription — multipart `file` (16 kHz mono WAV) → `{ "text", "language", "segments": [{ "start", "end", "text" }] }` |

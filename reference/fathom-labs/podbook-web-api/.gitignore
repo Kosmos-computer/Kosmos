@@ -1,0 +1,43 @@
+# Node modules
+node_modules/
+
+# Environment variables
+.env
+.env.*   # In case you have .env.development, .env.local etc.
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Runtime files
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory
+coverage/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Build output (if applicable)
+dist/
+build/
+
+# Cache
+.cache/
+.npm/
+.eslintcache
+
+# IDE/project files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+*.bak
+node_modules

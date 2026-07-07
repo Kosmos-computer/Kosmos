@@ -1,0 +1,11 @@
+# Web
+gunicorn == 20.*
+sanic == 20.*
+requests == 2.* 
+
+# ML
+numpy == 1.*
+torch == 1.*
+
+# General
+timestring

@@ -303,7 +303,7 @@ def _resolve_mlx_model(stt_cfg: dict[str, Any]) -> str:
         raise ValueError(f"Unknown MLX Whisper model {raw_model!r} (expected {valid})") from err
 
 
-def _transcribe_wav(wav_bytes: bytes, config: dict[str, Any]) -> str:
+def _transcribe_wav(wav_bytes: bytes, config: dict[str, Any]) -> dict[str, Any]:
     samples, sample_rate = _read_wav_mono(wav_bytes)
     samples = _resample_linear(samples, sample_rate, 16_000)
     stt_cfg = config.get("stt", {})
@@ -320,7 +320,20 @@ def _transcribe_wav(wav_bytes: bytes, config: dict[str, Any]) -> str:
             path_or_hf_repo=model,
             language=language_code,
         )
-        return str(result.get("text", "")).strip()
+        segments = [
+            {
+                "start": float(segment["start"]),
+                "end": float(segment["end"]),
+                "text": str(segment.get("text", "")).strip(),
+            }
+            for segment in result.get("segments", [])
+            if str(segment.get("text", "")).strip()
+        ]
+        return {
+            "text": str(result.get("text", "")).strip(),
+            "language": result.get("language"),
+            "segments": segments,
+        }
 
     if engine == "faster-whisper":
         from faster_whisper import WhisperModel
@@ -328,27 +341,40 @@ def _transcribe_wav(wav_bytes: bytes, config: dict[str, Any]) -> str:
         model_name = stt_cfg.get("model", "base")
         logger.info(f"Dictation STT: faster-whisper model {model_name}")
         whisper = WhisperModel(model_name)
-        segments, _info = whisper.transcribe(
+        segments_iter, info = whisper.transcribe(
             samples,
             language=language_code,
         )
-        return " ".join(segment.text.strip() for segment in segments).strip()
+        segments = [
+            {
+                "start": float(segment.start),
+                "end": float(segment.end),
+                "text": segment.text.strip(),
+            }
+            for segment in segments_iter
+            if segment.text.strip()
+        ]
+        return {
+            "text": " ".join(segment["text"] for segment in segments).strip(),
+            "language": info.language,
+            "segments": segments,
+        }
 
     raise ValueError(f"Unknown STT engine: {engine!r} (expected whisper-mlx | faster-whisper)")
 
 
 @voice_app.post("/api/stt")
-async def transcribe_speech(file: UploadFile = File(...)) -> dict[str, str]:
+async def transcribe_speech(file: UploadFile = File(...)) -> dict[str, Any]:
     wav_bytes = await file.read()
     if not wav_bytes:
         raise HTTPException(status_code=400, detail="audio file is required")
     try:
-        text = await asyncio.to_thread(_transcribe_wav, wav_bytes, load_config())
+        result = await asyncio.to_thread(_transcribe_wav, wav_bytes, load_config())
     except HTTPException:
         raise
     except Exception as err:
         raise HTTPException(status_code=500, detail=str(err)) from err
-    return {"text": text}
+    return result
 
 
 def build_brain(config: dict[str, Any]):

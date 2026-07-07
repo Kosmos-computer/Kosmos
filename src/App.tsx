@@ -28,7 +28,7 @@ export default function App() {
 
   if (standaloneKey) {
     return (
-      <ElectronShell>
+      <ElectronShell windowKey={standaloneKey}>
         <StandaloneAppWindow windowKey={standaloneKey} />
       </ElectronShell>
     );

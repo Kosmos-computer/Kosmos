@@ -1,0 +1,39 @@
+#!/bin/bash
+
+process=$1  # command line parameter => 'whisper' or 'heartbeat'
+home='/home/ubuntu/whisper_processing'
+
+# Remove all but last few runtimes
+cd $home/runtimes
+rm -rf `ls -r | tail -n +5`
+
+# Clone new runtime
+EPOCH="$(eval date +%s)"
+
+git clone https://2c362d5f4c48f0ee727f26f7c87a7dad014242fb:x-oauth-basic@github.com/fathom-labs/whisper-processing.git $home/runtimes/$EPOCH/$process --quiet
+
+# Copy env vars
+cp $home/config_$process.ini $home/runtimes/$EPOCH/$process/src
+
+# Copy instance id to config.ini (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html)
+while :
+do
+    EC2_INSTANCE_ID="`wget -q -O - http://169.254.169.254/latest/meta-data/instance-id || die \"wget instance-id has failed: $?\"`"
+    echo "Instance_id:"
+    echo $EC2_INSTANCE_ID
+    if [ -n $EC2_INSTANCE_ID ]; then
+        break
+    fi
+    sleep 1
+done
+
+sed -i "s/EC2_INSTANCE_ID/$EC2_INSTANCE_ID/" $home/runtimes/$EPOCH/$process/src/config_$process.ini
+cd $home/runtimes/$EPOCH/$process
+# Install requirements
+pip3 install -r src/requirements.txt
+
+# Start server
+bash production_start $process
+
+# Sleep to avoid thrashing on error
+sleep 10

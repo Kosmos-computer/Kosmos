@@ -66,6 +66,7 @@ export {
   type UseOnboardingFlowOptions,
 } from "./useOnboardingFlow";
 export {
+  BrowserAddressBar,
   BrowserShell,
   SearchBar,
   SearchFilters,
@@ -79,6 +80,8 @@ export {
   DEFAULT_SEARCH_FILTERS,
   DEFAULT_SEARCH_TABS,
   normalizeBrowserUrl,
+  looksLikeUrl,
+  type BrowserAddressBarProps,
   type BrowserShellProps,
   type SearchBarProps,
   type SearchFilterDef,

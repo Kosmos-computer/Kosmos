@@ -4,9 +4,9 @@
  * window store (debounce-persisted, closed geometry retained — matrix-os pattern).
  */
 import { useCallback, useRef, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
-import { X, Minus, Maximize2 } from "lucide-react";
 import { useOsStore } from "./osStore";
 import { useWindowStore, type OsWindow } from "./windowStore";
+import { WindowControls } from "./WindowControls";
 
 const MENUBAR_HEIGHT = 34;
 const MIN_W = 320;
@@ -18,76 +18,6 @@ interface Props {
   win: OsWindow;
   focused: boolean;
   children: ReactNode;
-}
-
-interface WindowControlsProps {
-  onClose: () => void;
-  onMinimize: () => void;
-  onMaximize: () => void;
-}
-
-function WindowControls({ onClose, onMinimize, onMaximize }: WindowControlsProps) {
-  const style = useOsStore((s) => s.windowControlStyle);
-
-  if (style === "glyph") {
-    return (
-      <div className="arco-window__controls arco-window__controls--glyph">
-        <button
-          type="button"
-          className="arco-window__control"
-          aria-label="Minimize window"
-          onClick={onMinimize}
-        >
-          <Minus strokeWidth={2.5} />
-        </button>
-        <button
-          type="button"
-          className="arco-window__control"
-          aria-label="Maximize window"
-          onClick={onMaximize}
-        >
-          <Maximize2 strokeWidth={2.25} />
-        </button>
-        <button
-          type="button"
-          className="arco-window__control arco-window__control--close"
-          aria-label="Close window"
-          onClick={onClose}
-        >
-          <X strokeWidth={2.5} />
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="arco-window__controls arco-window__controls--traffic">
-      <button
-        type="button"
-        className="arco-window__dot arco-window__dot--close"
-        aria-label="Close window"
-        onClick={onClose}
-      >
-        <X strokeWidth={3.5} />
-      </button>
-      <button
-        type="button"
-        className="arco-window__dot arco-window__dot--min"
-        aria-label="Minimize window"
-        onClick={onMinimize}
-      >
-        <Minus strokeWidth={3.5} />
-      </button>
-      <button
-        type="button"
-        className="arco-window__dot arco-window__dot--max"
-        aria-label="Maximize window"
-        onClick={onMaximize}
-      >
-        <Maximize2 strokeWidth={3.5} />
-      </button>
-    </div>
-  );
 }
 
 export function WindowFrame({ win, focused, children }: Props) {
@@ -207,6 +137,7 @@ export function WindowFrame({ win, focused, children }: Props) {
           onDoubleClick={() => toggleMaximize(win.id)}
         >
           <WindowControls
+            controlStyle={windowControlStyle}
             onClose={() => close(win.id)}
             onMinimize={() => toggleMinimize(win.id)}
             onMaximize={() => toggleMaximize(win.id)}

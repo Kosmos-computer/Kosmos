@@ -1,0 +1,8 @@
+mutation podiumUpdateUser($name: String!, $companyName: String, $podcastCount: String,$rssFeeds: String, $role: String, $category: String, $hearAboutPodium: String) {
+  podiumUpdateUser(podiumUser: {name: $name,companyName: $companyName,podcastCount: $podcastCount,rssFeeds: $rssFeeds,role: $role},
+  category: $category
+  ,hearAboutPodium: $hearAboutPodium),
+  {
+    ok
+  }
+}

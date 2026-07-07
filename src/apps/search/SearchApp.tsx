@@ -1,11 +1,9 @@
-import { ArrowLeft } from "lucide-react";
 import {
   BrowserShell,
   SearchAttribution,
   SearchHome,
   SearchResultsPage,
 } from "../../components/patterns/search";
-import { Button } from "../../components/ui";
 import { useSearch } from "./useSearch";
 
 export function SearchApp() {
@@ -14,21 +12,13 @@ export function SearchApp() {
   if (vm.view === "browse") {
     return (
       <div className="arco-search-app">
-        <div className="arco-search-app__browse-bar">
-          <Button variant="ghost" onClick={vm.goResults}>
-            <ArrowLeft size={14} aria-hidden />
-            Back to results
-          </Button>
-          <Button variant="ghost" onClick={vm.goHome}>
-            Search home
-          </Button>
-          <SearchAttribution className="arco-search-app__attribution" />
-        </div>
         <BrowserShell
           url={vm.browseUrl}
           onNavigate={vm.setBrowseUrl}
+          onFallbackBack={vm.goResults}
           placeholder="Address bar — edit URL or search term"
           title="Search result preview"
+          toolbarExtra={<SearchAttribution className="arco-search-app__attribution" />}
         />
       </div>
     );
@@ -39,7 +29,7 @@ export function SearchApp() {
       <SearchResultsPage
         query={vm.draft}
         onQueryChange={vm.setDraft}
-        onSubmit={() => vm.runSearch()}
+        onSubmit={() => vm.submitInput()}
         onHome={vm.goHome}
         suggestions={vm.suggestions}
         showSuggestions={vm.showSuggestions}
@@ -70,7 +60,7 @@ export function SearchApp() {
     <SearchHome
       query={vm.draft}
       onQueryChange={vm.setDraft}
-      onSubmit={() => vm.runSearch()}
+      onSubmit={() => vm.submitInput()}
       onLucky={vm.lucky}
       suggestions={vm.suggestions}
       showSuggestions={vm.showSuggestions}

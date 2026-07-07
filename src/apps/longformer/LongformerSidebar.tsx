@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "../../components/ui";
 import { ListSearch, NavSidebar, SidebarUserFooter } from "../../components/patterns";
-import type { LongformerViewModel } from "./useLongformerStub";
+import type { LongformerViewModel } from "./longformerStore";
 import type { LongformerView } from "./types";
 
 const VIEW_ICONS = {

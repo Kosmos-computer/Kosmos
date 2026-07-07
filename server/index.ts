@@ -35,6 +35,8 @@ import { requireAuth, requireCap, currentUser, type AuthEnv } from "./auth/middl
 import { authRoutes } from "./auth/routes.js";
 import { runAgentTurn } from "./agent/loop.js";
 import { runAcpTurn, stopAllAcpRuns } from "./acp/acpAgent.js";
+import { runCursorTurn, stopAllCursorRuns } from "./cursor/cursorAgent.js";
+import { listCursorModels, testCursorConnection } from "./cursor/cursorConnect.js";
 import { openaiCompatRoutes } from "./agent/openaiCompat.js";
 import { invokeRuntimeTool, runExec } from "./agent/tools.js";
 import { resolveClientRequest } from "./agent/clientRequests.js";
@@ -124,6 +126,8 @@ import {
   listPodcastTranscripts,
   transcribePodcastEpisode,
 } from "./services/podcastTranscriptService.js";
+import { transcriptionRoutes } from "./routes/transcription.js";
+import { startTranscriptionSupervisor } from "./transcription/supervisor.js";
 import { listRemoteVideos, listRemotePodcastEpisodes } from "./services/mediaRemoteService.js";
 import type { FileCreateInput } from "../shared/capabilities/files.js";
 import type { MailFolderId, MailInboxFilter } from "../shared/mail.js";
@@ -178,6 +182,8 @@ app.use("/api/*", requireAuth);
 
 app.route("/v1", openaiCompatRoutes);
 
+app.route("/api/transcription", transcriptionRoutes);
+
 // ── Chat ─────────────────────────────────────────────────────────────────────
 
 app.post("/api/chat", requireCap("chat"), async (c) => {
@@ -212,7 +218,9 @@ app.post("/api/chat", requireCap("chat"), async (c) => {
       // Interactive chat routes to whichever brain Settings selects; the
       // built-in loop stays the only agent for automations (headless ACP
       // has unresolved lifecycle semantics — see the extensibility plan).
-      const turnRunner = loadSettings().agent === "acp" ? runAcpTurn : runAgentTurn;
+      const agentKind = loadSettings().agent;
+      const turnRunner =
+        agentKind === "acp" ? runAcpTurn : agentKind === "cursor" ? runCursorTurn : runAgentTurn;
       await turnRunner({
         sessionId: session.id,
         userMessage: message,
@@ -2122,11 +2130,39 @@ app.put("/api/settings", requireCap("settings:write"), async (c) => {
   const patch = (await c.req.json()) as Partial<Settings>;
   // A masked key echoed back from the client must not clobber the real one.
   if (patch.apiKey && patch.apiKey.startsWith("••••")) delete patch.apiKey;
+  if (patch.cursorApiKey && patch.cursorApiKey.startsWith("••••")) delete patch.cursorApiKey;
   // Agent config changes tear down live ACP subprocesses so the next turn
   // respawns with the new command; running turns fail fast rather than
   // continuing on stale settings.
-  if (patch.agent !== undefined || patch.acpCommand !== undefined) stopAllAcpRuns();
+  if (
+    patch.agent !== undefined ||
+    patch.acpCommand !== undefined ||
+    patch.cursorApiKey !== undefined ||
+    patch.cursorModel !== undefined ||
+    patch.cursorRuntime !== undefined ||
+    patch.cursorRepoUrl !== undefined
+  ) {
+    stopAllAcpRuns();
+    stopAllCursorRuns();
+  }
   return c.json(maskSettings(saveSettings(patch)));
+});
+
+// ── Cursor connection ────────────────────────────────────────────────────────
+
+app.post("/api/cursor/test", requireCap("settings:write"), async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as { apiKey?: string };
+  return c.json(await testCursorConnection(body.apiKey));
+});
+
+app.get("/api/cursor/models", requireCap("settings:write"), async (c) => {
+  try {
+    const models = await listCursorModels();
+    return c.json({ models });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to list Cursor models";
+    return c.json({ error: message, models: [] as { id: string; displayName: string }[] }, 400);
+  }
 });
 
 // ── App static assets (unauthenticated, like the shell itself) ──────────────
@@ -2168,6 +2204,7 @@ void mcpSupervisor.start();
 // Same posture for messaging channels: connect in the background, isolate
 // failures per channel.
 void channelGateway.start();
+startTranscriptionSupervisor();
 serve({ fetch: app.fetch, port }, () => {
   console.log(`[arco] server listening on http://localhost:${port}`);
   console.log(`[arco] data dir: ${dataDirs.root}`);

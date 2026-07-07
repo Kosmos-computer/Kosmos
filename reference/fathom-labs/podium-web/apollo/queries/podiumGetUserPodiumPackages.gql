@@ -1,0 +1,20 @@
+query {
+  podiumGetUserPodiumPackages {
+    guid,
+    title,
+    originalFilename,
+    duration,
+    error,
+    errorType,
+    createdAt,
+    audioStored,
+    transcribed,
+    previewsGenerated,
+    vectorGenerated,
+    chaptersGenerated,
+    previewsGenerated,
+    summaryGenerated,
+    packageGenerated,
+    userEmail
+  }
+}

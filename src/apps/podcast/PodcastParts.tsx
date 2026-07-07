@@ -24,7 +24,6 @@ import { useConnectionStore } from "../../connections/useConnectionStore";
 import { PodcastCover } from "./PodcastCover";
 import { PodcastDirectory, PodcastDirectoryShowDetail } from "./PodcastDirectory";
 import { PodcastMainFeed } from "./PodcastMainFeed";
-import { podcastRssFeedSeedSummary } from "@shared/podcastFeeds";
 import { PODCAST_PROVIDERS, episodeBelongsToShow, isPlayableEpisode } from "./podcastCatalog";
 import type { PodcastContentFilter, PodcastEpisode, PodcastEpisodeDetailTab, PodcastNavSection, PodcastShow } from "./types";
 import type { PodcastViewModel } from "./usePodcast";
@@ -125,7 +124,6 @@ export function PodcastSidebar({ vm, connectOpen, onOpenConnect, onCloseConnect 
                   <ListItem
                     className="arco-nav-sidebar__nav-item"
                     label="RSS feeds"
-                    description={podcastRssFeedSeedSummary(vm.rssFeeds)}
                     active={vm.sourceFilter === "rss"}
                     onClick={() => {
                       if (vm.navSection === "settings") vm.setNavSection("browse");

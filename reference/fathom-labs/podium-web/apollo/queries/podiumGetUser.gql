@@ -1,0 +1,14 @@
+query($email: String) {
+  podiumGetUser(email: $email) {
+    guid,
+    name,
+    email,
+    profileImageUrl,
+    podiumToken,
+    newUserInfoComplete,
+    currentSubscriptionTitle,
+    currentSubscriptionCreditsBalance,
+    additionalCreditsBalance,
+    additionalCreditsStripePriceId
+  }
+}

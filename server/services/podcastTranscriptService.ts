@@ -3,8 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
-import OpenAI from "openai";
-import { dataDirs, loadSettings } from "../env.js";
+import { dataDirs } from "../env.js";
 import { resolveLocalEpisode } from "./podcastSeedService.js";
 import { resolveRssEpisode, type RssEpisodeRecord } from "./podcastRssService.js";
 
@@ -13,12 +12,11 @@ const execFileAsync = promisify(execFile);
 const TRANSCRIPTS_DIR = path.join(dataDirs.root, "podcast-transcripts");
 const MANIFEST_FILE = path.join(TRANSCRIPTS_DIR, "manifest.json");
 const VOICE_SERVER_URL = process.env.VOICE_SERVER_URL ?? "http://localhost:4630";
-const OPENAI_WHISPER_BASE = "https://api.openai.com/v1";
-/** OpenAI Whisper upload limit — longer episodes are split with ffmpeg. */
+/** Local STT upload limit — longer episodes are split with ffmpeg. */
 const WHISPER_MAX_BYTES = 25 * 1024 * 1024;
 const CHUNK_TARGET_BYTES = 20 * 1024 * 1024;
 
-export type PodcastTranscriptEngine = "openai-whisper" | "voice-server";
+export type PodcastTranscriptEngine = "voice-server";
 
 export interface PodcastTranscriptSummary {
   episodeId: string;
@@ -36,11 +34,6 @@ export interface PodcastTranscriptRecord extends PodcastTranscriptSummary {
 
 interface TranscriptManifest {
   records: PodcastTranscriptSummary[];
-}
-
-interface WhisperConfig {
-  apiKey: string;
-  baseUrl: string;
 }
 
 function ensureTranscriptsDir(): void {
@@ -74,39 +67,6 @@ function previewText(text: string): string {
   const trimmed = text.trim();
   if (trimmed.length <= 240) return trimmed;
   return `${trimmed.slice(0, 237)}…`;
-}
-
-function sanitizeName(value: string): string {
-  return value
-    .replace(/[<>:"/\\|?*\x00-\x1f]/g, "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 120) || "untitled";
-}
-
-function whisperCompatibleChatBaseUrl(chatBaseUrl: string): string | null {
-  try {
-    const host = new URL(chatBaseUrl).hostname.toLowerCase();
-    if (host.includes("openai.com") || host.includes("openrouter.ai")) {
-      return chatBaseUrl;
-    }
-  } catch {
-    // Ignore invalid URLs.
-  }
-  return null;
-}
-
-function resolveWhisperConfig(): WhisperConfig | null {
-  const settings = loadSettings();
-  const apiKey = (process.env.WHISPER_API_KEY ?? process.env.LLM_API_KEY ?? settings.apiKey).trim();
-  if (!apiKey) return null;
-
-  const baseUrl =
-    process.env.WHISPER_BASE_URL?.trim() ??
-    whisperCompatibleChatBaseUrl(settings.baseUrl) ??
-    OPENAI_WHISPER_BASE;
-
-  return { apiKey, baseUrl };
 }
 
 let voiceServerSttAvailable: boolean | null = null;
@@ -225,22 +185,6 @@ async function extractWavSegment(
   ]);
 }
 
-async function transcribeWithOpenAI(audio: Buffer, fileName: string, whisper: WhisperConfig): Promise<string> {
-  const client = new OpenAI({
-    apiKey: whisper.apiKey,
-    baseURL: whisper.baseUrl,
-  });
-
-  const transcription = await client.audio.transcriptions.create({
-    file: await OpenAI.toFile(audio, fileName),
-    model: "whisper-1",
-  });
-
-  const text = transcription.text?.trim();
-  if (!text) throw new Error("Whisper returned an empty transcript");
-  return text;
-}
-
 async function convertToWav16k(inputPath: string, outputPath: string): Promise<void> {
   await execFileAsync("ffmpeg", [
     "-hide_banner",
@@ -300,41 +244,14 @@ async function transcribeAudioSegment(
   ext: string,
   title: string,
 ): Promise<{ text: string; engine: PodcastTranscriptEngine }> {
-  const fileName = `${sanitizeName(title)}${ext || ".mp3"}`;
-  const errors: string[] = [];
-
-  if (await voiceServerSupportsStt()) {
-    try {
-      const text = await transcribeWithVoiceServer(audio, ext);
-      return { text, engine: "voice-server" };
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Voice server transcription failed";
-      errors.push(message);
-      console.warn(`[podcast] Voice server STT failed: ${message}`);
-    }
-  }
-
-  const whisper = resolveWhisperConfig();
-  if (whisper) {
-    try {
-      const text = await transcribeWithOpenAI(audio, fileName, whisper);
-      return { text, engine: "openai-whisper" };
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Whisper transcription failed";
-      errors.push(message);
-      console.warn(`[podcast] OpenAI Whisper failed: ${message}`);
-    }
-  }
-
-  if (!whisper && !(await voiceServerSupportsStt())) {
+  if (!(await voiceServerSupportsStt())) {
     throw new Error(
-      "No transcription backend available. Set WHISPER_API_KEY (or an OpenAI LLM_API_KEY) for cloud Whisper, or run the voice server (npm run voice) for local STT.",
+      "Voice server STT is not available. Start the free local engine with: npm run voice (whisper-mlx on Apple Silicon, or faster-whisper elsewhere).",
     );
   }
 
-  throw new Error(
-    `${errors.join("; ") || "Transcription failed"}. Set WHISPER_API_KEY for OpenAI Whisper, or restart the voice server (npm run voice) with ffmpeg installed.`,
-  );
+  const text = await transcribeWithVoiceServer(audio, ext);
+  return { text, engine: "voice-server" };
 }
 
 async function generateTranscript(
@@ -374,7 +291,7 @@ async function generateTranscript(
       engine = engine ?? result.engine;
     }
 
-    return { text: parts.join("\n\n"), engine: engine ?? "openai-whisper" };
+    return { text: parts.join("\n\n"), engine: engine ?? "voice-server" };
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }

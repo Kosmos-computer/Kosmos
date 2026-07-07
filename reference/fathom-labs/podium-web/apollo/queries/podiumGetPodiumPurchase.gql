@@ -1,0 +1,12 @@
+query($purchaseGuid: String!) {
+  podiumGetPodiumPurchase(purchaseGuid: $purchaseGuid) {
+    completed,
+    quantity,
+    productTitle,
+    productDescription,
+    productType,
+    productCredits,
+    productPeriod,
+    productPrice
+  }
+}

@@ -1,0 +1,3 @@
+query($email: String) {
+  podiumEmailRequiresLogin(email: $email)
+}

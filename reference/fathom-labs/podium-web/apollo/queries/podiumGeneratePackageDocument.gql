@@ -1,0 +1,3 @@
+query($guid: String!, $prompt: String!){
+  podiumGeneratePackageDocument(guid: $guid, prompt: $prompt)
+}

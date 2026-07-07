@@ -4,7 +4,7 @@ import { LongformerInspector } from "./LongformerInspector";
 import { LongformerTimeline } from "./LongformerTimeline";
 import { LongformerTranscriptPane } from "./LongformerTranscriptPane";
 import { PreviewPane } from "../../components/patterns";
-import type { LongformerViewModel } from "./useLongformerStub";
+import type { LongformerViewModel } from "./longformerStore";
 import type { TranscriptDetail } from "./types";
 
 interface LongformerEditorProps {

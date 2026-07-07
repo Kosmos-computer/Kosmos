@@ -40,6 +40,7 @@
     "test": "tsx --test server/automations/*.test.ts server/stores/automationStore.test.ts"
   },
   "dependencies": {
+    "@cursor/sdk": "^1.0.23",
     "@hono/node-server": "^1.14.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@monaco-editor/react": "^4.7.0",

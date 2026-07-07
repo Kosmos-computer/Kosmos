@@ -22,6 +22,7 @@ import { PasswordSection } from "./PasswordSection";
 import { UsersSection } from "./UsersSection";
 import { AppsSection } from "./AppsSection";
 import { AgentSection } from "./AgentSection";
+import { CursorConnectionFields } from "./CursorConnectionFields";
 import { ChannelsSection } from "./ChannelsSection";
 import { ConnectedAccountsSection } from "./ConnectedAccountsSection";
 import { ExternalAccessSection } from "./ExternalAccessSection";
@@ -171,13 +172,17 @@ export function SettingsApp() {
   };
 
   const activeAgentChip =
-    settings.agent !== "acp"
-      ? "builtin"
-      : (ACP_PRESETS.find((p) => p.command === settings.acpCommand)?.id ?? "custom");
+    settings.agent === "cursor"
+      ? "cursor"
+      : settings.agent !== "acp"
+        ? "builtin"
+        : (ACP_PRESETS.find((p) => p.command === settings.acpCommand)?.id ?? "custom");
 
   const pickAgent = (chip: string) => {
     if (chip === "builtin") {
       update({ agent: "builtin" });
+    } else if (chip === "cursor") {
+      update({ agent: "cursor" });
     } else if (chip === "custom") {
       update({ agent: "acp" });
     } else {
@@ -225,20 +230,26 @@ export function SettingsApp() {
           {activeSection === "agent" && (
             <SettingsPage>
               <SettingsSection
-                intro="Choose which agent runtime handles chat. External ACP agents bring their own model and tools."
+                intro="Choose which agent runtime handles chat. Cursor uses the Cursor SDK; external ACP agents bring their own model and tools."
               >
                 <SettingsStack>
                   <SettingsFieldRow label="Runtime">
                     <SettingsChipRow>
-                      {[{ id: "builtin", label: "Built-in" }, ...ACP_PRESETS, { id: "custom", label: "Custom (ACP)" }].map(
-                        (a) => (
-                          <Chip key={a.id} active={activeAgentChip === a.id} onClick={() => pickAgent(a.id)}>
-                            {a.label}
-                          </Chip>
-                        ),
-                      )}
+                      {[
+                        { id: "builtin", label: "Built-in" },
+                        { id: "cursor", label: "Cursor" },
+                        ...ACP_PRESETS,
+                        { id: "custom", label: "Custom (ACP)" },
+                      ].map((a) => (
+                        <Chip key={a.id} active={activeAgentChip === a.id} onClick={() => pickAgent(a.id)}>
+                          {a.label}
+                        </Chip>
+                      ))}
                     </SettingsChipRow>
                   </SettingsFieldRow>
+                  {settings.agent === "cursor" ? (
+                    <CursorConnectionFields settings={settings} update={update} />
+                  ) : null}
                   {settings.agent === "acp" && (
                     <SettingsFieldRow
                       label="Spawn command"

@@ -1,0 +1,14 @@
+query($podiumPackageGuid: String!){
+  podiumProgress(podiumPackageGuid: $podiumPackageGuid) {
+    audioStored
+    transcribed
+    previewsGenerated
+    vectorGenerated
+    chaptersGenerated
+    summaryGenerated
+    packageGenerated
+    signedUrl
+    userEmail
+    originalFilename
+  }
+}

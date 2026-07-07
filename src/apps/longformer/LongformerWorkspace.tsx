@@ -3,7 +3,7 @@ import { LongformerLibraryView } from "./LongformerLibraryView";
 import { LongformerPlaceholderView } from "./LongformerPlaceholderView";
 import { LongformerSidebar } from "./LongformerSidebar";
 import { SidebarPane } from "../../components/patterns";
-import type { LongformerViewModel } from "./useLongformerStub";
+import type { LongformerViewModel } from "./longformerStore";
 
 interface LongformerWorkspaceProps {
   vm: LongformerViewModel;
@@ -28,7 +28,13 @@ export function LongformerWorkspace({ vm }: LongformerWorkspaceProps) {
         return (
           <LongformerPlaceholderView
             title="In Progress"
-            description="Transcripts currently queued or being processed — calls, meetings, uploads, and podcast feeds in flight."
+            description={
+              vm.data.processingCount > 0
+                ? `${vm.data.processingCount} job${vm.data.processingCount === 1 ? "" : "s"} transcribing. The library updates automatically.`
+                : "No jobs in progress. Upload audio from the Uploads tab to start."
+            }
+            actionLabel={vm.data.processingCount > 0 ? "View library" : "Upload file"}
+            onAction={vm.data.processingCount > 0 ? () => vm.setView("library") : vm.uploadFile}
           />
         );
       case "sources":
@@ -42,9 +48,13 @@ export function LongformerWorkspace({ vm }: LongformerWorkspaceProps) {
         return (
           <LongformerPlaceholderView
             title="Uploads"
-            description="Drag and drop audio or video files to transcribe — MP3, M4A, WAV, MP4, and more."
-            actionLabel="Upload file"
-            onAction={vm.uploadFile}
+            description={
+              vm.uploading
+                ? "Uploading and queuing transcription…"
+                : "Upload audio or video to transcribe — MP3, M4A, WAV, MP4, and more. Chapters and artifacts generate automatically after transcription."
+            }
+            actionLabel={vm.uploading ? undefined : "Upload file"}
+            onAction={vm.uploading ? undefined : vm.uploadFile}
           />
         );
       case "settings":

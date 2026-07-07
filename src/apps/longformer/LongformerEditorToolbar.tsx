@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { Breadcrumb } from "../../components/patterns";
 import { Button } from "../../components/ui";
-import type { LongformerViewModel } from "./useLongformerStub";
+import type { LongformerViewModel } from "./longformerStore";
 import type { TranscriptDetail } from "./types";
 import { formatTimecode } from "./types";
 

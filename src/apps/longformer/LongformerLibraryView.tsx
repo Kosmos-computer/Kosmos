@@ -13,7 +13,7 @@ import {
 import { Button } from "../../components/ui";
 import { ListSearch } from "../../components/patterns";
 import { filterTranscripts, formatDuration } from "./types";
-import type { LongformerViewModel } from "./useLongformerStub";
+import type { LongformerViewModel } from "./longformerStore";
 import type { TranscriptSourceType, TranscriptStatus, TranscriptSummary } from "./types";
 
 const SOURCE_ICON: Record<TranscriptSourceType, typeof Mic> = {
@@ -23,6 +23,7 @@ const SOURCE_ICON: Record<TranscriptSourceType, typeof Mic> = {
   upload: Upload,
   recording: Video,
   memory: FileAudio,
+  broadcast: Headphones,
 };
 
 const STATUS_LABEL: Record<TranscriptStatus, string> = {

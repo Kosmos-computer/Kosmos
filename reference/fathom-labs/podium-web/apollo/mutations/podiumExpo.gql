@@ -1,0 +1,5 @@
+mutation podiumExpo($email: String!) {
+  podiumExpo(email: $email) {
+    ok
+  }
+}

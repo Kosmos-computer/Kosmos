@@ -40,6 +40,8 @@ import type {
   ImageGenSize,
   ImageGenStyle,
   Settings,
+  CursorConnectionStatus,
+  CursorModelInfo,
   Skill,
   SkillMeta,
   StoredApp,
@@ -667,6 +669,18 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(patch),
     }).then((r) => json<Settings>(r)),
+
+  testCursorConnection: (apiKey?: string) =>
+    fetch("/api/cursor/test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(apiKey ? { apiKey } : {}),
+    }).then((r) => json<CursorConnectionStatus>(r)),
+
+  listCursorModels: () =>
+    fetch("/api/cursor/models").then((r) =>
+      json<{ models: CursorModelInfo[]; error?: string }>(r),
+    ),
 };
 
 /**

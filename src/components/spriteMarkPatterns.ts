@@ -4,12 +4,9 @@ import {
   SPRITE_MARK_GRID_ROWS,
   SPRITE_MARK_LOGO_INDICES,
   spriteMarkGridCoords,
-  spriteMarkGridIndex,
   spriteMarkLogoPattern,
   spriteMarkPatternFromIndices,
 } from "./spriteMarkSquares";
-
-const LOGO_INDICES = [...SPRITE_MARK_LOGO_INDICES];
 
 const CENTER_COL = Math.floor(SPRITE_MARK_GRID_COLS / 2);
 const CENTER_ROW = Math.floor(SPRITE_MARK_GRID_ROWS / 2);
@@ -20,53 +17,6 @@ function patternFromPredicate(
   return Array.from({ length: SPRITE_MARK_GRID_COUNT }, (_, index) => {
     const { col, row } = spriteMarkGridCoords(index);
     return predicate(col, row, index);
-  });
-}
-
-function spiralIndices(): number[] {
-  const order: number[] = [];
-  let top = 0;
-  let bottom = SPRITE_MARK_GRID_ROWS - 1;
-  let left = 0;
-  let right = SPRITE_MARK_GRID_COLS - 1;
-
-  while (top <= bottom && left <= right) {
-    for (let col = left; col <= right; col += 1) {
-      order.push(spriteMarkGridIndex(col, top));
-    }
-    top += 1;
-
-    for (let row = top; row <= bottom; row += 1) {
-      order.push(spriteMarkGridIndex(right, row));
-    }
-    right -= 1;
-
-    if (top <= bottom) {
-      for (let col = right; col >= left; col -= 1) {
-        order.push(spriteMarkGridIndex(col, bottom));
-      }
-      bottom -= 1;
-    }
-
-    if (left <= right) {
-      for (let row = bottom; row >= top; row -= 1) {
-        order.push(spriteMarkGridIndex(left, row));
-      }
-      left += 1;
-    }
-  }
-
-  return order;
-}
-
-function chaseWithTrail(indices: number[], trail = 2): boolean[][] {
-  return indices.map((activeIndex, frame) => {
-    const lit = new Set<number>();
-    for (let offset = 0; offset <= trail; offset += 1) {
-      const index = indices[(frame - offset + indices.length) % indices.length];
-      lit.add(index);
-    }
-    return spriteMarkPatternFromIndices(lit);
   });
 }
 
@@ -123,18 +73,8 @@ function crossPattern(): boolean[] {
 
 function xPattern(): boolean[] {
   return patternFromPredicate((col, row) => {
-    const { col: centerCol, row: centerRow } = { col: CENTER_COL, row: CENTER_ROW };
-    return col - row === centerCol - centerRow || col + row === centerCol + centerRow;
+    return col - row === CENTER_COL - CENTER_ROW || col + row === CENTER_COL + CENTER_ROW;
   });
-}
-
-function columnRainPatterns(): boolean[][] {
-  return Array.from({ length: SPRITE_MARK_GRID_COLS }, (_, phase) =>
-    patternFromPredicate((col, row) => {
-      const drop = (row + phase) % SPRITE_MARK_GRID_ROWS;
-      return col === phase && row >= drop;
-    }),
-  );
 }
 
 function wavePatterns(): boolean[][] {
@@ -150,15 +90,6 @@ function equalizerPatterns(): boolean[][] {
       const baseHeight = barHeights[col] ?? 3;
       const height = ((baseHeight + phase + col) % SPRITE_MARK_GRID_ROWS) + 1;
       return row >= SPRITE_MARK_GRID_ROWS - height;
-    }),
-  );
-}
-
-function logoRipplePatterns(): boolean[][] {
-  return Array.from({ length: 6 }, (_, phase) =>
-    patternFromPredicate((col, row, index) => {
-      if (SPRITE_MARK_LOGO_INDICES.has(index)) return true;
-      return (col + row + phase) % 3 === 0;
     }),
   );
 }
@@ -196,10 +127,8 @@ function alternatingBandPatterns(): boolean[][] {
   ];
 }
 
-const SPIRAL_ORDER = spiralIndices();
-
-/** Bitmasks cycled while the agent is working — logo, sweeps, chases, ripples, and fills. */
-export const SPRITE_WORKING_PATTERNS: readonly (readonly boolean[])[] = [
+/** Structured geometric frames — sweeps, symmetries, and fills. No random noise. */
+export const SPRITE_GEOMETRIC_PATTERNS: readonly (readonly boolean[])[] = [
   spriteMarkLogoPattern(),
   spriteMarkPatternFromIndices(
     Array.from({ length: SPRITE_MARK_GRID_COUNT }, (_, index) => index),
@@ -221,19 +150,9 @@ export const SPRITE_WORKING_PATTERNS: readonly (readonly boolean[])[] = [
   ...ringPatterns(),
   ...quadrantPatterns(),
   ...alternatingBandPatterns(),
-  ...columnRainPatterns(),
   ...wavePatterns(),
   ...equalizerPatterns(),
-  ...logoRipplePatterns(),
   ...logoPulsePatterns(),
-  ...LOGO_INDICES.map((activeIndex) => spriteMarkPatternFromIndices([activeIndex])),
-  ...chaseWithTrail(SPIRAL_ORDER, 2),
-  ...chaseWithTrail(
-    Array.from({ length: SPRITE_MARK_GRID_COUNT }, (_, index) => index),
-    1,
-  ),
-  spriteMarkPatternFromIndices([0, 6, 28, 34]),
-  spriteMarkPatternFromIndices([0, 3, 6, 28, 31, 34]),
   patternFromPredicate((col, row) => row === 0 || row === SPRITE_MARK_GRID_ROWS - 1),
   patternFromPredicate((col, row) => col === 0 || col === SPRITE_MARK_GRID_COLS - 1),
   patternFromPredicate(
@@ -243,47 +162,12 @@ export const SPRITE_WORKING_PATTERNS: readonly (readonly boolean[])[] = [
   ),
 ];
 
-const LOGO_LIT_COUNT = SPRITE_MARK_LOGO_INDICES.size;
+/** @deprecated Use SPRITE_GEOMETRIC_PATTERNS */
+export const SPRITE_WORKING_PATTERNS = SPRITE_GEOMETRIC_PATTERNS;
 
-/** Library patterns that visibly use the full grid (exclude static-logo and single-cell frames). */
-export const SPRITE_DRAMATIC_PATTERN_INDICES: readonly number[] = SPRITE_WORKING_PATTERNS.map(
-  (pattern, index) => ({ index, lit: pattern.filter(Boolean).length }),
-)
-  .filter(({ lit }) => lit !== LOGO_LIT_COUNT && lit !== 1 && lit !== 0)
-  .map(({ index }) => index);
-
-/** Procedural pattern — random cells across the entire grid. */
-export function createRandomSpritePattern(density = 0.42): boolean[] {
-  return Array.from({ length: SPRITE_MARK_GRID_COUNT }, () => Math.random() < density);
-}
-
-function patternsEqual(left: readonly boolean[], right: readonly boolean[]): boolean {
-  return left.length === right.length && left.every((value, index) => value === right[index]);
-}
-
-/** Boot splash pattern — mixes procedural noise with dramatic library frames. */
-export function pickRandomBootPattern(previous?: readonly boolean[]): boolean[] {
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    const candidate =
-      Math.random() < 0.6
-        ? createRandomSpritePattern(0.28 + Math.random() * 0.44)
-        : [...SPRITE_WORKING_PATTERNS[
-            SPRITE_DRAMATIC_PATTERN_INDICES[
-              Math.floor(Math.random() * SPRITE_DRAMATIC_PATTERN_INDICES.length)
-            ] ?? 0
-          ]];
-
-    if (!previous || !patternsEqual(previous, candidate)) {
-      return candidate;
-    }
-  }
-
-  return createRandomSpritePattern();
-}
-
-/** Pick a random pattern index, avoiding an immediate repeat when possible. */
-export function pickRandomSpritePatternIndex(previousIndex?: number): number {
-  const count = SPRITE_WORKING_PATTERNS.length;
+/** Pick a random geometric pattern, avoiding an immediate repeat when possible. */
+export function pickRandomGeometricPatternIndex(previousIndex?: number): number {
+  const count = SPRITE_GEOMETRIC_PATTERNS.length;
   if (count <= 1) return 0;
   if (previousIndex === undefined) {
     return Math.floor(Math.random() * count);
@@ -293,3 +177,6 @@ export function pickRandomSpritePatternIndex(previousIndex?: number): number {
   if (next >= previousIndex) next += 1;
   return next;
 }
+
+/** @deprecated Use pickRandomGeometricPatternIndex */
+export const pickRandomSpritePatternIndex = pickRandomGeometricPatternIndex;

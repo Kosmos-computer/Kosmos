@@ -8,11 +8,15 @@ export const TITLE_BAR_THEME: Record<TitleBarTheme, { color: string; symbolColor
   light: { color: "#fcfdff", symbolColor: "#4e5665" },
 };
 
-/** Standard native window frame with themed background (no custom overlay chrome). */
+/**
+ * Frameless window — the renderer draws its own titlebar and window controls
+ * (ElectronTitleBar in the shell). Resize borders stay native on all platforms.
+ */
 export function titleBarWindowOptions(
   theme: TitleBarTheme = "dark",
-): Pick<BrowserWindowConstructorOptions, "autoHideMenuBar" | "backgroundColor"> {
+): Pick<BrowserWindowConstructorOptions, "frame" | "autoHideMenuBar" | "backgroundColor"> {
   return {
+    frame: false,
     autoHideMenuBar: true,
     backgroundColor: TITLE_BAR_THEME[theme].color,
   };

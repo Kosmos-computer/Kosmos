@@ -1,0 +1,6 @@
+# Internal
+-e git+https://2c362d5f4c48f0ee727f26f7c87a7dad014242fb:x-oauth-basic@github.com/fathom-labs/whisper-core.git@master#egg=whisper-core
+
+# General
+timestring
+ipdb

@@ -1,0 +1,14 @@
+-e git+https://2c362d5f4c48f0ee727f26f7c87a7dad014242fb:x-oauth-basic@github.com/fathom-app/fathom-core.git@main#egg=fathom-core
+
+importlib-metadata==4.13.0
+numpy
+boto3
+celery[redis]==5.3.4
+celery_once
+flower
+protobuf
+grpcio
+grpcio-tools
+sentry-sdk
+ddtrace
+datadog

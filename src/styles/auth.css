@@ -66,12 +66,7 @@
 }
 
 .arco-boot__mark.sprite-working-mark .sprite-working-mark__square {
-  opacity: 0.14;
   transition: opacity 0.08s ease;
-}
-
-.arco-boot__mark.sprite-working-mark .sprite-working-mark__square[data-on="true"] {
-  opacity: 1;
 }
 
 @keyframes arco-boot-rise {

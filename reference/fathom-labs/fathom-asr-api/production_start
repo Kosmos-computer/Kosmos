@@ -1,0 +1,4 @@
+#!/bin/sh
+
+cd src
+gunicorn start:web --bind 0.0.0.0:3000 --worker-class sanic.worker.GunicornWorker --workers 2 --timeout 1800

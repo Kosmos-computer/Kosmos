@@ -1,6 +1,8 @@
 export { SearchAttribution, type SearchAttributionProps } from "./SearchAttribution";
 export { browseFrameSrc } from "./browseFrameSrc";
+export { BrowserAddressBar, type BrowserAddressBarProps } from "./BrowserAddressBar";
 export { BrowserShell, normalizeBrowserUrl, type BrowserShellProps } from "./BrowserShell";
+export { looksLikeUrl } from "./looksLikeUrl";
 export { SearchBar, type SearchBarProps } from "./SearchBar";
 export { SearchHome, type SearchHomeProps } from "./SearchHome";
 export { SearchSuggestList, type SearchSuggestListProps } from "./SearchSuggestList";

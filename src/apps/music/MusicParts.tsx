@@ -12,8 +12,6 @@ import {
   Search,
   Square,
 } from "lucide-react";
-import { musicRssFeedSeedSummary } from "@shared/musicFeeds";
-import { musicLiveStationSummary } from "@shared/musicLiveStations";
 import { AlbumArt } from "./AlbumArt";
 import {
   MusicBroadcastDirectory,
@@ -119,11 +117,6 @@ export function MusicLibrarySidebar({ vm }: MusicLibrarySidebarProps) {
                       className="arco-nav-sidebar__nav-item"
                       leading={<Icon size={18} />}
                       label={item.label}
-                      description={
-                        item.id === "broadcasts"
-                          ? `${musicLiveStationSummary(vm.liveStations, 2)} · ${musicRssFeedSeedSummary(vm.rssFeeds, 2)}`
-                          : undefined
-                      }
                       active={vm.navSection === item.id && !vm.selectedBroadcastFeed && !vm.selectedSongId}
                       onClick={() => vm.setNavSection(item.id)}
                     />

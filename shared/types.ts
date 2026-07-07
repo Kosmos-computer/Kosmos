@@ -603,7 +603,10 @@ export type LlmProvider = "openai" | "anthropic" | "openrouter" | "ollama" | "lo
  * standard). ACP agents manage their own LLM and tools; Arco relays turns
  * and renders what comes back. Automations always use the built-in loop.
  */
-export type AgentKind = "builtin" | "acp";
+export type AgentKind = "builtin" | "acp" | "cursor";
+
+/** Where a Cursor SDK agent executes — local machine or Cursor cloud VM. */
+export type CursorRuntime = "local" | "cloud";
 
 export interface Settings {
   provider: LlmProvider;
@@ -615,6 +618,13 @@ export interface Settings {
   agent: AgentKind;
   /** Spawn command line for the ACP agent subprocess (when agent="acp"). */
   acpCommand: string;
+  /** Cursor API key (when agent="cursor") — masked on read like apiKey. */
+  cursorApiKey: string;
+  /** Cursor model id, e.g. composer-2.5 (when agent="cursor"). */
+  cursorModel: string;
+  cursorRuntime: CursorRuntime;
+  /** GitHub repo URL for cloud Cursor agents. */
+  cursorRepoUrl: string;
   /**
    * Built-in agent tools hidden from the model (Settings → Agent tools).
    * Mirrors McpServerConfig.disabledTools: the tool is removed from the
@@ -622,6 +632,25 @@ export interface Settings {
    */
   disabledTools?: string[];
 }
+
+/** Result of POST /api/cursor/test — validates the saved or supplied API key. */
+export interface CursorConnectionStatus {
+  connected: boolean;
+  user?: {
+    apiKeyName: string;
+    userEmail?: string;
+  };
+  error?: string;
+}
+
+/** One model entry from GET /api/cursor/models. */
+export interface CursorModelInfo {
+  id: string;
+  displayName: string;
+}
+
+/** Default Cursor model when none is configured. */
+export const CURSOR_DEFAULT_MODEL = "composer-2.5";
 
 /** One built-in agent tool as listed by GET /api/agent-tools. */
 export interface AgentToolInfo {

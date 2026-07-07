@@ -1,0 +1,33 @@
+# fly.toml file generated for ui-refresh-podium on 2023-04-20T23:23:12-07:00
+
+app = "ui-refresh-podium"
+kill_signal = "SIGINT"
+kill_timeout = 5
+primary_region = "sjc"
+
+[env]
+  BASE_URL = "https://ui-refresh-podium.fly.dev"
+  FATHOM_WEB_API_URL = "https://dev-api.fathom.fm"
+  GOOGLE_CLIENT_ID = "504283530680-ta4em5km46205tedico59bk460j1j16f.apps.googleusercontent.com"
+  GOOGLE_CLIENT_SECRET = "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"
+  HEAP_ID = "2341590280"
+  NUXT_SECRET = "perfect.light.eminates.from.the.heart.!42"
+  ROBOTS = "all"
+
+[[services]]
+  protocol = "tcp"
+  internal_port = 3000
+  processes = ["app"]
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+    force_https = true
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+  [services.concurrency]
+    type = "connections"
+    hard_limit = 25
+    soft_limit = 20

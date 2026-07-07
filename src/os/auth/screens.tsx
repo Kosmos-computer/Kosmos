@@ -7,6 +7,7 @@
  */
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { ArcoLogo } from "../../components/ArcoLogo";
+import { PasswordInput } from "../../components/ui/PasswordInput";
 import { SpriteWorkingMark } from "../../components/SpriteWorkingMark";
 import { useAuthStore } from "./authStore";
 import { AuthWallpaperBackdrop } from "../wallpaper/AuthWallpaperBackdrop";
@@ -31,7 +32,7 @@ export function BootScreen() {
   return (
     <div className="arco-boot" role="status" aria-label="Arco OS is starting">
       <div className="arco-boot__logo">
-        <SpriteWorkingMark className="arco-boot__mark" />
+        <SpriteWorkingMark className="arco-boot__mark" mode="boot" />
       </div>
       <div className="arco-boot__bar">
         <div className="arco-boot__bar-fill" />
@@ -199,10 +200,8 @@ export function LoginScreen() {
         </div>
         <div>
           <label className="arco-label" htmlFor="login-password">Password</label>
-          <input
+          <PasswordInput
             id="login-password"
-            className="arco-input"
-            type="password"
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -260,10 +259,8 @@ export function LockScreen() {
         <div className="arco-authscreen__subtitle">Enter your password to unlock</div>
       </div>
       <form className="arco-authscreen__form" onSubmit={(e) => void submit(e)}>
-        <input
+        <PasswordInput
           ref={inputRef}
-          className="arco-input"
-          type="password"
           aria-label="Password"
           autoComplete="current-password"
           autoFocus

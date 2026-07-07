@@ -51,6 +51,8 @@ import { getActiveRoot, projectStore, resolveProjectPath } from "./stores/projec
 import { sessionStore } from "./stores/sessionStore.js";
 import { generatorCatalogStore } from "./stores/generatorCatalogStore.js";
 import { generateUiFromPrompt } from "./services/generatorService.js";
+import { imageGenStore } from "./stores/imageGenStore.js";
+import { generateImageFromPrompt, getImageGenStatus } from "./services/imageGenService.js";
 import { webAppStore } from "./stores/webAppStore.js";
 import { installedAppStore, APPS_DIR } from "./platform/installedAppStore.js";
 import { grantStore, readAudit } from "./platform/grantStore.js";
@@ -341,6 +343,56 @@ app.post("/api/generator/catalog", requireCap("chat"), async (c) => {
 app.delete("/api/generator/catalog/:id", requireCap("chat"), async (c) => {
   const ok = await generatorCatalogStore.remove(c.req.param("id"));
   if (!ok) return c.json({ error: "Not found" }, 404);
+  return c.json({ ok: true });
+});
+
+// ── Image Gen (OpenAI Images API + gallery) ────────────────────────────────
+
+app.get("/api/image-gen/status", async (c) => c.json(getImageGenStatus()));
+
+app.get("/api/image-gen/history", async (c) => c.json(await imageGenStore.list()));
+
+app.post("/api/image-gen/generate", requireCap("chat"), async (c) => {
+  const body = (await c.req.json()) as {
+    prompt?: string;
+    size?: "1024x1024" | "1024x1792" | "1792x1024";
+    style?: "vivid" | "natural";
+  };
+  const prompt = (body.prompt ?? "").trim();
+  if (!prompt) return c.json({ error: "prompt is required" }, 400);
+  try {
+    const item = await generateImageFromPrompt(
+      { prompt, size: body.size, style: body.style },
+      c.req.raw.signal,
+    );
+    return c.json({ item });
+  } catch (err) {
+    return c.json(
+      { error: err instanceof Error ? err.message : "Image generation failed" },
+      500,
+    );
+  }
+});
+
+app.get("/api/image-gen/assets/:filename", async (c) => {
+  const assetPath = await imageGenStore.assetPath(c.req.param("filename"));
+  if (!assetPath) return c.json({ error: "Not found" }, 404);
+  const ext = path.extname(assetPath).toLowerCase();
+  const contentType =
+    ext === ".png" ? "image/png" : ext === ".svg" ? "image/svg+xml" : "application/octet-stream";
+  const stream = createReadStream(assetPath);
+  return c.body(stream as unknown as ReadableStream, 200, {
+    "Content-Type": contentType,
+    "Cache-Control": "public, max-age=31536000, immutable",
+  });
+});
+
+app.delete("/api/image-gen/history/:id", requireCap("chat"), async (c) => {
+  const removed = await imageGenStore.remove(c.req.param("id"));
+  if (!removed) return c.json({ error: "Not found" }, 404);
+  const filename = path.basename(removed.imageUrl);
+  const assetPath = await imageGenStore.assetPath(filename);
+  if (assetPath) await fs.unlink(assetPath).catch(() => {});
   return c.json({ ok: true });
 });
 

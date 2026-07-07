@@ -55,6 +55,40 @@ export interface GenerateUiResponse {
   lintSummary?: string;
 }
 
+// ── Image generation ─────────────────────────────────────────────────────────
+
+export type ImageGenProvider = "openai" | "mock";
+
+export type ImageGenSize = "1024x1024" | "1024x1792" | "1792x1024";
+
+export type ImageGenStyle = "vivid" | "natural";
+
+/** One generated image kept in the Image Gen gallery. */
+export interface ImageGenHistoryItem {
+  id: string;
+  prompt: string;
+  revisedPrompt?: string;
+  model: string;
+  size: ImageGenSize;
+  style: ImageGenStyle;
+  provider: ImageGenProvider;
+  /** API path served by GET /api/image-gen/assets/:filename */
+  imageUrl: string;
+  createdAt: string;
+}
+
+export interface GenerateImageResponse {
+  item: ImageGenHistoryItem;
+}
+
+/** Which backend the image service will use (no secrets). */
+export interface ImageGenStatus {
+  provider: ImageGenProvider;
+  model: string;
+  configured: boolean;
+  hint?: string;
+}
+
 // ── Chat sessions ────────────────────────────────────────────────────────────
 
 /**

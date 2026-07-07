@@ -4,4 +4,5 @@ export { Button, type ButtonProps, type ButtonSize, type ButtonVariant } from ".
 export { Chip, type ChipProps } from "./Chip";
 export { EmptyState, type EmptyStateProps } from "./EmptyState";
 export { Input, type InputProps, type InputWidth } from "./Input";
+export { PasswordInput, type PasswordInputProps } from "./PasswordInput";
 export { Switch, type SwitchProps } from "./Switch";

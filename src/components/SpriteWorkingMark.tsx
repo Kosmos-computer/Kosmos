@@ -3,27 +3,42 @@ import {
   SPRITE_MARK_GRID_SQUARES,
   SPRITE_MARK_VIEWBOX,
 } from "./spriteMarkSquares";
-import { SPRITE_WORKING_PATTERNS } from "./spriteMarkPatterns";
+import {
+  createRandomSpritePattern,
+  pickRandomBootPattern,
+  pickRandomSpritePatternIndex,
+  SPRITE_WORKING_PATTERNS,
+} from "./spriteMarkPatterns";
 
 type SpriteWorkingMarkProps = {
   className?: string;
+  /** Boot splash uses faster ticks, ghost grid, and procedural random patterns. */
+  mode?: "default" | "boot";
 };
 
-const FRAME_MS = 140;
+const DEFAULT_FRAME_MS = 140;
+const BOOT_FRAME_MS = 90;
 
-/** Animated logo mark — squares blink in sequence beside "Working…". */
-export function SpriteWorkingMark({ className = "" }: SpriteWorkingMarkProps) {
-  const [frame, setFrame] = useState(0);
+/** Animated logo mark — squares jump through random patterns beside "Working…". */
+export function SpriteWorkingMark({ className = "", mode = "default" }: SpriteWorkingMarkProps) {
+  const isBoot = mode === "boot";
+  const [frame, setFrame] = useState(() => pickRandomSpritePatternIndex());
+  const [bootPattern, setBootPattern] = useState(() => createRandomSpritePattern());
 
   useEffect(() => {
     const timer = window.setInterval(() => {
-      setFrame((current) => (current + 1) % SPRITE_WORKING_PATTERNS.length);
-    }, FRAME_MS);
+      if (isBoot) {
+        setBootPattern((current) => pickRandomBootPattern(current));
+        return;
+      }
+
+      setFrame((current) => pickRandomSpritePatternIndex(current));
+    }, isBoot ? BOOT_FRAME_MS : DEFAULT_FRAME_MS);
 
     return () => window.clearInterval(timer);
-  }, []);
+  }, [isBoot]);
 
-  const pattern = SPRITE_WORKING_PATTERNS[frame];
+  const pattern = isBoot ? bootPattern : SPRITE_WORKING_PATTERNS[frame];
 
   return (
     <svg

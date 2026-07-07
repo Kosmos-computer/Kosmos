@@ -38,6 +38,7 @@ export const SYSTEM_APP_CATALOG: SystemAppCatalogEntry[] = [
   { id: "social", title: "Social" },
   { id: "sheets", title: "Sheets" },
   { id: "generator", title: "Generator" },
+  { id: "imagegen", title: "Image Gen" },
   { id: "terminal", title: "Terminal" },
   { id: "settings", title: "Settings" },
   { id: "startup", title: "Setup" },

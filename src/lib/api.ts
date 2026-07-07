@@ -34,6 +34,11 @@ import type {
   SessionSummary,
   GenerateUiResponse,
   SavedGeneratorCatalogItem,
+  ImageGenHistoryItem,
+  GenerateImageResponse,
+  ImageGenStatus,
+  ImageGenSize,
+  ImageGenStyle,
   Settings,
   Skill,
   SkillMeta,
@@ -160,6 +165,18 @@ export const api = {
     }).then((r) => json<SavedGeneratorCatalogItem>(r)),
   deleteGeneratorCatalogItem: (id: string) =>
     fetch(`/api/generator/catalog/${id}`, { method: "DELETE" }).then((r) => json<{ ok: true }>(r)),
+
+  // Image Gen
+  getImageGenStatus: () => fetch("/api/image-gen/status").then((r) => json<ImageGenStatus>(r)),
+  listImageGenHistory: () => fetch("/api/image-gen/history").then((r) => json<ImageGenHistoryItem[]>(r)),
+  generateImage: (input: { prompt: string; size?: ImageGenSize; style?: ImageGenStyle }) =>
+    fetch("/api/image-gen/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    }).then((r) => json<GenerateImageResponse>(r)),
+  deleteImageGenHistoryItem: (id: string) =>
+    fetch(`/api/image-gen/history/${id}`, { method: "DELETE" }).then((r) => json<{ ok: true }>(r)),
 
   // App runtime tool bridge (Query/Mutation — no LLM)
   invokeTool: (tool: string, params: Record<string, unknown>) =>

@@ -47,6 +47,48 @@
   flex-shrink: 0;
 }
 
+.arco-password-input {
+  position: relative;
+  display: grid;
+  width: 100%;
+}
+
+.arco-password-input > * {
+  grid-area: 1 / 1;
+}
+
+.arco-password-input .arco-input {
+  padding-right: 40px;
+}
+
+.arco-password-input__toggle {
+  place-self: center end;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-right: 4px;
+  padding: 0;
+  border: none;
+  border-radius: var(--arco-radius-s);
+  background: transparent;
+  color: var(--arco-text-secondary);
+  cursor: pointer;
+  z-index: 1;
+  transition: color var(--arco-dur-fast), background var(--arco-dur-fast);
+}
+
+.arco-password-input__toggle:hover {
+  color: var(--arco-text-primary);
+  background: var(--arco-bg-hover);
+}
+
+.arco-password-input__toggle svg {
+  display: block;
+  stroke: currentColor;
+}
+
 .arco-btn--icon {
   padding: 6px;
 }

@@ -242,3 +242,54 @@ export const SPRITE_WORKING_PATTERNS: readonly (readonly boolean[])[] = [
       (row === 0 || row === SPRITE_MARK_GRID_ROWS - 1),
   ),
 ];
+
+const LOGO_LIT_COUNT = SPRITE_MARK_LOGO_INDICES.size;
+
+/** Library patterns that visibly use the full grid (exclude static-logo and single-cell frames). */
+export const SPRITE_DRAMATIC_PATTERN_INDICES: readonly number[] = SPRITE_WORKING_PATTERNS.map(
+  (pattern, index) => ({ index, lit: pattern.filter(Boolean).length }),
+)
+  .filter(({ lit }) => lit !== LOGO_LIT_COUNT && lit !== 1 && lit !== 0)
+  .map(({ index }) => index);
+
+/** Procedural pattern — random cells across the entire grid. */
+export function createRandomSpritePattern(density = 0.42): boolean[] {
+  return Array.from({ length: SPRITE_MARK_GRID_COUNT }, () => Math.random() < density);
+}
+
+function patternsEqual(left: readonly boolean[], right: readonly boolean[]): boolean {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
+/** Boot splash pattern — mixes procedural noise with dramatic library frames. */
+export function pickRandomBootPattern(previous?: readonly boolean[]): boolean[] {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const candidate =
+      Math.random() < 0.6
+        ? createRandomSpritePattern(0.28 + Math.random() * 0.44)
+        : [...SPRITE_WORKING_PATTERNS[
+            SPRITE_DRAMATIC_PATTERN_INDICES[
+              Math.floor(Math.random() * SPRITE_DRAMATIC_PATTERN_INDICES.length)
+            ] ?? 0
+          ]];
+
+    if (!previous || !patternsEqual(previous, candidate)) {
+      return candidate;
+    }
+  }
+
+  return createRandomSpritePattern();
+}
+
+/** Pick a random pattern index, avoiding an immediate repeat when possible. */
+export function pickRandomSpritePatternIndex(previousIndex?: number): number {
+  const count = SPRITE_WORKING_PATTERNS.length;
+  if (count <= 1) return 0;
+  if (previousIndex === undefined) {
+    return Math.floor(Math.random() * count);
+  }
+
+  let next = Math.floor(Math.random() * (count - 1));
+  if (next >= previousIndex) next += 1;
+  return next;
+}

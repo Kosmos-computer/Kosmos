@@ -10,7 +10,7 @@ import { InstallFlow } from "./InstallFlow";
 import { BootScreen, LockScreen, LoginScreen } from "./screens";
 
 /** Boot splash lingers at least this long — matches the bar-fill animation. */
-const MIN_BOOT_MS = 2200;
+const MIN_BOOT_MS = 4000;
 
 /** Must match --arco-dur-xfade in auth.css. */
 const XFADE_MS = 600;

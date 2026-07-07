@@ -36,7 +36,13 @@ export function ensureDataDirs(): void {
 const SETTINGS_FILE = path.join(ROOT, "settings.json");
 
 const DEFAULT_SETTINGS: Settings = {
-  provider: process.env.LLM_API_KEY ? "custom" : "mock",
+  provider: process.env.LLM_PROVIDER?.trim()
+    ? (process.env.LLM_PROVIDER.trim() as Settings["provider"])
+    : process.env.LLM_API_KEY
+      ? "custom"
+      : process.env.LLM_BASE_URL?.trim()
+        ? "ollama"
+        : "mock",
   baseUrl: process.env.LLM_BASE_URL ?? "https://api.openai.com/v1",
   apiKey: process.env.LLM_API_KEY ?? "",
   model: process.env.LLM_MODEL ?? "gpt-5.5",
@@ -45,12 +51,28 @@ const DEFAULT_SETTINGS: Settings = {
   acpCommand: "",
 };
 
+function applyLlmEnvOverrides(settings: Settings): Settings {
+  // In Docker/Coolify, wire the LLM via env — persisted settings.json may still
+  // point at desktop-only endpoints (e.g. model-manager on 127.0.0.1:4650).
+  if (process.env.LLM_BASE_URL?.trim()) {
+    settings.baseUrl = process.env.LLM_BASE_URL.trim();
+    if (process.env.LLM_PROVIDER?.trim()) {
+      settings.provider = process.env.LLM_PROVIDER.trim() as Settings["provider"];
+    } else if (!process.env.LLM_API_KEY?.trim() && settings.provider === "local") {
+      settings.provider = "ollama";
+    }
+  }
+  if (process.env.LLM_MODEL?.trim()) settings.model = process.env.LLM_MODEL.trim();
+  if (process.env.LLM_API_KEY !== undefined) settings.apiKey = process.env.LLM_API_KEY;
+  return settings;
+}
+
 export function loadSettings(): Settings {
   try {
     const raw = fs.readFileSync(SETTINGS_FILE, "utf-8");
-    return { ...DEFAULT_SETTINGS, ...(JSON.parse(raw) as Partial<Settings>) };
+    return applyLlmEnvOverrides({ ...DEFAULT_SETTINGS, ...(JSON.parse(raw) as Partial<Settings>) });
   } catch {
-    return { ...DEFAULT_SETTINGS };
+    return applyLlmEnvOverrides({ ...DEFAULT_SETTINGS });
   }
 }
 

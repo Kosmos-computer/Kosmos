@@ -23,6 +23,7 @@ import {
   Contact,
   Table,
   Code2,
+  Image as ImageIcon,
   GraduationCap,
   UsersRound,
   Share2,
@@ -59,6 +60,7 @@ import { SocialApp } from "../apps/social/SocialApp";
 import { MessengerApp } from "../apps/messenger/MessengerApp";
 import { SheetsApp } from "../apps/sheets/SheetsApp";
 import { GeneratorApp } from "../apps/generator/GeneratorApp";
+import { ImageGenApp } from "../apps/imagegen/ImageGenApp";
 import { TerminalApp } from "../apps/terminal/TerminalApp";
 import { SettingsApp } from "../apps/settings/SettingsApp";
 import { StartupApp } from "../apps/startup/StartupApp";
@@ -112,6 +114,7 @@ export const SYSTEM_APPS: SystemAppDef[] = [
   { id: "social", title: "Social", icon: Share2, component: SocialApp },
   { id: "sheets", title: "Sheets", icon: Table, component: SheetsApp },
   { id: "generator", title: "Generator", icon: Code2, component: GeneratorApp },
+  { id: "imagegen", title: "Image Gen", icon: ImageIcon, component: ImageGenApp },
   { id: "terminal", title: "Terminal", icon: SquareTerminal, component: TerminalApp },
   { id: "settings", title: "Settings", icon: SettingsIcon, component: SettingsApp },
   { id: "startup", title: "Setup", icon: Rocket, component: StartupApp },

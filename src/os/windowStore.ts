@@ -34,6 +34,7 @@ export type SystemAppId =
   | "messenger"
   | "sheets"
   | "generator"
+  | "imagegen"
   | "terminal"
   | "settings"
   | "startup"

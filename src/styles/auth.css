@@ -65,6 +65,15 @@
   color: var(--arco-text-primary);
 }
 
+.arco-boot__mark.sprite-working-mark .sprite-working-mark__square {
+  opacity: 0.14;
+  transition: opacity 0.08s ease;
+}
+
+.arco-boot__mark.sprite-working-mark .sprite-working-mark__square[data-on="true"] {
+  opacity: 1;
+}
+
 @keyframes arco-boot-rise {
   from { opacity: 0; transform: translateY(10px) scale(0.96); }
   to { opacity: 1; transform: none; }
@@ -88,7 +97,7 @@
     var(--arco-text-tertiary),
     var(--arco-text-primary)
   );
-  animation: arco-boot-fill 2s var(--arco-ease) forwards;
+  animation: arco-boot-fill 3.8s var(--arco-ease) forwards;
 }
 
 @keyframes arco-boot-fill {

@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { ArtifactKind, TranscriptSourceType } from "../../shared/transcription/types.js";
-import { ensureTranscriptionDirs, transcriptionDirs } from "../transcription/dirs.js";
+import type { ArtifactKind, TranscriptDetail, TranscriptSourceType } from "../../shared/transcription/types.js";
+import { ensureTranscriptionDirs, normalizedAudioPath, transcriptionDirs } from "../transcription/dirs.js";
 import { generateArtifact, enrichTranscript } from "../transcription/enrich.js";
 import { transcriptionJobStore } from "../transcription/jobStore.js";
 import { listEngines } from "../transcription/engines/stt.js";
@@ -20,6 +20,24 @@ export const transcriptionService = {
 
   getTranscript(id: string) {
     return transcriptStore.get(id);
+  },
+
+  getJobMediaPath(id: string): string | null {
+    const job = transcriptionJobStore.get(id);
+    if (!job) return null;
+    const wav = normalizedAudioPath(id);
+    if (fs.existsSync(wav)) return wav;
+    if (job.mediaPath && fs.existsSync(job.mediaPath)) return job.mediaPath;
+    return null;
+  },
+
+  updateTranscript(
+    jobId: string,
+    patch: Pick<TranscriptDetail, "segments" | "speakers" | "chapters" | "tracks" | "title" | "artifacts">,
+  ) {
+    const updated = transcriptStore.update(jobId, patch);
+    if (!updated) throw new Error("Transcript not found");
+    return updated;
   },
 
   async createUploadJob(file: { name: string; arrayBuffer(): Promise<ArrayBuffer> }): Promise<{ jobId: string }> {

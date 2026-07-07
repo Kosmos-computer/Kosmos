@@ -5,11 +5,13 @@ import {
   loadPersistedJobView,
   persistJobView,
 } from "./jobNav";
+import { isPersistableJobId } from "./artifactContent";
 import { BEACHCUBE_PODCAST_DETAIL, LONGFORMER_MOCK } from "./longformerMock";
 import type {
   ArtifactKind,
   LongformerJobView,
   LongformerView,
+  TimelineClip,
   TranscriptDetail,
   TranscriptJobStatus,
   TranscriptionJob,
@@ -36,9 +38,22 @@ async function fetchTranscript(id: string): Promise<TranscriptDetail | null> {
   return (await res.json()) as TranscriptDetail;
 }
 
+async function patchTranscript(id: string, patch: Partial<TranscriptDetail>): Promise<TranscriptDetail | null> {
+  const res = await fetch(`/api/transcription/jobs/${encodeURIComponent(id)}/transcript`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(patch),
+  });
+  if (!res.ok) return null;
+  return (await res.json()) as TranscriptDetail;
+}
+
+export type SaveStatus = "idle" | "saving" | "saved" | "error";
+
 export function useLongformerStore() {
   const user = useAuthStore((s) => s.user);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [view, setView] = useState<LongformerView>("library");
   const [selectedTranscriptId, setSelectedTranscriptId] = useState<string | null>(null);
   const [jobView, setJobViewState] = useState<LongformerJobView>("status");
@@ -56,6 +71,7 @@ export function useLongformerStore() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
 
   const userName = user?.displayName ?? user?.username ?? LONGFORMER_MOCK.userName;
   const userEmail = LONGFORMER_MOCK.userEmail;
@@ -104,7 +120,53 @@ export function useLongformerStore() {
     return details[selectedTranscriptId] ?? null;
   }, [details, selectedTranscriptId]);
 
+  const schedulePersist = useCallback(
+    (detail: TranscriptDetail) => {
+      if (!selectedTranscriptId || !isPersistableJobId(selectedTranscriptId)) return;
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      setSaveStatus("saving");
+      saveTimerRef.current = setTimeout(() => {
+        void (async () => {
+          const saved = await patchTranscript(selectedTranscriptId, {
+            segments: detail.segments,
+            speakers: detail.speakers,
+            chapters: detail.chapters,
+            tracks: detail.tracks,
+            artifacts: detail.artifacts,
+          });
+          if (saved) {
+            setDetails((prev) => ({ ...prev, [selectedTranscriptId]: saved }));
+            setSaveStatus("saved");
+          } else {
+            setSaveStatus("error");
+          }
+        })();
+      }, 800);
+    },
+    [selectedTranscriptId],
+  );
+
+  const applyDetailUpdate = useCallback(
+    (updater: (detail: TranscriptDetail) => TranscriptDetail, persist = true) => {
+      if (!selectedTranscriptId) return;
+      setDetails((prev) => {
+        const detail = prev[selectedTranscriptId];
+        if (!detail) return prev;
+        const next = updater(detail);
+        if (persist) schedulePersist(next);
+        return { ...prev, [selectedTranscriptId]: next };
+      });
+    },
+    [schedulePersist, selectedTranscriptId],
+  );
+
   const isJobMode = selectedTranscriptId !== null;
+
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, []);
 
   const setJobView = useCallback(
     (next: LongformerJobView) => {
@@ -200,6 +262,7 @@ export function useLongformerStore() {
     setActiveJob(null);
     setJobViewState("status");
     setIsPlaying(false);
+    setSaveStatus("idle");
   }, []);
 
   const setCurrentMs = useCallback((ms: number) => {
@@ -219,20 +282,89 @@ export function useLongformerStore() {
 
   const togglePlayback = useCallback(() => setIsPlaying((p) => !p), []);
 
-  const updateSegmentText = useCallback((segmentId: string, text: string) => {
-    if (!selectedTranscriptId) return;
-    setDetails((prev) => {
-      const detail = prev[selectedTranscriptId];
-      if (!detail) return prev;
-      return {
-        ...prev,
-        [selectedTranscriptId]: {
-          ...detail,
-          segments: detail.segments.map((seg) => (seg.id === segmentId ? { ...seg, text } : seg)),
-        },
-      };
-    });
-  }, [selectedTranscriptId]);
+  const updateSegmentText = useCallback(
+    (segmentId: string, text: string) => {
+      applyDetailUpdate((detail) => ({
+        ...detail,
+        segments: detail.segments.map((seg) => (seg.id === segmentId ? { ...seg, text } : seg)),
+      }));
+    },
+    [applyDetailUpdate],
+  );
+
+  const assignSegmentSpeaker = useCallback(
+    (segmentIds: string[], speakerId: string) => {
+      applyDetailUpdate((detail) => ({
+        ...detail,
+        segments: detail.segments.map((seg) =>
+          segmentIds.includes(seg.id) ? { ...seg, speakerId } : seg,
+        ),
+      }));
+    },
+    [applyDetailUpdate],
+  );
+
+  const updateSpeakerName = useCallback(
+    (speakerId: string, name: string) => {
+      applyDetailUpdate((detail) => ({
+        ...detail,
+        speakers: detail.speakers.map((s) => (s.id === speakerId ? { ...s, name } : s)),
+      }));
+    },
+    [applyDetailUpdate],
+  );
+
+  const createClipFromRange = useCallback(
+    (startMs: number, endMs: number, label: string) => {
+      applyDetailUpdate((detail) => {
+        const clipId = `clip-${Date.now()}`;
+        const newClip: TimelineClip = {
+          id: clipId,
+          label: label.slice(0, 48) + (label.length > 48 ? "…" : ""),
+          startMs,
+          endMs,
+          trackId: "track-words",
+        };
+        const tracks = detail.tracks.length
+          ? detail.tracks.map((track) =>
+              track.kind === "words" ? { ...track, clips: [...track.clips, newClip] } : track,
+            )
+          : [
+              {
+                id: "track-words",
+                label: "Words",
+                kind: "words" as const,
+                clips: [newClip],
+              },
+            ];
+        return { ...detail, tracks, selectedClipId: clipId };
+      });
+    },
+    [applyDetailUpdate],
+  );
+
+  const updateArtifactContent = useCallback(
+    (kind: ArtifactKind, content: string) => {
+      applyDetailUpdate((detail) => {
+        const existing = detail.artifacts.find((a) => a.kind === kind);
+        const artifacts = existing
+          ? detail.artifacts.map((a) => (a.kind === kind ? { ...a, content } : a))
+          : [
+              ...detail.artifacts,
+              {
+                id: `art-${kind}-${Date.now()}`,
+                kind,
+                title: kind,
+                content,
+                createdAt: new Date().toLocaleString(),
+                status: "ready" as const,
+              },
+            ];
+        return { ...detail, artifacts };
+      });
+    },
+    [applyDetailUpdate],
+  );
 
   const selectClip = useCallback((clipId: string | null) => {
     if (!selectedTranscriptId) return;
@@ -351,11 +483,16 @@ export function useLongformerStore() {
     error,
     fileInputRef,
     handleFileSelected,
+    saveStatus,
     openTranscript,
     closeEditor,
     setCurrentMs,
     togglePlayback,
     updateSegmentText,
+    assignSegmentSpeaker,
+    updateSpeakerName,
+    createClipFromRange,
+    updateArtifactContent,
     selectClip,
     updateClipSettings,
     generateArtifact,

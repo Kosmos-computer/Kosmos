@@ -1,5 +1,7 @@
+import { LongformerAudioPreview } from "../LongformerAudioPreview";
 import { LongformerEditorToolbar } from "../LongformerEditorToolbar";
 import { LongformerInspector } from "../LongformerInspector";
+import { LongformerPlaybackProvider } from "../LongformerPlaybackContext";
 import { LongformerTimeline } from "../LongformerTimeline";
 import { LongformerTranscriptPane } from "../LongformerTranscriptPane";
 import { PreviewPane } from "../../../components/patterns";
@@ -11,20 +13,23 @@ interface LongformerTranscriptPageProps {
   detail: TranscriptDetail;
 }
 
-/** Transcript editor — text surface, timeline, and inspector. */
+/** Transcript editor — playback, text surface, timeline, and inspector. */
 export function LongformerTranscriptPage({ vm, detail }: LongformerTranscriptPageProps) {
   return (
-    <div className="arco-longformer-transcript-page">
-      <LongformerEditorToolbar vm={vm} detail={detail} />
-      <div className="arco-longformer-transcript-page__body">
-        <div className="arco-longformer-transcript-page__center">
-          <LongformerTranscriptPane vm={vm} detail={detail} />
-          <LongformerTimeline vm={vm} detail={detail} />
+    <LongformerPlaybackProvider vm={vm} detail={detail}>
+      <div className="arco-longformer-transcript-page">
+        <LongformerEditorToolbar vm={vm} detail={detail} />
+        <div className="arco-longformer-transcript-page__body">
+          <div className="arco-longformer-transcript-page__center">
+            <LongformerTranscriptPane vm={vm} detail={detail} />
+            <LongformerTimeline vm={vm} detail={detail} />
+          </div>
+          <PreviewPane width={vm.inspectorWidth} onWidthChange={vm.setInspectorWidth}>
+            <LongformerAudioPreview durationMs={detail.durationMs} currentMs={detail.currentMs} />
+            <LongformerInspector vm={vm} detail={detail} />
+          </PreviewPane>
         </div>
-        <PreviewPane width={vm.inspectorWidth} onWidthChange={vm.setInspectorWidth}>
-          <LongformerInspector vm={vm} detail={detail} />
-        </PreviewPane>
       </div>
-    </div>
+    </LongformerPlaybackProvider>
   );
 }

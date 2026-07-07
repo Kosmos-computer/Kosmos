@@ -1,8 +1,10 @@
 /**
  * Transcription pipeline API — mounted at /api/transcription
  */
+import fs from "node:fs";
+import path from "node:path";
 import { Hono } from "hono";
-import type { ArtifactKind, TranscriptSourceType } from "../../shared/transcription/types.js";
+import type { ArtifactKind, TranscriptDetail, TranscriptSourceType } from "../../shared/transcription/types.js";
 import { transcriptionService } from "../services/transcriptionService.js";
 import { advanceJob } from "../transcription/pipeline.js";
 
@@ -58,6 +60,40 @@ transcriptionRoutes.get("/jobs/:id/transcript", (c) => {
   const transcript = transcriptionService.getTranscript(c.req.param("id"));
   if (!transcript) return c.json({ error: "Transcript not found" }, 404);
   return c.json(transcript);
+});
+
+transcriptionRoutes.patch("/jobs/:id/transcript", async (c) => {
+  const body = (await c.req.json().catch(() => null)) as Partial<
+    Pick<TranscriptDetail, "segments" | "speakers" | "chapters" | "tracks" | "title" | "artifacts">
+  > | null;
+  if (!body) return c.json({ error: "Invalid body" }, 400);
+  try {
+    const updated = transcriptionService.updateTranscript(c.req.param("id"), body);
+    return c.json(updated);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Update failed";
+    return c.json({ error: message }, 404);
+  }
+});
+
+transcriptionRoutes.get("/jobs/:id/media", (c) => {
+  const mediaPath = transcriptionService.getJobMediaPath(c.req.param("id"));
+  if (!mediaPath) return c.json({ error: "Media not found" }, 404);
+  const ext = path.extname(mediaPath).toLowerCase();
+  const type =
+    ext === ".wav"
+      ? "audio/wav"
+      : ext === ".mp3"
+        ? "audio/mpeg"
+        : ext === ".m4a"
+          ? "audio/mp4"
+          : ext === ".ogg"
+            ? "audio/ogg"
+            : "application/octet-stream";
+  return c.body(fs.readFileSync(mediaPath), 200, {
+    "Content-Type": type,
+    "Cache-Control": "private, max-age=3600",
+  });
 });
 
 transcriptionRoutes.post("/jobs/:id/artifacts/:kind", async (c) => {

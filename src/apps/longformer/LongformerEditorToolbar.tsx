@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Breadcrumb } from "../../components/patterns";
 import { Button } from "../../components/ui";
+import { useLongformerPlayback } from "./LongformerPlaybackContext";
 import type { LongformerViewModel } from "./longformerStore";
 import type { TranscriptDetail } from "./types";
 import { formatTimecode } from "./types";
@@ -28,7 +29,8 @@ interface LongformerEditorToolbarProps {
 
 /** Editor chrome — breadcrumbs, playback, formatting, and publish actions. */
 export function LongformerEditorToolbar({ vm, detail }: LongformerEditorToolbarProps) {
-  const skip = (delta: number) => vm.setCurrentMs(detail.currentMs + delta);
+  const { seekTo, togglePlayback } = useLongformerPlayback();
+  const skip = (delta: number) => seekTo(detail.currentMs + delta);
 
   return (
     <header className="arco-longformer-toolbar">
@@ -51,7 +53,7 @@ export function LongformerEditorToolbar({ vm, detail }: LongformerEditorToolbarP
         <button
           type="button"
           className="arco-longformer-toolbar__play"
-          onClick={vm.togglePlayback}
+          onClick={togglePlayback}
           aria-label={vm.isPlaying ? "Pause" : "Play"}
         >
           {vm.isPlaying ? <Pause size={16} strokeWidth={1.75} /> : <Play size={16} strokeWidth={1.75} />}

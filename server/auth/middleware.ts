@@ -32,7 +32,13 @@ export const requireAuth: MiddlewareHandler<AuthEnv> = async (c, next) => {
   if (c.req.path === "/api/mail/oauth/google/callback") return next();
   if (!c.req.path.startsWith("/api/")) return next();
 
-  const token = getCookie(c, AUTH_COOKIE);
+  const token =
+    getCookie(c, AUTH_COOKIE) ??
+    (() => {
+      const auth = c.req.header("authorization") ?? "";
+      const match = auth.match(/^Bearer\s+(.+)$/i);
+      return match?.[1]?.trim() || undefined;
+    })();
   const session = token ? authSessionStore.get(token) : null;
   const user = session ? userStore.getAuthUser(session.userId) : null;
   if (!session || !user) {

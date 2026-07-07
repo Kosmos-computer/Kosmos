@@ -589,6 +589,8 @@ export interface InstallCheck {
 /** Server + dev-environment readiness snapshot (GET /api/system/install-status). */
 export interface InstallStatus {
   ready: boolean;
+  /** True when running inside a packaged Electron build. */
+  packaged?: boolean;
   checks: InstallCheck[];
   optional: InstallCheck[];
 }
@@ -613,6 +615,14 @@ export interface Settings {
   baseUrl: string;
   /** Never returned in full by the API — masked except last 4 chars. */
   apiKey: string;
+  /**
+   * Per-provider API keys, keyed by a model manifest's apiKeyRef (e.g.
+   * "openai", "anthropic", or a custom model id). The model registry
+   * (shared/models.ts) references keys by name — they never live in
+   * data/models.json. Masked on read like apiKey; the legacy single apiKey
+   * mirrors the agent.chat slot's key during the model-hub migration.
+   */
+  apiKeys?: Record<string, string>;
   model: string;
   wallpaper: string;
   agent: AgentKind;

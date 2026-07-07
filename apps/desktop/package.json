@@ -12,8 +12,8 @@
     "prestart": "npm run icon",
     "start": "npm run build && electron .",
     "dev": "npm run build && electron . --dev",
-    "pack": "npm run build && electron-builder --dir",
-    "dist": "npm run build && electron-builder",
+    "pack": "npm run build && node scripts/validate-packaging.mjs && electron-builder --dir",
+    "dist": "npm run build && node scripts/validate-packaging.mjs && electron-builder",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "build": {

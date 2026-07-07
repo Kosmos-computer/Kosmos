@@ -15,10 +15,13 @@ import type { LucideIcon } from "lucide-react";
 import {
   Bookmark,
   Brain,
+  Compass,
   Database,
   FileText,
   GitBranch,
+  Globe,
   LayoutDashboard,
+  Map,
   ScrollText,
   Settings,
   Sparkles,
@@ -32,10 +35,59 @@ export type MemoryViewId =
   | "knowledge-graph"
   | "rag"
   | "vector-db"
+  | "world-model"
+  | "worldview-md"
+  | "integral-map-md"
   | "soul-md"
   | "ethics-md"
   | "user-md"
   | "settings";
+
+export type IntegralQuadrant = "I" | "We" | "It" | "Its";
+
+export type WorldModelDomain =
+  | "cosmology"
+  | "consciousness"
+  | "epistemology"
+  | "development"
+  | "ethics"
+  | "practice";
+
+export type WorldModelConfidence = "axiom" | "working" | "tentative";
+
+export interface IdentitySection {
+  id: string;
+  heading: string;
+  content: string;
+  quadrant?: IntegralQuadrant;
+  domain?: WorldModelDomain;
+  confidence?: WorldModelConfidence;
+  links?: string[];
+}
+
+export interface EthicalPrinciple {
+  id: string;
+  statement: string;
+  priority: number;
+  derivedFrom: string[];
+  appliesIn?: IntegralQuadrant[];
+}
+
+export type WorldModelNodeKind = "worldview" | "map" | "principle";
+
+export interface WorldModelNode {
+  id: string;
+  label: string;
+  kind: WorldModelNodeKind;
+}
+
+export interface WorldModelEdge {
+  id: string;
+  fromId: string;
+  toId: string;
+  relation: "derived_from" | "supports" | "contradicts" | "applies_in";
+  weight: number;
+}
 
 export interface MemoryNavItem {
   id: string;
@@ -76,7 +128,7 @@ export interface IdentityDocument {
   filename: string;
   version: string;
   lastEdited: string;
-  sections: { id: string; heading: string; content: string }[];
+  sections: IdentitySection[];
 }
 
 export interface MemoryWorkspaceData {
@@ -95,8 +147,13 @@ export interface MemoryWorkspaceData {
   embedders: MemoryEmbedderInfo[];
   grants: MemoryGrant[];
   soulDocument: IdentityDocument;
+  worldviewDocument: IdentityDocument;
+  integralMapDocument: IdentityDocument;
   ethicsDocument: IdentityDocument;
   userDocument: IdentityDocument;
+  ethicalPrinciples: EthicalPrinciple[];
+  worldModelNodes: WorldModelNode[];
+  worldModelEdges: WorldModelEdge[];
   systemNote: string;
 }
 
@@ -106,6 +163,9 @@ export const MEMORY_VIEW_ICONS: Record<MemoryViewId, LucideIcon> = {
   "knowledge-graph": GitBranch,
   rag: Sparkles,
   "vector-db": Database,
+  "world-model": Compass,
+  "worldview-md": Globe,
+  "integral-map-md": Map,
   "soul-md": Brain,
   "ethics-md": ScrollText,
   "user-md": FileText,

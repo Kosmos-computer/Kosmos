@@ -5,22 +5,25 @@ export type ServerProcessOptions = {
   root: string;
   port: number;
   dataDir: string;
+  /** Electron executable — runs embedded Node via ELECTRON_RUN_AS_NODE. */
+  nodeExecutable: string;
+  packaged?: boolean;
 };
 
-/** Spawn the existing Hono server via the repo's tsx binary. */
+/** Spawn the Hono server using Electron's embedded Node (no system Node required). */
 export function startServerProcess(options: ServerProcessOptions): ChildProcessWithoutNullStreams {
-  const tsxBin =
-    process.platform === "win32"
-      ? path.join(options.root, "node_modules", ".bin", "tsx.cmd")
-      : path.join(options.root, "node_modules", ".bin", "tsx");
+  const tsxCli = path.join(options.root, "node_modules", "tsx", "dist", "cli.mjs");
+  const serverEntry = path.join(options.root, "server", "index.ts");
 
-  return spawn(tsxBin, ["server/index.ts"], {
+  return spawn(options.nodeExecutable, [tsxCli, serverEntry], {
     cwd: options.root,
     env: {
       ...process.env,
+      ELECTRON_RUN_AS_NODE: "1",
       PORT: String(options.port),
       ARCO_DATA_DIR: options.dataDir,
       NODE_ENV: "production",
+      ...(options.packaged ? { ARCO_PACKAGED: "1" } : {}),
     },
     stdio: "pipe",
   });

@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "dev",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeExecutable": "env",
+      "runtimeArgs": ["PORT=4600", "npm", "run", "dev"],
       "port": 4610
     },
     {
@@ -12,6 +12,15 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["vite", "--port", "4611"],
       "port": 4611
+    },
+    {
+      "name": "saas-demo-dev",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-lc",
+        "cd /Users/paulbloch/Arco-Prototype-2/.claude/worktrees/saas-demo && ARCO_DATA_DIR=/private/tmp/claude-501/-Users-paulbloch-Arco-Prototype-2/3e699457-8a98-4cf6-b50e-bf2dddfeefb5/scratchpad/arco-data PORT=4600 npm run dev"
+      ],
+      "port": 4610
     }
   ]
 }

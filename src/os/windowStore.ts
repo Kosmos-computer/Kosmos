@@ -41,7 +41,8 @@ export type SystemAppId =
   | "onboarding"
   | "memory"
   | "longformer"
-  | "kamiji";
+  | "kamiji"
+  | "models";
 
 export type WindowKind =
   | { type: "system"; app: SystemAppId }

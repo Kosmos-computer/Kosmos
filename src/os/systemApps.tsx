@@ -39,6 +39,7 @@ import {
   Search,
   FileText,
   Egg,
+  Boxes,
 } from "lucide-react";
 import type { SystemAppId } from "./windowStore";
 import { ChatApp } from "../apps/chat/ChatApp";
@@ -62,6 +63,7 @@ import { SheetsApp } from "../apps/sheets/SheetsApp";
 import { GeneratorApp } from "../apps/generator/GeneratorApp";
 import { ImageGenApp } from "../apps/imagegen/ImageGenApp";
 import { TerminalApp } from "../apps/terminal/TerminalApp";
+import { ModelsApp } from "../apps/models/ModelsApp";
 import { SettingsApp } from "../apps/settings/SettingsApp";
 import { StartupApp } from "../apps/startup/StartupApp";
 import { OnboardingApp } from "../apps/onboarding/OnboardingApp";
@@ -116,6 +118,7 @@ export const SYSTEM_APPS: SystemAppDef[] = [
   { id: "generator", title: "Generator", icon: Code2, component: GeneratorApp },
   { id: "imagegen", title: "Image Gen", icon: ImageIcon, component: ImageGenApp },
   { id: "terminal", title: "Terminal", icon: SquareTerminal, component: TerminalApp },
+  { id: "models", title: "Models", icon: Boxes, component: ModelsApp },
   { id: "settings", title: "Settings", icon: SettingsIcon, component: SettingsApp },
   { id: "startup", title: "Setup", icon: Rocket, component: StartupApp },
   { id: "onboarding", title: "Onboarding", icon: GraduationCap, component: OnboardingApp },

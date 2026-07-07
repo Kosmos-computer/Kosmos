@@ -61,11 +61,21 @@ function InstallChecks({ status }: { status: InstallStatus | null }) {
   const failing = status.checks.filter((check) => check.required && !check.ok);
   if (failing.length === 0) return null;
 
+  const packaged = status.packaged === true;
+
   return (
     <div className="arco-install__checks" role="status">
-      <div className="arco-install__checks-title">Finish setup on this machine</div>
+      <div className="arco-install__checks-title">
+        {packaged ? "Installation incomplete" : "Finish setup on this machine"}
+      </div>
       <p className="arco-install__checks-lead">
-        From the repo root, run <code>npm run setup</code>, then refresh.
+        {packaged ? (
+          "This build is missing required components. Download a fresh release or rebuild with npm run dist:desktop."
+        ) : (
+          <>
+            From the repo root, run <code>npm run setup</code>, then refresh.
+          </>
+        )}
       </p>
       <ul className="arco-install__checks-list">
         {failing.map((check) => (

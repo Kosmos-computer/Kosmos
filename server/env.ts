@@ -100,6 +100,13 @@ export function maskSettings(s: Settings): Settings {
     ...s,
     apiKey: s.apiKey ? `••••${s.apiKey.slice(-4)}` : "",
     cursorApiKey: s.cursorApiKey ? `••••${s.cursorApiKey.slice(-4)}` : "",
+    ...(s.apiKeys
+      ? {
+          apiKeys: Object.fromEntries(
+            Object.entries(s.apiKeys).map(([ref, key]) => [ref, key ? `••••${key.slice(-4)}` : ""]),
+          ),
+        }
+      : {}),
   };
 }
 

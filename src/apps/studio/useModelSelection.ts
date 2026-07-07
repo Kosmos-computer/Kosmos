@@ -1,17 +1,17 @@
 /**
- * useModelSelection — feeds the composer's brain picker from Settings.
- * Built-in LLM presets, Cursor (when an API key is saved), and ACP agents
- * share one menu; selecting an entry persists the same fields Settings manages.
+ * useModelSelection — feeds the composer's brain picker from the model
+ * registry (the agent.chat use-case slot), plus Cursor (when an API key is
+ * saved) and ACP agents. Selecting a registry model assigns the slot; the
+ * server mirrors it into legacy settings for older consumers.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ACP_PRESETS,
   CURSOR_DEFAULT_MODEL,
-  PROVIDER_PRESETS,
   type CursorModelInfo,
-  type LlmProvider,
   type Settings,
 } from "@shared/types";
+import type { UseCaseSlotState } from "@shared/models";
 import { api } from "../../lib/api";
 import { useAuthStore } from "../../os/auth/authStore";
 import { useOsStore } from "../../os/osStore";
@@ -21,25 +21,8 @@ import { openSettingsApp, useSettingsStore } from "../settings/settingsStore";
 /** Shown while settings load and as the offline fallback label. */
 const DEFAULT_MODEL_LABEL = "Local engine";
 
-/** Human labels for built-in presets, in menu order. */
-const PRESET_LABELS: { provider: keyof typeof PROVIDER_PRESETS; label: string }[] = [
-  { provider: "local", label: DEFAULT_MODEL_LABEL },
-  { provider: "ollama", label: "Ollama · Qwen3 32B" },
-  { provider: "openai", label: "OpenAI · GPT-5.5" },
-  { provider: "anthropic", label: "Anthropic · Claude Sonnet 4.5" },
-  { provider: "openrouter", label: "OpenRouter · Claude Sonnet 4.5" },
-];
-
 function hasCursorKey(settings: Settings | null): boolean {
   return Boolean(settings?.cursorApiKey?.trim());
-}
-
-function builtinLabel(settings: Settings): string {
-  if (settings.provider === "local") return DEFAULT_MODEL_LABEL;
-  const preset = PRESET_LABELS.find((p) => p.provider === settings.provider);
-  return preset && PROVIDER_PRESETS[preset.provider].model === settings.model
-    ? preset.label
-    : settings.model;
 }
 
 function cursorLabel(settings: Settings, cursorModels: CursorModelInfo[]): string {
@@ -53,27 +36,35 @@ function acpLabel(settings: Settings): string {
   return preset?.label ?? "Custom ACP";
 }
 
-function displayLabel(settings: Settings | null, cursorModels: CursorModelInfo[]): string {
+function displayLabel(
+  settings: Settings | null,
+  cursorModels: CursorModelInfo[],
+  agentSlot: UseCaseSlotState | null,
+): string {
   if (!settings) return DEFAULT_MODEL_LABEL;
   if (settings.agent === "cursor") return cursorLabel(settings, cursorModels);
   if (settings.agent === "acp") return acpLabel(settings);
-  return builtinLabel(settings);
+  // Built-in agent → whatever the agent.chat slot resolves to.
+  return agentSlot?.effective?.name ?? settings.model ?? DEFAULT_MODEL_LABEL;
 }
 
 export function useModelSelection(): { modelLabel: string; modelItems: MenuItem[] } {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [cursorModels, setCursorModels] = useState<CursorModelInfo[]>([]);
+  const [agentSlot, setAgentSlot] = useState<UseCaseSlotState | null>(null);
   const authPhase = useAuthStore((s) => s.phase);
   const settingsRevision = useSettingsStore((s) => s.settingsRevision);
+  const bumpSettingsRevision = useSettingsStore((s) => s.bumpSettingsRevision);
   const notify = useOsStore((s) => s.notify);
 
   useEffect(() => {
     if (authPhase !== "ready") return;
     let cancelled = false;
-    api
-      .getSettings()
-      .then((loaded) => {
-        if (!cancelled) setSettings(loaded);
+    void Promise.all([api.getSettings(), api.getModels()])
+      .then(([loaded, registry]) => {
+        if (cancelled) return;
+        setSettings(loaded);
+        setAgentSlot(registry.slots.find((s) => s.id === "agent.chat") ?? null);
       })
       .catch(() => {
         // Keep the default chip label; switching still surfaces a permission error.
@@ -111,16 +102,23 @@ export function useModelSelection(): { modelLabel: string; modelItems: MenuItem[
     [notify],
   );
 
-  const selectBuiltin = useCallback(
-    (provider: LlmProvider) => {
-      const preset = PROVIDER_PRESETS[provider as keyof typeof PROVIDER_PRESETS];
-      if (!preset) return;
-      void save(
-        { agent: "builtin", provider, baseUrl: preset.baseUrl, model: preset.model },
-        "Could not switch model — check Settings permissions",
-      );
+  /** Assign the agent.chat slot; flip back to the built-in agent if needed. */
+  const selectRegistryModel = useCallback(
+    async (modelId: string) => {
+      try {
+        const { slots } = await api.assignModelSlot("agent.chat", modelId);
+        setAgentSlot(slots.find((s) => s.id === "agent.chat") ?? null);
+        if (settings?.agent !== "builtin") {
+          await save({ agent: "builtin" }, "Could not switch agent");
+        }
+        // The slot mirror rewrites settings server-side — let other
+        // settings consumers (Settings app, chat header) reload.
+        bumpSettingsRevision();
+      } catch {
+        notify("Could not switch model — check Settings permissions");
+      }
     },
-    [save],
+    [bumpSettingsRevision, notify, save, settings?.agent],
   );
 
   const selectCursor = useCallback(
@@ -152,13 +150,22 @@ export function useModelSelection(): { modelLabel: string; modelItems: MenuItem[
   );
 
   const modelItems = useMemo<MenuItem[]>(() => {
-    const items: MenuItem[] = PRESET_LABELS.map(({ provider, label }) => ({
-      id: `builtin-${provider}`,
-      label,
-      checked:
-        (settings?.agent ?? "builtin") === "builtin" && settings?.provider === provider,
-      onSelect: () => selectBuiltin(provider),
+    const builtin = settings?.agent ?? "builtin";
+    const effectiveId = agentSlot?.effective?.modelId ?? null;
+    const items: MenuItem[] = (agentSlot?.eligible ?? []).map((m) => ({
+      id: `model-${m.id}`,
+      label: m.name,
+      checked: builtin === "builtin" && effectiveId === m.id,
+      onSelect: () => void selectRegistryModel(m.id),
     }));
+
+    if (items.length === 0) {
+      items.push({
+        id: "models-empty",
+        label: "No models enabled — open the Models app",
+        onSelect: () => notify("Enable a chat model in the Models app"),
+      });
+    }
 
     if (hasCursorKey(settings)) {
       const cursorEntries =
@@ -205,7 +212,7 @@ export function useModelSelection(): { modelLabel: string; modelItems: MenuItem[
     });
 
     return items;
-  }, [cursorModels, notify, selectAcp, selectBuiltin, selectCursor, settings]);
+  }, [agentSlot, cursorModels, notify, selectAcp, selectCursor, selectRegistryModel, settings]);
 
-  return { modelLabel: displayLabel(settings, cursorModels), modelItems };
-};
+  return { modelLabel: displayLabel(settings, cursorModels, agentSlot), modelItems };
+}

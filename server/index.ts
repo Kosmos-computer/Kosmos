@@ -49,6 +49,10 @@ import { dataDirs, ensureDataDirs, loadSettings, maskSettings, saveSettings } fr
 import { gitCommit, gitFileDiff, gitInfo, gitPull, gitPush } from "./git.js";
 import { listRuns, runLog, startRun, stopRun } from "./runManager.js";
 import { appStore } from "./stores/appStore.js";
+import { modelStore } from "./stores/modelStore.js";
+import { modelRoutes } from "./routes/models.js";
+import { llamaEngine } from "./services/llamaEngine.js";
+import { LOCAL_ENGINE_BASE_URL } from "../shared/models.js";
 import { automationStore } from "./stores/automationStore.js";
 import { getActiveRoot, projectStore, resolveProjectPath } from "./stores/projectStore.js";
 import { sessionStore } from "./stores/sessionStore.js";
@@ -80,7 +84,9 @@ import { bus } from "./bus.js";
 import { shellClientConnected } from "./shellChannel.js";
 import { filesService } from "./services/filesService.js";
 import { calendarService } from "./services/calendarService.js";
+import { tasksService } from "./services/tasksService.js";
 import type { CalendarEventInput } from "../shared/capabilities/calendar.js";
+import type { TaskInput, TaskStatus } from "../shared/capabilities/tasks.js";
 import { searchPlaces, geocodePlace, getDrivingRoute } from "./services/mapsService.js";
 import { webSearch } from "./services/searchService.js";
 import { browseErrorHtml, fetchBrowsePage } from "./services/browseProxyService.js";
@@ -146,6 +152,23 @@ const execFileAsync = promisify(execFile);
 
 ensureDataDirs();
 installedAppStore.ensureSeeds();
+modelStore.ensureSeeded();
+// A chat slot already pointing at the local engine means the user expects
+// locally-hosted models to answer — bring the router up in the background.
+if (
+  modelStore
+    .slots()
+    .some((s) => s.requires === "text.chat" && modelStore.resolveModel(s.id).baseUrl === LOCAL_ENGINE_BASE_URL)
+) {
+  void llamaEngine.ensureRunning();
+}
+// Don't orphan the supervised llama-server process on shutdown.
+for (const signal of ["SIGINT", "SIGTERM"] as const) {
+  process.on(signal, () => {
+    llamaEngine.dispose();
+    process.exit(0);
+  });
+}
 filesService.ensureSeeds();
 warmPodcastRssFeeds();
 warmMusicRssFeeds();
@@ -184,6 +207,9 @@ app.use("/api/*", requireAuth);
 app.route("/v1", openaiCompatRoutes);
 
 app.route("/api/transcription", transcriptionRoutes);
+
+// ── Model registry (docs/model-hub-plan.md) ──────────────────────────────────
+app.route("/api/models", modelRoutes);
 
 // ── Chat ─────────────────────────────────────────────────────────────────────
 
@@ -1358,6 +1384,68 @@ app.delete("/api/calendar/events/:id", (c) => {
   }
 });
 
+// ── Tasks (os.tasks@1 — the OS task store) ───────────────────────────────────
+
+app.get("/api/tasks", (c) => {
+  const status = c.req.query("status");
+  const archived = c.req.query("archived");
+  const dueBefore = c.req.query("dueBefore");
+  const dueAfter = c.req.query("dueAfter");
+  try {
+    return c.json(
+      tasksService.list({
+        ...(status ? { status: status as TaskStatus } : {}),
+        ...(archived === "true" ? { archived: true } : archived === "false" ? { archived: false } : {}),
+        ...(dueBefore ? { dueBefore } : {}),
+        ...(dueAfter ? { dueAfter } : {}),
+      }),
+    );
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 400);
+  }
+});
+
+app.get("/api/tasks/:id", (c) => {
+  const task = tasksService.get(c.req.param("id"));
+  if (!task) return c.json({ error: "Task not found" }, 404);
+  return c.json(task);
+});
+
+app.post("/api/tasks", async (c) => {
+  try {
+    const body = (await c.req.json()) as TaskInput;
+    return c.json(tasksService.create(body), 201);
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 400);
+  }
+});
+
+app.patch("/api/tasks/:id", async (c) => {
+  try {
+    const body = (await c.req.json()) as Partial<TaskInput>;
+    return c.json(tasksService.update(c.req.param("id"), body));
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 400);
+  }
+});
+
+app.post("/api/tasks/:id/complete", async (c) => {
+  try {
+    const body = (await c.req.json().catch(() => ({}))) as { completed?: boolean };
+    return c.json(tasksService.complete(c.req.param("id"), body.completed !== false));
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 400);
+  }
+});
+
+app.delete("/api/tasks/:id", (c) => {
+  try {
+    return c.json({ deleted: tasksService.delete(c.req.param("id")) });
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 400);
+  }
+});
+
 // ── Projects (open folders) ──────────────────────────────────────────────────
 
 app.get("/api/projects", (c) => c.json(projectStore.list()));
@@ -2132,6 +2220,15 @@ app.put("/api/settings", requireCap("settings:write"), async (c) => {
   // A masked key echoed back from the client must not clobber the real one.
   if (patch.apiKey && patch.apiKey.startsWith("••••")) delete patch.apiKey;
   if (patch.cursorApiKey && patch.cursorApiKey.startsWith("••••")) delete patch.cursorApiKey;
+  if (patch.apiKeys) {
+    const saved = loadSettings().apiKeys ?? {};
+    patch.apiKeys = Object.fromEntries(
+      Object.entries({ ...saved, ...patch.apiKeys }).map(([ref, key]) => [
+        ref,
+        key.startsWith("••••") ? (saved[ref] ?? "") : key,
+      ]),
+    );
+  }
   // Agent config changes tear down live ACP subprocesses so the next turn
   // respawns with the new command; running turns fail fast rather than
   // continuing on stale settings.
@@ -2146,7 +2243,13 @@ app.put("/api/settings", requireCap("settings:write"), async (c) => {
     stopAllAcpRuns();
     stopAllCursorRuns();
   }
-  return c.json(maskSettings(saveSettings(patch)));
+  const merged = saveSettings(patch);
+  // Legacy write path: keep the model registry's agent.chat slot in step
+  // with the settings block (docs/model-hub-plan.md migration mirror).
+  if (patch.provider !== undefined || patch.baseUrl !== undefined || patch.model !== undefined) {
+    modelStore.syncFromSettings(merged);
+  }
+  return c.json(maskSettings(merged));
 });
 
 // ── Cursor connection ────────────────────────────────────────────────────────

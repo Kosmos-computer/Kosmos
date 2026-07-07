@@ -18,14 +18,28 @@ export interface InstallCheck {
 
 export interface InstallStatus {
   ready: boolean;
+  packaged?: boolean;
   checks: InstallCheck[];
   optional: InstallCheck[];
 }
 
+export interface CollectInstallStatusOptions {
+  /** Packaged Electron build — skip dev-only checks and use user-scoped data dir. */
+  packaged?: boolean;
+  /** Repo root for bundled asset checks (defaults to REPO_ROOT). */
+  repoRoot?: string;
+  /** Runtime data directory (defaults to REPO_ROOT/data or ARCO_DATA_DIR). */
+  dataDir?: string;
+}
+
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
-function exists(relativePath: string): boolean {
-  return fs.existsSync(path.join(ROOT, relativePath));
+function resolveRoot(options?: CollectInstallStatusOptions): string {
+  return options?.repoRoot ? path.resolve(options.repoRoot) : ROOT;
+}
+
+function existsAt(root: string, relativePath: string): boolean {
+  return fs.existsSync(path.join(root, relativePath));
 }
 
 function readText(relativePath: string): string {
@@ -50,8 +64,8 @@ export function checkNodeVersion(): InstallCheck {
 }
 
 /** Workspace dependencies from npm install. */
-export function checkNodeModules(): InstallCheck {
-  const ok = exists("node_modules/hono");
+export function checkNodeModules(root: string = ROOT): InstallCheck {
+  const ok = existsAt(root, "node_modules/hono");
   return {
     id: "node_modules",
     label: "npm dependencies",
@@ -62,8 +76,8 @@ export function checkNodeModules(): InstallCheck {
 }
 
 /** Local env file — copied from .env.example on first setup. */
-export function checkEnvFile(): InstallCheck {
-  const ok = exists(".env");
+export function checkEnvFile(root: string = ROOT): InstallCheck {
+  const ok = existsAt(root, ".env");
   return {
     id: "env",
     label: "Environment file (.env)",
@@ -74,8 +88,9 @@ export function checkEnvFile(): InstallCheck {
 }
 
 /** Generated LLM prompts consumed by the agent loop. */
-export function checkGeneratedPrompts(): InstallCheck {
-  const ok = exists("server/generated/app-prompt.md") && exists("server/generated/chat-prompt.md");
+export function checkGeneratedPrompts(root: string = ROOT): InstallCheck {
+  const ok =
+    existsAt(root, "server/generated/app-prompt.md") && existsAt(root, "server/generated/chat-prompt.md");
   return {
     id: "prompts",
     label: "Generated agent prompts",
@@ -85,9 +100,21 @@ export function checkGeneratedPrompts(): InstallCheck {
   };
 }
 
+/** Main Vite UI build served in production. */
+export function checkUiBuild(root: string = ROOT): InstallCheck {
+  const ok = existsAt(root, "dist/index.html");
+  return {
+    id: "ui_build",
+    label: "Desktop UI build",
+    ok,
+    required: true,
+    hint: ok ? undefined : "Run npm run build from the repo root.",
+  };
+}
+
 /** Bundled docs app served at /apps/docs/dist/. */
-export function checkDocsAppBuild(): InstallCheck {
-  const ok = exists("apps/docs/dist/index.html");
+export function checkDocsAppBuild(root: string = ROOT): InstallCheck {
+  const ok = existsAt(root, "apps/docs/dist/index.html");
   return {
     id: "docs_app",
     label: "Bundled docs app build",
@@ -98,14 +125,15 @@ export function checkDocsAppBuild(): InstallCheck {
 }
 
 /** Runtime data directory — created on server boot, but setup seeds it early. */
-export function checkDataDir(): InstallCheck {
-  const ok = exists("data");
+export function checkDataDir(root: string = ROOT, dataDir?: string): InstallCheck {
+  const target = dataDir ? path.resolve(dataDir) : path.join(root, "data");
+  const ok = fs.existsSync(target);
   return {
     id: "data_dir",
-    label: "Data directory (data/)",
+    label: dataDir ? "User data directory" : "Data directory (data/)",
     ok,
     required: true,
-    hint: ok ? undefined : "Run npm run setup or start the server once.",
+    hint: ok ? undefined : "Created automatically on first server start.",
   };
 }
 
@@ -153,8 +181,8 @@ function pythonVersionOk(): boolean {
 }
 
 /** Voice server Python venv — optional, ~1–2 GB of models on first run. */
-export function checkVoiceVenv(): InstallCheck {
-  const ok = exists("voice-server/.venv/bin/python");
+export function checkVoiceVenv(root: string = ROOT): InstallCheck {
+  const ok = existsAt(root, "voice-server/.venv/bin/python");
   return {
     id: "voice_venv",
     label: "Voice server (Python venv)",
@@ -221,7 +249,7 @@ export function markInstallComplete(): void {
 }
 
 export function isInstallMarkedComplete(): boolean {
-  return exists("data/.install-complete");
+  return existsAt(ROOT, "data/.install-complete");
 }
 
 /** Copy .env.example when missing so LLM defaults are discoverable. */
@@ -239,27 +267,37 @@ export function ensureDataDir(): void {
   fs.mkdirSync(path.join(ROOT, "data"), { recursive: true });
 }
 
-export async function collectInstallStatus(): Promise<InstallStatus> {
-  const checks: InstallCheck[] = [
-    checkNodeVersion(),
-    checkNodeModules(),
-    checkEnvFile(),
-    checkGeneratedPrompts(),
-    checkDocsAppBuild(),
-    checkDataDir(),
-    await checkSqlite(),
-  ];
+export async function collectInstallStatus(options: CollectInstallStatusOptions = {}): Promise<InstallStatus> {
+  const packaged = options.packaged === true;
+  const root = resolveRoot(options);
+  const dataDir =
+    options.dataDir ??
+    (process.env.ARCO_DATA_DIR ? path.resolve(process.env.ARCO_DATA_DIR) : undefined);
 
-  const optional: InstallCheck[] = [
-    checkPython(),
-    checkVoiceVenv(),
-    checkLlamaServer(),
-    checkOllama(),
-    checkRust(),
-  ];
+  const checks: InstallCheck[] = packaged
+    ? [
+        checkGeneratedPrompts(root),
+        checkUiBuild(root),
+        checkDocsAppBuild(root),
+        checkDataDir(root, dataDir),
+        await checkSqlite(),
+      ]
+    : [
+        checkNodeVersion(),
+        checkNodeModules(root),
+        checkEnvFile(root),
+        checkGeneratedPrompts(root),
+        checkDocsAppBuild(root),
+        checkDataDir(root, dataDir),
+        await checkSqlite(),
+      ];
+
+  const optional: InstallCheck[] = packaged
+    ? []
+    : [checkPython(), checkVoiceVenv(root), checkLlamaServer(), checkOllama(), checkRust()];
 
   const ready = checks.filter((c) => c.required).every((c) => c.ok);
-  return { ready, checks, optional };
+  return { ready, packaged, checks, optional };
 }
 
 export { ROOT as REPO_ROOT };

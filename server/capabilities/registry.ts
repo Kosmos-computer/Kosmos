@@ -17,9 +17,12 @@ import { DOC_MIME, FILES_CONTRACT_ID, SHEET_MIME, type FileCreateInput } from ".
 import { EMPTY_SHEET_JSON, SHEETS_CONTRACT_ID } from "../../shared/capabilities/sheets.js";
 import { exportDocToMarkdown } from "../../shared/docFormat.js";
 import { VOICE_CONTRACT_ID } from "../../shared/capabilities/voice.js";
+import { TASKS_CONTRACT_ID } from "../../shared/capabilities/tasks.js";
+import type { TaskInput, TaskStatus } from "../../shared/capabilities/tasks.js";
 import { intentMeta } from "../../shared/capabilities/index.js";
 import { calculatorService } from "../services/calculatorService.js";
 import { calendarService } from "../services/calendarService.js";
+import { tasksService } from "../services/tasksService.js";
 import { filesService } from "../services/filesService.js";
 import { dataDirs } from "../env.js";
 
@@ -33,6 +36,7 @@ const DEFAULT_PROVIDERS: Record<string, string> = {
   [DOCS_CONTRACT_ID]: "system",
   [SHEETS_CONTRACT_ID]: "system",
   [VOICE_CONTRACT_ID]: "system",
+  [TASKS_CONTRACT_ID]: "system",
 };
 
 /** Where the Pipecat voice service listens (voice-server/bot.py). */
@@ -81,6 +85,29 @@ const systemHandlers: Record<string, IntentHandler> = {
     return calendarService.update(String(id ?? ""), patch as Partial<CalendarEventInput>);
   },
   "calendar.event.delete": (p) => ({ deleted: calendarService.delete(String(p.id ?? "")) }),
+
+  "tasks.list": (p) =>
+    tasksService.list({
+      ...(typeof p.status === "string" ? { status: p.status as TaskStatus } : {}),
+      ...(typeof p.archived === "boolean" ? { archived: p.archived } : {}),
+      ...(typeof p.dueBefore === "string" ? { dueBefore: p.dueBefore } : {}),
+      ...(typeof p.dueAfter === "string" ? { dueAfter: p.dueAfter } : {}),
+    }),
+  "tasks.get": (p) => {
+    const task = tasksService.get(String(p.id ?? ""));
+    if (!task) throw new Error(`Task not found: ${String(p.id)}`);
+    return task;
+  },
+  "tasks.create": (p) => tasksService.create(p as unknown as TaskInput),
+  "tasks.update": (p) => {
+    const { id, ...patch } = p;
+    return tasksService.update(String(id ?? ""), patch as Partial<TaskInput>);
+  },
+  "tasks.complete": (p) =>
+    tasksService.complete(String(p.id ?? ""), p.completed !== false),
+  "tasks.archive": (p) =>
+    tasksService.archive(String(p.id ?? ""), p.archived !== false),
+  "tasks.delete": (p) => ({ deleted: tasksService.delete(String(p.id ?? "")) }),
 
   // os.files@1 — the OS-owned virtual file store (server/services/filesService.ts)
   "files.list": (p) =>

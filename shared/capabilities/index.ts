@@ -11,6 +11,7 @@ import { FILES_CONTRACT_ID, FILES_INTENTS, FILES_INTENT_SCHEMAS } from "./files.
 import { SHEETS_CONTRACT_ID, SHEETS_INTENTS, SHEETS_INTENT_SCHEMAS } from "./sheets.js";
 import { VOICE_CONTRACT_ID, VOICE_INTENTS, VOICE_INTENT_SCHEMAS } from "./voice.js";
 import { MEMORY_CONTRACT_ID, MEMORY_INTENTS, MEMORY_INTENT_SCHEMAS } from "./memory.js";
+import { TASKS_CONTRACT_ID, TASKS_INTENTS, TASKS_INTENT_SCHEMAS } from "./tasks.js";
 
 export type IntentAccess = "read" | "write";
 
@@ -23,6 +24,7 @@ export const CONTRACTS: Record<string, Record<string, IntentAccess>> = {
   [SHEETS_CONTRACT_ID]: SHEETS_INTENTS,
   [VOICE_CONTRACT_ID]: VOICE_INTENTS,
   [MEMORY_CONTRACT_ID]: MEMORY_INTENTS,
+  [TASKS_CONTRACT_ID]: TASKS_INTENTS,
 };
 
 /** intentId → JSON Schema for its params (for tool-shaped exposure). */
@@ -34,6 +36,7 @@ export const INTENT_SCHEMAS: Record<string, Record<string, unknown>> = {
   ...SHEETS_INTENT_SCHEMAS,
   ...VOICE_INTENT_SCHEMAS,
   ...MEMORY_INTENT_SCHEMAS,
+  ...TASKS_INTENT_SCHEMAS,
 };
 
 export function intentSchema(intentId: string): Record<string, unknown> {

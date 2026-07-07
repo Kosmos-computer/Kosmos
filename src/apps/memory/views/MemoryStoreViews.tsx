@@ -133,7 +133,24 @@ export function MemoryIdentityView({ document }: { document: IdentityDocument })
       </header>
       {document.sections.map((section) => (
         <section key={section.id} className="arco-memory-section">
-          <h2 className="arco-memory-section__title">{section.heading}</h2>
+          <div className="arco-memory-section__head">
+            <h2 className="arco-memory-section__title">{section.heading}</h2>
+            {(section.quadrant || section.domain || section.confidence) && (
+              <div className="arco-memory-section__badges">
+                {section.quadrant ? (
+                  <span className="arco-memory-section__badge">{section.quadrant}</span>
+                ) : null}
+                {section.domain ? (
+                  <span className="arco-memory-section__badge">{section.domain}</span>
+                ) : null}
+                {section.confidence ? (
+                  <span className="arco-memory-section__badge arco-memory-section__badge--confidence">
+                    {section.confidence}
+                  </span>
+                ) : null}
+              </div>
+            )}
+          </div>
           <p className="arco-memory-section__body">{section.content}</p>
         </section>
       ))}

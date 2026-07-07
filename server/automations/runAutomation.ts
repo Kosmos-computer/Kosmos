@@ -30,6 +30,7 @@ export async function runAutomationNow(id: string): Promise<AutomationRun> {
       sessionId: session.id,
       userMessage: automation.prompt,
       emit: () => {},
+      slot: "automations.chat",
     });
     run.status = "ok";
     run.summary = finalText.slice(0, 500);

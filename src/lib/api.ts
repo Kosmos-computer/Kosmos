@@ -50,7 +50,9 @@ import type {
   WebAppLaunchStatus,
   WorkspaceEntry,
 } from "@shared/types";
+import type { EngineStatus, RegisteredModel, UseCaseSlotState } from "@shared/models";
 import type { CalendarEvent, CalendarEventInput } from "@shared/capabilities/calendar";
+import type { Task, TaskInput, TaskStatus } from "@shared/capabilities/tasks";
 import type { FileCreateInput, FileEntry } from "@shared/capabilities/files";
 import type { InstalledAppInfo, GrantState } from "@shared/manifest";
 import type {
@@ -61,6 +63,12 @@ import type {
   MailThread,
   MailThreadDetail,
 } from "@shared/mail";
+
+/** GET /api/models — the registry and the slot table in one payload. */
+export interface ModelsResponse {
+  models: RegisteredModel[];
+  slots: UseCaseSlotState[];
+}
 
 /** One contract's provider assignment + who could provide it. */
 export interface CapabilityProviderInfo {
@@ -366,6 +374,39 @@ export const api = {
       json<{ deleted: boolean }>(r),
     ),
 
+  listTasks: (params: { status?: TaskStatus; archived?: boolean; dueBefore?: string; dueAfter?: string } = {}) => {
+    const qs = new URLSearchParams();
+    if (params.status) qs.set("status", params.status);
+    if (params.archived !== undefined) qs.set("archived", String(params.archived));
+    if (params.dueBefore) qs.set("dueBefore", params.dueBefore);
+    if (params.dueAfter) qs.set("dueAfter", params.dueAfter);
+    const query = qs.toString();
+    return fetch(`/api/tasks${query ? `?${query}` : ""}`).then((r) => json<Task[]>(r));
+  },
+  getTask: (id: string) => fetch(`/api/tasks/${encodeURIComponent(id)}`).then((r) => json<Task>(r)),
+  createTask: (input: TaskInput) =>
+    fetch("/api/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    }).then((r) => json<Task>(r)),
+  updateTask: (id: string, patch: Partial<TaskInput>) =>
+    fetch(`/api/tasks/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    }).then((r) => json<Task>(r)),
+  completeTask: (id: string, completed = true) =>
+    fetch(`/api/tasks/${encodeURIComponent(id)}/complete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ completed }),
+    }).then((r) => json<Task>(r)),
+  deleteTask: (id: string) =>
+    fetch(`/api/tasks/${encodeURIComponent(id)}`, { method: "DELETE" }).then((r) =>
+      json<{ deleted: boolean }>(r),
+    ),
+
   // Terminal
   exec: (command: string) =>
     fetch("/api/exec", {
@@ -642,6 +683,36 @@ export const api = {
   revokeExternalClient: (id: string) =>
     fetch(`/api/external-access/clients/${encodeURIComponent(id)}`, { method: "DELETE" }).then(
       (r) => json<ExternalAccessInfo>(r),
+    ),
+
+  // Model registry (docs/model-hub-plan.md) — models, use-case slots, local engine
+  getModels: () => fetch("/api/models").then((r) => json<ModelsResponse>(r)),
+  registerModel: (body: { manifest?: unknown; url?: string; apiKey?: string }) =>
+    post<RegisteredModel>("/api/models", body),
+  setModelEnabled: (id: string, enabled: boolean) =>
+    fetch(`/api/models/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled }),
+    }).then((r) => json<RegisteredModel>(r)),
+  deleteModel: (id: string) =>
+    fetch(`/api/models/${encodeURIComponent(id)}`, { method: "DELETE" }).then((r) =>
+      json<{ ok: true }>(r),
+    ),
+  assignModelSlot: (slotId: string, modelId: string | null) =>
+    fetch(`/api/models/slots/${encodeURIComponent(slotId)}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ modelId }),
+    }).then((r) => json<{ slots: UseCaseSlotState[] }>(r)),
+  getEngineStatus: () => fetch("/api/models/engine").then((r) => json<EngineStatus>(r)),
+  startEngine: () => post<EngineStatus>("/api/models/engine/start"),
+  stopEngine: () => post<EngineStatus>("/api/models/engine/stop"),
+  downloadModel: (id: string) =>
+    post<{ started: true }>(`/api/models/${encodeURIComponent(id)}/download`),
+  removeModelDownload: (id: string) =>
+    fetch(`/api/models/${encodeURIComponent(id)}/download`, { method: "DELETE" }).then((r) =>
+      json<{ ok: true }>(r),
     ),
 
   // Capability providers (default apps per contract)

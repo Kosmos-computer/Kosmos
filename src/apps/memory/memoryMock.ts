@@ -4,12 +4,23 @@
  */
 import type { MemoryWorkspaceData } from "./types";
 import {
+  ETHICAL_PRINCIPLES,
+  ETHICS_DOCUMENT_V2,
+  INTEGRAL_MAP_DOCUMENT,
+  WORLDVIEW_DOCUMENT,
+  WORLD_MODEL_EDGES,
+  WORLD_MODEL_NODES,
+} from "./worldModelData";
+import {
   Bookmark,
   Brain,
+  Compass,
   Database,
   FileText,
   GitBranch,
+  Globe,
   LayoutDashboard,
+  Map,
   ScrollText,
   Settings,
   Sparkles,
@@ -25,6 +36,9 @@ export const MEMORY_WORKSPACE_MOCK: MemoryWorkspaceData = {
     { id: "knowledge-graph", label: "Knowledge Graph", icon: GitBranch, view: "knowledge-graph", section: "stores" },
     { id: "rag", label: "RAG Pipeline", icon: Sparkles, view: "rag", section: "stores" },
     { id: "vector-db", label: "Vector Database", icon: Database, view: "vector-db", section: "stores" },
+    { id: "world-model", label: "World Model", icon: Compass, view: "world-model", section: "identity" },
+    { id: "worldview-md", label: "Worldview.md", icon: Globe, view: "worldview-md", section: "identity" },
+    { id: "integral-map-md", label: "Integral Map.md", icon: Map, view: "integral-map-md", section: "identity" },
     { id: "soul-md", label: "Soul.md", icon: Brain, view: "soul-md", section: "identity" },
     { id: "ethics-md", label: "Ethics.md", icon: ScrollText, view: "ethics-md", section: "identity" },
     { id: "user-md", label: "User.md", icon: FileText, view: "user-md", section: "identity" },
@@ -270,20 +284,9 @@ export const MEMORY_WORKSPACE_MOCK: MemoryWorkspaceData = {
       },
     ],
   },
-  ethicsDocument: {
-    id: "identity:ethics",
-    title: "Ethics",
-    filename: "ETHICS.md",
-    version: "1.0",
-    lastEdited: "2026-06-15",
-    sections: [
-      {
-        id: "e1",
-        heading: "User agency",
-        content: "Memory writes that affect behavior require visible audit and revocable grants.",
-      },
-    ],
-  },
+  worldviewDocument: WORLDVIEW_DOCUMENT,
+  integralMapDocument: INTEGRAL_MAP_DOCUMENT,
+  ethicsDocument: ETHICS_DOCUMENT_V2,
   userDocument: {
     id: "identity:user",
     title: "User",
@@ -298,5 +301,8 @@ export const MEMORY_WORKSPACE_MOCK: MemoryWorkspaceData = {
       },
     ],
   },
-  systemNote: "Phase 0 stub — wire to /api/memory in Phase 1.",
+  ethicalPrinciples: ETHICAL_PRINCIPLES,
+  worldModelNodes: WORLD_MODEL_NODES,
+  worldModelEdges: WORLD_MODEL_EDGES,
+  systemNote: "Phase 0.5 prototype — world model explorer + identity seeds. Wire to /api/memory in Phase 1.",
 };

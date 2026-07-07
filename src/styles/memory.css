@@ -208,8 +208,43 @@
   margin-bottom: var(--arco-space-xl);
 }
 
-.arco-memory-section__title {
+.arco-memory-section__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--arco-space-s);
+  margin-bottom: var(--arco-space-m);
+}
+
+.arco-memory-section__hint {
   margin: 0 0 var(--arco-space-m);
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-tertiary);
+}
+
+.arco-memory-section__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--arco-space-xs);
+}
+
+.arco-memory-section__badge {
+  font-size: var(--arco-text-xs);
+  padding: 0 var(--arco-space-s);
+  border-radius: var(--arco-radius-s);
+  border: 1px solid var(--arco-border);
+  color: var(--arco-text-secondary);
+  background: var(--arco-bg-sunk);
+}
+
+.arco-memory-section__badge--confidence {
+  color: var(--arco-accent);
+  border-color: color-mix(in srgb, var(--arco-accent) 30%, var(--arco-border));
+}
+
+.arco-memory-section__title {
+  margin: 0;
   font-size: var(--arco-text-sm);
   font-weight: 600;
   color: var(--arco-text-primary);
@@ -281,4 +316,140 @@
 .arco-memory-grants-table th {
   color: var(--arco-text-tertiary);
   font-weight: 500;
+}
+
+/* World Model explorer — prototype v0 */
+
+.arco-memory-view--world-model {
+  max-width: 1080px;
+}
+
+.arco-world-model__quadrants {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(140px, 1fr));
+  gap: var(--arco-space-m);
+  max-width: 480px;
+}
+
+.arco-world-model__quadrant {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--arco-space-xs);
+  padding: var(--arco-space-l);
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-m);
+  background: var(--arco-bg-raised);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.arco-world-model__quadrant:hover {
+  border-color: var(--arco-accent);
+}
+
+.arco-world-model__quadrant--active {
+  border-color: var(--arco-accent);
+  background: color-mix(in srgb, var(--arco-accent) 8%, var(--arco-bg-raised));
+}
+
+.arco-world-model__quadrant-label {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--arco-accent);
+}
+
+.arco-world-model__quadrant-full {
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-secondary);
+}
+
+.arco-world-model__protocol {
+  margin: 0;
+  padding: var(--arco-space-l);
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-m);
+  background: var(--arco-bg-sunk);
+  font-family: inherit;
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-secondary);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.arco-world-model__principles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-m);
+}
+
+.arco-world-model__principle {
+  padding: var(--arco-space-l);
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-m);
+  background: var(--arco-bg-raised);
+}
+
+.arco-world-model__principle-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--arco-space-m);
+  margin-bottom: var(--arco-space-s);
+}
+
+.arco-world-model__principle-priority {
+  flex-shrink: 0;
+  font-size: var(--arco-text-xs);
+  font-weight: 600;
+  padding: 0 var(--arco-space-s);
+  border-radius: var(--arco-radius-s);
+  background: var(--arco-accent);
+  color: var(--arco-bg-surface-solid);
+}
+
+.arco-world-model__principle-statement {
+  font-size: var(--arco-text-sm);
+  font-weight: 500;
+  color: var(--arco-text-primary);
+  line-height: 1.45;
+}
+
+.arco-world-model__lineage {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--arco-space-s);
+  margin-top: var(--arco-space-s);
+}
+
+.arco-world-model__lineage-label {
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+}
+
+.arco-world-model__lineage-chip {
+  font-size: var(--arco-text-xs);
+  padding: 0 var(--arco-space-s);
+  border-radius: var(--arco-radius-s);
+  border: 1px solid var(--arco-border);
+  color: var(--arco-text-secondary);
+}
+
+.arco-world-model__applies {
+  display: flex;
+  gap: var(--arco-space-xs);
+  margin-top: var(--arco-space-s);
+}
+
+.arco-world-model__quadrant-chip {
+  font-size: var(--arco-text-xs);
+  font-weight: 600;
+  padding: 0 var(--arco-space-s);
+  border-radius: var(--arco-radius-s);
+  color: var(--arco-accent);
+  background: color-mix(in srgb, var(--arco-accent) 12%, transparent);
 }

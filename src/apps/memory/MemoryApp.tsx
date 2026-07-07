@@ -14,6 +14,7 @@ import {
   MemoryRagView,
   MemoryVectorView,
 } from "./views/MemoryStoreViews";
+import { MemoryWorldModelView } from "./views/MemoryWorldModelView";
 
 export function MemoryApp() {
   const memory = useMemoryStub();
@@ -34,6 +35,21 @@ export function MemoryApp() {
         );
       case "vector-db":
         return <MemoryVectorView collections={memory.data.collections} />;
+      case "world-model":
+        return (
+          <MemoryWorldModelView
+            worldview={memory.data.worldviewDocument}
+            integralMap={memory.data.integralMapDocument}
+            ethics={memory.data.ethicsDocument}
+            principles={memory.data.ethicalPrinciples}
+            nodes={memory.data.worldModelNodes}
+            edges={memory.data.worldModelEdges}
+          />
+        );
+      case "worldview-md":
+        return <MemoryIdentityView document={memory.data.worldviewDocument} />;
+      case "integral-map-md":
+        return <MemoryIdentityView document={memory.data.integralMapDocument} />;
       case "soul-md":
         return <MemoryIdentityView document={memory.data.soulDocument} />;
       case "ethics-md":

@@ -8,6 +8,7 @@
  */
 import type { AgentEvent, ChatMessage, Session } from "../../shared/types.js";
 import { loadSettings } from "../env.js";
+import { modelStore } from "../stores/modelStore.js";
 import { sessionStore } from "../stores/sessionStore.js";
 import { streamTurn, type LlmMessage } from "./llm.js";
 import { buildSystemPrompt } from "./systemPrompt.js";
@@ -61,6 +62,12 @@ export interface RunTurnOptions {
    * ACP agents, which manage their own tools.
    */
   readOnly?: boolean;
+  /**
+   * Model-registry use-case slot this turn resolves its LLM through
+   * (shared/models.ts USE_CASE_SLOTS). Defaults to "agent.chat"; automations
+   * pass "automations.chat", the voice brain "voice.brain".
+   */
+  slot?: string;
 }
 
 const ASK_MODE_SYSTEM =
@@ -74,7 +81,17 @@ const ASK_MODE_SYSTEM =
  * Returns the final assistant text (used by automation run summaries).
  */
 export async function runAgentTurn(opts: RunTurnOptions): Promise<string> {
-  const settings = loadSettings();
+  // The LLM connection resolves through the model registry's slot table;
+  // the rest of settings (agent kind, disabled tools, …) stays as-is.
+  const baseSettings = loadSettings();
+  const llm = modelStore.resolveModel(opts.slot ?? "agent.chat", baseSettings);
+  const settings = {
+    ...baseSettings,
+    provider: llm.provider,
+    baseUrl: llm.baseUrl,
+    model: llm.model,
+    apiKey: llm.apiKey,
+  };
   const session = await sessionStore.get(opts.sessionId);
   if (!session) throw new Error(`Session not found: ${opts.sessionId}`);
 

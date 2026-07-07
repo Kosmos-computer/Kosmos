@@ -1,6 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { app, BrowserWindow, nativeImage, shell } from "electron";
+import { app, BrowserWindow, dialog, nativeImage, shell } from "electron";
 import { registerAppWindowIpc } from "./appWindows.js";
 import { appIconPath, desktopDataDir, repoRoot } from "./paths.js";
 import { attachServerLogging, startServerProcess, waitForUrl } from "./serverProcess.js";
@@ -21,6 +21,16 @@ function shellUrl(): string {
   return DEV_SHELL ? DEV_URL : `http://127.0.0.1:${SERVER_PORT}`;
 }
 
+async function showStartupError(title: string, detail: string): Promise<void> {
+  await dialog.showMessageBox({
+    type: "error",
+    title: "Arco OS",
+    message: title,
+    detail,
+    buttons: ["Quit"],
+  });
+}
+
 async function ensureServer(): Promise<void> {
   if (DEV_SHELL) {
     await waitForUrl(DEV_URL);
@@ -29,17 +39,29 @@ async function ensureServer(): Promise<void> {
 
   const root = repoRoot();
   const dataDir = desktopDataDir();
-  serverProcess = startServerProcess({ root, port: SERVER_PORT, dataDir });
+  serverProcess = startServerProcess({
+    root,
+    port: SERVER_PORT,
+    dataDir,
+    nodeExecutable: process.execPath,
+    packaged: app.isPackaged,
+  });
   attachServerLogging(serverProcess);
 
   serverProcess.on("exit", (code, signal) => {
     if (!quitting) {
+      const detail = `The backend exited unexpectedly (code=${code ?? "null"}, signal=${signal ?? "null"}).`;
       console.error(`[arco-desktop] server exited (code=${code}, signal=${signal})`);
-      app.quit();
+      void showStartupError("The Arco backend stopped unexpectedly.", detail).then(() => app.quit());
     }
   });
 
-  await waitForUrl(`http://127.0.0.1:${SERVER_PORT}/api/settings`);
+  try {
+    await waitForUrl(`http://127.0.0.1:${SERVER_PORT}/api/settings`);
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    throw new Error(`The Arco backend did not start in time.\n\n${detail}`);
+  }
 }
 
 function applyAppIcon(): void {
@@ -111,6 +133,8 @@ if (!gotLock) {
       createWindow();
     } catch (err) {
       console.error("[arco-desktop] failed to start:", err);
+      const detail = err instanceof Error ? err.message : String(err);
+      await showStartupError("Arco OS failed to start.", detail);
       app.quit();
     }
   });

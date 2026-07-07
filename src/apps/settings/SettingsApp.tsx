@@ -40,11 +40,15 @@ import {
   SettingsChipRow,
   SettingsFieldRow,
   SettingsPage,
+  SettingsRow,
+  SettingsRowActions,
+  SettingsRowMeta,
   SettingsSaveBar,
   SettingsSection,
   SettingsStack,
   SidebarPane,
 } from "../../components/patterns";
+import { useWindowStore } from "../../os/windowStore";
 import { Button, Chip, EmptyState, Input } from "../../components/ui";
 import { SettingsNav } from "./SettingsNav";
 import { NavBrandMark } from "../../os/NavBrandMark";
@@ -279,8 +283,23 @@ export function SettingsApp() {
 
           {activeSection === "model" && (
             <SettingsPage>
-              <SettingsSection intro="Provider settings apply to the built-in agent and automations.">
+              <SettingsSection intro="Provider settings apply to the built-in agent and automations. This section mirrors the Agent & Chat slot in the Models app, where every model the OS uses — voice and local models included — is managed.">
                 <SettingsStack>
+                  <SettingsRow>
+                    <SettingsRowMeta>
+                      Assign models per use-case, download local models, and add providers in the
+                      Models app.
+                    </SettingsRowMeta>
+                    <SettingsRowActions>
+                      <Button
+                        onClick={() =>
+                          useWindowStore.getState().open({ type: "system", app: "models" }, "Models")
+                        }
+                      >
+                        Open Models
+                      </Button>
+                    </SettingsRowActions>
+                  </SettingsRow>
                   <SettingsFieldRow label="Provider">
                     <SettingsChipRow>
                       {PROVIDERS.map((p) => (

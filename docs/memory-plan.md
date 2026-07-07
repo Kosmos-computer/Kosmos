@@ -334,6 +334,11 @@ Namespace: `data/memory/` (metadata JSON + `memory.db`).
 as entries with `format: markdown` — editable in Memory app document view
 (Longformer `DocumentView` port).
 
+**World model (Phase 0.5 prototype):** `identity:worldview`,
+`identity:integral-map`, and expanded `identity:ethics` — see
+`docs/world-model-plan.md`. Seed content in `memory/identity/`; agent
+distillation in `skills/integral-ethics/SKILL.md`; explorer UI in Memory app.
+
 ---
 
 ## 7. Agent tools (system)

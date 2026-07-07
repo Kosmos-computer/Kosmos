@@ -4,10 +4,10 @@ import { AddTaskModal } from "./AddTaskModal";
 import { MiniCalendar } from "./MiniCalendar";
 import { TaskDrawer, TaskHistoryPanel } from "./TaskDrawer";
 import { TasksList } from "./TaskList";
-import { useTasksStub } from "./useTasksStub";
+import { useTasks } from "./useTasks";
 
 export function TasksApp() {
-  const tasks = useTasksStub();
+  const tasks = useTasks();
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
 

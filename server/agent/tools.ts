@@ -730,6 +730,144 @@ export const agentTools: AgentTool[] = [
       ),
   },
 
+  // ── System tasks (os.tasks@1) ──────────────────────────────────────────────
+  {
+    name: "tasks_list",
+    description:
+      "List tasks from the system task store. Returns open tasks by default (not archived). Use status to filter, or archived=true for archived tasks.",
+    parameters: {
+      type: "object",
+      properties: {
+        status: { type: "string", enum: ["pending", "in_progress", "completed", "cancelled"] },
+        archived: { type: "boolean" },
+        dueBefore: { type: "string", description: "ISO date YYYY-MM-DD" },
+        dueAfter: { type: "string", description: "ISO date YYYY-MM-DD" },
+      },
+    },
+    execute: async (args, ctx) =>
+      agentInvokeIntent(
+        "tasks.list",
+        {
+          ...(typeof args.status === "string" ? { status: args.status } : {}),
+          ...(typeof args.archived === "boolean" ? { archived: args.archived } : {}),
+          ...(typeof args.dueBefore === "string" ? { dueBefore: args.dueBefore } : {}),
+          ...(typeof args.dueAfter === "string" ? { dueAfter: args.dueAfter } : {}),
+        },
+        "List tasks",
+        ctx,
+      ),
+  },
+  {
+    name: "tasks_create",
+    description:
+      "Create a task. Pauses for user approval before writing. Assign to the agent with assignee { kind: \"agent\", name: \"Agent\" }.",
+    parameters: {
+      type: "object",
+      properties: {
+        title: { type: "string" },
+        description: { type: "string" },
+        status: { type: "string", enum: ["pending", "in_progress", "completed", "cancelled"] },
+        priority: { type: "string", enum: ["low", "medium", "high"] },
+        dueDateISO: { type: "string", description: "Due date YYYY-MM-DD" },
+        assignee: {
+          type: "object",
+          properties: {
+            kind: { type: "string", enum: ["self", "agent", "contact", "custom"] },
+            name: { type: "string" },
+            contactId: { type: "string" },
+          },
+        },
+      },
+      required: ["title"],
+    },
+    execute: async (args, ctx) =>
+      agentInvokeIntent(
+        "tasks.create",
+        args,
+        `Create task "${String(args.title ?? "")}"`,
+        ctx,
+      ),
+  },
+  {
+    name: "tasks_update",
+    description: "Update a task by id (get ids from tasks_list). Pauses for user approval.",
+    parameters: {
+      type: "object",
+      properties: {
+        id: { type: "string" },
+        title: { type: "string" },
+        description: { type: "string" },
+        status: { type: "string", enum: ["pending", "in_progress", "completed", "cancelled"] },
+        priority: { type: "string", enum: ["low", "medium", "high"] },
+        dueDateISO: { type: "string" },
+        assignee: { type: "object" },
+        archived: { type: "boolean" },
+      },
+      required: ["id"],
+    },
+    execute: async (args, ctx) =>
+      agentInvokeIntent(
+        "tasks.update",
+        args,
+        `Update task ${String(args.id ?? "")}${typeof args.title === "string" ? ` → "${args.title}"` : ""}`,
+        ctx,
+      ),
+  },
+  {
+    name: "tasks_complete",
+    description: "Mark a task complete or reopen it. Pauses for user approval.",
+    parameters: {
+      type: "object",
+      properties: {
+        id: { type: "string" },
+        completed: { type: "boolean", description: "true to complete, false to reopen" },
+      },
+      required: ["id"],
+    },
+    execute: async (args, ctx) =>
+      agentInvokeIntent(
+        "tasks.complete",
+        args,
+        `${args.completed === false ? "Reopen" : "Complete"} task ${String(args.id ?? "")}`,
+        ctx,
+      ),
+  },
+  {
+    name: "tasks_archive",
+    description: "Archive or restore a task. Pauses for user approval.",
+    parameters: {
+      type: "object",
+      properties: {
+        id: { type: "string" },
+        archived: { type: "boolean" },
+      },
+      required: ["id"],
+    },
+    execute: async (args, ctx) =>
+      agentInvokeIntent(
+        "tasks.archive",
+        args,
+        `${args.archived === false ? "Restore" : "Archive"} task ${String(args.id ?? "")}`,
+        ctx,
+      ),
+  },
+  {
+    name: "tasks_delete",
+    description: "Permanently delete a task by id. Pauses for user approval.",
+    parameters: {
+      type: "object",
+      properties: { id: { type: "string" } },
+      required: ["id"],
+    },
+    execute: async (args, ctx) =>
+      agentInvokeIntent(
+        "tasks.delete",
+        args,
+        `Delete task ${String(args.id ?? "")}`,
+        ctx,
+      ),
+  },
+
   // ── User documents (os.files@1 — contract-level, provider-agnostic) ────────
   //
   // The OS document store behind Drive/Docs — NOT the coding workspace

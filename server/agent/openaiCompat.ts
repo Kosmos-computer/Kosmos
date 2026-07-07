@@ -20,7 +20,9 @@ import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { getConnInfo } from "@hono/node-server/conninfo";
 import type { AgentEvent } from "../../shared/types.js";
+import { USE_CASE_SLOTS } from "../../shared/models.js";
 import { broadcastShellEvent, hasShellClients } from "../shellChannel.js";
+import { modelStore } from "../stores/modelStore.js";
 import { sessionStore } from "../stores/sessionStore.js";
 import { runAgentTurn } from "./loop.js";
 
@@ -97,6 +99,72 @@ function chunkPayload(id: string, model: string, delta: Record<string, unknown>,
   };
 }
 
+// ── Raw model passthrough ────────────────────────────────────────────────────
+
+interface PassthroughEndpoint {
+  baseUrl: string;
+  model: string;
+  apiKey: string;
+}
+
+/**
+ * Map a caller-supplied model name to a hub endpoint: a registered model id
+ * first, then a text.chat slot id ("agent.chat" → whatever is assigned).
+ * Null means "not ours to proxy" — the caller gets the agent instead.
+ */
+function resolvePassthrough(name: string | undefined): PassthroughEndpoint | null {
+  if (!name || name === "arco-agent") return null;
+  const direct = modelStore.resolveEndpoint(name);
+  if (direct) return guardSelfProxy(direct);
+  const slot = USE_CASE_SLOTS.find((s) => s.id === name && s.requires === "text.chat");
+  if (slot) {
+    const resolved = modelStore.resolveModel(slot.id);
+    if (resolved.provider === "mock") return null;
+    return guardSelfProxy(resolved);
+  }
+  return null;
+}
+
+/**
+ * A registered endpoint may legitimately point back at this server (the
+ * voice brain's default is exactly that). Proxying to ourselves would
+ * recurse — those callers get the agent path instead.
+ */
+function guardSelfProxy(endpoint: PassthroughEndpoint): PassthroughEndpoint | null {
+  return endpoint.model === "arco-agent" ? null : endpoint;
+}
+
+/** Forward the request body verbatim (tools, temperature, stream, …) and pipe the response straight back. */
+async function proxyCompletion(
+  c: { req: { raw: Request } },
+  body: CompatRequest,
+  endpoint: PassthroughEndpoint,
+): Promise<Response> {
+  try {
+    const upstream = await fetch(`${endpoint.baseUrl.replace(/\/+$/, "")}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        ...(endpoint.apiKey ? { authorization: `Bearer ${endpoint.apiKey}` } : {}),
+      },
+      body: JSON.stringify({ ...body, model: endpoint.model }),
+      signal: c.req.raw.signal,
+    });
+    return new Response(upstream.body, {
+      status: upstream.status,
+      headers: {
+        "content-type": upstream.headers.get("content-type") ?? "application/json",
+      },
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "upstream request failed";
+    return Response.json(
+      { error: { message: `Model endpoint unreachable: ${message}` } },
+      { status: 502 },
+    );
+  }
+}
+
 export const openaiCompatRoutes = new Hono();
 
 openaiCompatRoutes.post("/chat/completions", async (c) => {
@@ -106,6 +174,15 @@ openaiCompatRoutes.post("/chat/completions", async (c) => {
   }
 
   const body = (await c.req.json()) as CompatRequest;
+
+  // Raw passthrough: naming a registered model id (or a text.chat slot id
+  // like "agent.chat") proxies straight to that model's endpoint — no agent
+  // loop, no tools. This is how other apps on the machine consume
+  // hub-managed models (docs/model-hub-plan.md). "arco-agent", unknown
+  // names, and the mock provider keep the full-agent behavior.
+  const passthrough = resolvePassthrough(body.model);
+  if (passthrough) return proxyCompletion(c, body, passthrough);
+
   const messages = body.messages ?? [];
   const lastUser = [...messages].reverse().find((m) => m.role === "user");
   // No user message yet happens on voice connect: the pipeline queues a
@@ -122,8 +199,11 @@ openaiCompatRoutes.post("/chat/completions", async (c) => {
   const sessionId = await resolveSession(conversationKey);
   const completionId = `chatcmpl-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
   // Speakability guidance only for voice conversations; other local OpenAI
-  // clients (scripts, tools) get the agent's normal register.
-  const extraSystem = conversationKey.startsWith("voice") ? VOICE_SYSTEM : undefined;
+  // clients (scripts, tools) get the agent's normal register. Voice turns
+  // also resolve their LLM through the voice.brain slot.
+  const isVoice = conversationKey.startsWith("voice");
+  const extraSystem = isVoice ? VOICE_SYSTEM : undefined;
+  const slot = isVoice ? "voice.brain" : "agent.chat";
 
   if (body.stream === false) {
     const text = await runAgentTurn({
@@ -135,6 +215,7 @@ openaiCompatRoutes.post("/chat/completions", async (c) => {
       // it renders approval cards and executes cursor commands. With no
       // desktop the turn runs headless (cursor refuses, confirms deny).
       interactive: hasShellClients(),
+      slot,
       ...(extraSystem ? { extraSystem } : {}),
     });
     return c.json({
@@ -167,6 +248,7 @@ openaiCompatRoutes.post("/chat/completions", async (c) => {
         },
         signal: c.req.raw.signal,
         interactive: hasShellClients(),
+        slot,
         ...(extraSystem ? { extraSystem } : {}),
       });
       write(chunkPayload(completionId, model, {}, "stop"));
@@ -179,10 +261,28 @@ openaiCompatRoutes.post("/chat/completions", async (c) => {
   });
 });
 
-/** Model listing — some OpenAI clients probe this before chatting. */
-openaiCompatRoutes.get("/models", (c) =>
-  c.json({
+/**
+ * Model listing — some OpenAI clients probe this before chatting. Exposes
+ * the agent, the text.chat slot aliases, and every enabled chat-capable
+ * model in the registry (those proxy raw, without the agent loop).
+ */
+openaiCompatRoutes.get("/models", (c) => {
+  const address = getConnInfo(c).remote.address ?? "";
+  if (!isLoopback(address)) {
+    return c.json({ error: { message: "The Arco /v1 endpoint only accepts local connections" } }, 403);
+  }
+  const slots = USE_CASE_SLOTS.filter((s) => s.requires === "text.chat").map((s) => ({
+    id: s.id,
+    object: "model",
+    created: 0,
+    owned_by: "arco-slot",
+  }));
+  const models = modelStore
+    .list()
+    .filter((m) => m.enabled && m.manifest.capabilities.includes("text.chat"))
+    .map((m) => ({ id: m.manifest.id, object: "model", created: 0, owned_by: "arco-hub" }));
+  return c.json({
     object: "list",
-    data: [{ id: "arco-agent", object: "model", created: 0, owned_by: "arco" }],
-  }),
-);
+    data: [{ id: "arco-agent", object: "model", created: 0, owned_by: "arco" }, ...slots, ...models],
+  });
+});

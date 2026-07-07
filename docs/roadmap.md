@@ -217,6 +217,22 @@ alongside Phase 1–2; enrichment (T3) needs agent tool registry.
 
 *Details: `transcription-plan.md` §10.*
 
+### Parallel track — Memory + World Model  *(memory-plan.md, world-model-plan.md)*
+
+Phase 0 Memory app stubs are shipped (operator UI, mock identity docs).
+**Phase 0.5 prototype** (2026-07-07) adds the world model layer:
+
+- `docs/world-model-plan.md` — three-layer architecture (worldview, integral
+  map, ethics) + roadmap
+- Memory app **World Model** explorer (AQAL quadrants, principles, lineage)
+- Identity seeds in `memory/identity/` (WORLDVIEW, INTEGRAL-MAP, ETHICS)
+- Agent seed skill `skills/integral-ethics/SKILL.md` (demand-paged ethics)
+
+Next: Phase 1 identity persistence (`server/memory/identityStore`), then
+recall integration (Phase 2) and graph editor (Phase 3) per `memory-plan.md`.
+
+*Details: `world-model-plan.md` §5 roadmap; `memory-plan.md` Phases 1–3.*
+
 ### Parallel track — SaaS  *(saas-plan.md)*
 
 Non-code business track; independent of everything above except two small

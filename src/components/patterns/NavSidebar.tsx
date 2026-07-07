@@ -16,6 +16,7 @@ export interface NavSidebarListItem {
   leading?: ReactNode;
   trailing?: ReactNode;
   active?: boolean;
+  disabled?: boolean;
   onClick?: () => void;
 }
 
@@ -108,6 +109,7 @@ export function NavSidebar({
                       label={item.label}
                       trailing={item.trailing}
                       active={item.active}
+                      disabled={item.disabled}
                       onClick={item.onClick}
                     />
                   ))}

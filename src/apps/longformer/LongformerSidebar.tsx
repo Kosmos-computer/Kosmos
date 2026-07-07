@@ -1,7 +1,6 @@
 import {
   BookOpen,
   Clock,
-  FolderOpen,
   Layers,
   Loader2,
   Mic,
@@ -36,12 +35,8 @@ export function LongformerSidebar({ vm }: LongformerSidebarProps) {
 
   const handleViewChange = (next: LongformerView) => {
     setView(next);
-    if (next !== "editor") {
-      vm.closeEditor();
-    }
+    vm.closeEditor();
   };
-
-  const editorFiles = vm.activeDetail?.mediaFiles ?? [];
 
   return (
     <NavSidebar
@@ -86,24 +81,6 @@ export function LongformerSidebar({ vm }: LongformerSidebarProps) {
             };
           }),
         },
-        ...(view === "editor" && editorFiles.length > 0
-          ? [
-              {
-                id: "project-files",
-                title: "Project Files",
-                items: editorFiles.map((file) => ({
-                  id: file.id,
-                  label: (
-                    <span className="arco-longformer-sidebar__file">
-                      <span className="arco-longformer-sidebar__file-name">{file.name}</span>
-                      <span className="arco-longformer-sidebar__file-ext">.{file.extension}</span>
-                    </span>
-                  ),
-                  leading: <FolderOpen size={14} strokeWidth={1.75} />,
-                })),
-              },
-            ]
-          : []),
         {
           id: "secondary",
           items: secondaryItems.map((item) => {

@@ -26,8 +26,23 @@ export type LongformerView =
   | "in-progress"
   | "sources"
   | "uploads"
-  | "settings"
-  | "editor";
+  | "settings";
+
+/** In-job asset page — mirrors Podium job sidenav (state-based, not URL routes). */
+export type LongformerJobView =
+  | "status"
+  | "transcript"
+  | "chapters"
+  | "clips"
+  | "titles"
+  | "summaries"
+  | "quotes"
+  | "notes"
+  | "reels"
+  | "details";
+
+export type { TranscriptionJob } from "@shared/transcription/types";
+export type { TranscriptionStep, StepState } from "@shared/transcription/steps";
 
 export interface LongformerNavItem {
   id: string;

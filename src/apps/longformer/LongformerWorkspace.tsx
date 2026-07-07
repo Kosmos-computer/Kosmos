@@ -1,4 +1,5 @@
-import { LongformerEditor } from "./LongformerEditor";
+import { LongformerJobShell } from "./LongformerJobShell";
+import { LongformerJobSidebar } from "./LongformerJobSidebar";
 import { LongformerLibraryView } from "./LongformerLibraryView";
 import { LongformerPlaceholderView } from "./LongformerPlaceholderView";
 import { LongformerSidebar } from "./LongformerSidebar";
@@ -12,16 +13,18 @@ interface LongformerWorkspaceProps {
 /** Longformer — transcription library and editor workbench. */
 export function LongformerWorkspace({ vm }: LongformerWorkspaceProps) {
   const renderMain = () => {
+    if (vm.isJobMode) {
+      return vm.activeDetail ? (
+        <LongformerJobShell vm={vm} detail={vm.activeDetail} />
+      ) : (
+        <LongformerPlaceholderView
+          title="Loading transcript"
+          description="Fetching job details…"
+        />
+      );
+    }
+
     switch (vm.view) {
-      case "editor":
-        return vm.activeDetail ? (
-          <LongformerEditor vm={vm} detail={vm.activeDetail} />
-        ) : (
-          <LongformerPlaceholderView
-            title="No transcript selected"
-            description="Choose a transcript from the library or upload media to begin editing."
-          />
-        );
       case "library":
         return <LongformerLibraryView vm={vm} />;
       case "in-progress":
@@ -72,7 +75,7 @@ export function LongformerWorkspace({ vm }: LongformerWorkspaceProps) {
   return (
     <div className="arco-longformer">
       <SidebarPane width={vm.sidebarWidth} onWidthChange={vm.setSidebarWidth}>
-        <LongformerSidebar vm={vm} />
+        {vm.isJobMode ? <LongformerJobSidebar vm={vm} /> : <LongformerSidebar vm={vm} />}
       </SidebarPane>
       <div className="arco-longformer__main">{renderMain()}</div>
     </div>

@@ -1,11 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuthStore } from "../../os/auth/authStore";
+import {
+  defaultJobView,
+  loadPersistedJobView,
+  persistJobView,
+} from "./jobNav";
 import { BEACHCUBE_PODCAST_DETAIL, LONGFORMER_MOCK } from "./longformerMock";
 import type {
   ArtifactKind,
+  LongformerJobView,
   LongformerView,
   TranscriptDetail,
   TranscriptJobStatus,
+  TranscriptionJob,
   TranscriptSourceType,
   TranscriptSummary,
 } from "./types";
@@ -17,10 +24,10 @@ async function fetchJobs(): Promise<TranscriptSummary[]> {
   return (await res.json()) as TranscriptSummary[];
 }
 
-async function fetchJob(id: string) {
+async function fetchJob(id: string): Promise<TranscriptionJob | null> {
   const res = await fetch(`/api/transcription/jobs/${encodeURIComponent(id)}`);
   if (!res.ok) return null;
-  return (await res.json()) as { status: TranscriptJobStatus; error?: string };
+  return (await res.json()) as TranscriptionJob;
 }
 
 async function fetchTranscript(id: string): Promise<TranscriptDetail | null> {
@@ -34,6 +41,8 @@ export function useLongformerStore() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [view, setView] = useState<LongformerView>("library");
   const [selectedTranscriptId, setSelectedTranscriptId] = useState<string | null>(null);
+  const [jobView, setJobViewState] = useState<LongformerJobView>("status");
+  const [activeJob, setActiveJob] = useState<TranscriptionJob | null>(null);
   const [sidebarWidth, setSidebarWidth] = useState(260);
   const [inspectorWidth, setInspectorWidth] = useState(280);
   const [timelineHeight, setTimelineHeight] = useState(200);
@@ -79,6 +88,7 @@ export function useLongformerStore() {
       if (selectedTranscriptId) {
         void (async () => {
           const job = await fetchJob(selectedTranscriptId);
+          if (job) setActiveJob(job);
           if (job?.status === "ready" || job?.status === "failed") {
             const detail = await fetchTranscript(selectedTranscriptId);
             if (detail) setDetails((prev) => ({ ...prev, [selectedTranscriptId]: detail }));
@@ -94,11 +104,23 @@ export function useLongformerStore() {
     return details[selectedTranscriptId] ?? null;
   }, [details, selectedTranscriptId]);
 
+  const isJobMode = selectedTranscriptId !== null;
+
+  const setJobView = useCallback(
+    (next: LongformerJobView) => {
+      setJobViewState(next);
+      if (selectedTranscriptId) persistJobView(selectedTranscriptId, next);
+    },
+    [selectedTranscriptId],
+  );
+
   const openTranscript = useCallback(async (id: string) => {
     setSelectedTranscriptId(id);
-    setView("editor");
     setIsPlaying(false);
-    const detail = await fetchTranscript(id);
+
+    const [job, detail] = await Promise.all([fetchJob(id), fetchTranscript(id)]);
+    if (job) setActiveJob(job);
+
     if (detail) {
       setDetails((prev) => ({ ...prev, [id]: detail }));
     } else {
@@ -138,11 +160,45 @@ export function useLongformerStore() {
         }));
       }
     }
+
+    const placeholderDetail =
+      detail ??
+      (() => {
+        const summary = transcripts.find((t) => t.id === id);
+        if (!summary) return null;
+        return {
+          id,
+          title: summary.title,
+          projectName: summary.projectName ?? "Transcription",
+          status: summary.status,
+          durationMs: summary.durationMs,
+          currentMs: 0,
+          language: summary.language ?? "English",
+          speakers: [],
+          segments: [],
+          chapters: [],
+          tracks: [],
+          mediaFiles: [],
+          artifacts: [],
+          selectedClipId: null,
+          volumeDb: 0,
+          speed: 1,
+          compressorEnabled: false,
+          compressorPreset: "Classic Voiceover",
+        } satisfies TranscriptDetail;
+      })();
+
+    const persisted = loadPersistedJobView(id);
+    const initialView = persisted ?? defaultJobView(job, placeholderDetail);
+    setJobViewState(initialView);
+    persistJobView(id, initialView);
   }, [transcripts]);
 
   const closeEditor = useCallback(() => {
     setView("library");
     setSelectedTranscriptId(null);
+    setActiveJob(null);
+    setJobViewState("status");
     setIsPlaying(false);
   }, []);
 
@@ -239,7 +295,6 @@ export function useLongformerStore() {
         const { jobId } = (await res.json()) as { jobId: string };
         await refreshJobs();
         await openTranscript(jobId);
-        setView("editor");
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : "Upload failed");
       } finally {
@@ -271,6 +326,10 @@ export function useLongformerStore() {
     userEmail,
     view,
     setView,
+    isJobMode,
+    jobView,
+    setJobView,
+    activeJob,
     selectedTranscriptId,
     activeDetail,
     sidebarWidth,

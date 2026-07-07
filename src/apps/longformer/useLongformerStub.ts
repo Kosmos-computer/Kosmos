@@ -4,6 +4,7 @@ import { BEACHCUBE_PODCAST_DETAIL, LONGFORMER_MOCK } from "./longformerMock";
 import type {
   ArtifactKind,
   GeneratedArtifact,
+  LongformerJobView,
   LongformerView,
   TranscriptDetail,
   TranscriptSegment,
@@ -141,6 +142,7 @@ export function useLongformerStub() {
   const user = useAuthStore((s) => s.user);
   const [view, setView] = useState<LongformerView>("library");
   const [selectedTranscriptId, setSelectedTranscriptId] = useState<string | null>(null);
+  const [jobView, setJobView] = useState<LongformerJobView>("transcript");
   const [sidebarWidth, setSidebarWidth] = useState(260);
   const [inspectorWidth, setInspectorWidth] = useState(280);
   const [timelineHeight, setTimelineHeight] = useState(200);
@@ -163,7 +165,7 @@ export function useLongformerStub() {
   const openTranscript = useCallback(
     (id: string) => {
       setSelectedTranscriptId(id);
-      setView("editor");
+      setJobView("transcript");
       setDetails((prev) => {
         if (prev[id]) return prev;
         const summary = LONGFORMER_MOCK.transcripts.find((t) => t.id === id);
@@ -287,6 +289,10 @@ export function useLongformerStub() {
     userEmail,
     view,
     setView,
+    isJobMode: selectedTranscriptId !== null,
+    jobView,
+    setJobView,
+    activeJob: null,
     selectedTranscriptId,
     activeDetail,
     sidebarWidth,
@@ -303,6 +309,12 @@ export function useLongformerStub() {
     sourceFilter,
     setSourceFilter,
     generatingArtifact,
+    loading: false,
+    uploading: false,
+    error: null,
+    fileInputRef: { current: null },
+    handleFileSelected: async () => {},
+    refreshJobs: async () => {},
     openTranscript,
     closeEditor,
     setCurrentMs,

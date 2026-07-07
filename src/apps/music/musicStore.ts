@@ -3,6 +3,7 @@
  * playing via the shell-mounted MusicEngine + MusicMiniWidget.
  */
 import { create } from "zustand";
+import { seekMusicAudio } from "./musicAudio";
 import {
   albumLibraryItems,
   buildFeatured,
@@ -21,6 +22,15 @@ export function formatMusicTime(seconds: number): string {
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
   return `${mins}:${secs.toString().padStart(2, "0")}`;
+}
+
+export function parseMusicTime(label: string): number {
+  const parts = label.split(":").map((part) => Number.parseInt(part, 10));
+  if (parts.some((part) => Number.isNaN(part))) return 0;
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  if (parts.length === 1) return parts[0];
+  return 0;
 }
 
 async function fetchSeedTracks(): Promise<SeedTrackStatus[]> {
@@ -61,6 +71,7 @@ interface MusicStore {
   playNext: () => void;
   playPrevious: () => void;
   setPlaybackProgress: (progress: number, elapsed: string, duration?: string) => void;
+  seekPlayback: (progress: number) => void;
   stopPlayback: () => void;
   showWidget: () => void;
   hideWidget: () => void;
@@ -199,6 +210,22 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
     }));
   },
 
+  seekPlayback: (progress) => {
+    const clamped = Math.min(100, Math.max(0, progress));
+    const durationSeconds = parseMusicTime(get().nowPlaying.track.duration);
+    const elapsedSeconds = durationSeconds > 0 ? (clamped / 100) * durationSeconds : 0;
+
+    set((state) => ({
+      nowPlaying: {
+        ...state.nowPlaying,
+        progress: clamped,
+        elapsed: formatMusicTime(elapsedSeconds),
+      },
+    }));
+
+    seekMusicAudio(clamped);
+  },
+
   stopPlayback: () => set({ playing: false }),
 
   showWidget: () => set({ widgetVisible: true, widgetCollapsed: false }),
@@ -275,6 +302,7 @@ export function useMusicViewModel() {
     playNext: store.playNext,
     playPrevious: store.playPrevious,
     setPlaybackProgress: store.setPlaybackProgress,
+    seekPlayback: store.seekPlayback,
     stopPlayback: store.stopPlayback,
     showWidget: store.showWidget,
     restoreMusicWindow: store.restoreMusicWindow,

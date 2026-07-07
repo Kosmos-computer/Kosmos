@@ -5,36 +5,22 @@
  * was just started. The agent can point this tab at a URL via
  * os_ui open_workspace_tab { tab: "browser", path: "http://..." }.
  */
-import { useCallback, useEffect, useRef, useState } from "react";
-import { BookmarkPlus, Check, ExternalLink, Globe, Play, RotateCw, ScrollText, Square } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { BookmarkPlus, Check, Play, ScrollText, Square } from "lucide-react";
 import type { RunEntry } from "@shared/types";
+import { BrowserShell } from "../../../components/patterns/search";
 import { api } from "../../../lib/api";
 import { useOsStore } from "../../../os/osStore";
 import { useStudioStore } from "../studioStore";
 
-/** "5173" → localhost URL; bare hosts get http:// — small affordances. */
-function normalizeUrl(input: string): string {
-  const t = input.trim();
-  if (!t) return "";
-  if (/^\d+$/.test(t)) return `http://localhost:${t}`;
-  if (!/^https?:\/\//.test(t)) return `http://${t}`;
-  return t;
-}
-
 export function BrowserTab() {
   const browserUrl = useStudioStore((s) => s.browserUrl);
-  const [draft, setDraft] = useState(browserUrl);
   const [runs, setRuns] = useState<RunEntry[]>([]);
   const [command, setCommand] = useState("");
   const [logFor, setLogFor] = useState<{ id: string; text: string } | null>(null);
-  const [frameTick, setFrameTick] = useState(0);
   const [mounted, setMounted] = useState(false);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
   const projectsInfo = useStudioStore((s) => s.projectsInfo);
   const refreshApps = useOsStore((s) => s.refreshApps);
-
-  // The agent (or a run start) may change the URL from outside.
-  useEffect(() => setDraft(browserUrl), [browserUrl]);
 
   const refreshRuns = useCallback(async () => {
     try {
@@ -51,14 +37,9 @@ export function BrowserTab() {
     return () => clearInterval(timer);
   }, [refreshRuns]);
 
-  const go = useCallback(
-    (url?: string) => {
-      const next = normalizeUrl(url ?? draft);
-      useStudioStore.setState({ browserUrl: next });
-      setFrameTick((t) => t + 1);
-    },
-    [draft],
-  );
+  const navigate = useCallback((url: string) => {
+    useStudioStore.setState({ browserUrl: url });
+  }, []);
 
   const start = useCallback(async () => {
     const cmd = command.trim();
@@ -71,9 +52,9 @@ export function BrowserTab() {
     const port = /(?::|port\s+)(\d{4,5})/.exec(cmd)?.[1];
     if (port && !browserUrl) {
       // Give the server a beat to bind before first load.
-      setTimeout(() => go(`http://localhost:${port}`), 1200);
+      setTimeout(() => navigate(`http://localhost:${port}`), 1200);
     }
-  }, [command, browserUrl, go, refreshRuns]);
+  }, [command, browserUrl, navigate, refreshRuns]);
 
   // Register the current URL as a dock web app. The active project supplies
   // the name and path; the newest alive run supplies the start command, so
@@ -144,56 +125,23 @@ export function BrowserTab() {
         </div>
       )}
 
-      {/* ── URL bar ────────────────────────────────────────────────────── */}
-      <div className="arco-studio__urlbar">
-        <Globe size={13} style={{ color: "var(--arco-text-tertiary)", flexShrink: 0 }} />
-        <input
-          className="arco-studio__urlinput"
-          placeholder="http://localhost:5173 (or just a port number)"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") go();
-          }}
-        />
-        <button className="arco-btn arco-btn--icon" onClick={() => setFrameTick((t) => t + 1)} aria-label="Reload page">
-          <RotateCw size={12} />
-        </button>
-        <button
-          className="arco-btn arco-btn--icon"
-          disabled={!browserUrl}
-          onClick={() => window.open(browserUrl, "_blank", "noopener")}
-          aria-label="Open in new tab"
-        >
-          <ExternalLink size={12} />
-        </button>
-        <button
-          className="arco-btn"
-          disabled={!browserUrl}
-          onClick={() => void addToDock()}
-          aria-label="Add this app to the dock"
-        >
-          {mounted ? <Check size={13} /> : <BookmarkPlus size={13} />}
-          {mounted ? "Added" : "Add to Dock"}
-        </button>
-      </div>
-
-      {/* ── Preview frame ──────────────────────────────────────────────── */}
-      {browserUrl ? (
-        <iframe
-          key={frameTick}
-          ref={iframeRef}
-          className="arco-studio__frame"
-          src={browserUrl}
-          title="Project preview"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-modals"
-        />
-      ) : (
-        <div className="arco-empty">
-          <Globe size={18} />
-          <span>Start your app above, then enter its URL (or just the port).</span>
-        </div>
-      )}
+      <BrowserShell
+        url={browserUrl}
+        onNavigate={navigate}
+        placeholder="http://localhost:5173 (or just a port number)"
+        title="Project preview"
+        toolbarExtra={
+          <button
+            className="arco-btn"
+            disabled={!browserUrl}
+            onClick={() => void addToDock()}
+            aria-label="Add this app to the dock"
+          >
+            {mounted ? <Check size={13} /> : <BookmarkPlus size={13} />}
+            {mounted ? "Added" : "Add to Dock"}
+          </button>
+        }
+      />
     </div>
   );
 }

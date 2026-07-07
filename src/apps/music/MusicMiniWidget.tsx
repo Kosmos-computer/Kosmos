@@ -2,7 +2,7 @@
  * Floating mini player — shown when the Music window is minimized or the user
  * pops out playback to keep listening while using other apps.
  */
-import { useCallback, useRef, type PointerEvent as ReactPointerEvent } from "react";
+import { useCallback, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import {
   ChevronDown,
   ChevronUp,
@@ -12,12 +12,9 @@ import {
   SkipForward,
   X,
 } from "lucide-react";
-import { useMusicStore } from "./musicStore";
-import type { MusicImageTone } from "./types";
-
-function artClass(tone: MusicImageTone) {
-  return `arco-music__art arco-music__art--sm arco-music__art--${tone}`;
-}
+import { AlbumArt } from "./AlbumArt";
+import { MusicProgressScrubber } from "./MusicProgressScrubber";
+import { formatMusicTime, parseMusicTime, useMusicStore } from "./musicStore";
 
 export function MusicMiniWidget() {
   const widgetVisible = useMusicStore((s) => s.widgetVisible);
@@ -27,6 +24,7 @@ export function MusicMiniWidget() {
   const playing = useMusicStore((s) => s.playing);
   const togglePlay = useMusicStore((s) => s.togglePlay);
   const playNext = useMusicStore((s) => s.playNext);
+  const seekPlayback = useMusicStore((s) => s.seekPlayback);
   const hideWidget = useMusicStore((s) => s.hideWidget);
   const toggleWidgetCollapsed = useMusicStore((s) => s.toggleWidgetCollapsed);
   const setWidgetPosition = useMusicStore((s) => s.setWidgetPosition);
@@ -35,10 +33,11 @@ export function MusicMiniWidget() {
   const dragState = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(
     null,
   );
+  const [scrubPreview, setScrubPreview] = useState<number | null>(null);
 
   const onDragPointerDown = useCallback(
     (e: ReactPointerEvent) => {
-      if ((e.target as HTMLElement).closest("button")) return;
+      if ((e.target as HTMLElement).closest("button, [role='slider']")) return;
       dragState.current = {
         startX: e.clientX,
         startY: e.clientY,
@@ -68,6 +67,11 @@ export function MusicMiniWidget() {
   if (!widgetVisible) return null;
 
   const { track, progress, elapsed } = nowPlaying;
+  const durationSeconds = parseMusicTime(track.duration);
+  const displayElapsed =
+    scrubPreview != null && durationSeconds > 0
+      ? formatMusicTime((scrubPreview / 100) * durationSeconds)
+      : elapsed;
 
   return (
     <div
@@ -87,15 +91,26 @@ export function MusicMiniWidget() {
         onPointerMove={onDragPointerMove}
         onPointerUp={onDragPointerUp}
       >
-        <span className={artClass(track.albumArtTone)} aria-hidden="true" />
+        <AlbumArt
+          trackId={track.id !== "empty" ? track.id : undefined}
+          tone={track.albumArtTone}
+          size="sm"
+          alt={track.title}
+        />
 
         <div className="arco-music-widget__meta">
           <span className="arco-music-widget__title">{track.title}</span>
           <span className="arco-music-widget__artist">{track.artists}</span>
           {!widgetCollapsed ? (
-            <div className="arco-music-widget__progress" aria-hidden="true">
-              <span className="arco-music-widget__progress-fill" style={{ width: `${progress}%` }} />
-            </div>
+            <MusicProgressScrubber
+              progress={progress}
+              elapsed={elapsed}
+              duration={track.duration}
+              onSeek={seekPlayback}
+              onScrubPreview={setScrubPreview}
+              variant="widget"
+              showTimes={false}
+            />
           ) : null}
         </div>
 
@@ -147,7 +162,7 @@ export function MusicMiniWidget() {
 
       {!widgetCollapsed ? (
         <div className="arco-music-widget__footer">
-          <span className="arco-music-widget__time">{elapsed}</span>
+          <span className="arco-music-widget__time">{displayElapsed}</span>
           <span className="arco-music-widget__time">{track.duration}</span>
         </div>
       ) : null}

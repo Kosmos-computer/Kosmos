@@ -8,6 +8,7 @@ import {
   X,
 } from "lucide-react";
 import { Avatar, Button, EmptyState } from "../../components/ui";
+import { api } from "../../lib/api";
 import { PdfViewer } from "./PdfViewer";
 import { FILE_KIND_ICON, FILE_KIND_TONE, type DriveFileItem } from "./types";
 
@@ -21,6 +22,7 @@ const PREVIEW_COPY: Partial<Record<DriveFileItem["kind"], string>> = {
   code: "Source file — open to edit.",
   image: "Image preview would render here when connected to real file storage.",
   video: "Video preview and playback controls would appear here.",
+  audio: "Audio track — use the player above or open in Music.",
   archive: "Compressed archive containing exported assets and build artifacts.",
 };
 
@@ -85,6 +87,10 @@ export function FilePreviewPane({
               <Play size={42} strokeWidth={1.5} />
               <span>Video preview</span>
             </div>
+          ) : file.kind === "audio" ? (
+            <audio controls className="arco-drive-preview__audio" src={api.driveBlobUrl(file.id)}>
+              <track kind="captions" />
+            </audio>
           ) : file.kind === "code" ? (
             <pre className="arco-drive-preview__code">{body}</pre>
           ) : file.kind === "pdf" ? (

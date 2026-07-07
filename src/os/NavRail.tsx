@@ -169,8 +169,12 @@ export function NavRail() {
             onRemove={() => setNavPinnedIds((prev) => removePinned(prev, entry.id))}
           />
         ))}
+      </div>
 
+      <div className="arco-navrail__footer">
         <Menu
+          className="arco-navrail__more-apps"
+          side="right"
           trigger={
             <button className="arco-navrail__item arco-navrail__item--add" aria-label="More apps">
               <span className="arco-navrail__item-icon">

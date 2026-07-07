@@ -1,0 +1,301 @@
+/**
+ * STUB: Renders Longformer SettingsWorkspace section content using Arco patterns.
+ */
+import { Check, ChevronRight } from "lucide-react";
+import { ListItem } from "../../components/patterns";
+import {
+  SettingsDivider,
+  SettingsEmpty,
+  SettingsFieldRow,
+  SettingsPage,
+  SettingsRow,
+  SettingsRowActions,
+  SettingsSection,
+  SettingsStack,
+  SettingsSubhead,
+} from "../../components/patterns";
+import { Button, Input, Switch } from "../../components/ui";
+import { SettingsStubNotice } from "./SettingsStubNotice";
+import type {
+  StubSettingsContentSection,
+  StubSettingsFieldRow,
+  StubSettingsLinkRow,
+  StubSettingsStanding,
+  StubSettingsToggleRow,
+  StubSettingsWallpaperPreset,
+} from "./settingsStubTypes";
+import type { SettingsStubViewModel } from "./useSettingsStub";
+
+function renderStandingDescription(standing: StubSettingsStanding) {
+  const parts = standing.description.split(/(\[\[link\d+\]\])/g);
+  let linkIndex = 0;
+
+  return parts.map((part, index) => {
+    const match = part.match(/^\[\[link(\d+)\]\]$/);
+    if (match) {
+      const label = standing.linkLabels?.[linkIndex] ?? "Learn more";
+      linkIndex += 1;
+      return (
+        <button key={`link-${index}`} type="button" className="arco-settings-stub-standing__link">
+          {label}
+        </button>
+      );
+    }
+    return <span key={`text-${index}`}>{part}</span>;
+  });
+}
+
+function StubFieldRow({
+  row,
+  revealed,
+  onReveal,
+}: {
+  row: StubSettingsFieldRow;
+  revealed: boolean;
+  onReveal: () => void;
+}) {
+  const displayValue = row.masked && !revealed ? (row.maskedDisplay ?? row.value) : row.value;
+
+  return (
+    <SettingsRow>
+      <div className="arco-settings-row__label">{row.label}</div>
+      <div className="arco-settings-row__control">
+        {displayValue ? <span>{displayValue}</span> : null}
+        {row.actions?.length ? (
+          <SettingsRowActions>
+            {row.actions.map((action) => {
+              if (action.type === "reveal" && !revealed) {
+                return (
+                  <Button key={`${row.id}-reveal`} variant="ghost" onClick={onReveal}>
+                    {action.label ?? "Reveal"}
+                  </Button>
+                );
+              }
+              if (action.type === "edit") {
+                return (
+                  <Button key={`${row.id}-edit`} variant="secondary">
+                    {action.label ?? "Edit"}
+                  </Button>
+                );
+              }
+              return null;
+            })}
+          </SettingsRowActions>
+        ) : null}
+      </div>
+    </SettingsRow>
+  );
+}
+
+function StubLinkRow({ row }: { row: StubSettingsLinkRow }) {
+  return (
+    <ListItem
+      className="arco-settings-stub-link"
+      label={row.label}
+      description={row.hint}
+      trailing={
+        <>
+          {row.value ? <span className="arco-settings-stub-link__value">{row.value}</span> : null}
+          <ChevronRight size={16} strokeWidth={1.75} aria-hidden="true" />
+        </>
+      }
+    />
+  );
+}
+
+function StubToggleRow({
+  row,
+  enabled,
+  onChange,
+}: {
+  row: StubSettingsToggleRow;
+  enabled: boolean;
+  onChange: (next: boolean) => void;
+}) {
+  return (
+    <div className="arco-settings-toggle-row">
+      <div className="arco-settings-toggle-row__label">{row.label}</div>
+      <div className="arco-settings-toggle-row__body">
+        {row.description ? <p className="arco-settings-toggle-row__desc">{row.description}</p> : null}
+      </div>
+      <Switch checked={enabled} onChange={(event) => onChange(event.target.checked)} aria-label={row.label} />
+    </div>
+  );
+}
+
+function StubStandingCard({ standing }: { standing: StubSettingsStanding }) {
+  return (
+    <button type="button" className={`arco-settings-stub-standing arco-settings-stub-standing--${standing.status}`}>
+      <span className="arco-settings-stub-standing__icon" aria-hidden="true">
+        <Check size={18} strokeWidth={2} />
+      </span>
+      <span className="arco-settings-stub-standing__body">
+        <span className="arco-settings-stub-standing__title">{standing.title}</span>
+        <span className="arco-settings-stub-standing__desc">{renderStandingDescription(standing)}</span>
+      </span>
+      <ChevronRight size={18} strokeWidth={1.75} aria-hidden="true" />
+    </button>
+  );
+}
+
+function StubWallpaperPanel({
+  presets,
+  activeUrl,
+  onSelect,
+}: {
+  presets: StubSettingsWallpaperPreset[];
+  activeUrl: string;
+  onSelect: (url: string) => void;
+}) {
+  const presetUrls = new Set(presets.map((preset) => preset.url));
+  const usingCustom = !presetUrls.has(activeUrl);
+
+  return (
+    <div className="arco-settings-stub-wallpaper">
+      <div className="arco-settings-stub-wallpaper__grid" role="listbox" aria-label="Wallpaper presets">
+        {presets.map((preset) => {
+          const selected = activeUrl === preset.url;
+          return (
+            <button
+              key={preset.id}
+              type="button"
+              role="option"
+              aria-selected={selected}
+              className={`arco-settings-stub-wallpaper__option ${selected ? "arco-settings-stub-wallpaper__option--active" : ""}`}
+              onClick={() => onSelect(preset.url)}
+            >
+              <span
+                className="arco-settings-stub-wallpaper__preview"
+                style={{ backgroundImage: `url("${preset.url}")` }}
+                aria-hidden="true"
+              >
+                {selected ? (
+                  <span className="arco-settings-stub-wallpaper__check" aria-hidden="true">
+                    <Check size={14} strokeWidth={2.5} />
+                  </span>
+                ) : null}
+              </span>
+              <span className="arco-settings-stub-wallpaper__label">{preset.label}</span>
+              {preset.credit ? <span className="arco-settings-stub-wallpaper__credit">{preset.credit}</span> : null}
+            </button>
+          );
+        })}
+      </div>
+      <SettingsFieldRow label="Custom image URL" htmlFor="stub-wallpaper-url">
+        <Input
+          id="stub-wallpaper-url"
+          width="auto"
+          value={activeUrl}
+          placeholder="https://…"
+          onChange={(event) => onSelect(event.target.value)}
+        />
+      </SettingsFieldRow>
+      {usingCustom ? (
+        <p className="arco-settings-stub-wallpaper__custom-note">Using a custom wallpaper not in the preset list.</p>
+      ) : null}
+    </div>
+  );
+}
+
+export interface SettingsStubSectionProps {
+  section: StubSettingsContentSection;
+  stub: SettingsStubViewModel;
+  showTitle?: boolean;
+  showNotice?: boolean;
+}
+
+export function SettingsStubSection({
+  section,
+  stub,
+  showTitle = true,
+  showNotice = true,
+}: SettingsStubSectionProps) {
+  const hasContent =
+    Boolean(section.fields?.length) ||
+    Boolean(section.links?.length) ||
+    Boolean(section.toggles?.length) ||
+    Boolean(section.standing) ||
+    section.id === "wallpaper";
+
+  return (
+    <SettingsPage>
+      {showNotice ? <SettingsStubNotice /> : null}
+      <SettingsSection intro={section.intro}>
+        {showTitle ? <SettingsSubhead>{section.title}</SettingsSubhead> : null}
+        {section.id === "wallpaper" ? (
+          <StubWallpaperPanel
+            presets={stub.wallpaperPresets}
+            activeUrl={stub.wallpaperUrl}
+            onSelect={stub.setWallpaperUrl}
+          />
+        ) : null}
+        {section.fields?.length || section.links?.length || section.toggles?.length ? (
+          <SettingsStack>
+            {section.fields?.map((row) => (
+              <StubFieldRow
+                key={row.id}
+                row={row}
+                revealed={stub.revealedFields.has(row.id)}
+                onReveal={() => stub.revealField(row.id)}
+              />
+            ))}
+            {section.links?.map((row) => (
+              <StubLinkRow key={row.id} row={row} />
+            ))}
+            {section.toggles?.map((row) => (
+              <StubToggleRow
+                key={row.id}
+                row={row}
+                enabled={stub.toggleStates[row.id] ?? row.enabled}
+                onChange={(next) => stub.setToggle(row.id, next)}
+              />
+            ))}
+          </SettingsStack>
+        ) : null}
+        {section.standing ? <StubStandingCard standing={section.standing} /> : null}
+        {!hasContent ? <SettingsEmpty>No settings in this section yet.</SettingsEmpty> : null}
+      </SettingsSection>
+    </SettingsPage>
+  );
+}
+
+export function SettingsStubPane({
+  sectionIds,
+  stub,
+  showNotice = true,
+}: {
+  sectionIds: StubSettingsContentSection["id"][];
+  stub: SettingsStubViewModel;
+  showNotice?: boolean;
+}) {
+  const sections = sectionIds
+    .map((id) => stub.sectionFor(id))
+    .filter((section): section is StubSettingsContentSection => section !== undefined);
+
+  if (sections.length === 0) {
+    return (
+      <SettingsPage>
+        <SettingsStubNotice />
+        <SettingsEmpty>Section not found.</SettingsEmpty>
+      </SettingsPage>
+    );
+  }
+
+  const showMultiTitle = sections.length > 1;
+
+  return (
+    <>
+      {sections.map((section, index) => (
+        <div key={section.id}>
+          {index > 0 ? <SettingsDivider /> : null}
+          <SettingsStubSection
+            section={section}
+            stub={stub}
+            showTitle={showMultiTitle}
+            showNotice={showNotice && index === 0}
+          />
+        </div>
+      ))}
+    </>
+  );
+}

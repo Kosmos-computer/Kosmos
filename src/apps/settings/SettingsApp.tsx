@@ -8,6 +8,15 @@ import { ACP_PRESETS, PROVIDER_PRESETS } from "@shared/types";
 import { api } from "../../lib/api";
 import { useCan } from "../../os/auth/authStore";
 import { useOsStore, type AppWindowHost } from "../../os/osStore";
+import {
+  ACCENT_PRESET_OPTIONS,
+  FONT_PRESET_OPTIONS,
+  RADIUS_PRESET_OPTIONS,
+  SPACING_PRESET_OPTIONS,
+  TEXT_SCALE_PRESET_OPTIONS,
+  WINDOW_CONTROL_ALIGN_OPTIONS,
+  WINDOW_CONTROL_STYLE_OPTIONS,
+} from "../../os/themeTokens";
 import { isArcoDesktop } from "../../lib/desktopBridge";
 import { PasswordSection } from "./PasswordSection";
 import { UsersSection } from "./UsersSection";
@@ -38,10 +47,14 @@ import { SettingsNav } from "./SettingsNav";
 import { NavBrandMark } from "../../os/NavBrandMark";
 import {
   DEFAULT_SETTINGS_SECTION,
+  isStubSettingsSection,
   settingsSectionLabel,
   visibleSettingsNavGroups,
 } from "./settingsSections";
 import { useSettingsStore } from "./settingsStore";
+import { ACCOUNT_STUB_SECTION_IDS } from "./settingsStubMock";
+import { SettingsStubPane } from "./SettingsStubSection";
+import { useSettingsStub } from "./useSettingsStub";
 
 const PROVIDERS: { id: LlmProvider; label: string }[] = [
   { id: "mock", label: "Mock (no key needed)" },
@@ -56,8 +69,33 @@ const PROVIDERS: { id: LlmProvider; label: string }[] = [
 const NAV_BRAND_MAX_BYTES = 512 * 1024;
 
 export function SettingsApp() {
-  const { theme, setTheme, wallpaper, setWallpaper, authWallpaper, setAuthWallpaper, navBrandImage, setNavBrandImage, appWindowHost, setAppWindowHost, notify } =
-    useOsStore();
+  const {
+    theme,
+    setTheme,
+    accentPreset,
+    setAccentPreset,
+    radiusPreset,
+    setRadiusPreset,
+    fontPreset,
+    setFontPreset,
+    textScalePreset,
+    setTextScalePreset,
+    spacingPreset,
+    setSpacingPreset,
+    windowControlStyle,
+    setWindowControlStyle,
+    windowControlAlign,
+    setWindowControlAlign,
+    wallpaper,
+    setWallpaper,
+    authWallpaper,
+    setAuthWallpaper,
+    navBrandImage,
+    setNavBrandImage,
+    appWindowHost,
+    setAppWindowHost,
+    notify,
+  } = useOsStore();
   const faceBg = useFacePreferencesStore((s) => s.faceBg);
   const setFaceBg = useFacePreferencesStore((s) => s.setFaceBg);
   const canManageUsers = useCan("users:manage");
@@ -68,6 +106,8 @@ export function SettingsApp() {
   const activeSection = useSettingsStore((s) => s.activeSection);
   const setActiveSection = useSettingsStore((s) => s.setActiveSection);
   const [sidebarWidth, setSidebarWidth] = useState(220);
+  const [navSearch, setNavSearch] = useState("");
+  const settingsStub = useSettingsStub();
 
   const navGroups = useMemo(
     () => visibleSettingsNavGroups({ canWriteSettings, canManageUsers }),
@@ -154,7 +194,13 @@ export function SettingsApp() {
         maxWidth={320}
         handleLabel="Resize settings sidebar"
       >
-        <SettingsNav groups={navGroups} activeSection={activeSection} onSelect={setActiveSection} />
+        <SettingsNav
+          groups={navGroups}
+          activeSection={activeSection}
+          onSelect={setActiveSection}
+          searchQuery={navSearch}
+          onSearchChange={setNavSearch}
+        />
       </SidebarPane>
 
       <div className="arco-settings-shell__main">
@@ -162,6 +208,17 @@ export function SettingsApp() {
           <h1 className="arco-settings-shell__title">{sectionTitle}</h1>
         </header>
         <div className="arco-settings-shell__content arco-scroll">
+          {isStubSettingsSection(activeSection) ? (
+            <SettingsStubPane
+              sectionIds={
+                (ACCOUNT_STUB_SECTION_IDS as readonly string[]).includes(activeSection)
+                  ? [...ACCOUNT_STUB_SECTION_IDS]
+                  : [activeSection]
+              }
+              stub={settingsStub}
+            />
+          ) : null}
+
           {activeSection === "agent" && (
             <SettingsPage>
               <SettingsSection
@@ -263,13 +320,155 @@ export function SettingsApp() {
 
           {activeSection === "appearance" && (
             <SettingsPage>
-              <SettingsSection intro="Theme, assistant face, and background for the desktop and sign-in screen.">
+              <SettingsSection intro="Theme, typography, spacing, assistant face, and background for the desktop and sign-in screen.">
                 <SettingsStack>
                   <SettingsFieldRow label="Theme">
                     <SettingsChipRow>
                       {(["dark", "light"] as const).map((t) => (
                         <Chip key={t} active={theme === t} onClick={() => setTheme(t)}>
                           {t}
+                        </Chip>
+                      ))}
+                    </SettingsChipRow>
+                  </SettingsFieldRow>
+                  <SettingsFieldRow
+                    label="UI font"
+                    hint="Typeface for labels, menus, and body text across the shell."
+                    alignTop
+                  >
+                    <div className="arco-font-preset-grid">
+                      {FONT_PRESET_OPTIONS.map((option) => (
+                        <button
+                          key={option.id}
+                          type="button"
+                          className={`arco-font-preset-swatch ${fontPreset === option.id ? "arco-font-preset-swatch--active" : ""}`}
+                          onClick={() => setFontPreset(option.id)}
+                          aria-pressed={fontPreset === option.id}
+                          aria-label={`${option.label} font`}
+                        >
+                          <span
+                            className="arco-font-preset-swatch__preview"
+                            style={{ fontFamily: option.family }}
+                          >
+                            Aa
+                          </span>
+                          <span className="arco-font-preset-swatch__label">{option.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </SettingsFieldRow>
+                  <SettingsFieldRow
+                    label="Text size"
+                    hint="Scale for labels, body copy, and headings."
+                  >
+                    <SettingsChipRow>
+                      {TEXT_SCALE_PRESET_OPTIONS.map((option) => (
+                        <Chip
+                          key={option.id}
+                          active={textScalePreset === option.id}
+                          onClick={() => setTextScalePreset(option.id)}
+                        >
+                          {option.label}
+                        </Chip>
+                      ))}
+                    </SettingsChipRow>
+                  </SettingsFieldRow>
+                  <SettingsFieldRow
+                    label="Padding & spacing"
+                    hint="Gaps and padding in panels, lists, and controls."
+                  >
+                    <SettingsChipRow>
+                      {SPACING_PRESET_OPTIONS.map((option) => (
+                        <Chip
+                          key={option.id}
+                          active={spacingPreset === option.id}
+                          onClick={() => setSpacingPreset(option.id)}
+                        >
+                          {option.label}
+                        </Chip>
+                      ))}
+                    </SettingsChipRow>
+                  </SettingsFieldRow>
+                  <SettingsFieldRow
+                    label="Accent color"
+                    hint="Buttons, links, and other accent-colored controls across the shell."
+                    alignTop
+                  >
+                    <div className="arco-accent-preset-grid">
+                      {ACCENT_PRESET_OPTIONS.map((option) => (
+                        <button
+                          key={option.id}
+                          type="button"
+                          className={`arco-accent-preset-swatch ${accentPreset === option.id ? "arco-accent-preset-swatch--active" : ""}`}
+                          onClick={() => setAccentPreset(option.id)}
+                          aria-pressed={accentPreset === option.id}
+                          aria-label={`${option.label} accent`}
+                        >
+                          <span
+                            className={`arco-accent-preset-swatch__preview ${option.preview ? "" : "arco-accent-preset-swatch__preview--mono"}`}
+                            style={option.preview ? { background: option.preview } : undefined}
+                          />
+                          <span className="arco-accent-preset-swatch__label">{option.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </SettingsFieldRow>
+                  <SettingsFieldRow
+                    label="Corner radius"
+                    hint="Roundness for buttons, inputs, panels, and windows."
+                    alignTop
+                  >
+                    <div className="arco-radius-preset-grid">
+                      {RADIUS_PRESET_OPTIONS.map((option) => (
+                        <button
+                          key={option.id}
+                          type="button"
+                          className={`arco-radius-preset-swatch ${radiusPreset === option.id ? "arco-radius-preset-swatch--active" : ""}`}
+                          onClick={() => setRadiusPreset(option.id)}
+                          aria-pressed={radiusPreset === option.id}
+                          aria-label={`${option.label} corners`}
+                        >
+                          <span className={`arco-radius-preset-swatch__preview arco-radius-preset-swatch__preview--${option.id}`} />
+                          <span className="arco-radius-preset-swatch__label">{option.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </SettingsFieldRow>
+                  <SettingsFieldRow
+                    label="Window controls"
+                    hint="Close, minimize, and maximize buttons in the desktop window title bar."
+                    alignTop
+                  >
+                    <div className="arco-window-control-preset-grid">
+                      {WINDOW_CONTROL_STYLE_OPTIONS.map((option) => (
+                        <button
+                          key={option.id}
+                          type="button"
+                          className={`arco-window-control-preset-swatch ${windowControlStyle === option.id ? "arco-window-control-preset-swatch--active" : ""}`}
+                          onClick={() => setWindowControlStyle(option.id)}
+                          aria-pressed={windowControlStyle === option.id}
+                          aria-label={`${option.label} window controls`}
+                        >
+                          <span
+                            className={`arco-window-control-preset-swatch__preview arco-window-control-preset-swatch__preview--${option.id}`}
+                          />
+                          <span className="arco-window-control-preset-swatch__label">{option.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </SettingsFieldRow>
+                  <SettingsFieldRow
+                    label="Control alignment"
+                    hint="Place window controls on the left (macOS-style) or right (Windows-style)."
+                  >
+                    <SettingsChipRow>
+                      {WINDOW_CONTROL_ALIGN_OPTIONS.map((option) => (
+                        <Chip
+                          key={option.id}
+                          active={windowControlAlign === option.id}
+                          onClick={() => setWindowControlAlign(option.id)}
+                        >
+                          {option.label}
                         </Chip>
                       ))}
                     </SettingsChipRow>

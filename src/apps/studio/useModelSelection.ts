@@ -10,22 +10,25 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { PROVIDER_PRESETS, type LlmProvider, type Settings } from "@shared/types";
 import { api } from "../../lib/api";
+import { useAuthStore } from "../../os/auth/authStore";
 import { useOsStore } from "../../os/osStore";
 import type { MenuItem } from "../../components/Menu";
 
+/** Shown while settings load and as the offline fallback label. */
+const DEFAULT_MODEL_LABEL = "Local engine";
+
 /** Human labels for the pickable presets, in menu order. */
 const PRESET_LABELS: { provider: keyof typeof PROVIDER_PRESETS; label: string }[] = [
-  { provider: "local", label: "Local engine" },
+  { provider: "local", label: DEFAULT_MODEL_LABEL },
   { provider: "ollama", label: "Ollama · Qwen3 32B" },
   { provider: "openai", label: "OpenAI · GPT-5.5" },
   { provider: "anthropic", label: "Anthropic · Claude Sonnet 4.5" },
   { provider: "openrouter", label: "OpenRouter · Claude Sonnet 4.5" },
 ];
 
-function displayLabel(settings: Settings | null): string | undefined {
-  // No readable settings (viewer role / server down) — hide the picker.
-  if (!settings) return undefined;
-  if (settings.provider === "local") return "Local engine";
+function displayLabel(settings: Settings | null): string {
+  if (!settings) return DEFAULT_MODEL_LABEL;
+  if (settings.provider === "local") return DEFAULT_MODEL_LABEL;
   const preset = PRESET_LABELS.find((p) => p.provider === settings.provider);
   // A preset name reads better than a raw model id when they match.
   return preset && PROVIDER_PRESETS[preset.provider].model === settings.model
@@ -33,18 +36,26 @@ function displayLabel(settings: Settings | null): string | undefined {
     : settings.model;
 }
 
-export function useModelSelection(): { modelLabel: string | undefined; modelItems: MenuItem[] } {
+export function useModelSelection(): { modelLabel: string; modelItems: MenuItem[] } {
   const [settings, setSettings] = useState<Settings | null>(null);
+  const authPhase = useAuthStore((s) => s.phase);
   const notify = useOsStore((s) => s.notify);
 
   useEffect(() => {
+    if (authPhase !== "ready") return;
+    let cancelled = false;
     api
       .getSettings()
-      .then(setSettings)
+      .then((loaded) => {
+        if (!cancelled) setSettings(loaded);
+      })
       .catch(() => {
-        // Viewer-role users can't read settings — the picker simply hides.
+        // Keep the default chip label; switching still surfaces a permission error.
       });
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [authPhase]);
 
   const select = useCallback(
     async (provider: LlmProvider) => {

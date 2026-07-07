@@ -81,6 +81,10 @@ html[data-theme="dark"] {
   --arco-shadow-window: 0 24px 64px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.35);
   --arco-shadow-chrome: 0 8px 32px rgba(0, 0, 0, 0.4);
   --arco-backdrop-blur: saturate(160%) blur(22px);
+
+  /* App launcher tiles — neutral well with a colored inner mark */
+  --arco-app-icon-well: rgba(255, 255, 255, 0.06);
+  --arco-app-icon-well-hover: rgba(255, 255, 255, 0.1);
 }
 
 html[data-theme="light"] {
@@ -120,6 +124,9 @@ html[data-theme="light"] {
   --arco-shadow-window: 0 24px 64px rgba(30, 40, 60, 0.28), 0 2px 8px rgba(30, 40, 60, 0.14);
   --arco-shadow-chrome: 0 8px 32px rgba(30, 40, 60, 0.18);
   --arco-backdrop-blur: saturate(160%) blur(22px);
+
+  --arco-app-icon-well: #f2f2f2;
+  --arco-app-icon-well-hover: #e8e8e8;
 }
 
 /* Wallpapers — gradient presets selectable in Settings */
@@ -146,4 +153,166 @@ html[data-theme="light"] {
     radial-gradient(110% 90% at 20% 15%, rgba(60, 180, 120, 0.28), transparent 55%),
     radial-gradient(110% 90% at 85% 85%, rgba(30, 120, 160, 0.26), transparent 60%),
     var(--arco-bg-desktop);
+}
+
+/* Accent presets — override button, link, and selection tokens per theme */
+html[data-theme="dark"][data-accent="violet"] {
+  --arco-accent: #b794f6;
+  --arco-accent-strong: #9f7aea;
+  --arco-accent-soft: rgba(183, 148, 246, 0.16);
+}
+html[data-theme="light"][data-accent="violet"] {
+  --arco-accent: #7c3aed;
+  --arco-accent-strong: #6d28d9;
+  --arco-accent-soft: rgba(124, 58, 237, 0.12);
+}
+
+html[data-theme="dark"][data-accent="green"] {
+  --arco-accent: #4fd1c5;
+  --arco-accent-strong: #38b2ac;
+  --arco-accent-soft: rgba(79, 209, 197, 0.16);
+}
+html[data-theme="light"][data-accent="green"] {
+  --arco-accent: #0d9488;
+  --arco-accent-strong: #0f766e;
+  --arco-accent-soft: rgba(13, 148, 136, 0.12);
+}
+
+html[data-theme="dark"][data-accent="amber"] {
+  --arco-accent: #f6ad55;
+  --arco-accent-strong: #ed8936;
+  --arco-accent-soft: rgba(246, 173, 85, 0.16);
+}
+html[data-theme="light"][data-accent="amber"] {
+  --arco-accent: #d97706;
+  --arco-accent-strong: #b45309;
+  --arco-accent-soft: rgba(217, 119, 6, 0.12);
+}
+
+html[data-theme="dark"][data-accent="rose"] {
+  --arco-accent: #f687b3;
+  --arco-accent-strong: #ed64a6;
+  --arco-accent-soft: rgba(246, 135, 179, 0.16);
+}
+html[data-theme="light"][data-accent="rose"] {
+  --arco-accent: #db2777;
+  --arco-accent-strong: #be185d;
+  --arco-accent-soft: rgba(219, 39, 119, 0.12);
+}
+
+html[data-theme="dark"][data-accent="cyan"] {
+  --arco-accent: #63b3ed;
+  --arco-accent-strong: #4299e1;
+  --arco-accent-soft: rgba(99, 179, 237, 0.16);
+}
+html[data-theme="light"][data-accent="cyan"] {
+  --arco-accent: #0284c7;
+  --arco-accent-strong: #0369a1;
+  --arco-accent-soft: rgba(2, 132, 199, 0.12);
+}
+
+html[data-theme="dark"][data-accent="monochrome"] {
+  --arco-accent: #eef1f6;
+  --arco-accent-strong: #ffffff;
+  --arco-accent-soft: rgba(255, 255, 255, 0.12);
+}
+html[data-theme="light"][data-accent="monochrome"] {
+  --arco-accent: #171b23;
+  --arco-accent-strong: #0a0d12;
+  --arco-accent-soft: rgba(10, 13, 18, 0.1);
+}
+
+/* Corner-radius presets — buttons, inputs, panels, and windows */
+html[data-radius="sharp"] {
+  --arco-radius-s: 2px;
+  --arco-radius-m: 4px;
+  --arco-radius-l: 6px;
+  --arco-radius-window: 6px;
+}
+
+html[data-radius="round"] {
+  --arco-radius-s: 8px;
+  --arco-radius-m: 14px;
+  --arco-radius-l: 20px;
+  --arco-radius-window: 16px;
+}
+
+html[data-radius="soft"] {
+  --arco-radius-s: 12px;
+  --arco-radius-m: 18px;
+  --arco-radius-l: 24px;
+  --arco-radius-window: 20px;
+}
+
+/* UI font presets — body and control typography */
+html[data-font="inter"] {
+  --arco-font-ui: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+html[data-font="ibm-plex"] {
+  --arco-font-ui: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+html[data-font="source-serif"] {
+  --arco-font-ui: "Source Serif 4", "Iowan Old Style", "Palatino Linotype", serif;
+}
+
+html[data-font="space-grotesk"] {
+  --arco-font-ui: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Text-size presets — labels, body copy, and headings */
+html[data-text-scale="compact"] {
+  --arco-text-xs: 10px;
+  --arco-text-sm: 11px;
+  --arco-text-md: 13px;
+  --arco-text-lg: 14px;
+  --arco-text-xl: 18px;
+}
+
+html[data-text-scale="comfortable"] {
+  --arco-text-xs: 12px;
+  --arco-text-sm: 14px;
+  --arco-text-md: 15px;
+  --arco-text-lg: 18px;
+  --arco-text-xl: 22px;
+}
+
+html[data-text-scale="large"] {
+  --arco-text-xs: 13px;
+  --arco-text-sm: 15px;
+  --arco-text-md: 17px;
+  --arco-text-lg: 19px;
+  --arco-text-xl: 24px;
+}
+
+/* Spacing presets — padding, gaps, and layout rhythm */
+html[data-spacing="compact"] {
+  --arco-space-2xs: 2px;
+  --arco-space-xs: 3px;
+  --arco-space-s: 6px;
+  --arco-space-m: 10px;
+  --arco-space-l: 14px;
+  --arco-space-xl: 20px;
+  --arco-space-2xl: 28px;
+}
+
+html[data-spacing="comfortable"] {
+  --arco-space-2xs: 2px;
+  --arco-space-xs: 5px;
+  --arco-space-s: 10px;
+  --arco-space-m: 14px;
+  --arco-space-l: 18px;
+  --arco-space-xl: 28px;
+  --arco-space-2xl: 36px;
+}
+
+html[data-spacing="spacious"] {
+  --arco-space-2xs: 3px;
+  --arco-space-xs: 6px;
+  --arco-space-s: 10px;
+  --arco-space-m: 16px;
+  --arco-space-l: 20px;
+  --arco-space-xl: 32px;
+  --arco-space-2xl: 42px;
 }

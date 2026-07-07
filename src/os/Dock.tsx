@@ -2,16 +2,24 @@
  * The dock — bottom app tray. Which apps show here (and in what order) is
  * independent from the NavRail — each app can be pinned/removed per
  * surface. Drag to reorder, or drag an item off the dock (macOS-style) to
- * unpin it; right-click also offers "Remove from Dock". "More apps" lists
+ * unpin it; right-click also offers "Remove from Dock". Pinned icons beyond
+ * {@link DOCK_VISIBLE_APP_LIMIT} move to "View all apps"; "More apps" lists
  * every app with a checkmark for what's currently pinned.
  */
 import { useEffect, useRef, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { LayoutGrid, Plus, Trash2 } from "lucide-react";
 import { Menu } from "../components/Menu";
 import { useOsStore } from "./osStore";
 import { useWindowStore } from "./windowStore";
 import { useShellApps, type ShellAppEntry } from "./shellApps";
-import { addPinned, normalizePinned, removePinned, reorderPinned, splitByPinned } from "./pinnedApps";
+import {
+  addPinned,
+  DOCK_VISIBLE_APP_LIMIT,
+  normalizePinned,
+  removePinned,
+  reorderPinned,
+  splitByPinned,
+} from "./pinnedApps";
 import { useAppPinDrag } from "./useAppPinDrag";
 
 function DockItem({
@@ -106,43 +114,84 @@ export function Dock() {
   });
 
   const isOpen = (key: string) => windows.some((w) => w.id === key);
+  const visiblePinned = pinned.slice(0, DOCK_VISIBLE_APP_LIMIT);
+  const overflowPinned = pinned.slice(DOCK_VISIBLE_APP_LIMIT);
+
+  const openApp = (entry: ShellAppEntry) =>
+    isOpen(entry.id) ? focus(entry.id) : open(entry.kind, entry.title);
 
   return (
     <nav ref={dockRef} className="arco-dock" aria-label="Dock">
-      {pinned.map((entry, index) => (
-        <DockItem
-          key={entry.id}
-          entry={entry}
-          open={isOpen(entry.id)}
-          isDragging={draggingId === entry.id}
-          isUndocking={isUndocking}
-          dropBefore={draggingId !== null && draggingId !== entry.id && overIndex === index}
-          dragHandlers={dragHandlers(entry.id, index)}
-          onSelect={() => (isOpen(entry.id) ? focus(entry.id) : open(entry.kind, entry.title))}
-          onRemove={() => setDockPinnedIds((prev) => removePinned(prev, entry.id))}
-        />
-      ))}
+      <div className="arco-dock__items">
+        <div className="arco-dock__items-track">
+          {visiblePinned.map((entry, index) => (
+            <DockItem
+              key={entry.id}
+              entry={entry}
+              open={isOpen(entry.id)}
+              isDragging={draggingId === entry.id}
+              isUndocking={isUndocking}
+              dropBefore={draggingId !== null && draggingId !== entry.id && overIndex === index}
+              dragHandlers={dragHandlers(entry.id, index)}
+              onSelect={() => openApp(entry)}
+              onRemove={() => setDockPinnedIds((prev) => removePinned(prev, entry.id))}
+            />
+          ))}
+        </div>
+      </div>
 
-      <Menu
-        trigger={
-          <button className="arco-dock__item arco-dock__item--add" aria-label="More apps">
-            <Plus size={20} strokeWidth={1.8} />
-            <span className="arco-dock__tooltip">More apps</span>
-          </button>
-        }
-        aria-label="More apps"
-        side="top"
-        items={entries.map((entry) => ({
-          id: entry.id,
-          label: entry.title,
-          icon: entry.icon,
-          checked: pinnedIdSet.has(entry.id),
-          onSelect: () =>
-            setDockPinnedIds((prev) =>
-              pinnedIdSet.has(entry.id) ? removePinned(prev, entry.id) : addPinned(prev, entry.id),
-            ),
-        }))}
-      />
+      <div className="arco-dock__actions">
+        <Menu
+          className="arco-dock__all-apps"
+          trigger={
+            <button className="arco-dock__item arco-dock__item--all-apps" aria-label="View all apps">
+              <LayoutGrid size={20} strokeWidth={1.8} />
+              {overflowPinned.length > 0 && (
+                <span className="arco-dock__overflow-count" aria-hidden="true">
+                  {overflowPinned.length}
+                </span>
+              )}
+              <span className="arco-dock__tooltip">View all apps</span>
+            </button>
+          }
+          aria-label="View all apps"
+          side="top"
+          align="end"
+          items={
+            overflowPinned.length > 0
+              ? overflowPinned.map((entry) => ({
+                  id: entry.id,
+                  label: entry.title,
+                  icon: entry.icon,
+                  onSelect: () => openApp(entry),
+                }))
+              : [{ id: "empty", label: "All pinned apps are on the tray.", disabled: true }]
+          }
+        />
+
+        <Menu
+          className="arco-dock__more-apps"
+          trigger={
+            <button className="arco-dock__item arco-dock__item--add" aria-label="More apps">
+              <Plus size={20} strokeWidth={1.8} />
+              <span className="arco-dock__tooltip">More apps</span>
+            </button>
+          }
+          aria-label="More apps"
+          side="top"
+          align="end"
+          items={entries.map((entry) => ({
+            id: entry.id,
+            label: entry.title,
+            icon: entry.icon,
+            checked: pinnedIdSet.has(entry.id),
+            onSelect: () =>
+              setDockPinnedIds((prev) =>
+                pinnedIdSet.has(entry.id) ? removePinned(prev, entry.id) : addPinned(prev, entry.id),
+              ),
+          }))}
+        />
+      </div>
     </nav>
   );
 }

@@ -1,7 +1,7 @@
 /**
- * A desktop window: draggable titlebar with traffic-light controls, edge and
- * corner resize handles, maximize toggle. Geometry writes back to the window
- * store (debounce-persisted, closed geometry retained — matrix-os pattern).
+ * A desktop window: draggable titlebar with traffic-light or glyph controls,
+ * edge and corner resize handles, maximize toggle. Geometry writes back to the
+ * window store (debounce-persisted, closed geometry retained — matrix-os pattern).
  */
 import { useCallback, useRef, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { X, Minus, Maximize2 } from "lucide-react";
@@ -20,8 +20,80 @@ interface Props {
   children: ReactNode;
 }
 
+interface WindowControlsProps {
+  onClose: () => void;
+  onMinimize: () => void;
+  onMaximize: () => void;
+}
+
+function WindowControls({ onClose, onMinimize, onMaximize }: WindowControlsProps) {
+  const style = useOsStore((s) => s.windowControlStyle);
+
+  if (style === "glyph") {
+    return (
+      <div className="arco-window__controls arco-window__controls--glyph">
+        <button
+          type="button"
+          className="arco-window__control"
+          aria-label="Minimize window"
+          onClick={onMinimize}
+        >
+          <Minus strokeWidth={2.5} />
+        </button>
+        <button
+          type="button"
+          className="arco-window__control"
+          aria-label="Maximize window"
+          onClick={onMaximize}
+        >
+          <Maximize2 strokeWidth={2.25} />
+        </button>
+        <button
+          type="button"
+          className="arco-window__control arco-window__control--close"
+          aria-label="Close window"
+          onClick={onClose}
+        >
+          <X strokeWidth={2.5} />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="arco-window__controls arco-window__controls--traffic">
+      <button
+        type="button"
+        className="arco-window__dot arco-window__dot--close"
+        aria-label="Close window"
+        onClick={onClose}
+      >
+        <X strokeWidth={3.5} />
+      </button>
+      <button
+        type="button"
+        className="arco-window__dot arco-window__dot--min"
+        aria-label="Minimize window"
+        onClick={onMinimize}
+      >
+        <Minus strokeWidth={3.5} />
+      </button>
+      <button
+        type="button"
+        className="arco-window__dot arco-window__dot--max"
+        aria-label="Maximize window"
+        onClick={onMaximize}
+      >
+        <Maximize2 strokeWidth={3.5} />
+      </button>
+    </div>
+  );
+}
+
 export function WindowFrame({ win, focused, children }: Props) {
   const shellView = useOsStore((s) => s.shellView);
+  const windowControlAlign = useOsStore((s) => s.windowControlAlign);
+  const windowControlStyle = useOsStore((s) => s.windowControlStyle);
   const appView = shellView === "app";
   const { close, focus, toggleMinimize, toggleMaximize, setRect } = useWindowStore();
   const dragState = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
@@ -36,8 +108,7 @@ export function WindowFrame({ win, focused, children }: Props) {
   const onTitlePointerDown = useCallback(
     (e: ReactPointerEvent) => {
       if (win.maximized) return;
-      // Ignore drags starting on the traffic-light buttons.
-      if ((e.target as HTMLElement).closest(".arco-window__dot")) return;
+      if ((e.target as HTMLElement).closest(".arco-window__dot, .arco-window__control")) return;
       dragState.current = { startX: e.clientX, startY: e.clientY, origX: win.x, origY: win.y };
       (e.target as HTMLElement).setPointerCapture(e.pointerId);
     },
@@ -92,23 +163,26 @@ export function WindowFrame({ win, focused, children }: Props) {
     resizeState.current = null;
   }, []);
 
-  // Maximized windows fill the area right of the nav rail (--arco-nav-width
-  // is set by Desktop) and below the menu bar. App view uses the same footprint
-  // but hides the titlebar and resize handles.
   const style = win.maximized || appView
     ? {
         left: "var(--arco-nav-width, 0px)",
-        top: appView ? "var(--arco-menubar-offset, 0px)" : MENUBAR_HEIGHT,
-        width: "calc(100vw - var(--arco-nav-width, 0px))",
+        top: appView ? "var(--arco-menubar-offset, 0px)" : "var(--arco-window-top, 34px)",
+        width: "calc(100% - var(--arco-nav-width, 0px))",
         height: appView
-          ? "calc(100vh - var(--arco-menubar-offset, 0px))"
-          : `calc(100vh - ${MENUBAR_HEIGHT}px)`,
+          ? "calc(100% - var(--arco-menubar-offset, 0px))"
+          : "calc(100% - var(--arco-window-top, 34px))",
         borderRadius: 0,
         zIndex: win.z,
       }
     : { left: win.x, top: win.y, width: win.w, height: win.h, zIndex: win.z };
 
   if (win.minimized) return null;
+
+  const titlebarClass = [
+    "arco-window__titlebar",
+    `arco-window__titlebar--align-${windowControlAlign}`,
+    `arco-window__titlebar--style-${windowControlStyle}`,
+  ].join(" ");
 
   return (
     <section
@@ -126,35 +200,17 @@ export function WindowFrame({ win, focused, children }: Props) {
     >
       {!appView && (
         <header
-          className="arco-window__titlebar"
+          className={titlebarClass}
           onPointerDown={onTitlePointerDown}
           onPointerMove={onTitlePointerMove}
           onPointerUp={onTitlePointerUp}
           onDoubleClick={() => toggleMaximize(win.id)}
         >
-          <div className="arco-window__dots">
-            <button
-              className="arco-window__dot arco-window__dot--close"
-              aria-label="Close window"
-              onClick={() => close(win.id)}
-            >
-              <X strokeWidth={3.5} />
-            </button>
-            <button
-              className="arco-window__dot arco-window__dot--min"
-              aria-label="Minimize window"
-              onClick={() => toggleMinimize(win.id)}
-            >
-              <Minus strokeWidth={3.5} />
-            </button>
-            <button
-              className="arco-window__dot arco-window__dot--max"
-              aria-label="Maximize window"
-              onClick={() => toggleMaximize(win.id)}
-            >
-              <Maximize2 strokeWidth={3.5} />
-            </button>
-          </div>
+          <WindowControls
+            onClose={() => close(win.id)}
+            onMinimize={() => toggleMinimize(win.id)}
+            onMaximize={() => toggleMaximize(win.id)}
+          />
           <span className="arco-window__title">{win.title}</span>
         </header>
       )}

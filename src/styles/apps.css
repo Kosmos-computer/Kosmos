@@ -11,6 +11,11 @@
   padding: var(--arco-space-m);
 }
 
+/* Icon launcher: scroll the grid body, not the whole panel (flex scroll trap). */
+.arco-panel--apps-launcher {
+  overflow: hidden;
+}
+
 .arco-panel__header {
   display: flex;
   align-items: center;
@@ -85,21 +90,14 @@
   font-weight: 600;
 }
 
-/* ── Apps library — iPhone-style icon home ─────────────────────────────────── */
+/* ── Apps library — launcher grid with neutral wells + colored marks ─────── */
 
 .arco-apps-home {
   flex: 1;
   min-height: 0;
   padding: var(--arco-space-xl) var(--arco-space-l) var(--arco-space-2xl);
   border-radius: var(--arco-radius-l);
-  background:
-    radial-gradient(ellipse 120% 80% at 15% 0%, var(--arco-accent-soft) 0%, transparent 55%),
-    radial-gradient(
-      ellipse 90% 70% at 85% 100%,
-      color-mix(in srgb, var(--arco-accent) 16%, transparent) 0%,
-      transparent 52%
-    ),
-    linear-gradient(168deg, var(--arco-bg-surface) 0%, var(--arco-bg-sunk) 100%);
+  background: var(--arco-bg-surface);
 }
 
 .arco-apps-home__section + .arco-apps-home__section {
@@ -118,8 +116,8 @@
 
 .arco-apps-home__grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--arco-space-xl) var(--arco-space-s);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--arco-space-xl) var(--arco-space-m);
   justify-items: center;
 }
 
@@ -127,38 +125,48 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--arco-space-xs);
+  gap: var(--arco-space-s);
   width: 100%;
-  max-width: 88px;
+  max-width: 104px;
 }
 
 .arco-apps-home__glyph {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 60px;
-  height: 60px;
-  border-radius: 22%;
+  width: 76px;
+  height: 76px;
+  aspect-ratio: 1 / 1;
+  border-radius: 24px;
   border: none;
-  box-shadow:
-    0 1px 0 color-mix(in srgb, #fff 22%, transparent),
-    0 8px 18px color-mix(in srgb, #000 22%, transparent);
-  transition: transform var(--arco-dur-fast), filter var(--arco-dur-fast);
+  background: var(--arco-app-icon-well);
+  box-shadow: none;
+  transition: background var(--arco-dur-fast), transform var(--arco-dur-fast);
 }
 
 .arco-apps-home__glyph:hover {
-  transform: scale(1.04);
-  filter: brightness(1.05);
+  background: var(--arco-app-icon-well-hover);
 }
 
 .arco-apps-home__glyph:active {
-  transform: scale(0.96);
-  filter: brightness(0.95);
+  transform: scale(0.98);
+}
+
+.arco-apps-home__glyph-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  color: var(--arco-text-inverted);
+  box-shadow: none;
 }
 
 .arco-apps-home__menu {
-  width: 100%;
+  display: flex;
   justify-content: center;
+  width: 100%;
 }
 
 .arco-apps-home__menu .arco-menu__panel {
@@ -167,21 +175,22 @@
 }
 
 .arco-apps-home__label {
-  display: inline-flex;
+  position: relative;
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  width: 76px;
   max-width: 100%;
   padding: 2px 4px;
   border: none;
   border-radius: var(--arco-radius-s);
   background: transparent;
-  color: var(--arco-text-primary);
-  font-size: var(--arco-text-xs);
+  color: var(--arco-text-secondary);
+  font-size: var(--arco-text-sm);
   font-weight: 500;
   line-height: 1.25;
   cursor: pointer;
-  transition: background var(--arco-dur-fast);
+  transition: background var(--arco-dur-fast), color var(--arco-dur-fast);
 }
 
 .arco-apps-home__label:hover,
@@ -193,10 +202,15 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 68px;
+  width: 100%;
+  text-align: center;
 }
 
 .arco-apps-home__more {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
@@ -213,6 +227,18 @@
 .arco-apps-home__label[aria-expanded="true"] .arco-apps-home__more {
   opacity: 1;
   color: var(--arco-text-primary);
+}
+
+.arco-apps-home__hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--arco-space-xs);
+  margin-top: var(--arco-space-xl);
+  padding: 0 var(--arco-space-m);
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-tertiary);
+  text-align: center;
 }
 
 /* Toggle switch */

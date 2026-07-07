@@ -1,22 +1,38 @@
 import type { LucideIcon } from "lucide-react";
 import {
   AppWindow,
+  Bell,
   Bot,
   Brain,
+  CreditCard,
   Globe,
+  Image,
+  Keyboard,
+  Languages,
   Layers,
   Link2,
   Lock,
+  Mic,
+  Monitor,
   Palette,
   Plug,
   Server,
   Shield,
   Sparkles,
+  Target,
+  User,
   Users,
+  Video,
+  Wallet,
   Wrench,
+  Code,
+  Gift,
 } from "lucide-react";
+import { SETTINGS_STUB_NAV_GROUPS } from "./settingsStubMock";
+import type { StubSettingsSectionId } from "./settingsStubTypes";
 
 export type SettingsSectionId =
+  | StubSettingsSectionId
   | "agent"
   | "model"
   | "appearance"
@@ -36,7 +52,9 @@ export type SettingsSectionId =
 export interface SettingsNavItem {
   id: SettingsSectionId;
   label: string;
-  icon: LucideIcon;
+  icon?: LucideIcon;
+  badge?: string;
+  children?: SettingsNavItem[];
   /** Hide unless the user can write settings. */
   requiresWrite?: boolean;
   /** Hide unless the user can manage users. */
@@ -49,7 +67,58 @@ export interface SettingsNavGroup {
   items: SettingsNavItem[];
 }
 
+const STUB_SECTION_ICONS: Partial<Record<StubSettingsSectionId, LucideIcon>> = {
+  "account-info": User,
+  "content-social": Globe,
+  "data-privacy": Lock,
+  "authorized-apps": Layers,
+  connections: Link2,
+  notifications: Bell,
+  subscriptions: Wallet,
+  "gift-inventory": Gift,
+  billing: CreditCard,
+  wallpaper: Image,
+  accessibility: Target,
+  "voice-video": Mic,
+  "text-images": Monitor,
+  "notification-settings": Bell,
+  keybinds: Keyboard,
+  language: Languages,
+  "streamer-mode": Video,
+  advanced: Code,
+};
+
+function stubNavItemToArco(item: (typeof SETTINGS_STUB_NAV_GROUPS)[number]["items"][number]): SettingsNavItem {
+  return {
+    id: item.id,
+    label: item.label,
+    icon: STUB_SECTION_ICONS[item.id],
+    badge: item.badge,
+    children: item.children?.map(stubNavItemToArco),
+  };
+}
+
+export const SETTINGS_STUB_NAV: SettingsNavGroup[] = SETTINGS_STUB_NAV_GROUPS.map((group) => ({
+  id: group.id,
+  title: group.title,
+  items: group.items.map(stubNavItemToArco),
+}));
+
+export const STUB_SETTINGS_SECTION_IDS = new Set<SettingsSectionId>(
+  SETTINGS_STUB_NAV_GROUPS.flatMap((group) =>
+    group.items.flatMap((item) => [
+      item.id,
+      ...(item.children?.map((child) => child.id) ?? []),
+    ]),
+  ),
+);
+
+export function isStubSettingsSection(sectionId: SettingsSectionId): sectionId is StubSettingsSectionId {
+  return STUB_SETTINGS_SECTION_IDS.has(sectionId);
+}
+
 export const SETTINGS_NAV_GROUPS: SettingsNavGroup[] = [
+  ...SETTINGS_STUB_NAV,
   {
     id: "general",
     title: "General",
@@ -91,6 +160,28 @@ export const SETTINGS_NAV_GROUPS: SettingsNavGroup[] = [
   },
 ];
 
+export function filterSettingsNavGroups(groups: SettingsNavGroup[], query: string): SettingsNavGroup[] {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) return groups;
+
+  return groups
+    .map((group) => {
+      const items = group.items
+        .map((item) => {
+          const itemMatches = item.label.toLowerCase().includes(normalized);
+          const children = item.children?.filter((child) => child.label.toLowerCase().includes(normalized));
+          if (itemMatches) return item;
+          if (children && children.length > 0) return { ...item, children };
+          if (!item.children && item.label.toLowerCase().includes(normalized)) return item;
+          return null;
+        })
+        .filter((item): item is SettingsNavItem => item !== null);
+
+      return items.length > 0 ? { ...group, items } : null;
+    })
+    .filter((group): group is SettingsNavGroup => group !== null);
+}
+
 export function visibleSettingsNavGroups(options: {
   canWriteSettings: boolean;
   canManageUsers: boolean;
@@ -105,13 +196,31 @@ export function visibleSettingsNavGroups(options: {
   })).filter((group) => group.items.length > 0);
 }
 
+export function parentNavItem(
+  groups: SettingsNavGroup[],
+  sectionId: SettingsSectionId,
+): SettingsNavItem | undefined {
+  for (const group of groups) {
+    for (const item of group.items) {
+      if (item.children?.some((child) => child.id === sectionId)) return item;
+    }
+  }
+  return undefined;
+}
+
 export function settingsSectionLabel(
   sectionId: SettingsSectionId,
   groups: SettingsNavGroup[],
 ): string {
+  const parent = parentNavItem(groups, sectionId);
+  if (parent) return parent.label;
+
   for (const group of groups) {
-    const item = group.items.find((entry) => entry.id === sectionId);
-    if (item) return item.label;
+    for (const item of group.items) {
+      if (item.id === sectionId) return item.label;
+      const child = item.children?.find((entry) => entry.id === sectionId);
+      if (child) return child.label;
+    }
   }
   return "Settings";
 }

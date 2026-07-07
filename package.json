@@ -33,6 +33,9 @@
     "desktop:dev": "concurrently -n web,desktop -c cyan,magenta \"npm run dev:web\" \"npm run dev -w @arco/desktop\"",
     "desktop:dev:all": "concurrently -n server,web,desktop -c yellow,cyan,magenta \"npm run dev:server\" \"npm run dev:web\" \"npm run dev -w @arco/desktop\"",
     "start": "NODE_ENV=production tsx server/index.ts",
+    "setup": "tsx scripts/setup.mts",
+    "setup:check": "tsx scripts/setup.mts --check",
+    "postinstall": "tsx scripts/postinstall.mts",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.server.json",
     "test": "tsx --test server/automations/*.test.ts server/stores/automationStore.test.ts"
   },

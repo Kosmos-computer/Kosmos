@@ -6,7 +6,8 @@
  */
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useAuthStore, type AuthPhase } from "./authStore";
-import { BootScreen, LockScreen, LoginScreen, SetupScreen } from "./screens";
+import { InstallFlow } from "./InstallFlow";
+import { BootScreen, LockScreen, LoginScreen } from "./screens";
 
 /** Boot splash lingers at least this long — matches the bar-fill animation. */
 const MIN_BOOT_MS = 2200;
@@ -113,7 +114,7 @@ export function AuthGate({ children, standalone = false }: { children: ReactNode
   return (
     <FadeSwitch screenKey={screen}>
       {screen === "boot" && <BootScreen />}
-      {screen === "setup" && <SetupScreen />}
+      {screen === "setup" && <InstallFlow />}
       {screen === "login" && <LoginScreen />}
       {screen === "locked" && <LockScreen />}
       {screen === "ready" && children}

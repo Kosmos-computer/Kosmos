@@ -7,6 +7,9 @@
   "main": "dist/main.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "icon": "node scripts/generate-icon.mjs",
+    "predev": "npm run icon",
+    "prestart": "npm run icon",
     "start": "npm run build && electron .",
     "dev": "npm run build && electron . --dev",
     "pack": "npm run build && electron-builder --dir",
@@ -42,12 +45,15 @@
     ],
     "mac": {
       "category": "public.app-category.productivity",
+      "icon": "build/icon.icns",
       "target": ["dmg", "zip"]
     },
     "win": {
+      "icon": "build/icon.png",
       "target": ["nsis"]
     },
     "linux": {
+      "icon": "build/icon.png",
       "target": ["AppImage"]
     }
   },

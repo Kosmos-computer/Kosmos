@@ -9,6 +9,7 @@ import {
   Grid3X3,
   Image,
   Layers,
+  Music,
   Video,
 } from "lucide-react";
 import type { FileEntry } from "@shared/capabilities/files";
@@ -24,6 +25,7 @@ export type FileKind =
   | "pdf"
   | "image"
   | "video"
+  | "audio"
   | "code"
   | "archive"
   | "other";
@@ -36,7 +38,10 @@ export type DriveNewItemType = DriveNewFileType | "folder";
 
 export type FilesViewMode = "list" | "grid" | "gallery";
 
-export type FilesLocation = "home" | "drive" | "recent" | "starred" | "trash";
+export type FilesLocation = "home" | "drive" | "music" | "recent" | "starred" | "trash";
+
+/** Root Music folder name — must match server seed catalog. */
+export const MUSIC_FOLDER_NAME = "Music";
 
 export interface DriveFileItem {
   id: string;
@@ -67,6 +72,7 @@ export const FILE_KIND_ICON: Record<FileKind, LucideIcon> = {
   pdf: FileText,
   image: Image,
   video: Video,
+  audio: Music,
   code: Code2,
   archive: Archive,
   other: FileText,
@@ -82,6 +88,7 @@ export const FILE_KIND_TONE: Record<FileKind, string> = {
   pdf: "danger",
   image: "accent",
   video: "accent",
+  audio: "accent",
   code: "neutral",
   archive: "neutral",
   other: "neutral",
@@ -115,6 +122,7 @@ export function mimeToFileKind(entry: FileEntry): FileKind {
   if (entry.mimeType === "application/pdf") return "pdf";
   if (entry.mimeType.startsWith("image/")) return "image";
   if (entry.mimeType.startsWith("video/")) return "video";
+  if (entry.mimeType.startsWith("audio/")) return "audio";
   if (/\.(ts|tsx|js|jsx|py|rs|go|json)$/i.test(entry.name) || entry.mimeType.includes("json")) return "code";
   if (/\.(zip|tar|gz|tgz)$/i.test(entry.name)) return "archive";
   return "other";

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { musicArtPath } from "@shared/musicSeed";
 import type { MusicImageTone } from "./types";
 
@@ -18,6 +18,11 @@ export interface AlbumArtProps {
 /** Album art from embedded MP3 tags, with gradient fallback when missing. */
 export function AlbumArt({ trackId, tone, size = "sm", alt = "" }: AlbumArtProps) {
   const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setFailed(false);
+  }, [trackId]);
+
   const src = trackId && !failed ? musicArtPath(trackId) : undefined;
 
   if (src) {

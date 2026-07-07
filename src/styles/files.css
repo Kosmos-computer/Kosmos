@@ -558,6 +558,10 @@
   border-bottom: 1px solid var(--arco-border);
 }
 
+.arco-drive-preview__audio {
+  width: 100%;
+}
+
 .arco-drive-preview__placeholder {
   display: flex;
   flex-direction: column;

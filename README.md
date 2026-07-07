@@ -17,19 +17,38 @@ A generative AI operating system prototype. A desktop shell in the browser where
 
 ## Quick start
 
-Requires Node 22+.
+Requires **Node 22+** (see `.nvmrc`). On a fresh clone:
 
 ```bash
-npm install
-npm run generate   # generates LLM prompts + OpenUI schema (already committed)
+npm install        # installs deps; postinstall runs a lightweight readiness check
+npm run setup      # seeds .env + data/, generates prompts, builds bundled apps
 npm run dev        # starts API server (:4600) + Vite dev server (:4610)
 ```
 
 Open http://localhost:4610.
 
-### First run: create the owner account
+`npm run setup:check` prints the same readiness report without modifying anything — useful in CI or after a partial install.
 
-On first load Arco shows a boot splash, then a **setup screen**: pick a username and password (8+ characters) to create the **owner** account for this instance. There's no email — accounts are local to your Arco data dir. To start over, stop the server and delete `data/users.json` and `data/auth-sessions.json`.
+### First run: install wizard
+
+On first load Arco shows a boot splash, then an **install wizard**: choose how models run (mock, cloud, local, or Ollama), optionally connect a cloud API key, and create the **owner** account (username + password, 8+ characters). Settings from the wizard are saved to `data/settings.json`. There's no email — accounts are local to your Arco data dir.
+
+If machine setup is incomplete, the welcome step lists what's missing and asks you to run `npm run setup` from the repo root, then refresh.
+
+To start over, stop the server and delete `data/users.json` and `data/auth-sessions.json`.
+
+### Dependencies
+
+| Component | Required? | Notes |
+| --- | --- | --- |
+| **Node.js 22+** | Yes | `engines` in package.json; use `nvm use` with `.nvmrc` |
+| **npm install** | Yes | Compiles `better-sqlite3`; macOS needs Xcode CLT, Linux needs build tools |
+| **npm run setup** | Yes (first run) | Copies `.env`, generates prompts, builds bundled apps |
+| **LLM API key** | No | Mock provider works offline; add a key in the wizard or Settings |
+| **Python 3.11+** | No | For `npm run voice` |
+| **Voice venv** | No | `npm run setup -- --with-voice` |
+| **Ollama** | No | Local models via Ollama preset |
+| **llama-server + Rust** | No | Arco Models local path (`npm run models`) |
 
 ### Accounts, roles, and locking
 
@@ -108,6 +127,8 @@ for engine swapping.
 
 | Command | Description |
 | --- | --- |
+| `npm run setup` | First-install setup (env, prompts, bundled apps) |
+| `npm run setup:check` | Print install readiness without changing files |
 | `npm run dev` | Server + web dev servers with hot reload |
 | `npm run dev:all` | Server + web + voice server together |
 | `npm run voice` | Voice server only (see `voice-server/README.md` for setup) |

@@ -14,7 +14,8 @@
  */
 import { Hono, type Context } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
-import type { AuthStatus, Role } from "../../shared/types.js";
+import type { AuthStatus, Role, Settings } from "../../shared/types.js";
+import { saveSettings } from "../env.js";
 import { AUTH_COOKIE, type AuthEnv } from "./middleware.js";
 import { authSessionStore } from "./sessionStore.js";
 import { userStore } from "./userStore.js";
@@ -87,9 +88,24 @@ authRoutes.get("/status", (c) => {
 authRoutes.post("/setup", async (c) => {
   // Only valid while zero accounts exist — afterwards owners add users.
   if (!userStore.isEmpty()) return c.json({ error: "Setup already completed" }, 403);
-  const body = (await c.req.json()) as { username: string; displayName?: string; password: string };
+  const body = (await c.req.json()) as {
+    username: string;
+    displayName?: string;
+    password: string;
+    settings?: Partial<Settings>;
+  };
   try {
-    const user = userStore.create({ ...body, role: "owner" });
+    const user = userStore.create({
+      username: body.username,
+      displayName: body.displayName,
+      password: body.password,
+      role: "owner",
+    });
+    if (body.settings && typeof body.settings === "object") {
+      const patch = { ...body.settings };
+      if (patch.apiKey && patch.apiKey.startsWith("••••")) delete patch.apiKey;
+      saveSettings(patch);
+    }
     setCookie(c, AUTH_COOKIE, authSessionStore.create(user.id), COOKIE_OPTS);
     return c.json({ user });
   } catch (err) {

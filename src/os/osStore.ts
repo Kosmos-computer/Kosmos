@@ -6,8 +6,37 @@ import { create } from "zustand";
 import type { AppSummary, ConfirmOption, WebApp } from "@shared/types";
 import type { InstalledAppInfo } from "@shared/manifest";
 import { api } from "../lib/api";
+import { getArcoDesktop } from "../lib/desktopBridge";
 import { normalizeWallpaper, type WallpaperId } from "./wallpaper/wallpapers";
 import { normalizeAuthWallpaper, type AuthWallpaperId } from "./wallpaper/authWallpapers";
+import {
+  ACCENT_PRESET_STORAGE_KEY,
+  applyAccentPreset,
+  applyFontPreset,
+  applyRadiusPreset,
+  applySpacingPreset,
+  applyTextScalePreset,
+  FONT_PRESET_STORAGE_KEY,
+  normalizeAccentPreset,
+  normalizeFontPreset,
+  normalizeRadiusPreset,
+  normalizeSpacingPreset,
+  normalizeTextScalePreset,
+  normalizeWindowControlAlign,
+  normalizeWindowControlStyle,
+  RADIUS_PRESET_STORAGE_KEY,
+  SPACING_PRESET_STORAGE_KEY,
+  TEXT_SCALE_PRESET_STORAGE_KEY,
+  WINDOW_CONTROL_ALIGN_STORAGE_KEY,
+  WINDOW_CONTROL_STYLE_STORAGE_KEY,
+  type AccentPreset,
+  type FontPreset,
+  type RadiusPreset,
+  type SpacingPreset,
+  type TextScalePreset,
+  type WindowControlAlign,
+  type WindowControlStyle,
+} from "./themeTokens";
 
 export type Theme = "dark" | "light";
 
@@ -36,6 +65,13 @@ export interface ShellConfirm {
 
 interface OsStore {
   theme: Theme;
+  accentPreset: AccentPreset;
+  radiusPreset: RadiusPreset;
+  fontPreset: FontPreset;
+  textScalePreset: TextScalePreset;
+  spacingPreset: SpacingPreset;
+  windowControlStyle: WindowControlStyle;
+  windowControlAlign: WindowControlAlign;
   wallpaper: WallpaperId;
   authWallpaper: AuthWallpaperId;
   notifications: OsNotification[];
@@ -58,6 +94,13 @@ interface OsStore {
   navBrandImage: string | null;
 
   setTheme: (theme: Theme) => void;
+  setAccentPreset: (preset: AccentPreset) => void;
+  setRadiusPreset: (preset: RadiusPreset) => void;
+  setFontPreset: (preset: FontPreset) => void;
+  setTextScalePreset: (preset: TextScalePreset) => void;
+  setSpacingPreset: (preset: SpacingPreset) => void;
+  setWindowControlStyle: (style: WindowControlStyle) => void;
+  setWindowControlAlign: (align: WindowControlAlign) => void;
   setWallpaper: (wallpaper: WallpaperId) => void;
   setAuthWallpaper: (authWallpaper: AuthWallpaperId) => void;
   setNavBrandImage: (image: string | null) => void;
@@ -84,8 +127,26 @@ function loadPinnedIds(key: string): string[] {
   }
 }
 
+const initialAccentPreset = normalizeAccentPreset(localStorage.getItem(ACCENT_PRESET_STORAGE_KEY));
+const initialRadiusPreset = normalizeRadiusPreset(localStorage.getItem(RADIUS_PRESET_STORAGE_KEY));
+const initialFontPreset = normalizeFontPreset(localStorage.getItem(FONT_PRESET_STORAGE_KEY));
+const initialTextScalePreset = normalizeTextScalePreset(localStorage.getItem(TEXT_SCALE_PRESET_STORAGE_KEY));
+const initialSpacingPreset = normalizeSpacingPreset(localStorage.getItem(SPACING_PRESET_STORAGE_KEY));
+applyAccentPreset(initialAccentPreset);
+applyRadiusPreset(initialRadiusPreset);
+applyFontPreset(initialFontPreset);
+applyTextScalePreset(initialTextScalePreset);
+applySpacingPreset(initialSpacingPreset);
+
 export const useOsStore = create<OsStore>((set) => ({
   theme: (localStorage.getItem("arco:theme") as Theme) || "dark",
+  accentPreset: initialAccentPreset,
+  radiusPreset: initialRadiusPreset,
+  fontPreset: initialFontPreset,
+  textScalePreset: initialTextScalePreset,
+  spacingPreset: initialSpacingPreset,
+  windowControlStyle: normalizeWindowControlStyle(localStorage.getItem(WINDOW_CONTROL_STYLE_STORAGE_KEY)),
+  windowControlAlign: normalizeWindowControlAlign(localStorage.getItem(WINDOW_CONTROL_ALIGN_STORAGE_KEY)),
   wallpaper: normalizeWallpaper(localStorage.getItem("arco:wallpaper")),
   authWallpaper: normalizeAuthWallpaper(localStorage.getItem("arco:auth-wallpaper")),
   notifications: [],
@@ -104,7 +165,48 @@ export const useOsStore = create<OsStore>((set) => ({
   setTheme: (theme) => {
     localStorage.setItem("arco:theme", theme);
     document.documentElement.dataset.theme = theme;
+    void getArcoDesktop()?.setTitleBarTheme(theme);
     set({ theme });
+  },
+
+  setAccentPreset: (accentPreset) => {
+    localStorage.setItem(ACCENT_PRESET_STORAGE_KEY, accentPreset);
+    applyAccentPreset(accentPreset);
+    set({ accentPreset });
+  },
+
+  setRadiusPreset: (radiusPreset) => {
+    localStorage.setItem(RADIUS_PRESET_STORAGE_KEY, radiusPreset);
+    applyRadiusPreset(radiusPreset);
+    set({ radiusPreset });
+  },
+
+  setFontPreset: (fontPreset) => {
+    localStorage.setItem(FONT_PRESET_STORAGE_KEY, fontPreset);
+    applyFontPreset(fontPreset);
+    set({ fontPreset });
+  },
+
+  setTextScalePreset: (textScalePreset) => {
+    localStorage.setItem(TEXT_SCALE_PRESET_STORAGE_KEY, textScalePreset);
+    applyTextScalePreset(textScalePreset);
+    set({ textScalePreset });
+  },
+
+  setSpacingPreset: (spacingPreset) => {
+    localStorage.setItem(SPACING_PRESET_STORAGE_KEY, spacingPreset);
+    applySpacingPreset(spacingPreset);
+    set({ spacingPreset });
+  },
+
+  setWindowControlStyle: (windowControlStyle) => {
+    localStorage.setItem(WINDOW_CONTROL_STYLE_STORAGE_KEY, windowControlStyle);
+    set({ windowControlStyle });
+  },
+
+  setWindowControlAlign: (windowControlAlign) => {
+    localStorage.setItem(WINDOW_CONTROL_ALIGN_STORAGE_KEY, windowControlAlign);
+    set({ windowControlAlign });
   },
 
   setWallpaper: (wallpaper) => {

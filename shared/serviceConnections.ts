@@ -3,11 +3,17 @@
  * Brand-free provider ids; apps bind by connectionId, not vendor secrets.
  */
 
-export type ConnectionDomain = "teams" | "social";
+export type ConnectionDomain = "teams" | "social" | "video" | "podcast";
 
 export type TeamProviderId = "mattermost" | "slack" | "matrix";
 export type SocialProviderId = "bluesky" | "mastodon" | "nostr";
-export type ServiceProviderId = TeamProviderId | SocialProviderId;
+export type VideoProviderId = "youtube" | "vimeo";
+export type PodcastProviderId = "spotify" | "apple-podcasts" | "audible";
+export type ServiceProviderId =
+  | TeamProviderId
+  | SocialProviderId
+  | VideoProviderId
+  | PodcastProviderId;
 
 export type ConnectionStatus = "connected" | "expired" | "error";
 
@@ -98,6 +104,56 @@ export const SERVICE_PROVIDER_PRESETS: ServiceProviderPreset[] = [
     requiresToken: true,
     accent: "#8b5cf6",
     initials: "No",
+  },
+  {
+    id: "youtube",
+    domain: "video",
+    label: "YouTube",
+    hint: "Connect a Google/YouTube account for subscriptions and recommendations.",
+    requiresInstance: false,
+    requiresToken: true,
+    accent: "#ff0000",
+    initials: "YT",
+  },
+  {
+    id: "vimeo",
+    domain: "video",
+    label: "Vimeo",
+    hint: "Personal access token for your Vimeo library and watch history.",
+    requiresInstance: false,
+    requiresToken: true,
+    accent: "#1ab7ea",
+    initials: "Vi",
+  },
+  {
+    id: "spotify",
+    domain: "podcast",
+    label: "Spotify",
+    hint: "Spotify podcasts and saved shows — OAuth replaces token paste later.",
+    requiresInstance: false,
+    requiresToken: true,
+    accent: "#1db954",
+    initials: "Sp",
+  },
+  {
+    id: "apple-podcasts",
+    domain: "podcast",
+    label: "Apple Podcasts",
+    hint: "Apple ID token for subscribed shows and listening history.",
+    requiresInstance: false,
+    requiresToken: true,
+    accent: "#fa2d48",
+    initials: "AP",
+  },
+  {
+    id: "audible",
+    domain: "podcast",
+    label: "Audible",
+    hint: "Audible library for audiobooks and series progress.",
+    requiresInstance: false,
+    requiresToken: true,
+    accent: "#f8991c",
+    initials: "Au",
   },
 ];
 

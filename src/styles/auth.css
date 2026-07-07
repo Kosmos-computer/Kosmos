@@ -245,3 +245,104 @@
 .arco-auth-rainbow__segment--yellow { background: #ffed00; }
 .arco-auth-rainbow__segment--green { background: #008026; }
 .arco-auth-rainbow__segment--blue { background: #004dff; }
+
+/* ── First-run install wizard (InstallFlow) ─────────────────────────────── */
+
+.arco-install__progress {
+  display: flex;
+  justify-content: center;
+  gap: var(--arco-space-xs);
+  margin-bottom: var(--arco-space-s);
+}
+
+.arco-install__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--arco-bg-hover);
+  border: 1px solid var(--arco-border);
+  transition:
+    background var(--arco-dur-fast),
+    border-color var(--arco-dur-fast),
+    transform var(--arco-dur-fast);
+}
+
+.arco-install__dot--done {
+  background: var(--arco-accent-soft);
+  border-color: var(--arco-accent-strong);
+}
+
+.arco-install__dot--active {
+  background: var(--arco-accent);
+  border-color: var(--arco-accent-strong);
+  transform: scale(1.15);
+}
+
+.arco-install__checks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-m);
+  border-radius: var(--arco-radius-m);
+  background: var(--arco-bg-hover);
+  border: 1px solid var(--arco-border);
+}
+
+.arco-install__checks-title {
+  font-size: var(--arco-text-sm);
+  font-weight: 600;
+  color: var(--arco-text-primary);
+}
+
+.arco-install__checks-lead {
+  margin: 0;
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+  line-height: 1.5;
+}
+
+.arco-install__checks-lead code {
+  font-family: var(--arco-font-mono, ui-monospace, monospace);
+  font-size: 0.95em;
+  padding: 1px 4px;
+  border-radius: var(--arco-radius-s);
+  background: var(--arco-bg-surface);
+  border: 1px solid var(--arco-border);
+}
+
+.arco-install__checks-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-xs);
+}
+
+.arco-install__checks-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: var(--arco-space-m);
+  position: relative;
+}
+
+.arco-install__checks-list li::before {
+  content: "✗";
+  position: absolute;
+  left: 0;
+  font-size: var(--arco-text-xs);
+  color: var(--arco-danger);
+}
+
+.arco-install__checks-label {
+  font-size: var(--arco-text-sm);
+  font-weight: 500;
+  color: var(--arco-text-primary);
+}
+
+.arco-install__checks-hint {
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+  line-height: 1.4;
+}

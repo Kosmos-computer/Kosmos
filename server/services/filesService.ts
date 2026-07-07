@@ -19,15 +19,18 @@ import {
   type FileCreateInput,
   type FileEntry,
 } from "../../shared/capabilities/files.js";
+import { MUSIC_SEED_TRACKS } from "../../shared/musicSeed.js";
 import {
   DRIVE_SEED_FILES,
   DRIVE_SEED_FOLDERS,
+  MUSIC_FOLDER_NAME,
 } from "../seeds/driveSeedData.js";
+import { resolveSeedTrack } from "./musicSeedService.js";
 import { dataDirs } from "../env.js";
 import { announceAppEvent } from "../bus.js";
 
-/** Content larger than this is rejected — the store is for documents, not disk images. */
-const MAX_CONTENT_BYTES = 10 * 1024 * 1024;
+/** Content larger than this is rejected — large enough for seed MP3s (Glow ≈ 10 MB). */
+const MAX_CONTENT_BYTES = 12 * 1024 * 1024;
 
 const BLOBS_DIR = path.join(dataDirs.root, "files");
 const SEED_PDF_PATH = path.join(import.meta.dirname, "../seeds/arco-test.pdf");
@@ -216,6 +219,51 @@ function seedDriveCatalog(): void {
   if (seeded > 0) {
     announceChange();
     console.log(`[files] seeded ${seeded} Drive sample file(s)`);
+  }
+
+  seedMusicLibrary();
+}
+
+/** Import tirufm seed MP3s into the Drive Music folder (idempotent by name). */
+function seedMusicLibrary(): void {
+  const musicFolderId = findFolderId(MUSIC_FOLDER_NAME, null);
+  if (!musicFolderId) return;
+
+  let seeded = 0;
+  for (const track of MUSIC_SEED_TRACKS) {
+    if (seedEntryExists(track.fileName, musicFolderId)) continue;
+
+    const resolved = resolveSeedTrack(track.id);
+    if (!resolved) {
+      console.warn(`[files] skipping ${track.fileName}: source MP3 not found`);
+      continue;
+    }
+
+    const data = fs.readFileSync(resolved.absPath);
+    if (data.length > MAX_CONTENT_BYTES) {
+      console.warn(`[files] skipping ${track.fileName}: exceeds ${MAX_CONTENT_BYTES} byte limit`);
+      continue;
+    }
+
+    const now = new Date().toISOString();
+    const entry: FileEntry = {
+      id: crypto.randomUUID(),
+      name: track.fileName,
+      parentId: musicFolderId,
+      mimeType: "audio/mpeg",
+      size: data.length,
+      starred: false,
+      trashed: false,
+      createdAt: now,
+      updatedAt: now,
+    };
+    insertSeedFile(entry, data);
+    seeded += 1;
+  }
+
+  if (seeded > 0) {
+    announceChange();
+    console.log(`[files] seeded ${seeded} music file(s) into ${MUSIC_FOLDER_NAME}`);
   }
 }
 

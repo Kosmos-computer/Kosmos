@@ -24,6 +24,7 @@ import type {
   ExternalAccessInfo,
   ExternalClientScope,
   GitInfo,
+  InstallStatus,
   McpServerInfo,
   McpTransport,
   Project,
@@ -100,8 +101,13 @@ function post<T>(url: string, body?: unknown): Promise<T> {
 export const api = {
   // Auth
   authStatus: () => fetch("/api/auth/status").then((r) => json<AuthStatus>(r)),
-  authSetup: (data: { username: string; displayName?: string; password: string }) =>
-    post<{ user: AuthUser }>("/api/auth/setup", data),
+  authSetup: (data: {
+    username: string;
+    displayName?: string;
+    password: string;
+    settings?: Partial<Settings>;
+  }) => post<{ user: AuthUser }>("/api/auth/setup", data),
+  installStatus: () => fetch("/api/system/install-status").then((r) => json<InstallStatus>(r)),
   authLogin: (username: string, password: string) =>
     post<{ user: AuthUser }>("/api/auth/login", { username, password }),
   authLogout: () => post<{ ok: true }>("/api/auth/logout"),

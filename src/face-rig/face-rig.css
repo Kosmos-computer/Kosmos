@@ -31,9 +31,9 @@
 .arco-face__eye {
   position: absolute;
   top: 32%;
-  width: 1.05em;
+  width: 0.65em;
   height: 0.72em;
-  border-radius: 0.18em;
+  border-radius: 0.16em;
   background: var(--arco-face-feature, var(--arco-bg-surface-solid));
   overflow: hidden;
   animation: arco-face-blink 4.6s infinite;
@@ -51,9 +51,9 @@
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 0.52em;
+  width: 0.32em;
   height: 0.36em;
-  margin: -0.18em 0 0 -0.26em;
+  margin: -0.18em 0 0 -0.16em;
   border-radius: 0.1em;
   background: var(--arco-face-feature, var(--arco-bg-surface-solid));
   transition: transform 300ms ease;

@@ -27,10 +27,14 @@ import {
   UsersRound,
   Share2,
   Brain,
+  MessagesSquare,
   Map,
   CircleDollarSign,
   Music,
   Download,
+  PlaySquare,
+  Headphones,
+  Search,
 } from "lucide-react";
 import type { SystemAppId } from "./windowStore";
 import { ChatApp } from "../apps/chat/ChatApp";
@@ -49,6 +53,7 @@ import { TasksApp } from "../apps/tasks/TasksApp";
 import { ContactsApp } from "../apps/contacts/ContactsApp";
 import { GroupsApp } from "../apps/groups/GroupsApp";
 import { SocialApp } from "../apps/social/SocialApp";
+import { MessengerApp } from "../apps/messenger/MessengerApp";
 import { SheetsApp } from "../apps/sheets/SheetsApp";
 import { GeneratorApp } from "../apps/generator/GeneratorApp";
 import { TerminalApp } from "../apps/terminal/TerminalApp";
@@ -59,7 +64,10 @@ import { MapsApp } from "../apps/maps/MapsApp";
 import { PayApp } from "../apps/pay/PayApp";
 import { MemoryApp } from "../apps/memory/MemoryApp";
 import { MusicApp } from "../apps/music/MusicApp";
+import { VideoApp } from "../apps/video/VideoApp";
+import { PodcastApp } from "../apps/podcast/PodcastApp";
 import { DownloadsApp } from "../apps/downloads/DownloadsApp";
+import { SearchApp } from "../apps/search/SearchApp";
 
 export interface SystemAppDef {
   id: SystemAppId;
@@ -79,7 +87,10 @@ export const SYSTEM_APPS: SystemAppDef[] = [
   { id: "automations", title: "Automations", icon: CalendarClock, component: AutomationsApp },
   { id: "files", title: "Drive", icon: HardDrive, component: FilesApp },
   { id: "maps", title: "Maps", icon: Map, component: MapsApp },
+  { id: "search", title: "Search", icon: Search, component: SearchApp },
   { id: "music", title: "Music", icon: Music, component: MusicApp },
+  { id: "video", title: "Video", icon: PlaySquare, component: VideoApp },
+  { id: "podcast", title: "Podcasts", icon: Headphones, component: PodcastApp },
   { id: "downloads", title: "Downloads", icon: Download, component: DownloadsApp },
   { id: "pay", title: "Pay", icon: CircleDollarSign, component: PayApp },
   { id: "notes", title: "Notes", icon: StickyNote, component: NotesApp },
@@ -88,6 +99,7 @@ export const SYSTEM_APPS: SystemAppDef[] = [
   { id: "tasks", title: "Tasks", icon: CheckSquare, component: TasksApp },
   { id: "contacts", title: "Contacts", icon: Contact, component: ContactsApp },
   { id: "groups", title: "Groups", icon: UsersRound, component: GroupsApp },
+  { id: "messenger", title: "Messenger", icon: MessagesSquare, component: MessengerApp },
   { id: "social", title: "Social", icon: Share2, component: SocialApp },
   { id: "sheets", title: "Sheets", icon: Table, component: SheetsApp },
   { id: "generator", title: "Generator", icon: Code2, component: GeneratorApp },

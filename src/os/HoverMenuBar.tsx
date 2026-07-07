@@ -16,8 +16,8 @@ export interface HoverMenuBarProps {
 
 type BarPhase = "idle" | "peaked" | "open";
 
-const HOVER_ZONE_HEIGHT_PX = 4;
-const PEAK_DELAY_MS = 480;
+/** Hold time on the top edge before the bar fully reveals (matches Longformer HoverStatusBar). */
+const PEAK_DELAY_MS = 520;
 
 export function HoverMenuBar({ enabled = true, onOpenChange, children }: HoverMenuBarProps) {
   const [phase, setPhase] = useState<BarPhase>("idle");
@@ -78,12 +78,7 @@ export function HoverMenuBar({ enabled = true, onOpenChange, children }: HoverMe
         .join(" ")}
       onMouseLeave={handleHoverLeave}
     >
-      <div
-        className="arco-hover-menubar__zone"
-        style={{ height: HOVER_ZONE_HEIGHT_PX }}
-        onMouseEnter={handleHoverEnter}
-        aria-hidden="true"
-      />
+      <div className="arco-hover-menubar__zone" onMouseEnter={handleHoverEnter} aria-hidden="true" />
       <div
         ref={barRef}
         className={[

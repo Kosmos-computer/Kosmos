@@ -27,7 +27,11 @@ export interface DriveSeedFile {
   folder?: string;
 }
 
+/** Root Music folder — surfaced by the Drive sidebar Music tab. */
+export const MUSIC_FOLDER_NAME = "Music";
+
 export const DRIVE_SEED_FOLDERS: DriveSeedFolder[] = [
+  { name: MUSIC_FOLDER_NAME },
   { name: "Projects" },
   { name: "Shared" },
   { name: "Design", parent: "Projects" },

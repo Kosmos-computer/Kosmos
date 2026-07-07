@@ -4,6 +4,8 @@
   position: fixed;
   inset: 0;
   overflow: hidden;
+  /* In-browser shell: menubar lives inside the desktop. Electron overrides to 0. */
+  --arco-window-top: 34px;
 }
 
 /* ── Menu bar ─────────────────────────────────────────────────────────────── */
@@ -96,10 +98,6 @@
   pointer-events: none;
 }
 
-.arco-hover-menubar--peaked {
-  height: 56px;
-}
-
 .arco-hover-menubar--open {
   inset: 0;
   z-index: var(--arco-z-overlay);
@@ -110,13 +108,13 @@
   top: 0;
   left: 0;
   right: 0;
+  height: 4px;
   pointer-events: auto;
 }
 
-.arco-hover-menubar--peaked .arco-hover-menubar__zone,
 .arco-hover-menubar--open .arco-hover-menubar__zone {
   inset: 0;
-  height: auto;
+  height: 100%;
 }
 
 .arco-hover-menubar__tray {
@@ -126,9 +124,8 @@
   right: 0;
   display: flex;
   flex-direction: column;
-  padding: var(--arco-space-s) var(--arco-space-m) 0;
   overflow: visible;
-  transform: translateY(calc(-100% - 12px));
+  transform: translateY(calc(-100% - 8px));
   opacity: 0;
   pointer-events: none;
   transition:
@@ -188,7 +185,6 @@
   transform: translateY(0);
   opacity: 1;
   pointer-events: auto;
-  padding-top: 0;
 }
 
 .arco-hover-menubar__tray--open .arco-hover-menubar__peak {
@@ -320,6 +316,21 @@
 }
 .arco-navrail__items::-webkit-scrollbar {
   display: none;
+}
+
+.arco-navrail__footer {
+  flex-shrink: 0;
+  margin-top: var(--arco-space-2xs);
+}
+
+.arco-navrail__more-apps {
+  display: flex;
+  width: 100%;
+}
+
+.arco-navrail__more-apps .arco-menu__panel {
+  max-height: min(420px, calc(100vh - 80px));
+  overflow-y: auto;
 }
 
 .arco-navrail__itemslot {
@@ -490,7 +501,7 @@
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: var(--arco-space-xs);
   padding: 7px 10px;
   border-radius: 18px;
@@ -500,9 +511,52 @@
   border: 1px solid var(--arco-border);
   box-shadow: var(--arco-shadow-chrome);
   z-index: var(--arco-z-chrome);
+  width: max-content;
   max-width: calc(100vw - 24px);
+  /* Visible so dock tooltips and top-anchored menus can extend above the pill. */
+  overflow: visible;
+}
+
+.arco-dock__items {
+  flex: 1 1 0;
+  min-width: 0;
   overflow-x: auto;
+  overflow-y: hidden;
+  /* Reserve headroom inside the scroll box so hover tooltips aren't clipped. */
+  padding-top: 56px;
+  margin-top: -56px;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+}
+.arco-dock__items::-webkit-scrollbar {
+  display: none;
+}
+
+.arco-dock__items-track {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-xs);
+  width: max-content;
+  min-width: 100%;
+}
+
+.arco-dock__actions {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-xs);
+  padding-left: var(--arco-space-xs);
+  margin-left: var(--arco-space-2xs);
+  border-left: 1px solid var(--arco-border);
+  background: var(--arco-bg-chrome);
+  overflow: visible;
+}
+
+.arco-dock__all-apps .arco-menu__panel,
+.arco-dock__more-apps .arco-menu__panel {
+  max-height: min(420px, calc(100vh - 120px));
+  overflow-y: auto;
 }
 
 .arco-dock__item {
@@ -575,11 +629,30 @@
   color: #fff;
 }
 
+.arco-dock__item--all-apps,
 .arco-dock__item--add {
   color: var(--arco-text-tertiary);
 }
+.arco-dock__item--all-apps:hover,
 .arco-dock__item--add:hover {
   color: var(--arco-text-primary);
+}
+
+.arco-dock__overflow-count {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--arco-bg-active);
+  border: 1px solid var(--arco-border);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 14px;
+  color: var(--arco-text-secondary);
+  pointer-events: none;
 }
 
 .arco-dock__tooltip {
@@ -598,6 +671,7 @@
   pointer-events: none;
   opacity: 0;
   transition: opacity var(--arco-dur-fast);
+  z-index: 1;
 }
 .arco-dock__item:hover .arco-dock__tooltip {
   opacity: 1;
@@ -610,6 +684,7 @@
   inset: auto 0 0;
   z-index: var(--arco-z-chrome);
   pointer-events: none;
+  overflow: visible;
 }
 
 .arco-hover-dock--peaked {
@@ -648,6 +723,7 @@
   transform: translateY(calc(100% + 12px));
   opacity: 0;
   pointer-events: none;
+  overflow: visible;
   transition:
     transform var(--arco-dur-fast) var(--arco-ease),
     opacity var(--arco-dur-fast) var(--arco-ease);
@@ -712,6 +788,8 @@
   left: auto;
   transform: none;
   margin: 0 auto;
+  width: min(max-content, calc(100vw - 2 * var(--arco-space-m)));
+  max-width: calc(100vw - 2 * var(--arco-space-m));
 }
 
 /* ── Windows ──────────────────────────────────────────────────────────────── */
@@ -771,11 +849,41 @@
   user-select: none;
   cursor: default;
   flex-shrink: 0;
+  position: relative;
 }
 
-.arco-window__dots {
+.arco-window__controls {
   display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.arco-window__controls--traffic {
   gap: 7px;
+}
+
+.arco-window__titlebar--style-traffic.arco-window__titlebar--align-left .arco-window__controls--traffic {
+  position: absolute;
+  left: var(--arco-space-m);
+}
+
+.arco-window__titlebar--style-traffic.arco-window__titlebar--align-right .arco-window__controls--traffic {
+  position: absolute;
+  right: var(--arco-space-m);
+}
+
+.arco-window__titlebar--style-glyph.arco-window__titlebar--align-right {
+  padding-right: 0;
+}
+
+.arco-window__titlebar--style-glyph.arco-window__titlebar--align-right .arco-window__controls--glyph {
+  margin-left: auto;
+  height: 100%;
+}
+
+.arco-window__titlebar--style-glyph.arco-window__titlebar--align-left .arco-window__controls--glyph {
+  order: -1;
+  height: 100%;
 }
 
 .arco-window__dot {
@@ -788,6 +896,7 @@
   align-items: center;
   justify-content: center;
   color: transparent;
+  cursor: pointer;
 }
 .arco-window__dot:hover {
   color: rgba(0, 0, 0, 0.55);
@@ -800,8 +909,32 @@
 .arco-window__dot--min { background: #febc2e; }
 .arco-window__dot--max { background: #28c840; }
 
+.arco-window__control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: var(--arco-text-secondary);
+  cursor: pointer;
+}
+.arco-window__control:hover {
+  background: var(--arco-bg-hover);
+}
+.arco-window__control--close:hover {
+  background: var(--arco-danger);
+  color: var(--arco-text-inverted);
+}
+.arco-window__control svg {
+  width: 12px;
+  height: 12px;
+}
+
 .arco-window__title {
   flex: 1;
+  min-width: 0;
   text-align: center;
   font-size: var(--arco-text-sm);
   font-weight: 600;
@@ -809,8 +942,20 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.arco-window__titlebar--style-traffic.arco-window__titlebar--align-left .arco-window__title {
   /* Balance the traffic dots so the title optically centers */
   margin-right: 50px;
+}
+
+.arco-window__titlebar--style-traffic.arco-window__titlebar--align-right .arco-window__title {
+  margin-left: 50px;
+}
+
+.arco-window__titlebar--style-glyph .arco-window__title {
+  text-align: left;
+  padding-left: var(--arco-space-xs);
 }
 
 .arco-window__content {
@@ -932,8 +1077,8 @@
 /* ── Standalone Electron app windows ───────────────────────────────────────── */
 
 .arco-standalone-window {
-  width: 100vw;
-  height: 100vh;
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   background: var(--arco-bg-desktop);
@@ -944,4 +1089,215 @@
 .arco-standalone-window > * {
   flex: 1;
   min-height: 0;
+}
+
+/* ── Electron native window chrome ─────────────────────────────────────────── */
+
+html[data-electron] {
+  --arco-electron-titlebar-height: 34px;
+  --arco-menubar-height: 34px;
+  --arco-electron-traffic-left: 0px;
+}
+
+html[data-electron][data-platform="darwin"] {
+  --arco-electron-traffic-left: 78px;
+}
+
+html[data-electron] #root {
+  box-sizing: border-box;
+  height: 100%;
+  padding-top: var(--arco-electron-titlebar-height);
+}
+
+html[data-electron] .arco-desktop {
+  --arco-window-top: 0px;
+  top: var(--arco-electron-titlebar-height);
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: auto;
+}
+
+/* Desktop view keeps a second menubar row below the dedicated title strip. */
+html[data-electron] .arco-desktop:not(.arco-desktop--app-view) {
+  top: calc(var(--arco-electron-titlebar-height) + var(--arco-menubar-height));
+}
+
+html[data-electron] .arco-navrail {
+  top: 0;
+}
+
+.arco-electron-window-chrome {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 99999;
+  height: var(--arco-electron-titlebar-height);
+  min-height: var(--arco-electron-titlebar-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--arco-space-l);
+  background: var(--arco-bg-surface-solid);
+  border-bottom: 1px solid var(--arco-border);
+  color: var(--arco-text-secondary);
+  font-size: var(--arco-text-sm);
+  font-weight: 600;
+  user-select: none;
+  -webkit-app-region: drag;
+  app-region: drag;
+  pointer-events: auto;
+  isolation: isolate;
+}
+
+.arco-electron-window-chrome__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: min(480px, calc(100vw - 180px));
+  pointer-events: none;
+}
+
+.arco-electron-window-chrome__controls {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: stretch;
+  height: 100%;
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+.arco-electron-window-chrome__control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: var(--arco-text-secondary);
+  cursor: pointer;
+}
+
+.arco-electron-window-chrome__control:hover {
+  background: var(--arco-bg-hover);
+}
+
+.arco-electron-window-chrome__control--close:hover {
+  background: var(--arco-danger);
+  color: var(--arco-text-inverted);
+}
+
+.arco-electron-window-chrome__control svg {
+  width: 12px;
+  height: 12px;
+}
+
+.arco-electron-window-chrome--darwin {
+  padding-left: var(--arco-electron-traffic-left);
+  padding-right: var(--arco-electron-traffic-left);
+  justify-content: center;
+}
+
+/* Native traffic lights replace the decorative dots on Electron desktop windows. */
+html[data-electron] .arco-window__controls--traffic {
+  display: none;
+}
+
+html[data-electron] .arco-window__titlebar--style-traffic .arco-window__title {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+html[data-electron][data-platform="darwin"] .arco-window__titlebar--style-traffic.arco-window__titlebar--align-left {
+  padding-left: var(--arco-electron-traffic-left);
+}
+
+html[data-electron] .arco-authgate {
+  box-sizing: border-box;
+  min-height: 100%;
+}
+
+html[data-electron] .arco-standalone-window {
+  box-sizing: border-box;
+  min-height: 100%;
+}
+
+html[data-electron] .arco-menubar {
+  position: fixed;
+  top: var(--arco-electron-titlebar-height);
+  left: 0;
+  right: 0;
+  height: var(--arco-menubar-height);
+  z-index: calc(var(--arco-z-overlay) + 21);
+  background: var(--arco-bg-surface-solid);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-bottom: 1px solid var(--arco-border);
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+html[data-electron] .arco-menubar button,
+html[data-electron] .arco-menubar .arco-menu,
+html[data-electron] .arco-menubar__view-toggle,
+html[data-electron] .arco-menubar__right > span {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+html[data-electron][data-platform="darwin"] .arco-menubar {
+  padding-left: calc(var(--arco-electron-traffic-left) + var(--arco-space-s));
+}
+
+html[data-electron][data-platform="win32"] .arco-menubar,
+html[data-electron][data-platform="linux"] .arco-menubar {
+  padding-right: calc(46px * 3);
+}
+
+html[data-electron] .arco-hover-menubar {
+  z-index: calc(var(--arco-z-overlay) + 22);
+}
+
+html[data-electron] .arco-hover-menubar__zone {
+  top: var(--arco-electron-titlebar-height);
+  height: var(--arco-menubar-height);
+}
+
+/* Idle/peek: drag lives on the title strip; hover reveals the menubar below it. */
+html[data-electron] .arco-hover-menubar:not(.arco-hover-menubar--open) .arco-hover-menubar__zone {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+html[data-electron] .arco-hover-menubar--open .arco-hover-menubar__zone {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+/* Hidden menubar must not sit in the fixed native titlebar slot and steal drag. */
+html[data-electron] .arco-hover-menubar:not(.arco-hover-menubar--peaked):not(.arco-hover-menubar--open) .arco-menubar {
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+html[data-electron] .arco-hover-menubar--peaked .arco-menubar,
+html[data-electron] .arco-hover-menubar--open .arco-menubar {
+  position: fixed;
+  top: var(--arco-electron-titlebar-height);
+  left: 0;
+  right: 0;
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+html[data-electron] .arco-notifications {
+  top: 10px;
 }

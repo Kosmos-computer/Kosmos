@@ -12,6 +12,7 @@ import type { DriveFileItem, DriveNewItemType, FilesLocation, FilesViewMode } fr
 const LOCATION_LABELS: Record<FilesLocation, string> = {
   home: "Home",
   drive: "My Drive",
+  music: "Music",
   recent: "Recent",
   starred: "Starred",
   trash: "Trash",
@@ -70,7 +71,12 @@ export function FilesWorkspace({
   onRestoreFile,
   onDeleteForever,
 }: FilesWorkspaceProps) {
-  const pageTitle = location === "drive" && !searchQuery.trim() ? undefined : searchQuery.trim() ? "Search results" : LOCATION_LABELS[location];
+  const pageTitle =
+    location === "drive" && !searchQuery.trim()
+      ? undefined
+      : searchQuery.trim()
+        ? "Search results"
+        : LOCATION_LABELS[location];
   const suggestedFolders = location === "home" ? files.filter((file) => file.kind === "folder") : [];
 
   const emptyCopy =
@@ -78,9 +84,11 @@ export function FilesWorkspace({
       ? { title: "Trash is empty", description: "Items you delete will appear here." }
       : location === "starred"
         ? { title: "No starred files", description: "Star files to find them quickly here." }
-        : searchQuery.trim()
-          ? { title: "No matches", description: "Try a different search term." }
-          : { title: "This folder is empty", description: "Create a file or folder to get started." };
+        : location === "music"
+          ? { title: "No music files", description: "Seed MP3s from your tirufm library on server start." }
+          : searchQuery.trim()
+            ? { title: "No matches", description: "Try a different search term." }
+            : { title: "This folder is empty", description: "Create a file or folder to get started." };
 
   const selectedFile = useMemo(
     () => files.find((file) => file.id === selectedId) ?? null,

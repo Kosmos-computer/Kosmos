@@ -1,10 +1,6 @@
 import { Pause, Play, SkipForward } from "lucide-react";
+import { AlbumArt } from "../../apps/music/AlbumArt";
 import { useMusicStore } from "../../apps/music/musicStore";
-import type { MusicImageTone } from "../../apps/music/types";
-
-function artClass(tone: MusicImageTone) {
-  return `arco-music__art arco-music__art--sm arco-music__art--${tone}`;
-}
 
 /** Live now-playing card for the bento drawer — reads from the global music store. */
 export function BentoMusicWidget() {
@@ -29,8 +25,13 @@ export function BentoMusicWidget() {
   return (
     <div className="arco-bento-card arco-bento-card--music">
       <span className="arco-bento-card__label">Now playing</span>
-      <div style={{ display: "flex", alignItems: "center", gap: "var(--arco-space-s)" }}>
-        <span className={artClass(track.albumArtTone)} aria-hidden="true" />
+      <div className="arco-bento-card--music__row">
+        <AlbumArt
+          trackId={track.id !== "empty" ? track.id : undefined}
+          tone={track.albumArtTone}
+          size="sm"
+          alt={track.title}
+        />
         <div className="arco-music-widget__meta">
           <span className="arco-music-widget__title">{track.title}</span>
           <span className="arco-music-widget__artist">{track.artists}</span>

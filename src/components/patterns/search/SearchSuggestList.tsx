@@ -1,0 +1,34 @@
+import { Clock, Search, TrendingUp } from "lucide-react";
+import type { SearchSuggestion } from "./searchTypes";
+
+export interface SearchSuggestListProps {
+  suggestions: SearchSuggestion[];
+  onSelect: (suggestion: SearchSuggestion) => void;
+}
+
+export function SearchSuggestList({ suggestions, onSelect }: SearchSuggestListProps) {
+  return (
+    <ul className="arco-search-suggest" role="listbox" aria-label="Search suggestions">
+      {suggestions.map((item) => (
+        <li key={item.id}>
+          <button
+            type="button"
+            className="arco-search-suggest__item"
+            role="option"
+            onClick={() => onSelect(item)}
+          >
+            {item.hint === "Trending" ? (
+              <TrendingUp size={14} className="arco-icon--tertiary" aria-hidden />
+            ) : item.hint === "Recent" ? (
+              <Clock size={14} className="arco-icon--tertiary" aria-hidden />
+            ) : (
+              <Search size={14} className="arco-icon--tertiary" aria-hidden />
+            )}
+            <span className="arco-search-suggest__text">{item.text}</span>
+            {item.hint ? <span className="arco-search-suggest__hint">{item.hint}</span> : null}
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}

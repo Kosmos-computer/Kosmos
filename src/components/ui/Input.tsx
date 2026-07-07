@@ -1,4 +1,4 @@
-import type { InputHTMLAttributes } from "react";
+import { forwardRef, type InputHTMLAttributes } from "react";
 
 export type InputWidth = "full" | "auto" | "narrow" | "compact";
 
@@ -14,7 +14,10 @@ const WIDTH_CLASS: Record<InputWidth, string> = {
 };
 
 /** Text field — wraps the global `.arco-input` styles. */
-export function Input({ width = "full", className = "", ...rest }: InputProps) {
+export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
+  { width = "full", className = "", ...rest },
+  ref,
+) {
   const classes = ["arco-input", WIDTH_CLASS[width], className].filter(Boolean).join(" ");
-  return <input className={classes} {...rest} />;
-}
+  return <input ref={ref} className={classes} {...rest} />;
+});

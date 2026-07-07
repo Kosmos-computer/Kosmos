@@ -1,5 +1,7 @@
 import { BrowserWindow, ipcMain, shell } from "electron";
 import { DESKTOP_IPC, type OpenAppWindowPayload } from "./ipc.js";
+import { appIconPath } from "./paths.js";
+import { titleBarWindowOptions } from "./titleBar.js";
 
 const appWindows = new Map<string, BrowserWindow>();
 
@@ -44,7 +46,8 @@ function openAppWindow(
     minWidth: 400,
     minHeight: 300,
     title,
-    backgroundColor: "#0b0d12",
+    icon: appIconPath(),
+    ...titleBarWindowOptions("dark"),
     webPreferences: {
       preload: preloadPath,
       contextIsolation: true,

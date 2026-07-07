@@ -1,5 +1,11 @@
 import { contextBridge, ipcRenderer } from "electron";
-import { DESKTOP_IPC, type OpenAppWindowPayload } from "./ipc.js";
+import { DESKTOP_IPC, type OpenAppWindowPayload, type TitleBarTheme } from "./ipc.js";
+
+document.documentElement.dataset.electron = "true";
+document.documentElement.dataset.platform = process.platform;
+document.documentElement.classList.add("arco-electron");
+document.body.classList.add("arco-electron");
+document.documentElement.style.setProperty("--arco-electron-titlebar-height", "34px");
 
 contextBridge.exposeInMainWorld("arcoDesktop", {
   isDesktop: true,
@@ -8,6 +14,10 @@ contextBridge.exposeInMainWorld("arcoDesktop", {
   closeAppWindow: (id: string) => ipcRenderer.invoke(DESKTOP_IPC.closeAppWindow, id),
   focusAppWindow: (id: string) => ipcRenderer.invoke(DESKTOP_IPC.focusAppWindow, id),
   closeAllAppWindows: () => ipcRenderer.invoke(DESKTOP_IPC.closeAllAppWindows),
+  setTitleBarTheme: (theme: TitleBarTheme) => ipcRenderer.invoke(DESKTOP_IPC.setTitleBarTheme, theme),
+  minimizeWindow: () => ipcRenderer.invoke(DESKTOP_IPC.minimizeWindow),
+  maximizeWindow: () => ipcRenderer.invoke(DESKTOP_IPC.maximizeWindow),
+  closeWindow: () => ipcRenderer.invoke(DESKTOP_IPC.closeWindow),
   onAppWindowClosed: (handler: (id: string) => void) => {
     const listener = (_event: unknown, id: string) => handler(id);
     ipcRenderer.on(DESKTOP_IPC.appWindowClosed, listener);

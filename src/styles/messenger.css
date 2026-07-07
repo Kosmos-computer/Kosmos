@@ -1,0 +1,843 @@
+/* Messenger — Facebook Messenger-style direct messaging */
+
+.arco-messenger {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--arco-bg-surface-solid);
+}
+
+.arco-messenger--empty {
+  align-items: center;
+  justify-content: center;
+}
+
+.arco-messenger--empty .arco-empty {
+  max-width: 28rem;
+  text-align: center;
+}
+
+.arco-messenger--empty .arco-empty p {
+  margin: 0 0 var(--arco-space-m);
+  color: var(--arco-text-secondary);
+}
+
+.arco-messenger__connect-banner {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--arco-space-m);
+  padding: var(--arco-space-s) var(--arco-space-l);
+  background: var(--arco-accent-soft);
+  color: var(--arco-text-primary);
+  font-size: var(--arco-text-sm);
+  border-bottom: 1px solid var(--arco-border);
+}
+
+/* View toggle */
+.arco-messenger__view-toggle {
+  flex-shrink: 0;
+  display: flex;
+  gap: var(--arco-space-xs);
+  padding: var(--arco-space-s) var(--arco-space-m);
+  border-bottom: 1px solid var(--arco-border);
+  background: var(--arco-bg-elevated);
+}
+
+.arco-messenger__view-toggle button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--arco-space-xs);
+  padding: var(--arco-space-xs) var(--arco-space-m);
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--arco-text-secondary);
+  font-size: var(--arco-text-sm);
+  cursor: pointer;
+}
+
+.arco-messenger__view-toggle button:hover {
+  background: var(--arco-bg-hover);
+  color: var(--arco-text-primary);
+}
+
+.arco-messenger__view-btn--active {
+  background: var(--arco-accent-soft) !important;
+  color: var(--arco-accent) !important;
+}
+
+/* Dock view — side-by-side popout windows */
+.arco-messenger__dock-view {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.arco-messenger__dock-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--arco-space-s) var(--arco-space-l);
+  border-bottom: 1px solid var(--arco-border);
+}
+
+.arco-messenger__dock-bar h1 {
+  margin: 0;
+  font-size: var(--arco-text-md);
+  font-weight: 600;
+}
+
+.arco-messenger__dock-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+}
+
+.arco-messenger__dock-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: var(--arco-space-m);
+  padding: var(--arco-space-l);
+  overflow-x: auto;
+  background: var(--arco-bg-sunk);
+}
+
+.arco-messenger__dock-footer {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  padding: var(--arco-space-m);
+  border-top: 1px solid var(--arco-border);
+}
+
+/* Popout window */
+.arco-messenger__popout {
+  flex: 0 0 328px;
+  width: 328px;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-radius: var(--arco-radius-l);
+  overflow: hidden;
+  background: #242526;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+}
+
+.arco-messenger__popout--floating {
+  flex: none;
+  width: 328px;
+  height: 455px;
+  max-height: calc(100vh - 140px);
+}
+
+.arco-messenger__popout-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-s) var(--arco-space-m);
+  background: #3a3b3c;
+  color: #e4e6eb;
+}
+
+.arco-messenger__popout--themed .arco-messenger__popout-header {
+  background: var(--messenger-header-accent, #7b3fe4);
+}
+
+.arco-messenger__popout-identity {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  min-width: 0;
+}
+
+.arco-messenger__popout-identity strong {
+  display: block;
+  font-size: var(--arco-text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.arco-messenger__popout-identity span {
+  display: block;
+  font-size: var(--arco-text-xs);
+  color: rgba(228, 230, 235, 0.75);
+}
+
+.arco-messenger__popout-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.arco-messenger__popout-actions .arco-btn--ghost {
+  color: #e4e6eb;
+}
+
+.arco-messenger__popout-actions .arco-btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.arco-messenger__popout-thread {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--arco-space-m);
+  background: #18191a;
+}
+
+/* Messages */
+.arco-messenger__divider {
+  text-align: center;
+  margin: var(--arco-space-m) 0;
+  font-size: var(--arco-text-xs);
+  color: #b0b3b8;
+}
+
+.arco-messenger__message {
+  display: flex;
+  gap: var(--arco-space-s);
+  margin-bottom: var(--arco-space-s);
+  align-items: flex-end;
+}
+
+.arco-messenger__message--me {
+  flex-direction: row-reverse;
+}
+
+.arco-messenger__message-body {
+  max-width: 78%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-xs);
+}
+
+.arco-messenger__message--me .arco-messenger__message-body {
+  align-items: flex-end;
+}
+
+.arco-messenger__bubble {
+  margin: 0;
+  padding: var(--arco-space-s) var(--arco-space-m);
+  border-radius: 18px;
+  font-size: var(--arco-text-md);
+  line-height: 1.35;
+  white-space: pre-wrap;
+  background: #3e4042;
+  color: #e4e6eb;
+}
+
+.arco-messenger__message--me .arco-messenger__bubble {
+  background: #0084ff;
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
+.arco-messenger__message:not(.arco-messenger__message--me) .arco-messenger__bubble {
+  border-bottom-left-radius: 4px;
+}
+
+.arco-messenger__link-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--arco-space-s) var(--arco-space-m);
+  border-radius: var(--arco-radius-m);
+  background: #3e4042;
+  color: #e4e6eb;
+  text-decoration: none;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.arco-messenger__link-title {
+  font-weight: 600;
+  font-size: var(--arco-text-sm);
+}
+
+.arco-messenger__link-source {
+  font-size: var(--arco-text-xs);
+  color: #b0b3b8;
+}
+
+.arco-messenger__media {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-xs);
+}
+
+.arco-messenger__media-placeholder {
+  width: 200px;
+  height: 140px;
+  border-radius: var(--arco-radius-m);
+  background: linear-gradient(145deg, #4a4d52, #2d2f33);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #b0b3b8;
+}
+
+.arco-messenger__media--video .arco-messenger__media-placeholder {
+  height: 220px;
+}
+
+.arco-messenger__media p {
+  margin: 0;
+  font-size: var(--arco-text-sm);
+  color: #e4e6eb;
+}
+
+.arco-messenger__call-card {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-m);
+  padding: var(--arco-space-m);
+  border-radius: var(--arco-radius-m);
+  background: #3e4042;
+  color: #e4e6eb;
+}
+
+.arco-messenger__call-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.arco-messenger__call-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.arco-messenger__call-body strong {
+  font-size: var(--arco-text-sm);
+}
+
+.arco-messenger__call-body span {
+  font-size: var(--arco-text-xs);
+  color: #b0b3b8;
+}
+
+.arco-messenger__call-again {
+  font-size: var(--arco-text-xs) !important;
+  color: #0084ff !important;
+}
+
+/* Composer — Messenger dock style */
+.arco-messenger__composer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-xs);
+  padding: var(--arco-space-s) var(--arco-space-m) var(--arco-space-m);
+  background: #242526;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.arco-messenger__composer-tools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.arco-messenger__composer-tools .arco-btn--ghost {
+  color: #0084ff;
+}
+
+.arco-messenger__gif-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.arco-messenger__composer-field {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-xs);
+  padding: 0 var(--arco-space-s);
+  border-radius: 999px;
+  background: #3a3b3c;
+}
+
+.arco-messenger__composer-field .arco-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: #e4e6eb;
+  padding: var(--arco-space-s) 0;
+}
+
+.arco-messenger__composer-field .arco-input::placeholder {
+  color: #b0b3b8;
+}
+
+.arco-messenger__composer-field .arco-btn--ghost {
+  color: #0084ff;
+}
+
+.arco-messenger__like-btn {
+  color: #0084ff !important;
+}
+
+/* Inbox — two-pane layout */
+.arco-messenger__inbox {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+}
+
+.arco-messenger__sidebar {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--arco-bg-surface);
+}
+
+.arco-messenger__sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-m);
+  border-bottom: 1px solid var(--arco-border);
+}
+
+.arco-messenger__sidebar-header h1 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  font-size: var(--arco-text-lg);
+}
+
+.arco-messenger__sidebar-search {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-s) var(--arco-space-m);
+  color: var(--arco-text-tertiary);
+}
+
+.arco-messenger__sidebar-search .arco-input {
+  flex: 1;
+}
+
+.arco-messenger__sidebar-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--arco-space-s);
+}
+
+.arco-messenger__contact-section h3 {
+  margin: var(--arco-space-s) var(--arco-space-s) var(--arco-space-xs);
+  font-size: var(--arco-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--arco-text-tertiary);
+}
+
+.arco-messenger__contact-section + .arco-messenger__contact-section {
+  margin-top: var(--arco-space-s);
+  padding-top: var(--arco-space-s);
+  border-top: 1px solid var(--arco-border);
+}
+
+.arco-messenger__contact {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-m);
+  padding: var(--arco-space-s) var(--arco-space-m);
+  border: none;
+  border-radius: var(--arco-radius-m);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.arco-messenger__contact:hover {
+  background: var(--arco-bg-hover);
+}
+
+.arco-messenger__contact--active {
+  background: var(--arco-accent-soft);
+}
+
+.arco-messenger__contact-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.arco-messenger__contact-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--arco-space-s);
+}
+
+.arco-messenger__contact-name {
+  font-weight: 600;
+  font-size: var(--arco-text-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.arco-messenger__contact-top time {
+  flex-shrink: 0;
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+}
+
+.arco-messenger__contact-preview {
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.arco-messenger__contact--unread .arco-messenger__contact-preview {
+  font-weight: 600;
+  color: var(--arco-text-primary);
+}
+
+.arco-messenger__contact-preview em {
+  font-style: normal;
+  color: var(--arco-accent);
+}
+
+.arco-messenger__contact-badge {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--arco-accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+/* Thread pane */
+.arco-messenger__thread {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--arco-bg-surface-solid);
+}
+
+.arco-messenger__thread-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--arco-space-m);
+  padding: var(--arco-space-m) var(--arco-space-l);
+  border-bottom: 1px solid var(--arco-border);
+}
+
+.arco-messenger__thread-identity {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-m);
+}
+
+.arco-messenger__thread-identity strong {
+  display: block;
+  font-size: var(--arco-text-md);
+}
+
+.arco-messenger__thread-identity span {
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+}
+
+.arco-messenger__thread-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+}
+
+.arco-messenger__thread-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--arco-space-l);
+}
+
+.arco-messenger__thread-composer {
+  flex-shrink: 0;
+  display: flex;
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-m) var(--arco-space-l);
+  border-top: 1px solid var(--arco-border);
+}
+
+.arco-messenger__thread-composer .arco-input {
+  flex: 1;
+}
+
+@media (max-width: 720px) {
+  .arco-messenger__dock-wrap {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .arco-messenger__popout {
+    flex: 1 1 auto;
+    width: 100%;
+    max-width: 360px;
+  }
+}
+
+/* ── Desktop shell dock (persists outside app window) ─────────────────────── */
+
+.arco-messenger-shell {
+  position: fixed;
+  right: var(--arco-space-l);
+  bottom: 88px;
+  z-index: calc(var(--arco-z-overlay) + 2);
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: flex-end;
+  gap: var(--arco-space-m);
+  pointer-events: none;
+  max-width: calc(100vw - 120px);
+}
+
+.arco-messenger-shell__popouts,
+.arco-messenger-shell__tray {
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: flex-end;
+  gap: var(--arco-space-m);
+  pointer-events: auto;
+}
+
+.arco-messenger-shell__tray {
+  flex-shrink: 0;
+}
+
+.arco-messenger-shell__bubble,
+.arco-messenger-shell__launcher,
+.arco-messenger-shell__compose {
+  position: relative;
+  border: none;
+  cursor: pointer;
+  font-family: var(--arco-font-ui);
+}
+
+.arco-messenger-shell__bubble {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border-radius: 50%;
+  background: #242526;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--arco-dur-fast) var(--arco-ease);
+}
+
+.arco-messenger-shell__bubble:hover {
+  transform: scale(1.06);
+}
+
+.arco-messenger-shell__bubble-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #e41e3f;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+.arco-messenger-shell__launcher,
+.arco-messenger-shell__compose {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  transition: transform var(--arco-dur-fast) var(--arco-ease);
+}
+
+.arco-messenger-shell__launcher {
+  background: linear-gradient(135deg, #0084ff, #00c6ff);
+}
+
+.arco-messenger-shell__compose {
+  background: #3a3b3c;
+  color: #e4e6eb;
+}
+
+.arco-messenger-shell__launcher:hover,
+.arco-messenger-shell__compose:hover {
+  transform: scale(1.06);
+}
+
+/* Hub view inside Messenger app */
+.arco-messenger__hub {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--arco-space-l);
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-xl);
+}
+
+.arco-messenger__hub-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--arco-space-l);
+}
+
+.arco-messenger__hub-header h1 {
+  margin: 0 0 var(--arco-space-xs);
+  font-size: var(--arco-text-lg);
+}
+
+.arco-messenger__hub-header p {
+  margin: 0;
+  color: var(--arco-text-secondary);
+  font-size: var(--arco-text-sm);
+  max-width: 36rem;
+}
+
+.arco-messenger__hub-section h2 {
+  margin: 0 0 var(--arco-space-m);
+  font-size: var(--arco-text-sm);
+  font-weight: 600;
+  color: var(--arco-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.arco-messenger__hub-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-s);
+}
+
+.arco-messenger__hub-list--bubbles {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: var(--arco-space-m);
+}
+
+.arco-messenger__hub-item {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-m);
+  padding: var(--arco-space-m);
+  border-radius: var(--arco-radius-m);
+  background: var(--arco-bg-elevated);
+  border: 1px solid var(--arco-border);
+}
+
+.arco-messenger__hub-item-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.arco-messenger__hub-item-body strong {
+  font-size: var(--arco-text-sm);
+}
+
+.arco-messenger__hub-item-body span {
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.arco-messenger__hub-item-actions {
+  display: flex;
+  gap: var(--arco-space-xs);
+  flex-shrink: 0;
+}
+
+.arco-messenger__hub-bubble {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--arco-space-xs);
+  padding: var(--arco-space-m);
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-m);
+  background: var(--arco-bg-surface);
+  cursor: pointer;
+  color: inherit;
+  font-size: var(--arco-text-xs);
+}
+
+.arco-messenger__hub-bubble:hover {
+  background: var(--arco-bg-hover);
+}
+
+@media (max-width: 720px) {
+  .arco-messenger-shell {
+    right: var(--arco-space-s);
+    bottom: 72px;
+    max-width: calc(100vw - 16px);
+  }
+
+  .arco-messenger-shell__popouts {
+    display: none;
+  }
+
+  .arco-messenger__popout--floating {
+    width: min(328px, calc(100vw - 32px));
+  }
+}

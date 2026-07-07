@@ -4,11 +4,27 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Arco OS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <script>
       // FOUC-free boot: hydrate theme before first paint (hermes-webui pattern).
       try {
         var t = localStorage.getItem("arco:theme") || "dark";
         document.documentElement.dataset.theme = t;
+        var accent = localStorage.getItem("arco:accent-preset");
+        if (accent && accent !== "blue") document.documentElement.dataset.accent = accent;
+        var radius = localStorage.getItem("arco:radius-preset");
+        if (radius && radius !== "default") document.documentElement.dataset.radius = radius;
+        var font = localStorage.getItem("arco:font-preset");
+        if (font && font !== "system") document.documentElement.dataset.font = font;
+        var textScale = localStorage.getItem("arco:text-scale-preset");
+        if (textScale && textScale !== "default") document.documentElement.dataset.textScale = textScale;
+        var spacing = localStorage.getItem("arco:spacing-preset");
+        if (spacing && spacing !== "default") document.documentElement.dataset.spacing = spacing;
         var fb = localStorage.getItem("arco:face-bg") || "mono";
         if (fb !== "mono") {
           var rootStyle = document.documentElement.style;
@@ -23,6 +39,14 @@
             rootStyle.setProperty("--arco-face-pupil", "rgba(0, 0, 0, 0.62)");
             document.documentElement.dataset.faceBg = "custom";
           }
+        }
+        var desktop = window.arcoDesktop;
+        if (desktop && desktop.isDesktop) {
+          document.documentElement.dataset.electron = "true";
+          document.documentElement.dataset.platform = desktop.platform;
+          document.documentElement.classList.add("arco-electron");
+          document.body.classList.add("arco-electron");
+          document.documentElement.style.setProperty("--arco-electron-titlebar-height", "34px");
         }
       } catch (e) {}
     </script>

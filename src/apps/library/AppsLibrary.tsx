@@ -1,14 +1,13 @@
 /**
- * Apps library — every generated app (open, refine, version history with
- * non-destructive restore — the openclaw-os app lifecycle) plus registered
- * web apps (user projects mounted on the dock).
+ * Apps library — launcher for every app on the shell (system, installed,
+ * generated, and web) plus generated-app lifecycle actions (refine, version
+ * history, restore, delete).
  */
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import {
   Clock,
   EllipsisVertical,
   ExternalLink,
-  Globe,
   LayoutGrid,
   List,
   Sparkles,
@@ -19,9 +18,9 @@ import type { AppSummary, StoredApp, WebApp } from "@shared/types";
 import { Menu, type MenuItem } from "../../components/Menu";
 import { api } from "../../lib/api";
 import { useOsStore } from "../../os/osStore";
+import { useShellApps, type ShellAppEntry } from "../../os/shellApps";
 import { useWindowStore } from "../../os/windowStore";
 import { primeComposer } from "../chat/composerBus";
-import { appIcon } from "../appview/appIcon";
 
 type LibraryView = "list" | "icons";
 
@@ -45,11 +44,10 @@ function iconHue(seed: string): number {
   return Math.abs(h) % 360;
 }
 
-function iconTileStyle(seed: string): CSSProperties {
+function iconMarkStyle(seed: string): CSSProperties {
   const hue = iconHue(seed);
   return {
-    background: `linear-gradient(145deg, hsl(${hue} 62% 52%) 0%, hsl(${(hue + 28) % 360} 48% 38%) 100%)`,
-    color: "#fff",
+    background: `hsl(${hue} 68% 52%)`,
   };
 }
 
@@ -91,11 +89,12 @@ function AppIconGlyph({
     <button
       type="button"
       className="arco-apps-home__glyph"
-      style={iconTileStyle(seed)}
       aria-label={`Open ${label}`}
       onClick={onOpen}
     >
-      <Icon size={28} strokeWidth={1.75} aria-hidden="true" />
+      <span className="arco-apps-home__glyph-mark" style={iconMarkStyle(seed)} aria-hidden="true">
+        <Icon size={20} strokeWidth={2.25} />
+      </span>
     </button>
   );
 }
@@ -130,6 +129,7 @@ export function AppsLibrary() {
   const apps = useOsStore((s) => s.apps);
   const webApps = useOsStore((s) => s.webApps);
   const refreshApps = useOsStore((s) => s.refreshApps);
+  const shellApps = useShellApps();
   const openWindow = useWindowStore((s) => s.open);
   const closeWindow = useWindowStore((s) => s.close);
   const [historyApp, setHistoryApp] = useState<StoredApp | null>(null);
@@ -225,6 +225,29 @@ export function AppsLibrary() {
     [openWebApp, removeWebApp],
   );
 
+  const menuItemsForEntry = useCallback(
+    (entry: ShellAppEntry): MenuItem[] => {
+      const { kind } = entry;
+      if (kind.type === "generated") {
+        const app = apps.find((a) => a.id === kind.appId);
+        if (app) return generatedMenuItems(app);
+      }
+      if (kind.type === "web") {
+        const app = webApps.find((a) => a.id === kind.webAppId);
+        if (app) return webMenuItems(app);
+      }
+      return [
+        {
+          id: "open",
+          label: "Open",
+          icon: ExternalLink,
+          onSelect: () => openWindow(kind, entry.title),
+        },
+      ];
+    },
+    [apps, webApps, generatedMenuItems, openWindow, webMenuItems],
+  );
+
   if (historyApp) {
     return (
       <div className="arco-panel arco-scroll">
@@ -255,123 +278,109 @@ export function AppsLibrary() {
     );
   }
 
-  const empty = apps.length === 0 && webApps.length === 0;
+  const noUserApps = apps.length === 0 && webApps.length === 0;
 
   return (
-    <div className="arco-panel arco-scroll">
+    <div className={`arco-panel${view === "icons" ? " arco-panel--apps-launcher" : " arco-scroll"}`}>
       <div className="arco-panel__header">
         <strong>Apps</strong>
         <ViewToggle view={view} onChange={setView} />
       </div>
 
-      {empty && (
-        <div className="arco-empty">
-          <Sparkles size={22} />
-          <span>No apps yet — ask Arco to build one in Chat, or add a project from the Studio's Browser tab.</span>
-        </div>
-      )}
-
       {view === "icons" ? (
         <div className="arco-apps-home arco-scroll">
-          {apps.length > 0 && (
-            <section className="arco-apps-home__section" aria-label="Generated apps">
-              {webApps.length > 0 && <div className="arco-apps-home__sectionlabel">Generated</div>}
-              <div className="arco-apps-home__grid">
-                {apps.map((app) => {
-                  const Icon = appIcon(app.icon);
-                  return (
-                    <div key={app.id} className="arco-apps-home__tile">
-                      <AppIconGlyph
-                        Icon={Icon}
-                        seed={app.id}
-                        label={app.title}
-                        onOpen={() => openApp(app.id, app.title)}
-                      />
-                      <AppNameMenu label={app.title} items={generatedMenuItems(app)} />
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          )}
-
-          {webApps.length > 0 && (
-            <section className="arco-apps-home__section" aria-label="Your projects">
-              {apps.length > 0 && <div className="arco-apps-home__sectionlabel">Projects</div>}
-              <div className="arco-apps-home__grid">
-                {webApps.map((app) => (
-                  <div key={app.id} className="arco-apps-home__tile">
+          <section className="arco-apps-home__section" aria-label="All apps">
+            <div className="arco-apps-home__grid">
+              {shellApps.map((entry) => {
+                const Icon = entry.icon;
+                return (
+                  <div key={entry.id} className="arco-apps-home__tile">
                     <AppIconGlyph
-                      Icon={Globe}
-                      seed={app.id}
-                      label={app.name}
-                      onOpen={() => openWebApp(app.id, app.name)}
+                      Icon={Icon}
+                      seed={entry.id}
+                      label={entry.title}
+                      onOpen={() => openWindow(entry.kind, entry.title)}
                     />
-                    <AppNameMenu label={app.name} items={webMenuItems(app)} />
+                    <AppNameMenu label={entry.title} items={menuItemsForEntry(entry)} />
                   </div>
-                ))}
-              </div>
-            </section>
+                );
+              })}
+            </div>
+          </section>
+
+          {noUserApps && (
+            <p className="arco-apps-home__hint">
+              <Sparkles size={14} aria-hidden="true" />
+              Ask Arco to build an app in Chat, or add a project from Studio&apos;s Browser tab.
+            </p>
           )}
         </div>
       ) : (
         <>
-          {apps.length > 0 && <div className="arco-label">Generated apps</div>}
-          {apps.map((app) => {
-            const Icon = appIcon(app.icon);
+          <div className="arco-label">All apps</div>
+          {shellApps.map((entry) => {
+            const Icon = entry.icon;
+            const { kind } = entry;
+            const generated = kind.type === "generated" ? apps.find((a) => a.id === kind.appId) : undefined;
+            const web = kind.type === "web" ? webApps.find((a) => a.id === kind.webAppId) : undefined;
             return (
-              <div key={app.id} className="arco-listrow">
+              <div key={entry.id} className="arco-listrow">
                 <Icon size={16} style={{ color: "var(--arco-accent)", flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 600, fontSize: "var(--arco-text-sm)" }}>{app.title}</div>
+                  <div style={{ fontWeight: 600, fontSize: "var(--arco-text-sm)" }}>{entry.title}</div>
                   <div className="arco-listrow__sub">
-                    updated {new Date(app.updatedAt).toLocaleString()} · {app.versionCount} version
-                    {app.versionCount === 1 ? "" : "s"}
+                    {generated
+                      ? `updated ${new Date(generated.updatedAt).toLocaleString()} · ${generated.versionCount} version${generated.versionCount === 1 ? "" : "s"}`
+                      : web
+                        ? web.url + (web.command ? ` · ${web.command}` : "")
+                        : kind.type === "installed"
+                          ? "Installed app"
+                          : "Built-in app"}
                   </div>
                 </div>
-                <button className="arco-btn" onClick={() => openApp(app.id, app.title)}>
+                <button className="arco-btn" onClick={() => openWindow(kind, entry.title)}>
                   <ExternalLink size={13} /> Open
                 </button>
-                <button className="arco-btn" onClick={() => refine(app.id, app.title)}>
-                  <Sparkles size={13} /> Refine
-                </button>
-                <button className="arco-btn" onClick={() => void showHistory(app.id)} aria-label="Version history">
-                  <Clock size={13} />
-                </button>
-                <button
-                  className="arco-btn arco-btn--danger"
-                  onClick={() => void remove(app.id)}
-                  aria-label={`Delete ${app.title}`}
-                >
-                  <Trash2 size={13} />
-                </button>
+                {generated && (
+                  <>
+                    <button className="arco-btn" onClick={() => refine(generated.id, generated.title)}>
+                      <Sparkles size={13} /> Refine
+                    </button>
+                    <button
+                      className="arco-btn"
+                      onClick={() => void showHistory(generated.id)}
+                      aria-label="Version history"
+                    >
+                      <Clock size={13} />
+                    </button>
+                    <button
+                      className="arco-btn arco-btn--danger"
+                      onClick={() => void remove(generated.id)}
+                      aria-label={`Delete ${generated.title}`}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </>
+                )}
+                {web && (
+                  <button
+                    className="arco-btn arco-btn--danger"
+                    onClick={() => void removeWebApp(web.id)}
+                    aria-label={`Remove ${web.name} from the registry`}
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                )}
               </div>
             );
           })}
 
-          {webApps.length > 0 && <div className="arco-label">Your projects</div>}
-          {webApps.map((app) => (
-            <div key={app.id} className="arco-listrow">
-              <Globe size={16} style={{ color: "var(--arco-accent)", flexShrink: 0 }} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 600, fontSize: "var(--arco-text-sm)" }}>{app.name}</div>
-                <div className="arco-listrow__sub">
-                  {app.url}
-                  {app.command ? ` · ${app.command}` : ""}
-                </div>
-              </div>
-              <button className="arco-btn" onClick={() => openWebApp(app.id, app.name)}>
-                <ExternalLink size={13} /> Open
-              </button>
-              <button
-                className="arco-btn arco-btn--danger"
-                onClick={() => void removeWebApp(app.id)}
-                aria-label={`Remove ${app.name} from the registry`}
-              >
-                <Trash2 size={13} />
-              </button>
-            </div>
-          ))}
+          {noUserApps && (
+            <p className="arco-apps-home__hint">
+              <Sparkles size={14} aria-hidden="true" />
+              Ask Arco to build an app in Chat, or add a project from Studio&apos;s Browser tab.
+            </p>
+          )}
         </>
       )}
     </div>

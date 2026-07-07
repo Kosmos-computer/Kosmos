@@ -1,9 +1,12 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { app, BrowserWindow, shell } from "electron";
+import { app, BrowserWindow, nativeImage, shell } from "electron";
 import { registerAppWindowIpc } from "./appWindows.js";
-import { desktopDataDir, repoRoot } from "./paths.js";
+import { appIconPath, desktopDataDir, repoRoot } from "./paths.js";
 import { attachServerLogging, startServerProcess, waitForUrl } from "./serverProcess.js";
+import { registerTitleBarIpc } from "./titleBarIpc.js";
+import { registerWindowControlsIpc } from "./windowControlsIpc.js";
+import { titleBarWindowOptions } from "./titleBar.js";
 
 const DEV_SHELL = process.argv.includes("--dev");
 const SERVER_PORT = Number(process.env.ARCO_PORT ?? 4600);
@@ -39,6 +42,12 @@ async function ensureServer(): Promise<void> {
   await waitForUrl(`http://127.0.0.1:${SERVER_PORT}/api/settings`);
 }
 
+function applyAppIcon(): void {
+  const icon = nativeImage.createFromPath(appIconPath());
+  if (icon.isEmpty()) return;
+  if (process.platform === "darwin" && app.dock) app.dock.setIcon(icon);
+}
+
 function createWindow(): void {
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -46,7 +55,8 @@ function createWindow(): void {
     minWidth: 960,
     minHeight: 640,
     title: "Arco OS",
-    backgroundColor: "#0b0d12",
+    icon: appIconPath(),
+    ...titleBarWindowOptions("dark"),
     webPreferences: {
       preload: preloadPath,
       contextIsolation: true,
@@ -86,12 +96,18 @@ if (!gotLock) {
 
   app.whenReady().then(async () => {
     try {
+      applyAppIcon();
       await ensureServer();
       registerAppWindowIpc(
         shellUrl,
         () => preloadPath,
         () => mainWindow,
       );
+      registerTitleBarIpc(() => {
+        const windows = BrowserWindow.getAllWindows().filter((win) => !win.isDestroyed());
+        return windows;
+      });
+      registerWindowControlsIpc();
       createWindow();
     } catch (err) {
       console.error("[arco-desktop] failed to start:", err);

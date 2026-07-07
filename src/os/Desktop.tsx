@@ -18,6 +18,9 @@ import { connectShellEvents } from "./shellEvents";
 import { WindowContentById } from "./windowContent";
 import { AgentCursor } from "./cursor/AgentCursor";
 import { MusicShell } from "../apps/music/MusicShell";
+import { MessengerShell } from "../apps/messenger/MessengerShell";
+import { VideoShell } from "../apps/video/VideoShell";
+import { PodcastShell } from "../apps/podcast/PodcastShell";
 import { ConfirmCard } from "../apps/chat/ConfirmCard";
 import { WallpaperBackdrop } from "./wallpaper/WallpaperBackdrop";
 import {
@@ -128,7 +131,9 @@ export function Desktop() {
       style={
         {
           "--arco-nav-width": navExpanded ? "200px" : "56px",
-          ...(appView && { "--arco-menubar-offset": menuBarOpen ? "34px" : "0px" }),
+          ...(appView && {
+            "--arco-menubar-offset": menuBarOpen ? "34px" : "0px",
+          }),
         } as CSSProperties
       }
     >
@@ -151,6 +156,9 @@ export function Desktop() {
       <ShellConfirms />
       <BentoDrawer />
       <MusicShell />
+      <MessengerShell />
+      <VideoShell />
+      <PodcastShell />
       <AgentCursor />
     </div>
   );

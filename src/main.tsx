@@ -1,6 +1,9 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
+import { bootstrapElectronShell } from "./os/bootstrapElectronShell";
+
+bootstrapElectronShell();
 
 // OpenUI component library styles (generated apps + inline chat UI).
 import "@openuidev/react-ui/index.css";
@@ -19,10 +22,14 @@ import "./styles/tasks.css";
 import "./styles/calendar.css";
 import "./styles/contacts.css";
 import "./styles/maps.css";
+import "./styles/search.css";
 import "./styles/music.css";
+import "./styles/video.css";
+import "./styles/podcast.css";
 import "./styles/downloads.css";
 import "./styles/pay.css";
 import "./styles/groups.css";
+import "./styles/messenger.css";
 import "./styles/social.css";
 import "./styles/connections.css";
 import "./styles/sheets.css";
@@ -30,6 +37,7 @@ import "./styles/memory.css";
 import "./styles/generator.css";
 import "./styles/auth.css";
 import "./styles/os.css";
+import "./styles/command-palette.css";
 import "./styles/bento.css";
 import "./styles/bento-themes.css";
 import "./os/wallpaper/wallpaper.css";

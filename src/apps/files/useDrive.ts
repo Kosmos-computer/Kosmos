@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FileEntry } from "@shared/capabilities/files";
 import {
   DOC_MIME,
+  FOLDER_MIME,
   SCHEDULE_MIME,
   SHEET_MIME,
   SLIDES_MIME,
@@ -19,6 +20,7 @@ import {
   type DriveNewItemType,
   type FilesLocation,
   type FilesViewMode,
+  MUSIC_FOLDER_NAME,
 } from "./types";
 
 const NEW_FILE_DEFAULTS: Record<
@@ -149,7 +151,11 @@ export function useDrive() {
         onClick:
           index < folderPath.length - 1
             ? () => {
-                setLocation("drive");
+                if (crumb.label === "My Drive") {
+                  setLocation("drive");
+                } else if (crumb.label === MUSIC_FOLDER_NAME) {
+                  setLocation("music");
+                }
                 setFolderPath(folderPath.slice(0, index + 1));
                 setSelectedId(null);
               }
@@ -161,19 +167,19 @@ export function useDrive() {
   const openFile = useCallback(
     async (file: DriveFileItem) => {
       if (file.kind === "folder") {
-        setLocation("drive");
+        if (location !== "music") setLocation("drive");
         setFolderPath((prev) => [...prev, { id: file.id, label: file.name }]);
         setSelectedId(null);
         return;
       }
       setSelectedId(file.id);
     },
-    [],
+    [location],
   );
 
   const openFileEditor = useCallback(async (file: DriveFileItem) => {
     if (file.kind === "folder") {
-      setLocation("drive");
+      if (location !== "music") setLocation("drive");
       setFolderPath((prev) => [...prev, { id: file.id, label: file.name }]);
       return;
     }
@@ -191,7 +197,7 @@ export function useDrive() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not open file");
     }
-  }, []);
+  }, [location]);
 
   const saveEditor = useCallback(async (content: string) => {
     if (!editorFile) return;
@@ -211,9 +217,9 @@ export function useDrive() {
   );
 
   const navigateToFolder = useCallback((folderId: string, folderName: string) => {
-    setLocation("drive");
+    setLocation((prev) => (prev === "music" ? "music" : "drive"));
     setFolderPath((prev) => {
-      const atDriveRoot = location !== "drive" || prev.length <= 1;
+      const atDriveRoot = (location !== "drive" && location !== "music") || prev.length <= 1;
       const base = atDriveRoot ? [{ id: null, label: "My Drive" }] : prev;
       return [...base, { id: folderId, label: folderName }];
     });
@@ -227,7 +233,7 @@ export function useDrive() {
       const entry = await api.createDriveEntry({
         name: name.trim(),
         kind: "folder",
-        parentId: location === "drive" ? currentFolderId : null,
+        parentId: location === "drive" || location === "music" ? currentFolderId : null,
       });
       await refresh();
       navigateToFolder(entry.id, entry.name);
@@ -250,7 +256,7 @@ export function useDrive() {
           name: defaults.name,
           kind: "file",
           mimeType: defaults.mimeType,
-          parentId: location === "drive" ? currentFolderId : null,
+          parentId: location === "drive" || location === "music" ? currentFolderId : null,
           content: defaults.content,
         });
         await refresh();
@@ -297,6 +303,29 @@ export function useDrive() {
     setSelectedId(null);
     if (next === "drive") {
       setFolderPath([{ id: null, label: "My Drive" }]);
+      return;
+    }
+    if (next === "music") {
+      void (async () => {
+        try {
+          const root = await api.listDriveEntries({ parentId: null });
+          const musicFolder = root.find(
+            (entry) => entry.name === MUSIC_FOLDER_NAME && entry.mimeType === FOLDER_MIME,
+          );
+          if (musicFolder) {
+            setFolderPath([
+              { id: null, label: "My Drive" },
+              { id: musicFolder.id, label: MUSIC_FOLDER_NAME },
+            ]);
+            setError(null);
+          } else {
+            setFolderPath([{ id: null, label: MUSIC_FOLDER_NAME }]);
+            setError("Music folder not found — restart the server to seed Drive.");
+          }
+        } catch (err) {
+          setError(err instanceof Error ? err.message : "Could not open Music folder");
+        }
+      })();
     }
   }, []);
 

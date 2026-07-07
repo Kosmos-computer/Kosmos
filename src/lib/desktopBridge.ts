@@ -1,7 +1,7 @@
 /**
  * Renderer bridge to the Electron desktop shell — no-op in the browser.
  */
-import { DESKTOP_IPC, type OpenAppWindowPayload } from "@shared/desktopBridge";
+import { DESKTOP_IPC, type OpenAppWindowPayload, type TitleBarTheme } from "@shared/desktopBridge";
 
 export interface ArcoDesktopBridge {
   isDesktop: true;
@@ -10,6 +10,10 @@ export interface ArcoDesktopBridge {
   closeAppWindow: (id: string) => Promise<void>;
   focusAppWindow: (id: string) => Promise<void>;
   closeAllAppWindows: () => Promise<void>;
+  setTitleBarTheme: (theme: TitleBarTheme) => Promise<void>;
+  minimizeWindow: () => Promise<void>;
+  maximizeWindow: () => Promise<void>;
+  closeWindow: () => Promise<void>;
   onAppWindowClosed: (handler: (id: string) => void) => () => void;
 }
 

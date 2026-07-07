@@ -1,7 +1,5 @@
 import {
-  Bell,
   Heart,
-  Home,
   List,
   Maximize2,
   Mic,
@@ -16,10 +14,11 @@ import {
   SkipBack,
   SkipForward,
   Square,
-  Users,
   Volume2,
 } from "lucide-react";
 import { AlbumArt } from "./AlbumArt";
+import { MusicProgressScrubber } from "./MusicProgressScrubber";
+import { ListItem, NavSidebar, NavSidebarSectionHeader } from "../../components/patterns";
 import type {
   MusicContentFilter,
   MusicFeaturedCard,
@@ -28,7 +27,6 @@ import type {
   MusicMixCard,
   MusicNowPlaying,
   MusicQuickAccess,
-  MusicUser,
 } from "./types";
 import type { MusicViewModel } from "./useMusicStub";
 
@@ -46,64 +44,14 @@ const CONTENT_FILTERS: { id: MusicContentFilter; label: string }[] = [
   { id: "audiobooks", label: "Audiobooks" },
 ];
 
-export interface MusicTopBarProps {
-  searchQuery: string;
-  onSearchChange: (value: string) => void;
-  user: MusicUser;
-}
-
-export function MusicTopBar({ searchQuery, onSearchChange, user }: MusicTopBarProps) {
-  return (
-    <header className="arco-music__top-bar">
-      <div className="arco-music__nav-cluster">
-        <button type="button" className="arco-music__nav-btn" aria-label="Home">
-          <Home size={18} />
-        </button>
-
-        <label className="arco-music__search">
-          <Search size={18} />
-          <input
-            className="arco-music__search-input"
-            type="search"
-            placeholder="What do you want to play?"
-            value={searchQuery}
-            onChange={(event) => onSearchChange(event.target.value)}
-          />
-        </label>
-      </div>
-
-      <div className="arco-music__top-actions">
-        <button type="button" className="arco-music__premium-btn">
-          Explore Premium
-        </button>
-        <button type="button" className="arco-music__install-btn">
-          Install App
-        </button>
-        <button type="button" className="arco-music__icon-btn" aria-label="Notifications">
-          <Bell size={18} />
-        </button>
-        <button type="button" className="arco-music__icon-btn" aria-label="Friends activity">
-          <Users size={18} />
-        </button>
-        <button type="button" className="arco-music__profile-btn" aria-label={user.name}>
-          {user.name
-            .split(/\s+/)
-            .map((part) => part[0])
-            .join("")
-            .slice(0, 2)
-            .toUpperCase()}
-        </button>
-      </div>
-    </header>
-  );
-}
-
 export interface MusicLibrarySidebarProps {
   items: MusicLibraryItem[];
   activeItemId?: string;
   onSelectItem: (id: string) => void;
   libraryFilter: MusicLibraryFilter;
   onLibraryFilterChange: (filter: MusicLibraryFilter) => void;
+  searchQuery: string;
+  onSearchChange: (value: string) => void;
 }
 
 export function MusicLibrarySidebar({
@@ -112,6 +60,8 @@ export function MusicLibrarySidebar({
   onSelectItem,
   libraryFilter,
   onLibraryFilterChange,
+  searchQuery,
+  onSearchChange,
 }: MusicLibrarySidebarProps) {
   const filteredItems = items.filter((item) => {
     if (libraryFilter === "playlists") return item.kind === "playlist";
@@ -122,62 +72,79 @@ export function MusicLibrarySidebar({
 
   return (
     <aside className="arco-music__library" aria-label="Your Library">
-      <div className="arco-music__library-header">
-        <h2 className="arco-music__library-title">Your Library</h2>
-        <div className="arco-music__library-header-actions">
-          <button type="button" className="arco-music__icon-btn" aria-label="Create">
-            <Plus size={18} />
-          </button>
-          <button type="button" className="arco-music__icon-btn" aria-label="Expand library">
-            <PanelRight size={18} />
-          </button>
-        </div>
-      </div>
+      <NavSidebar
+        className="arco-music-library-nav"
+        header={
+          <>
+            <div className="arco-music-library-nav__header">
+              <h2 className="arco-music-library-nav__title">Your Library</h2>
+              <div className="arco-music-library-nav__header-actions">
+                <button type="button" className="arco-music__icon-btn" aria-label="Create">
+                  <Plus size={18} />
+                </button>
+                <button type="button" className="arco-music__icon-btn" aria-label="Expand library">
+                  <PanelRight size={18} />
+                </button>
+              </div>
+            </div>
 
-      <div className="arco-music__library-filters">
-        {LIBRARY_FILTERS.map((filter) => (
-          <button
-            key={filter.id}
-            type="button"
-            className={`arco-music__filter-chip${libraryFilter === filter.id ? " arco-music__filter-chip--active" : ""}`}
-            onClick={() => onLibraryFilterChange(filter.id)}
-          >
-            {filter.label}
-          </button>
-        ))}
-      </div>
+            <label className="arco-music-library-nav__search">
+              <Search size={16} aria-hidden="true" />
+              <input
+                className="arco-music-library-nav__search-input"
+                type="search"
+                placeholder="What do you want to play?"
+                value={searchQuery}
+                onChange={(event) => onSearchChange(event.target.value)}
+                aria-label="Search library"
+              />
+            </label>
+          </>
+        }
+        sections={[]}
+        scrollContent={
+          <div className="arco-nav-sidebar__sections">
+            <div>
+              <NavSidebarSectionHeader title="Browse" />
+              <div className="arco-nav-sidebar__section-items">
+                {LIBRARY_FILTERS.map((filter) => (
+                  <ListItem
+                    key={filter.id}
+                    className="arco-nav-sidebar__nav-item"
+                    label={filter.label}
+                    active={libraryFilter === filter.id}
+                    onClick={() => onLibraryFilterChange(filter.id)}
+                  />
+                ))}
+              </div>
+            </div>
 
-      <div className="arco-music__library-toolbar">
-        <button type="button" className="arco-music__icon-btn" aria-label="Search library">
-          <Search size={16} />
-        </button>
-        <button type="button" className="arco-music__library-sort">
-          Recents
-          <List size={14} />
-        </button>
-      </div>
-
-      <div className="arco-music__library-list arco-music__scrollable">
-        {filteredItems.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className={`arco-music__library-item${activeItemId === item.id ? " arco-music__library-item--active" : ""}`}
-            onClick={() => onSelectItem(item.id)}
-          >
-            <AlbumArt
-              trackId={item.coverTrackId ?? item.id}
-              tone={item.imageTone}
-              size="sm"
-              alt={item.title}
-            />
-            <span className="arco-music__library-item-meta">
-              <span className="arco-music__library-item-title">{item.title}</span>
-              <span className="arco-music__library-item-subtitle">{item.subtitle}</span>
-            </span>
-          </button>
-        ))}
-      </div>
+            <div>
+              <NavSidebarSectionHeader title="Library" />
+              <div className="arco-nav-sidebar__section-items">
+                {filteredItems.map((item) => (
+                  <ListItem
+                    key={item.id}
+                    className="arco-nav-sidebar__nav-item"
+                    leading={
+                      <AlbumArt
+                        trackId={item.coverTrackId ?? item.id}
+                        tone={item.imageTone}
+                        size="sm"
+                        alt={item.title}
+                      />
+                    }
+                    label={item.title}
+                    description={item.subtitle}
+                    active={activeItemId === item.id}
+                    onClick={() => onSelectItem(item.id)}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        }
+      />
     </aside>
   );
 }
@@ -395,13 +362,12 @@ export function MusicPlayerBar({ vm }: MusicPlayerBarProps) {
             <Repeat size={16} />
           </button>
         </div>
-        <div className="arco-music__progress-row">
-          <span className="arco-music__time-label">{elapsed}</span>
-          <div className="arco-music__progress-track" aria-hidden="true">
-            <span className="arco-music__progress-fill" style={{ width: `${progress}%` }} />
-          </div>
-          <span className="arco-music__time-label">{track.duration}</span>
-        </div>
+        <MusicProgressScrubber
+          progress={progress}
+          elapsed={elapsed}
+          duration={track.duration}
+          onSeek={vm.seekPlayback}
+        />
       </div>
 
       <div className="arco-music__player-extras">

@@ -22,7 +22,7 @@ import { RESPONSE_ALREADY_SENT } from "@hono/node-server/utils/response";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import fs from "node:fs/promises";
-import { createReadStream } from "node:fs";
+import { createReadStream, type ReadStream } from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import type {
@@ -79,6 +79,16 @@ import type { CalendarEventInput } from "../shared/capabilities/calendar.js";
 import { searchPlaces, geocodePlace, getDrivingRoute } from "./services/mapsService.js";
 import { listSeedTracks, statSeedTrack } from "./services/musicSeedService.js";
 import { resolveTrackArt } from "./services/musicArtService.js";
+import { listLocalVideos, statLocalVideo } from "./services/videoSeedService.js";
+import { listLocalEpisodes, resolveLocalEpisode, statLocalEpisode } from "./services/podcastSeedService.js";
+import {
+  listPodcastRssFeedSeeds,
+  listRssEpisodes,
+  proxyRssCover,
+  proxyRssEnclosure,
+  warmPodcastRssFeeds,
+} from "./services/podcastRssService.js";
+import { listRemoteVideos, listRemotePodcastEpisodes } from "./services/mediaRemoteService.js";
 import type { FileCreateInput } from "../shared/capabilities/files.js";
 import type { MailFolderId, MailInboxFilter } from "../shared/mail.js";
 import { mailGateway } from "./mail/mailGateway.js";
@@ -89,12 +99,14 @@ import {
   webOriginAfterOAuth,
 } from "./mail/googleOAuth.js";
 import { mailStore } from "./mail/mailStore.js";
+import { getInstallStatus } from "./system/installStatus.js";
 
 const execFileAsync = promisify(execFile);
 
 ensureDataDirs();
 installedAppStore.ensureSeeds();
 filesService.ensureSeeds();
+warmPodcastRssFeeds();
 // Skills: static seeds from ./skills, plus the generated OpenUI app-authoring
 // guide as a gating skill (it left the always-on system prompt in Phase C).
 skillStore.ensureSeeds(path.resolve("skills"));
@@ -115,6 +127,10 @@ const app = new Hono<AuthEnv>();
 // gate the sensitive routes per role — see ROLE_CAPABILITIES in shared/types.
 
 app.route("/api/auth", authRoutes);
+
+/** Unauthenticated readiness probe for first boot and dev setup. */
+app.get("/api/system/install-status", async (c) => c.json(await getInstallStatus()));
+
 app.use("/api/*", requireAuth);
 
 // ── OpenAI-compatible agent endpoint ─────────────────────────────────────────
@@ -604,6 +620,17 @@ app.get("/api/maps/route", async (c) => {
 
 app.get("/api/music/tracks", (c) => c.json(listSeedTracks()));
 
+/** Avoid process crashes when a client disconnects during a file stream. */
+function createSafeReadStream(absPath: string, options?: { start?: number; end?: number }): ReadStream {
+  const stream = createReadStream(absPath, options);
+  stream.on("error", () => stream.destroy());
+  return stream;
+}
+
+function attachStreamAbort(stream: ReadStream, signal?: AbortSignal) {
+  signal?.addEventListener("abort", () => stream.destroy(), { once: true });
+}
+
 app.get("/api/music/stream/:id", (c) => {
   const resolved = statSeedTrack(c.req.param("id"));
   if (!resolved) return c.json({ error: "Track not found" }, 404);
@@ -619,7 +646,8 @@ app.get("/api/music/stream/:id", (c) => {
       return c.json({ error: "Invalid range" }, 416);
     }
 
-    const stream = createReadStream(resolved.absPath, { start, end });
+    const stream = createSafeReadStream(resolved.absPath, { start, end });
+    attachStreamAbort(stream, c.req.raw.signal);
     return c.body(stream, 206, {
       "Content-Range": `bytes ${start}-${end}/${resolved.size}`,
       "Accept-Ranges": "bytes",
@@ -628,7 +656,8 @@ app.get("/api/music/stream/:id", (c) => {
     });
   }
 
-  const stream = createReadStream(resolved.absPath);
+  const stream = createSafeReadStream(resolved.absPath);
+  attachStreamAbort(stream, c.req.raw.signal);
   return c.body(stream, 200, {
     "Content-Length": String(resolved.size),
     "Content-Type": "audio/mpeg",
@@ -640,7 +669,165 @@ app.get("/api/music/art/:id", (c) => {
   const art = resolveTrackArt(c.req.param("id"));
   if (!art) return c.json({ error: "Artwork not found" }, 404);
 
-  const stream = createReadStream(art.absPath);
+  const stream = createSafeReadStream(art.absPath);
+  attachStreamAbort(stream, c.req.raw.signal);
+  return c.body(stream, 200, {
+    "Content-Type": art.mime,
+    "Cache-Control": "public, max-age=86400",
+  });
+});
+
+app.get("/api/video/videos", (c) => c.json(listLocalVideos()));
+
+app.post("/api/video/remote", async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as {
+    provider?: string;
+    token?: string;
+    query?: string;
+  };
+  if (body.provider !== "youtube" && body.provider !== "vimeo") {
+    return c.json({ error: "Invalid video provider" }, 400);
+  }
+  return c.json(listRemoteVideos({ provider: body.provider, token: body.token, query: body.query }));
+});
+
+app.get("/api/video/stream/:id", (c) => {
+  const resolved = statLocalVideo(c.req.param("id"));
+  if (!resolved) return c.json({ error: "Video not found" }, 404);
+
+  const range = c.req.header("range");
+  if (range) {
+    const match = /^bytes=(\d+)-(\d*)$/i.exec(range.trim());
+    if (!match) return c.json({ error: "Invalid range" }, 416);
+
+    const start = Number(match[1]);
+    const end = match[2] ? Number(match[2]) : resolved.size - 1;
+    if (!Number.isFinite(start) || !Number.isFinite(end) || start > end || end >= resolved.size) {
+      return c.json({ error: "Invalid range" }, 416);
+    }
+
+    const stream = createSafeReadStream(resolved.absPath, { start, end });
+    attachStreamAbort(stream, c.req.raw.signal);
+    return c.body(stream, 206, {
+      "Content-Range": `bytes ${start}-${end}/${resolved.size}`,
+      "Accept-Ranges": "bytes",
+      "Content-Length": String(end - start + 1),
+      "Content-Type": resolved.video.mimeType,
+    });
+  }
+
+  const stream = createSafeReadStream(resolved.absPath);
+  attachStreamAbort(stream, c.req.raw.signal);
+  return c.body(stream, 200, {
+    "Content-Length": String(resolved.size),
+    "Content-Type": resolved.video.mimeType,
+    "Accept-Ranges": "bytes",
+  });
+});
+
+app.get("/api/podcast/episodes", (c) => c.json(listLocalEpisodes()));
+
+app.get("/api/podcast/rss/feeds", (c) => c.json(listPodcastRssFeedSeeds()));
+
+app.get("/api/podcast/rss/episodes", async (c) => {
+  try {
+    return c.json(await listRssEpisodes());
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to load RSS feeds";
+    return c.json({ error: message }, 502);
+  }
+});
+
+app.post("/api/podcast/remote", async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as {
+    provider?: string;
+    token?: string;
+    query?: string;
+    kind?: string;
+  };
+  if (body.provider !== "spotify" && body.provider !== "apple-podcasts" && body.provider !== "audible") {
+    return c.json({ error: "Invalid podcast provider" }, 400);
+  }
+  const kind =
+    body.kind === "podcast" || body.kind === "audiobook" || body.kind === "all" ? body.kind : "all";
+  return c.json(
+    listRemotePodcastEpisodes({
+      provider: body.provider,
+      token: body.token,
+      query: body.query,
+      kind,
+    }),
+  );
+});
+
+app.get("/api/podcast/stream/:id", async (c) => {
+  const episodeId = c.req.param("id");
+  if (episodeId.startsWith("rss-")) {
+    const proxied = await proxyRssEnclosure(episodeId, c.req.header("range"));
+    if (!proxied) return c.json({ error: "Episode not found" }, 404);
+    return c.body(proxied.body, proxied.status as 200 | 206, proxied.headers);
+  }
+
+  const resolved = statLocalEpisode(episodeId);
+  if (!resolved) return c.json({ error: "Episode not found" }, 404);
+
+  const range = c.req.header("range");
+  if (range) {
+    const match = /^bytes=(\d+)-(\d*)$/i.exec(range.trim());
+    if (!match) return c.json({ error: "Invalid range" }, 416);
+
+    const start = Number(match[1]);
+    const end = match[2] ? Number(match[2]) : resolved.size - 1;
+    if (!Number.isFinite(start) || !Number.isFinite(end) || start > end || end >= resolved.size) {
+      return c.json({ error: "Invalid range" }, 416);
+    }
+
+    const stream = createSafeReadStream(resolved.absPath, { start, end });
+    attachStreamAbort(stream, c.req.raw.signal);
+    return c.body(stream, 206, {
+      "Content-Range": `bytes ${start}-${end}/${resolved.size}`,
+      "Accept-Ranges": "bytes",
+      "Content-Length": String(end - start + 1),
+      "Content-Type": resolved.mimeType,
+    });
+  }
+
+  const stream = createSafeReadStream(resolved.absPath);
+  attachStreamAbort(stream, c.req.raw.signal);
+  return c.body(stream, 200, {
+    "Content-Length": String(resolved.size),
+    "Content-Type": resolved.mimeType,
+    "Accept-Ranges": "bytes",
+  });
+});
+
+app.get("/api/podcast/art/:id", async (c) => {
+  const episodeId = c.req.param("id");
+  if (episodeId.startsWith("rss-")) {
+    const proxied = await proxyRssCover(episodeId);
+    if (!proxied) return c.json({ error: "Artwork not found" }, 404);
+    return c.body(proxied.body, 200, {
+      "Content-Type": proxied.contentType,
+      "Cache-Control": "public, max-age=86400",
+    });
+  }
+
+  const art = resolveTrackArt(episodeId);
+  if (!art) {
+    const episode = resolveLocalEpisode(c.req.param("id"));
+    if (!episode?.episode.musicTrackId) return c.json({ error: "Artwork not found" }, 404);
+    const trackArt = resolveTrackArt(episode.episode.musicTrackId);
+    if (!trackArt) return c.json({ error: "Artwork not found" }, 404);
+    const stream = createSafeReadStream(trackArt.absPath);
+    attachStreamAbort(stream, c.req.raw.signal);
+    return c.body(stream, 200, {
+      "Content-Type": trackArt.mime,
+      "Cache-Control": "public, max-age=86400",
+    });
+  }
+
+  const stream = createSafeReadStream(art.absPath);
+  attachStreamAbort(stream, c.req.raw.signal);
   return c.body(stream, 200, {
     "Content-Type": art.mime,
     "Cache-Control": "public, max-age=86400",

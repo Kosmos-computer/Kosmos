@@ -11,7 +11,7 @@
  * event and demotes the phase — no per-caller handling needed.
  */
 import { create } from "zustand";
-import type { AuthUser, Capability } from "@shared/types";
+import type { AuthUser, Capability, Settings } from "@shared/types";
 import { api, type AuthFailureCode } from "../../lib/api";
 
 export type AuthPhase = "booting" | "setup" | "login" | "locked" | "ready";
@@ -24,7 +24,12 @@ interface AuthStore {
 
   /** Boot-time status fetch; resolves when the phase is known. */
   init: () => Promise<void>;
-  setup: (data: { username: string; displayName?: string; password: string }) => Promise<void>;
+  setup: (data: {
+    username: string;
+    displayName?: string;
+    password: string;
+    settings?: Partial<Settings>;
+  }) => Promise<void>;
   login: (username: string, password: string) => Promise<void>;
   unlock: (password: string) => Promise<void>;
   lock: () => Promise<void>;

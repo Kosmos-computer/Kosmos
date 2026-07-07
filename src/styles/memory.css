@@ -1,10 +1,11 @@
 /* Memory workspace — Psyche operator surface (Arco tokens). */
 
 .arco-memory {
-  display: flex;
-  height: 100%;
+  flex: 1;
   min-height: 0;
-  background: var(--arco-surface-base);
+  display: flex;
+  overflow: hidden;
+  background: var(--arco-bg-surface-solid);
 }
 
 .arco-memory__main {
@@ -15,29 +16,29 @@
 
 .arco-memory-sidebar__note {
   margin: 0;
-  padding: var(--arco-space-3);
+  padding: var(--arco-space-m);
   font-size: var(--arco-text-xs);
   color: var(--arco-text-tertiary);
   line-height: 1.4;
 }
 
 .arco-memory-view {
-  padding: var(--arco-space-6);
+  padding: var(--arco-space-xl);
   max-width: 960px;
 }
 
 .arco-memory-view--placeholder {
   display: flex;
   flex-direction: column;
-  gap: var(--arco-space-3);
+  gap: var(--arco-space-m);
 }
 
 .arco-memory-view__header {
-  margin-bottom: var(--arco-space-5);
+  margin-bottom: var(--arco-space-xl);
 }
 
 .arco-memory-view__title {
-  margin: 0 0 var(--arco-space-2);
+  margin: 0 0 var(--arco-space-s);
   font-size: var(--arco-text-xl);
   font-weight: 600;
   color: var(--arco-text-primary);
@@ -59,30 +60,30 @@
 .arco-memory-metrics {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: var(--arco-space-4);
+  gap: var(--arco-space-l);
 }
 
 .arco-memory-metric {
-  padding: var(--arco-space-4);
-  border: 1px solid var(--arco-border-subtle);
-  border-radius: var(--arco-radius-md);
-  background: var(--arco-surface-raised);
+  padding: var(--arco-space-l);
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-m);
+  background: var(--arco-bg-raised);
 }
 
 .arco-memory-metric__label {
   font-size: var(--arco-text-xs);
   color: var(--arco-text-tertiary);
-  margin-bottom: var(--arco-space-2);
+  margin-bottom: var(--arco-space-s);
 }
 
 .arco-memory-metric__value {
-  font-size: var(--arco-text-2xl);
+  font-size: 24px;
   font-weight: 600;
   color: var(--arco-text-primary);
 }
 
 .arco-memory-metric__change {
-  margin-top: var(--arco-space-2);
+  margin-top: var(--arco-space-s);
   font-size: var(--arco-text-xs);
   color: var(--arco-text-secondary);
 }
@@ -95,37 +96,49 @@
   color: var(--arco-success);
 }
 
+.arco-memory-metric--warning .arco-memory-metric__value {
+  color: var(--arco-warning);
+}
+
+.arco-memory-metric--neutral .arco-memory-metric__value {
+  color: var(--arco-text-secondary);
+}
+
 .arco-memory-filters {
   display: flex;
   flex-direction: column;
-  gap: var(--arco-space-3);
-  margin-bottom: var(--arco-space-5);
+  gap: var(--arco-space-m);
+  margin-bottom: var(--arco-space-xl);
+}
+
+.arco-memory-filters__search {
+  max-width: 420px;
 }
 
 .arco-memory-filters__kinds {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--arco-space-2);
+  gap: var(--arco-space-s);
 }
 
 .arco-memory-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: var(--arco-space-4);
+  gap: var(--arco-space-l);
 }
 
 .arco-memory-card {
-  padding: var(--arco-space-4);
-  border: 1px solid var(--arco-border-subtle);
-  border-radius: var(--arco-radius-md);
-  background: var(--arco-surface-raised);
+  padding: var(--arco-space-l);
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-m);
+  background: var(--arco-bg-raised);
 }
 
 .arco-memory-card__head {
   display: flex;
   justify-content: space-between;
-  gap: var(--arco-space-3);
-  margin-bottom: var(--arco-space-3);
+  gap: var(--arco-space-m);
+  margin-bottom: var(--arco-space-m);
 }
 
 .arco-memory-card__title {
@@ -136,13 +149,13 @@
 }
 
 .arco-memory-card__source {
-  margin: var(--arco-space-1) 0 0;
+  margin: var(--arco-space-xs) 0 0;
   font-size: var(--arco-text-xs);
   color: var(--arco-text-tertiary);
 }
 
 .arco-memory-card__summary {
-  margin: 0 0 var(--arco-space-3);
+  margin: 0 0 var(--arco-space-m);
   font-size: var(--arco-text-sm);
   color: var(--arco-text-secondary);
   line-height: 1.45;
@@ -151,25 +164,25 @@
 .arco-memory-card__meta {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--arco-space-2);
+  gap: var(--arco-space-s);
   font-size: var(--arco-text-xs);
   color: var(--arco-text-tertiary);
-  margin-bottom: var(--arco-space-2);
+  margin-bottom: var(--arco-space-s);
 }
 
 .arco-memory-card__kind {
-  padding: 0 var(--arco-space-2);
-  border-radius: var(--arco-radius-sm);
-  background: var(--arco-surface-overlay);
+  padding: 0 var(--arco-space-s);
+  border-radius: var(--arco-radius-s);
+  background: var(--arco-bg-sunk);
   color: var(--arco-text-secondary);
 }
 
 .arco-memory-card__confidence {
   height: 4px;
-  border-radius: var(--arco-radius-full);
-  background: var(--arco-surface-overlay);
+  border-radius: 9999px;
+  background: var(--arco-bg-sunk);
   overflow: hidden;
-  margin-bottom: var(--arco-space-3);
+  margin-bottom: var(--arco-space-m);
 }
 
 .arco-memory-card__confidence-fill {
@@ -180,23 +193,23 @@
 .arco-memory-card__tags {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--arco-space-2);
+  gap: var(--arco-space-s);
 }
 
 .arco-memory-card__tag {
   font-size: var(--arco-text-xs);
-  padding: 0 var(--arco-space-2);
-  border-radius: var(--arco-radius-sm);
-  border: 1px solid var(--arco-border-subtle);
+  padding: 0 var(--arco-space-s);
+  border-radius: var(--arco-radius-s);
+  border: 1px solid var(--arco-border);
   color: var(--arco-text-secondary);
 }
 
 .arco-memory-section {
-  margin-bottom: var(--arco-space-6);
+  margin-bottom: var(--arco-space-xl);
 }
 
 .arco-memory-section__title {
-  margin: 0 0 var(--arco-space-3);
+  margin: 0 0 var(--arco-space-m);
   font-size: var(--arco-text-sm);
   font-weight: 600;
   color: var(--arco-text-primary);
@@ -213,18 +226,18 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  border: 1px solid var(--arco-border-subtle);
-  border-radius: var(--arco-radius-md);
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-m);
   overflow: hidden;
 }
 
 .arco-memory-list__row {
   display: flex;
   justify-content: space-between;
-  gap: var(--arco-space-3);
-  padding: var(--arco-space-3) var(--arco-space-4);
-  border-bottom: 1px solid var(--arco-border-subtle);
-  background: var(--arco-surface-raised);
+  gap: var(--arco-space-m);
+  padding: var(--arco-space-m) var(--arco-space-l);
+  border-bottom: 1px solid var(--arco-border);
+  background: var(--arco-bg-raised);
 }
 
 .arco-memory-list__row:last-child {
@@ -260,8 +273,8 @@
 
 .arco-memory-grants-table th,
 .arco-memory-grants-table td {
-  padding: var(--arco-space-2) var(--arco-space-3);
-  border-bottom: 1px solid var(--arco-border-subtle);
+  padding: var(--arco-space-s) var(--arco-space-m);
+  border-bottom: 1px solid var(--arco-border);
   text-align: left;
 }
 

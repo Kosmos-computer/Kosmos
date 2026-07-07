@@ -3,6 +3,7 @@ import {
   Folder,
   Globe,
   Home,
+  Music,
   Star,
   Trash2,
 } from "lucide-react";
@@ -13,6 +14,7 @@ import type { DriveNewItemType, FilesLocation } from "./types";
 const LOCATIONS: { id: FilesLocation; label: string; icon: typeof Home }[] = [
   { id: "home", label: "Home", icon: Home },
   { id: "drive", label: "My Drive", icon: Folder },
+  { id: "music", label: "Music", icon: Music },
   { id: "recent", label: "Recent", icon: Clock },
   { id: "starred", label: "Starred", icon: Star },
   { id: "trash", label: "Trash", icon: Trash2 },

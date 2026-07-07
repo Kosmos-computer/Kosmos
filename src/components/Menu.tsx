@@ -42,7 +42,7 @@ export interface MenuProps {
   /** Panel edge alignment relative to the trigger. */
   align?: "start" | "end";
   /** Which side of the trigger the panel opens on. */
-  side?: "top" | "bottom";
+  side?: "top" | "bottom" | "right";
   "aria-label"?: string;
   className?: string;
   /** Controlled open state — e.g. to open the menu from a right-click instead of the trigger's click. */

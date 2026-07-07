@@ -70,6 +70,11 @@ function collectAppTokens(): Record<string, string> {
 export function AppHost({ appId }: { appId: string }) {
   const app = useOsStore((s) => s.installedApps.find((e) => e.manifest.id === appId));
   const theme = useOsStore((s) => s.theme);
+  const accentPreset = useOsStore((s) => s.accentPreset);
+  const radiusPreset = useOsStore((s) => s.radiusPreset);
+  const fontPreset = useOsStore((s) => s.fontPreset);
+  const textScalePreset = useOsStore((s) => s.textScalePreset);
+  const spacingPreset = useOsStore((s) => s.spacingPreset);
   const notify = useOsStore((s) => s.notify);
   const [launchFileId] = useState(
     () => useDocumentLaunchStore.getState().consume(installedLaunchKey(appId)) ?? undefined,
@@ -123,7 +128,7 @@ export function AppHost({ appId }: { appId: string }) {
 
   const pushTheme = useCallback(() => {
     postToApp({ appBridge: true, type: "theme", theme, tokens: collectAppTokens() });
-  }, [postToApp, theme]);
+  }, [postToApp, theme, accentPreset, radiusPreset, fontPreset, textScalePreset, spacingPreset]);
 
   // Re-push tokens whenever the OS theme flips while the window is open.
   useEffect(() => {

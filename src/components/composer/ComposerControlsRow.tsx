@@ -82,7 +82,8 @@ export function ComposerControlsRow({
 
   const showModeMenu = Boolean(modes?.length && activeModeId && onModeChange);
   const activeModeLabel = modes?.find((m) => m.id === activeModeId)?.label;
-  const showModelMenu = Boolean(model && modelItems);
+  const showModelMenu = Boolean(modelItems?.length);
+  const modelLabel = model ?? "Model";
 
   const controlIds = useMemo<ControlId[]>(() => {
     const ids: ControlId[] = ["attach", "emoji", "formatting"];
@@ -249,7 +250,7 @@ export function ComposerControlsRow({
                 items={modelItems ?? []}
                 trigger={
                   <button type="button" className="arco-composer__pickertrigger">
-                    <span className="arco-composer__pickerlabel">{model}</span>
+                    <span className="arco-composer__pickerlabel">{modelLabel}</span>
                     <ChevronDown size={12} />
                   </button>
                 }

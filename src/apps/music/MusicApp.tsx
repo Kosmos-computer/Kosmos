@@ -4,7 +4,6 @@ import {
   MusicLibrarySidebar,
   MusicNowPlayingPanel,
   MusicPlayerBar,
-  MusicTopBar,
 } from "./MusicParts";
 import { useMusicStub } from "./useMusicStub";
 
@@ -32,12 +31,6 @@ export function MusicApp() {
 
   return (
     <div className="arco-music">
-      <MusicTopBar
-        searchQuery={vm.searchQuery}
-        onSearchChange={vm.setSearchQuery}
-        user={vm.user}
-      />
-
       <div className="arco-music__body">
         <MusicLibrarySidebar
           items={vm.libraryItems}
@@ -45,6 +38,8 @@ export function MusicApp() {
           onSelectItem={vm.setActiveLibraryItemId}
           libraryFilter={vm.libraryFilter}
           onLibraryFilterChange={vm.setLibraryFilter}
+          searchQuery={vm.searchQuery}
+          onSearchChange={vm.setSearchQuery}
         />
 
         <MusicHomeContent

@@ -7,6 +7,9 @@
  */
 import type { ShellAppEntry } from "./shellApps";
 
+/** Max pinned apps shown as tray icons; the rest appear in "View all apps". */
+export const DOCK_VISIBLE_APP_LIMIT = 10;
+
 export function splitByPinned(
   pinnedIds: string[],
   entries: ShellAppEntry[],

@@ -543,6 +543,22 @@ export interface AuthStatus {
   user?: AuthUser;
 }
 
+/** One row in the install-status checklist shown during first-run setup. */
+export interface InstallCheck {
+  id: string;
+  label: string;
+  ok: boolean;
+  required: boolean;
+  hint?: string;
+}
+
+/** Server + dev-environment readiness snapshot (GET /api/system/install-status). */
+export interface InstallStatus {
+  ready: boolean;
+  checks: InstallCheck[];
+  optional: InstallCheck[];
+}
+
 // ── Settings ─────────────────────────────────────────────────────────────────
 
 export type LlmProvider = "openai" | "anthropic" | "openrouter" | "ollama" | "local" | "custom" | "mock";

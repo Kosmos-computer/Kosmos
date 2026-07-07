@@ -20,7 +20,6 @@ import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { getConnInfo } from "@hono/node-server/conninfo";
 import type { AgentEvent } from "../../shared/types.js";
-import { USE_CASE_SLOTS } from "../../shared/models.js";
 import { broadcastShellEvent, hasShellClients } from "../shellChannel.js";
 import { modelStore } from "../stores/modelStore.js";
 import { sessionStore } from "../stores/sessionStore.js";
@@ -116,8 +115,8 @@ function resolvePassthrough(name: string | undefined): PassthroughEndpoint | nul
   if (!name || name === "arco-agent") return null;
   const direct = modelStore.resolveEndpoint(name);
   if (direct) return guardSelfProxy(direct);
-  const slot = USE_CASE_SLOTS.find((s) => s.id === name && s.requires === "text.chat");
-  if (slot) {
+  const slot = modelStore.getSlotDef(name);
+  if (slot?.requires === "text.chat") {
     const resolved = modelStore.resolveModel(slot.id);
     if (resolved.provider === "mock") return null;
     return guardSelfProxy(resolved);
@@ -271,7 +270,10 @@ openaiCompatRoutes.get("/models", (c) => {
   if (!isLoopback(address)) {
     return c.json({ error: { message: "The Arco /v1 endpoint only accepts local connections" } }, 403);
   }
-  const slots = USE_CASE_SLOTS.filter((s) => s.requires === "text.chat").map((s) => ({
+  const slots = modelStore
+    .allSlotDefs()
+    .filter((s) => s.requires === "text.chat")
+    .map((s) => ({
     id: s.id,
     object: "model",
     created: 0,

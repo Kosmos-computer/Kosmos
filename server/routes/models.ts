@@ -6,6 +6,8 @@
  *   PATCH  /:id              — enable/disable
  *   DELETE /:id              — remove (non-seed only)
  *   PUT    /slots/:slotId    — assign a model to a use-case slot (null clears)
+ *   POST   /slots            — add a user-defined use case
+ *   DELETE /slots/:slotId    — remove a user-defined use case
  *
  * Local engine (server/services/llamaEngine.ts):
  *   GET    /engine           — phase + per-GGUF download/router state
@@ -91,6 +93,26 @@ modelRoutes.put("/slots/:slotId", async (c) => {
     if (body.modelId && modelStore.get(body.modelId)?.manifest.runtime.kind === "llama-gguf") {
       void llamaEngine.ensureRunning();
     }
+    return c.json({ slots: modelStore.slots() });
+  } catch (err) {
+    return c.json({ error: errorMessage(err) }, 400);
+  }
+});
+
+modelRoutes.post("/slots", async (c) => {
+  const body = await c.req.json().catch(() => null);
+  if (!body) return c.json({ error: "Provide label and requires capability" }, 400);
+  try {
+    const slot = modelStore.addSlot(body);
+    return c.json({ slot, slots: modelStore.slots() }, 201);
+  } catch (err) {
+    return c.json({ error: errorMessage(err) }, 400);
+  }
+});
+
+modelRoutes.delete("/slots/:slotId", (c) => {
+  try {
+    modelStore.removeSlot(c.req.param("slotId"));
     return c.json({ slots: modelStore.slots() });
   } catch (err) {
     return c.json({ error: errorMessage(err) }, 400);

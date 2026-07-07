@@ -20,13 +20,17 @@ import {
   type ModelManifest,
   type ModelSource,
   type RegisteredModel,
+  type UseCaseSlotDef,
+  type UseCaseSlotSource,
   type UseCaseSlotState,
 } from "../../shared/models.js";
 import { dataDirs, loadSettings, saveSettings } from "../env.js";
 import { parseModelManifest } from "./modelSchema.js";
+import { parseCreateUseCaseSlot } from "./useCaseSlotSchema.js";
 
 const MODELS_FILE = path.join(dataDirs.root, "models.json");
 const ASSIGNMENTS_FILE = path.join(dataDirs.root, "model-assignments.json");
+const CUSTOM_SLOTS_FILE = path.join(dataDirs.root, "custom-use-case-slots.json");
 
 /** LLM connection details a text.chat consumer needs — Settings-field shaped. */
 export interface ResolvedLlm {
@@ -63,6 +67,23 @@ function loadAssignments(): Record<string, string | null> {
 function saveAssignments(assignments: Record<string, string | null>): void {
   fs.mkdirSync(dataDirs.root, { recursive: true });
   fs.writeFileSync(ASSIGNMENTS_FILE, JSON.stringify(assignments, null, 2), "utf-8");
+}
+
+function loadCustomSlots(): UseCaseSlotDef[] {
+  try {
+    return JSON.parse(fs.readFileSync(CUSTOM_SLOTS_FILE, "utf-8")) as UseCaseSlotDef[];
+  } catch {
+    return [];
+  }
+}
+
+function saveCustomSlots(slots: UseCaseSlotDef[]): void {
+  fs.mkdirSync(dataDirs.root, { recursive: true });
+  fs.writeFileSync(CUSTOM_SLOTS_FILE, JSON.stringify(slots, null, 2), "utf-8");
+}
+
+function slugifyLabel(label: string): string {
+  return label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 }
 
 function ggufStem(file: string): string {
@@ -114,6 +135,73 @@ function endpointOf(manifest: ModelManifest, settings: Settings): Omit<ResolvedL
 export const modelStore = {
   list(): RegisteredModel[] {
     return loadModels();
+  },
+
+  /** Built-in slots plus user-added slots from disk. */
+  allSlotDefs(): Array<UseCaseSlotDef & { source: UseCaseSlotSource }> {
+    return [
+      ...USE_CASE_SLOTS.map((slot) => ({ ...slot, source: "seed" as const })),
+      ...loadCustomSlots().map((slot) => ({ ...slot, source: "user" as const })),
+    ];
+  },
+
+  getSlotDef(slotId: string): (UseCaseSlotDef & { source: UseCaseSlotSource }) | undefined {
+    return this.allSlotDefs().find((slot) => slot.id === slotId);
+  },
+
+  /** Register a user-defined use case (persisted to custom-use-case-slots.json). */
+  addSlot(raw: unknown): UseCaseSlotDef & { source: "user" } {
+    const input = parseCreateUseCaseSlot(raw);
+    const existing = this.allSlotDefs();
+    const slug = slugifyLabel(input.label) || "use-case";
+    let id = `user.${slug}`;
+    let suffix = 2;
+    while (existing.some((slot) => slot.id === id)) {
+      id = `user.${slug}-${suffix++}`;
+    }
+
+    if (input.fallback) {
+      const fallback = this.getSlotDef(input.fallback);
+      if (!fallback) throw new Error(`Unknown fallback slot: ${input.fallback}`);
+      if (fallback.requires !== input.requires) {
+        throw new Error(`Fallback must require the same capability (${input.requires})`);
+      }
+      if (input.fallback === id) throw new Error("A use case cannot inherit from itself");
+    }
+
+    const slot: UseCaseSlotDef = {
+      id,
+      label: input.label,
+      description: input.description?.trim() || "",
+      requires: input.requires,
+      ...(input.fallback ? { fallback: input.fallback } : {}),
+    };
+    const custom = loadCustomSlots();
+    custom.push(slot);
+    saveCustomSlots(custom);
+    return { ...slot, source: "user" };
+  },
+
+  /** Remove a user-added use case. Built-in slots cannot be removed. */
+  removeSlot(slotId: string): void {
+    const slot = this.getSlotDef(slotId);
+    if (!slot) return;
+    if (slot.source !== "user") throw new Error("Built-in use cases cannot be removed");
+
+    const dependents = this.allSlotDefs().filter((entry) => entry.fallback === slotId);
+    if (dependents.length > 0) {
+      throw new Error(
+        `Other use cases inherit from this slot: ${dependents.map((entry) => entry.label).join(", ")}`,
+      );
+    }
+
+    saveCustomSlots(loadCustomSlots().filter((entry) => entry.id !== slotId));
+
+    const assignments = loadAssignments();
+    if (slotId in assignments) {
+      delete assignments[slotId];
+      saveAssignments(assignments);
+    }
   },
 
   get(id: string): RegisteredModel | undefined {
@@ -171,7 +259,7 @@ export const modelStore = {
 
   /** Assign a model to a slot (null clears it). Validates capability match. */
   assign(slotId: string, modelId: string | null): void {
-    const slot = USE_CASE_SLOTS.find((s) => s.id === slotId);
+    const slot = this.getSlotDef(slotId);
     if (!slot) throw new Error(`Unknown use-case slot: ${slotId}`);
     if (modelId !== null) {
       const record = this.get(modelId);
@@ -206,7 +294,7 @@ export const modelStore = {
           if (endpoint) return { modelId: record.manifest.id, ...endpoint };
         }
       }
-      current = USE_CASE_SLOTS.find((s) => s.id === current)?.fallback;
+      current = this.getSlotDef(current)?.fallback;
     }
     return {
       modelId: null,
@@ -233,7 +321,7 @@ export const modelStore = {
     const settings = loadSettings();
     const assignments = loadAssignments();
     const models = loadModels();
-    return USE_CASE_SLOTS.map((def) => {
+    return this.allSlotDefs().map((def) => {
       const eligible = models
         .filter((m) => m.enabled && m.manifest.capabilities.includes(def.requires))
         .map((m) => ({ id: m.manifest.id, name: m.manifest.name }));

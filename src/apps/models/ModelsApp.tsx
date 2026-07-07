@@ -7,8 +7,31 @@
  * supersedes the legacy Tauri model-manager UI.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Cloud, Cpu, Download, Play, Plus, Square, Trash2 } from "lucide-react";
-import type { EngineStatus, RegisteredModel, UseCaseSlotState } from "@shared/models";
+import type { LucideIcon } from "lucide-react";
+import {
+  Brain,
+  CalendarClock,
+  Cloud,
+  Cpu,
+  Download,
+  Image as ImageIcon,
+  Layers,
+  MessageSquare,
+  Mic,
+  Music,
+  Play,
+  Plus,
+  Square,
+  Trash2,
+  Volume2,
+} from "lucide-react";
+import type {
+  CreateUseCaseSlotInput,
+  EngineStatus,
+  ModelCapability,
+  RegisteredModel,
+  UseCaseSlotState,
+} from "@shared/models";
 import {
   ModuleHeader,
   ModuleInner,
@@ -30,6 +53,24 @@ const CAPABILITY_LABELS: Record<string, string> = {
   "music.generate": "music",
 };
 
+const CAPABILITY_OPTIONS: ModelCapability[] = [
+  "text.chat",
+  "text.embedding",
+  "speech.stt",
+  "speech.tts",
+  "image.generate",
+  "music.generate",
+];
+
+const CAPABILITY_ICONS: Record<ModelCapability, LucideIcon> = {
+  "text.chat": MessageSquare,
+  "text.embedding": Layers,
+  "speech.stt": Mic,
+  "speech.tts": Volume2,
+  "image.generate": ImageIcon,
+  "music.generate": Music,
+};
+
 function formatBytes(bytes: number): string {
   if (bytes >= 1e9) return `${(bytes / 1e9).toFixed(1)} GB`;
   if (bytes >= 1e6) return `${Math.round(bytes / 1e6)} MB`;
@@ -42,24 +83,54 @@ function isLocalGguf(model: RegisteredModel): boolean {
 
 const rowBody = { flex: 1, minWidth: 0 } as const;
 const rowTitle = { fontWeight: 600, fontSize: "var(--arco-text-sm)" } as const;
+const rowIcon = { color: "var(--arco-accent)", flexShrink: 0 } as const;
 const inlineActions = { display: "flex", alignItems: "center", gap: "var(--arco-space-s)" } as const;
+
+const SLOT_ICONS: Record<string, LucideIcon> = {
+  "agent.chat": MessageSquare,
+  "automations.chat": CalendarClock,
+  "voice.brain": Brain,
+  "voice.stt": Mic,
+  "voice.tts": Volume2,
+  "image.generate": ImageIcon,
+  "music.generate": Music,
+};
 
 // ── Use-case slots ───────────────────────────────────────────────────────────
 
 function SlotRow({
   slot,
   onAssign,
+  onRemove,
 }: {
   slot: UseCaseSlotState;
   onAssign: (slotId: string, modelId: string | null) => void;
+  onRemove?: (slotId: string) => void;
 }) {
+  const Icon = SLOT_ICONS[slot.id] ?? CAPABILITY_ICONS[slot.requires];
+
   return (
     <div className="arco-listrow">
+      <Icon size={16} style={rowIcon} aria-hidden="true" />
       <div style={rowBody}>
-        <div style={rowTitle}>{slot.label}</div>
+        <div style={{ ...rowTitle, display: "flex", alignItems: "center", gap: "var(--arco-space-xs)" }}>
+          {slot.label}
+          {slot.source === "user" ? <Badge>custom</Badge> : null}
+        </div>
         <div className="arco-listrow__sub">{slot.description}</div>
       </div>
       {slot.assigned === null && slot.effective ? <Badge>via {slot.effective.name}</Badge> : null}
+      {slot.source === "user" && onRemove ? (
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label={`Remove ${slot.label}`}
+          title="Remove use case"
+          onClick={() => onRemove(slot.id)}
+        >
+          <Trash2 size={14} />
+        </Button>
+      ) : null}
       <select
         className="arco-input arco-input--narrow"
         value={slot.assigned ?? ""}
@@ -159,7 +230,7 @@ function ModelRow({
 
   return (
     <div className="arco-listrow" style={model.enabled ? undefined : { opacity: 0.55 }}>
-      <Icon size={16} style={{ color: "var(--arco-accent)", flexShrink: 0 }} aria-hidden="true" />
+      <Icon size={16} style={rowIcon} aria-hidden="true" />
       <div style={rowBody}>
         <div style={{ ...rowTitle, display: "flex", alignItems: "center", gap: "var(--arco-space-xs)" }}>
           {manifest.name}
@@ -201,6 +272,106 @@ function ModelRow({
         onChange={(e) => onToggle(manifest.id, e.target.checked)}
         aria-label={`${manifest.name} enabled`}
       />
+    </div>
+  );
+}
+
+// ── Add use case ─────────────────────────────────────────────────────────────
+
+function AddUseCaseForm({
+  slots,
+  onDone,
+}: {
+  slots: UseCaseSlotState[];
+  onDone: () => void;
+}) {
+  const notify = useOsStore((s) => s.notify);
+  const [label, setLabel] = useState("");
+  const [description, setDescription] = useState("");
+  const [requires, setRequires] = useState<ModelCapability>("text.chat");
+  const [fallback, setFallback] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const fallbackOptions = useMemo(
+    () => slots.filter((slot) => slot.requires === requires),
+    [slots, requires],
+  );
+
+  const addUseCase = async () => {
+    if (!label.trim()) {
+      notify("Name is required");
+      return;
+    }
+    setBusy(true);
+    try {
+      const body: CreateUseCaseSlotInput = {
+        label: label.trim(),
+        requires,
+        ...(description.trim() ? { description: description.trim() } : {}),
+        ...(fallback ? { fallback } : {}),
+      };
+      await api.addUseCaseSlot(body);
+      setLabel("");
+      setDescription("");
+      setRequires("text.chat");
+      setFallback("");
+      onDone();
+    } catch (err) {
+      notify(err instanceof Error ? err.message : "Could not add use case");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="arco-form">
+      <Input
+        placeholder="Name (e.g. Nightly reports)"
+        value={label}
+        onChange={(e) => setLabel(e.target.value)}
+        aria-label="Use case name"
+      />
+      <Input
+        placeholder="Description (optional)"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        aria-label="Use case description"
+      />
+      <select
+        className="arco-input"
+        value={requires}
+        onChange={(e) => {
+          setRequires(e.target.value as ModelCapability);
+          setFallback("");
+        }}
+        aria-label="Required capability"
+      >
+        {CAPABILITY_OPTIONS.map((cap) => (
+          <option key={cap} value={cap}>
+            {CAPABILITY_LABELS[cap] ?? cap}
+          </option>
+        ))}
+      </select>
+      {fallbackOptions.length > 0 ? (
+        <select
+          className="arco-input"
+          value={fallback}
+          onChange={(e) => setFallback(e.target.value)}
+          aria-label="Inherit from"
+        >
+          <option value="">No inheritance</option>
+          {fallbackOptions.map((slot) => (
+            <option key={slot.id} value={slot.id}>
+              Inherit from {slot.label}
+            </option>
+          ))}
+        </select>
+      ) : null}
+      <div style={inlineActions}>
+        <Button variant="primary" onClick={() => void addUseCase()} disabled={busy}>
+          <Plus size={14} /> Add use case
+        </Button>
+      </div>
     </div>
   );
 }
@@ -354,6 +525,8 @@ export function ModelsApp() {
 
   const onAssign = (slotId: string, modelId: string | null) =>
     void act(() => api.assignModelSlot(slotId, modelId), "Could not assign model");
+  const onRemoveSlot = (slotId: string) =>
+    void act(() => api.removeUseCaseSlot(slotId), "Could not remove use case");
   const onToggle = (id: string, enabled: boolean) =>
     void act(() => api.setModelEnabled(id, enabled), "Could not update model");
   const onRemove = (id: string) => void act(() => api.deleteModel(id), "Could not remove model");
@@ -410,9 +583,10 @@ export function ModelsApp() {
         <ModuleSection title="Use cases" count={slots.length}>
           <ModuleList>
             {slots.map((slot) => (
-              <SlotRow key={slot.id} slot={slot} onAssign={onAssign} />
+              <SlotRow key={slot.id} slot={slot} onAssign={onAssign} onRemove={onRemoveSlot} />
             ))}
           </ModuleList>
+          <AddUseCaseForm slots={slots} onDone={() => void refresh()} />
         </ModuleSection>
 
         <ModuleSection title="Local models" count={localModels.length}>

@@ -50,7 +50,7 @@ import type {
   WebAppLaunchStatus,
   WorkspaceEntry,
 } from "@shared/types";
-import type { EngineStatus, RegisteredModel, UseCaseSlotState } from "@shared/models";
+import type { CreateUseCaseSlotInput, EngineStatus, RegisteredModel, UseCaseSlotState } from "@shared/models";
 import type { CalendarEvent, CalendarEventInput } from "@shared/capabilities/calendar";
 import type { Task, TaskInput, TaskStatus } from "@shared/capabilities/tasks";
 import type { FileCreateInput, FileEntry } from "@shared/capabilities/files";
@@ -705,6 +705,16 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ modelId }),
     }).then((r) => json<{ slots: UseCaseSlotState[] }>(r)),
+  addUseCaseSlot: (body: CreateUseCaseSlotInput) =>
+    fetch("/api/models/slots", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }).then((r) => json<{ slot: UseCaseSlotState; slots: UseCaseSlotState[] }>(r)),
+  removeUseCaseSlot: (slotId: string) =>
+    fetch(`/api/models/slots/${encodeURIComponent(slotId)}`, { method: "DELETE" }).then((r) =>
+      json<{ slots: UseCaseSlotState[] }>(r),
+    ),
   getEngineStatus: () => fetch("/api/models/engine").then((r) => json<EngineStatus>(r)),
   startEngine: () => post<EngineStatus>("/api/models/engine/start"),
   stopEngine: () => post<EngineStatus>("/api/models/engine/stop"),

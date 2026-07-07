@@ -77,6 +77,9 @@ export interface RegisteredModel {
 
 // ── Use-case slots ───────────────────────────────────────────────────────────
 
+/** Built-in slots ship with the OS; user slots are added in the Models app. */
+export type UseCaseSlotSource = "seed" | "user";
+
 /** One OS-defined slot a model can be assigned to. */
 export interface UseCaseSlotDef {
   id: string;
@@ -84,6 +87,15 @@ export interface UseCaseSlotDef {
   description: string;
   requires: ModelCapability;
   /** Slot to inherit from when unassigned (e.g. automations → agent.chat). */
+  fallback?: string;
+}
+
+/** POST /api/models/slots — create a user-defined use case. */
+export interface CreateUseCaseSlotInput {
+  label: string;
+  description?: string;
+  requires: ModelCapability;
+  /** Another slot with the same capability to inherit from when unassigned. */
   fallback?: string;
 }
 
@@ -138,8 +150,9 @@ export const USE_CASE_SLOTS: UseCaseSlotDef[] = [
   },
 ];
 
-/** A slot with its current assignment, as served by GET /api/models/slots. */
+/** A slot with its current assignment, as served by GET /api/models. */
 export interface UseCaseSlotState extends UseCaseSlotDef {
+  source: UseCaseSlotSource;
   /** Registered model id, or null = unconfigured (uses fallback chain). */
   assigned: string | null;
   /**

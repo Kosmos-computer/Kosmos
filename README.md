@@ -14,6 +14,14 @@ A generative AI operating system prototype. A desktop shell in the browser where
 - **Databases** — namespaced SQLite databases usable by both the agent and generated apps.
 - **Automations** — cron-scheduled agent runs with prompts, run history, and an Automations manager app.
 - **Accounts & locking** — boot splash → login flow, session auth on every API route, role-based permissions (owner/admin/member/viewer), manual + idle lock screen, and in-app account management.
+- **OS-owned PIM data** — Calendar (`os.calendar@1`), Tasks (`os.tasks@1`), and Drive/Docs/Sheets (`os.files@1` / `os.docs@1` / `os.sheets@1`) share canonical SQLite stores. Any app or the agent reads and writes the same data — swap the UI without losing state.
+- **Tasks** — full Tasks app (list, drawer, due dates, assignees, history) backed by the system store. The agent has `tasks_list`, `tasks_create`, `tasks_update`, `tasks_complete`, `tasks_archive`, and `tasks_delete` tools.
+- **Menu bar tasks (macOS)** — native Swift companion app (`apps/menubar-tasks/`) lives in the status bar for quick capture. Tasks sync instantly with Arco and the agent. Build with `npm run menubar-tasks`; authenticate once with `npm run menubar-tasks:auth`.
+- **Model hub** — Models app and server-side registry assign models to use-case slots (agent, voice, image, plus custom slots you define). Supports cloud presets, Ollama, and local `llama-server` engines managed by the registry.
+- **Memory & world model** — Memory app includes a world-model explorer prototype (entities, relations, ethics/worldview seeds). Ships with the `integral-ethics` agent skill and identity docs under `memory/identity/`.
+- **Studio** — coding workspace with file browser, git diffs, integrated terminal, live browser preview, and model selection wired to the hub.
+- **Agent extensibility** — dynamic tool registry with per-tool policy (auto / confirm / deny), MCP client (connect external servers) and outward MCP server (expose Arco intents to other agents), installable skills, and ACP/Cursor agent backends.
+- **Desktop app** — Electron wrapper bundles the server + UI into a native macOS/Windows app. Dev: `npm run desktop:dev:all`. Production build: `npm run dist:desktop`.
 
 ## Quick start
 
@@ -28,6 +36,18 @@ npm run dev        # starts API server (:4600) + Vite dev server (:4610)
 Open http://localhost:4610.
 
 `npm run setup:check` prints the same readiness report without modifying anything — useful in CI or after a partial install.
+
+### macOS menu bar tasks
+
+Quick-capture tasks from the status bar without opening Arco:
+
+```bash
+npm run dev:server              # keep the API running
+npm run menubar-tasks:auth      # once per machine (writes a session token)
+npm run menubar-tasks           # builds ArcoMenubarTasks.app and opens it
+```
+
+Look for the **checklist icon** in the menu bar (it may be under the `>>` overflow). Tasks sync with the Tasks app and the agent via `os.tasks@1`. See `apps/menubar-tasks/README.md` for details.
 
 ### First run: install wizard
 
@@ -134,5 +154,11 @@ for engine swapping.
 | `npm run voice` | Voice server only (see `voice-server/README.md` for setup) |
 | `npm run build` | Production client build to `dist/` |
 | `npm start` | Serve the production build + API from one process |
+| `npm run desktop` | Build and launch the Electron desktop app |
+| `npm run desktop:dev:all` | Server + web + Electron desktop together |
+| `npm run dist:desktop` | Build a distributable desktop package (DMG/ZIP on macOS) |
+| `npm run menubar-tasks:auth` | Mint a session token for the macOS menu bar tasks app |
+| `npm run menubar-tasks` | Build and open the menu bar tasks app (macOS 13+) |
+| `npm run models` | Launch the Arco Models manager (Tauri) |
 | `npm run typecheck` | Typecheck client and server configs |
 | `npm run generate` | Regenerate prompts/schema after upgrading OpenUI packages |

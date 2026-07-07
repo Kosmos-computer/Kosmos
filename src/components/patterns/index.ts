@@ -1,4 +1,5 @@
 export { Breadcrumb, type BreadcrumbItem, type BreadcrumbProps } from "./Breadcrumb";
+export { ListSearch, type ListSearchProps } from "./ListSearch";
 export { EditorToolbar, type BlockFormat, type EditorToolbarProps, type ReadAloudStatus, type TextAlign, type TextMark } from "./EditorToolbar";
 export { FormActions, FormRow, Section, type FormActionsProps, type FormRowProps, type SectionProps } from "./Section";
 export { ListItem, type ListItemProps } from "./ListItem";
@@ -41,6 +42,8 @@ export {
 export { SidebarPane, type SidebarPaneProps } from "./SidebarPane";
 export { PreviewPane, type PreviewPaneProps } from "./PreviewPane";
 export { ConnectServiceModal, type ConnectServiceModalProps } from "./ConnectServiceModal";
+export { MediaPlayerBar, type MediaPlayerBarProps } from "./MediaPlayerBar";
+export { MediaProgressScrubber, type MediaProgressScrubberProps } from "./MediaProgressScrubber";
 export { useColumnResize, type UseColumnResizeOptions } from "./useColumnResize";
 export {
   ModuleCardGrid,

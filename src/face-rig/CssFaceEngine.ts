@@ -14,7 +14,7 @@ export class CssFaceEngine implements FaceRigEngine {
     root.dataset.expression = "neutral";
     root.dataset.speaking = "idle";
     root.setAttribute("role", "img");
-    root.setAttribute("aria-label", "Arco assistant face");
+    root.setAttribute("aria-label", "Minimal assistant face");
     root.innerHTML = `
       <div class="arco-face__head">
         <div class="arco-face__eye arco-face__eye--left"><div class="arco-face__pupil"></div></div>

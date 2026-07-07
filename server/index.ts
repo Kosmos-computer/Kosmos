@@ -77,17 +77,51 @@ import { filesService } from "./services/filesService.js";
 import { calendarService } from "./services/calendarService.js";
 import type { CalendarEventInput } from "../shared/capabilities/calendar.js";
 import { searchPlaces, geocodePlace, getDrivingRoute } from "./services/mapsService.js";
+import { webSearch } from "./services/searchService.js";
+import { browseErrorHtml, fetchBrowsePage } from "./services/browseProxyService.js";
 import { listSeedTracks, statSeedTrack } from "./services/musicSeedService.js";
 import { resolveTrackArt } from "./services/musicArtService.js";
+import {
+  addSubscribedMusicFeed,
+  fetchMusicFeedMetadata,
+  fetchMusicFeedSongs,
+  invalidateMusicFeedCache,
+  listRssSongs,
+  listSubscribedMusicFeeds,
+  proxyMusicFeedCover,
+  proxyMusicRssEnclosure,
+  proxyMusicSongCover,
+  removeSubscribedMusicFeed,
+  seedAudioBroadcastFeeds,
+  warmMusicRssFeeds,
+} from "./services/musicRssService.js";
+import { listMusicLiveStations, proxyMusicLiveStream } from "./services/musicLiveService.js";
 import { listLocalVideos, statLocalVideo } from "./services/videoSeedService.js";
 import { listLocalEpisodes, resolveLocalEpisode, statLocalEpisode } from "./services/podcastSeedService.js";
 import {
-  listPodcastRssFeedSeeds,
+  addSubscribedFeed,
+  fetchFeedEpisodes,
+  fetchFeedMetadata,
+  invalidateFeedCache,
   listRssEpisodes,
+  listSubscribedFeeds,
   proxyRssCover,
+  proxyFeedCover,
   proxyRssEnclosure,
+  removeSubscribedFeed,
   warmPodcastRssFeeds,
 } from "./services/podcastRssService.js";
+import { syncPodcastDownloads, warmPodcastDownloads } from "./services/podcastDownloadService.js";
+import {
+  getPodcastDriveSave,
+  listPodcastDriveSaves,
+  savePodcastEpisodeToDrive,
+} from "./services/podcastDriveService.js";
+import {
+  getPodcastTranscript,
+  listPodcastTranscripts,
+  transcribePodcastEpisode,
+} from "./services/podcastTranscriptService.js";
 import { listRemoteVideos, listRemotePodcastEpisodes } from "./services/mediaRemoteService.js";
 import type { FileCreateInput } from "../shared/capabilities/files.js";
 import type { MailFolderId, MailInboxFilter } from "../shared/mail.js";
@@ -107,6 +141,8 @@ ensureDataDirs();
 installedAppStore.ensureSeeds();
 filesService.ensureSeeds();
 warmPodcastRssFeeds();
+warmMusicRssFeeds();
+warmPodcastDownloads();
 // Skills: static seeds from ./skills, plus the generated OpenUI app-authoring
 // guide as a gating skill (it left the always-on system prompt in Phase C).
 skillStore.ensureSeeds(path.resolve("skills"));
@@ -555,6 +591,40 @@ app.get("/api/drive/search", requireCap("files:read"), (c) => {
   return c.json(filesService.search(query));
 });
 
+app.get("/api/search/web", async (c) => {
+  const q = c.req.query("q") ?? "";
+  if (!q.trim()) {
+    return c.json({ query: "", results: [], resultCount: 0, elapsedMs: 0 });
+  }
+  const limit = Number(c.req.query("limit") ?? "10");
+  const max = Math.min(Math.max(Number.isFinite(limit) ? limit : 10, 1), 20);
+  try {
+    const start = performance.now();
+    const results = await webSearch(q, max);
+    const elapsedMs = performance.now() - start;
+    return c.json({
+      query: q.trim(),
+      results,
+      resultCount: results.length,
+      elapsedMs,
+    });
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 502);
+  }
+});
+
+app.get("/api/search/browse", async (c) => {
+  const raw = c.req.query("url") ?? "";
+  if (!raw.trim()) return c.text("Missing url", 400);
+  try {
+    const { html, contentType } = await fetchBrowsePage(raw);
+    return c.body(html, 200, { "Content-Type": contentType });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Browse failed";
+    return c.html(browseErrorHtml(message), 502);
+  }
+});
+
 app.get("/api/maps/search", async (c) => {
   const q = c.req.query("q") ?? "";
   if (!q.trim()) return c.json([]);
@@ -677,6 +747,140 @@ app.get("/api/music/art/:id", (c) => {
   });
 });
 
+app.get("/api/music/rss/feeds", (c) => c.json(listSubscribedMusicFeeds()));
+
+app.post("/api/music/rss/seed-audio", async (c) => {
+  try {
+    const result = await seedAudioBroadcastFeeds();
+    return c.json(result);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to seed audio feeds";
+    return c.json({ error: message }, 502);
+  }
+});
+
+app.post("/api/music/rss/feeds", async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as { url?: string };
+  const url = body.url?.trim();
+  if (!url) return c.json({ error: "Feed URL is required" }, 400);
+
+  try {
+    new URL(url);
+  } catch {
+    return c.json({ error: "Invalid feed URL" }, 400);
+  }
+
+  try {
+    const metadata = await fetchMusicFeedMetadata(url);
+    const feed = addSubscribedMusicFeed(metadata);
+    invalidateMusicFeedCache(url);
+    return c.json(feed, 201);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to add feed";
+    return c.json({ error: message }, 502);
+  }
+});
+
+app.delete("/api/music/rss/feeds/:id", (c) => {
+  const feedId = c.req.param("id");
+  const feed = listSubscribedMusicFeeds().find((entry) => entry.id === feedId);
+  if (!feed) return c.json({ error: "Feed not found" }, 404);
+  removeSubscribedMusicFeed(feedId);
+  invalidateMusicFeedCache(feed.url);
+  return c.json({ ok: true });
+});
+
+app.get("/api/music/rss/songs", async (c) => {
+  try {
+    return c.json(await listRssSongs());
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to load RSS feeds";
+    return c.json({ error: message }, 502);
+  }
+});
+
+app.get("/api/music/rss/feed-songs", async (c) => {
+  const feedUrl = c.req.query("url")?.trim();
+  if (!feedUrl) return c.json({ error: "Feed URL is required" }, 400);
+
+  try {
+    new URL(feedUrl);
+  } catch {
+    return c.json({ error: "Invalid feed URL" }, 400);
+  }
+
+  try {
+    return c.json(await fetchMusicFeedSongs(feedUrl));
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to load feed songs";
+    return c.json({ error: message }, 502);
+  }
+});
+
+app.get("/api/music/rss/stream/:id", async (c) => {
+  try {
+    const proxied = await proxyMusicRssEnclosure(
+      c.req.param("id"),
+      c.req.header("range"),
+      c.req.query("feedUrl"),
+    );
+    if (!proxied) return c.json({ error: "Song not found" }, 404);
+    return c.body(proxied.body, proxied.status as 200 | 206, proxied.headers);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to stream song";
+    return c.json({ error: message }, 502);
+  }
+});
+
+app.get("/api/music/rss/art/:id", async (c) => {
+  try {
+    const proxied = await proxyMusicSongCover(c.req.param("id"));
+    if (!proxied) return c.json({ error: "Artwork not found" }, 404);
+    return c.body(proxied.body, 200, {
+      "Content-Type": proxied.contentType,
+      "Cache-Control": "public, max-age=86400",
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to load song artwork";
+    return c.json({ error: message }, 502);
+  }
+});
+
+app.get("/api/music/rss/feed-art", async (c) => {
+  const feedUrl = c.req.query("url")?.trim();
+  if (!feedUrl) return c.json({ error: "Feed URL is required" }, 400);
+
+  try {
+    new URL(feedUrl);
+  } catch {
+    return c.json({ error: "Invalid feed URL" }, 400);
+  }
+
+  try {
+    const proxied = await proxyMusicFeedCover(feedUrl);
+    if (!proxied) return c.json({ error: "Artwork not found" }, 404);
+    return c.body(proxied.body, 200, {
+      "Content-Type": proxied.contentType,
+      "Cache-Control": "public, max-age=86400",
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to load feed artwork";
+    return c.json({ error: message }, 502);
+  }
+});
+
+app.get("/api/music/live/stations", (c) => c.json(listMusicLiveStations()));
+
+app.get("/api/music/live/stream/:id", async (c) => {
+  try {
+    const proxied = await proxyMusicLiveStream(c.req.param("id"));
+    if (!proxied) return c.json({ error: "Station not found" }, 404);
+    return c.body(proxied.body, 200, proxied.headers);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to stream station";
+    return c.json({ error: message }, 502);
+  }
+});
 app.get("/api/video/videos", (c) => c.json(listLocalVideos()));
 
 app.post("/api/video/remote", async (c) => {
@@ -688,7 +892,7 @@ app.post("/api/video/remote", async (c) => {
   if (body.provider !== "youtube" && body.provider !== "vimeo") {
     return c.json({ error: "Invalid video provider" }, 400);
   }
-  return c.json(listRemoteVideos({ provider: body.provider, token: body.token, query: body.query }));
+  return c.json(await listRemoteVideos({ provider: body.provider, token: body.token, query: body.query }));
 });
 
 app.get("/api/video/stream/:id", (c) => {
@@ -727,13 +931,139 @@ app.get("/api/video/stream/:id", (c) => {
 
 app.get("/api/podcast/episodes", (c) => c.json(listLocalEpisodes()));
 
-app.get("/api/podcast/rss/feeds", (c) => c.json(listPodcastRssFeedSeeds()));
+app.get("/api/podcast/rss/feeds", (c) => c.json(listSubscribedFeeds()));
+
+app.post("/api/podcast/rss/feeds", async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as { url?: string };
+  const url = body.url?.trim();
+  if (!url) return c.json({ error: "Feed URL is required" }, 400);
+
+  try {
+    new URL(url);
+  } catch {
+    return c.json({ error: "Invalid feed URL" }, 400);
+  }
+
+  try {
+    const metadata = await fetchFeedMetadata(url);
+    const feed = addSubscribedFeed(metadata);
+    invalidateFeedCache(url);
+    void syncPodcastDownloads().catch(() => undefined);
+    return c.json(feed, 201);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to add feed";
+    return c.json({ error: message }, 502);
+  }
+});
+
+app.delete("/api/podcast/rss/feeds/:id", (c) => {
+  const feedId = c.req.param("id");
+  const feed = listSubscribedFeeds().find((entry) => entry.id === feedId);
+  if (!feed) return c.json({ error: "Feed not found" }, 404);
+  removeSubscribedFeed(feedId);
+  invalidateFeedCache(feed.url);
+  return c.json({ ok: true });
+});
+
+app.post("/api/podcast/rss/sync", async (c) => {
+  try {
+    return c.json(await syncPodcastDownloads());
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Sync failed";
+    return c.json({ error: message }, 502);
+  }
+});
+
+app.get("/api/podcast/drive/saves", (c) => c.json(listPodcastDriveSaves()));
+
+app.get("/api/podcast/drive/:id", (c) => {
+  const save = getPodcastDriveSave(c.req.param("id"));
+  if (!save) return c.json({ saved: false });
+  try {
+    return c.json({ saved: true, file: filesService.get(save.driveFileId), save });
+  } catch {
+    return c.json({ saved: false });
+  }
+});
+
+app.post("/api/podcast/drive/:id", requireCap("files:write"), async (c) => {
+  try {
+    const entry = await savePodcastEpisodeToDrive(c.req.param("id"));
+    return c.json(entry, 201);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to save to Drive";
+    const status = message.includes("not found") ? 404 : 502;
+    return c.json({ error: message }, status);
+  }
+});
+
+app.get("/api/podcast/transcripts", (c) => c.json(listPodcastTranscripts()));
+
+app.get("/api/podcast/transcripts/:id", (c) => {
+  const transcript = getPodcastTranscript(c.req.param("id"));
+  if (!transcript) return c.json({ error: "Transcript not found" }, 404);
+  return c.json(transcript);
+});
+
+app.post("/api/podcast/transcripts/:id", async (c) => {
+  const episodeId = c.req.param("id");
+  const existing = getPodcastTranscript(episodeId);
+  try {
+    const transcript = await transcribePodcastEpisode(episodeId);
+    return c.json(transcript, existing ? 200 : 201);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Transcription failed";
+    const status = message.includes("not found") ? 404 : 502;
+    return c.json({ error: message }, status);
+  }
+});
 
 app.get("/api/podcast/rss/episodes", async (c) => {
   try {
     return c.json(await listRssEpisodes());
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to load RSS feeds";
+    return c.json({ error: message }, 502);
+  }
+});
+
+app.get("/api/podcast/rss/feed-episodes", async (c) => {
+  const feedUrl = c.req.query("url")?.trim();
+  if (!feedUrl) return c.json({ error: "Feed URL is required" }, 400);
+
+  try {
+    new URL(feedUrl);
+  } catch {
+    return c.json({ error: "Invalid feed URL" }, 400);
+  }
+
+  try {
+    return c.json(await fetchFeedEpisodes(feedUrl));
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to load feed episodes";
+    return c.json({ error: message }, 502);
+  }
+});
+
+app.get("/api/podcast/rss/feed-art", async (c) => {
+  const feedUrl = c.req.query("url")?.trim();
+  if (!feedUrl) return c.json({ error: "Feed URL is required" }, 400);
+
+  try {
+    new URL(feedUrl);
+  } catch {
+    return c.json({ error: "Invalid feed URL" }, 400);
+  }
+
+  try {
+    const proxied = await proxyFeedCover(feedUrl);
+    if (!proxied) return c.json({ error: "Artwork not found" }, 404);
+    return c.body(proxied.body, 200, {
+      "Content-Type": proxied.contentType,
+      "Cache-Control": "public, max-age=86400",
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to load feed artwork";
     return c.json({ error: message }, 502);
   }
 });

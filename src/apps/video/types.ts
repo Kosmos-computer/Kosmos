@@ -28,6 +28,7 @@ export interface VideoItem {
   provider?: "youtube" | "vimeo";
   streamSrc?: string;
   watchUrl?: string;
+  thumbnailUrl?: string;
 }
 
 export interface VideoChannel {

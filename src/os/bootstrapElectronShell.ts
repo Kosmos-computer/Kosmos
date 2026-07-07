@@ -1,6 +1,5 @@
 /**
- * Bootstrap Electron shell flags before the first React paint so title-bar CSS
- * variables and layout offsets apply immediately (no flash / zero-height bar).
+ * Bootstrap Electron shell flags before the first React paint.
  */
 export function bootstrapElectronShell(): void {
   const desktop = window.arcoDesktop;
@@ -10,6 +9,5 @@ export function bootstrapElectronShell(): void {
   root.dataset.electron = "true";
   root.dataset.platform = desktop.platform;
   root.classList.add("arco-electron");
-  root.style.setProperty("--arco-electron-titlebar-height", "34px");
   document.body.classList.add("arco-electron");
 }

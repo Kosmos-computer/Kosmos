@@ -5,7 +5,6 @@ document.documentElement.dataset.electron = "true";
 document.documentElement.dataset.platform = process.platform;
 document.documentElement.classList.add("arco-electron");
 document.body.classList.add("arco-electron");
-document.documentElement.style.setProperty("--arco-electron-titlebar-height", "34px");
 
 contextBridge.exposeInMainWorld("arcoDesktop", {
   isDesktop: true,

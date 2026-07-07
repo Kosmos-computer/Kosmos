@@ -4,7 +4,7 @@
   position: fixed;
   inset: 0;
   overflow: hidden;
-  /* In-browser shell: menubar lives inside the desktop. Electron overrides to 0. */
+  /* In-browser shell: menubar lives inside the desktop. */
   --arco-window-top: 34px;
 }
 
@@ -1044,6 +1044,25 @@
   overflow-x: auto;
 }
 
+.arco-mobile-home__search {
+  flex-shrink: 0;
+  padding: var(--arco-space-m) var(--arco-space-xl) 0;
+}
+
+.arco-mobile-home__empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: var(--arco-text-tertiary);
+  font-size: var(--arco-text-sm);
+  padding: var(--arco-space-l);
+}
+
+.arco-mobile-shell__dock-search {
+  flex-shrink: 0;
+  padding: 0 var(--arco-space-s) var(--arco-space-xs);
+  min-width: 140px;
+}
+
 .arco-mobile-home {
   flex: 1;
   display: grid;
@@ -1091,130 +1110,7 @@
   min-height: 0;
 }
 
-/* ── Electron native window chrome ─────────────────────────────────────────── */
-
-html[data-electron] {
-  --arco-electron-titlebar-height: 34px;
-  --arco-menubar-height: 34px;
-  --arco-electron-traffic-left: 0px;
-}
-
-html[data-electron][data-platform="darwin"] {
-  --arco-electron-traffic-left: 78px;
-}
-
-html[data-electron] #root {
-  box-sizing: border-box;
-  height: 100%;
-  padding-top: var(--arco-electron-titlebar-height);
-}
-
-html[data-electron] .arco-desktop {
-  --arco-window-top: 0px;
-  top: var(--arco-electron-titlebar-height);
-  right: 0;
-  bottom: 0;
-  left: 0;
-  height: auto;
-}
-
-/* Desktop view keeps a second menubar row below the dedicated title strip. */
-html[data-electron] .arco-desktop:not(.arco-desktop--app-view) {
-  top: calc(var(--arco-electron-titlebar-height) + var(--arco-menubar-height));
-}
-
-html[data-electron] .arco-navrail {
-  top: 0;
-}
-
-.arco-electron-window-chrome {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 99999;
-  height: var(--arco-electron-titlebar-height);
-  min-height: var(--arco-electron-titlebar-height);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 var(--arco-space-l);
-  background: var(--arco-bg-surface-solid);
-  border-bottom: 1px solid var(--arco-border);
-  color: var(--arco-text-secondary);
-  font-size: var(--arco-text-sm);
-  font-weight: 600;
-  user-select: none;
-  -webkit-app-region: drag;
-  app-region: drag;
-  pointer-events: auto;
-  isolation: isolate;
-}
-
-.arco-electron-window-chrome__title {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: min(480px, calc(100vw - 180px));
-  pointer-events: none;
-}
-
-.arco-electron-window-chrome__controls {
-  position: absolute;
-  top: 0;
-  right: 0;
-  display: flex;
-  align-items: stretch;
-  height: 100%;
-  -webkit-app-region: no-drag;
-  app-region: no-drag;
-}
-
-.arco-electron-window-chrome__control {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 46px;
-  height: 100%;
-  border: none;
-  background: transparent;
-  color: var(--arco-text-secondary);
-  cursor: pointer;
-}
-
-.arco-electron-window-chrome__control:hover {
-  background: var(--arco-bg-hover);
-}
-
-.arco-electron-window-chrome__control--close:hover {
-  background: var(--arco-danger);
-  color: var(--arco-text-inverted);
-}
-
-.arco-electron-window-chrome__control svg {
-  width: 12px;
-  height: 12px;
-}
-
-.arco-electron-window-chrome--darwin {
-  padding-left: var(--arco-electron-traffic-left);
-  padding-right: var(--arco-electron-traffic-left);
-  justify-content: center;
-}
-
-/* Native traffic lights replace the decorative dots on Electron desktop windows. */
-html[data-electron] .arco-window__controls--traffic {
-  display: none;
-}
-
-html[data-electron] .arco-window__titlebar--style-traffic .arco-window__title {
-  margin-left: 0;
-  margin-right: 0;
-}
-
-html[data-electron][data-platform="darwin"] .arco-window__titlebar--style-traffic.arco-window__titlebar--align-left {
-  padding-left: var(--arco-electron-traffic-left);
-}
+/* ── Electron shell ────────────────────────────────────────────────────────── */
 
 html[data-electron] .arco-authgate {
   box-sizing: border-box;
@@ -1224,78 +1120,6 @@ html[data-electron] .arco-authgate {
 html[data-electron] .arco-standalone-window {
   box-sizing: border-box;
   min-height: 100%;
-}
-
-html[data-electron] .arco-menubar {
-  position: fixed;
-  top: var(--arco-electron-titlebar-height);
-  left: 0;
-  right: 0;
-  height: var(--arco-menubar-height);
-  z-index: calc(var(--arco-z-overlay) + 21);
-  background: var(--arco-bg-surface-solid);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  border-bottom: 1px solid var(--arco-border);
-  -webkit-app-region: no-drag;
-  app-region: no-drag;
-}
-
-html[data-electron] .arco-menubar button,
-html[data-electron] .arco-menubar .arco-menu,
-html[data-electron] .arco-menubar__view-toggle,
-html[data-electron] .arco-menubar__right > span {
-  -webkit-app-region: no-drag;
-  app-region: no-drag;
-}
-
-html[data-electron][data-platform="darwin"] .arco-menubar {
-  padding-left: calc(var(--arco-electron-traffic-left) + var(--arco-space-s));
-}
-
-html[data-electron][data-platform="win32"] .arco-menubar,
-html[data-electron][data-platform="linux"] .arco-menubar {
-  padding-right: calc(46px * 3);
-}
-
-html[data-electron] .arco-hover-menubar {
-  z-index: calc(var(--arco-z-overlay) + 22);
-}
-
-html[data-electron] .arco-hover-menubar__zone {
-  top: var(--arco-electron-titlebar-height);
-  height: var(--arco-menubar-height);
-}
-
-/* Idle/peek: drag lives on the title strip; hover reveals the menubar below it. */
-html[data-electron] .arco-hover-menubar:not(.arco-hover-menubar--open) .arco-hover-menubar__zone {
-  -webkit-app-region: no-drag;
-  app-region: no-drag;
-}
-
-html[data-electron] .arco-hover-menubar--open .arco-hover-menubar__zone {
-  -webkit-app-region: no-drag;
-  app-region: no-drag;
-}
-
-/* Hidden menubar must not sit in the fixed native titlebar slot and steal drag. */
-html[data-electron] .arco-hover-menubar:not(.arco-hover-menubar--peaked):not(.arco-hover-menubar--open) .arco-menubar {
-  position: relative;
-  top: auto;
-  left: auto;
-  right: auto;
-  -webkit-app-region: no-drag;
-  app-region: no-drag;
-}
-
-html[data-electron] .arco-hover-menubar--peaked .arco-menubar,
-html[data-electron] .arco-hover-menubar--open .arco-menubar {
-  position: fixed;
-  top: var(--arco-electron-titlebar-height);
-  left: 0;
-  right: 0;
-  -webkit-app-region: no-drag;
-  app-region: no-drag;
 }
 
 html[data-electron] .arco-notifications {

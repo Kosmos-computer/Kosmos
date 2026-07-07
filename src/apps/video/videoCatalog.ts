@@ -19,6 +19,7 @@ export interface RemoteVideoRecord {
   viewCount: string;
   publishedAt: string;
   watchUrl: string;
+  thumbnailUrl?: string;
   provider: "youtube" | "vimeo";
   source: "remote";
 }
@@ -47,6 +48,7 @@ export function remoteToVideoItem(record: RemoteVideoRecord): VideoItem {
     source: "remote",
     provider: record.provider,
     watchUrl: record.watchUrl,
+    thumbnailUrl: record.thumbnailUrl,
   };
 }
 
@@ -84,4 +86,13 @@ export function formatVideoTime(seconds: number): string {
     return `${hrs}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   }
   return `${mins}:${secs.toString().padStart(2, "0")}`;
+}
+
+export function parseVideoTime(label: string): number {
+  const parts = label.split(":").map((part) => Number.parseInt(part, 10));
+  if (parts.some((part) => Number.isNaN(part))) return 0;
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  if (parts.length === 1) return parts[0];
+  return 0;
 }

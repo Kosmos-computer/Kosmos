@@ -1,0 +1,281 @@
+/* Shared media player bar — used by Music, Podcast, and future audio apps */
+
+.arco-music,
+.arco-podcast {
+  --media-player-bg-elevated: #181818;
+  --media-player-border: var(--arco-border);
+  --media-player-text: #ffffff;
+  --media-player-text-subtle: #b3b3b3;
+  --media-player-on-primary: #000000;
+  --media-player-track-bg: rgba(255, 255, 255, 0.25);
+  --media-player-tag-bg: rgba(255, 255, 255, 0.12);
+  --media-player-hover-bg: rgba(255, 255, 255, 0.08);
+}
+
+html[data-theme="light"] .arco-music,
+html[data-theme="light"] .arco-podcast {
+  --media-player-bg-elevated: #f6f6f6;
+  --media-player-text: #121212;
+  --media-player-text-subtle: #6a6a6a;
+  --media-player-on-primary: #ffffff;
+  --media-player-track-bg: rgba(0, 0, 0, 0.15);
+  --media-player-tag-bg: rgba(0, 0, 0, 0.06);
+  --media-player-hover-bg: rgba(0, 0, 0, 0.04);
+}
+
+.arco-music {
+  --media-player-bg-elevated: var(--music-bg-elevated);
+  --media-player-border: var(--music-border);
+  --media-player-text: var(--music-text);
+  --media-player-text-subtle: var(--music-text-subtle);
+  --media-player-on-primary: var(--music-on-primary);
+  --media-player-track-bg: var(--music-track-bg);
+  --media-player-tag-bg: var(--music-tag-bg);
+  --media-player-hover-bg: var(--music-hover-bg);
+}
+
+.arco-podcast {
+  --media-player-bg-elevated: var(--podcast-bg-elevated);
+  --media-player-border: var(--podcast-border);
+  --media-player-text: var(--podcast-text);
+  --media-player-text-subtle: var(--podcast-text-subtle);
+  --media-player-on-primary: var(--podcast-bg);
+  --media-player-track-bg: rgba(255, 255, 255, 0.25);
+  --media-player-tag-bg: var(--podcast-active-bg);
+  --media-player-hover-bg: var(--podcast-hover-bg);
+}
+
+html[data-theme="light"] .arco-podcast {
+  --media-player-on-primary: var(--podcast-bg);
+  --media-player-track-bg: rgba(0, 0, 0, 0.15);
+}
+
+.arco-media-player__icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--media-player-text-subtle);
+  cursor: pointer;
+}
+
+.arco-media-player__icon-btn:hover {
+  color: var(--media-player-text);
+  background: var(--media-player-hover-bg);
+}
+
+.arco-media-player__bar {
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  align-items: center;
+  gap: var(--arco-space-l);
+  padding: var(--arco-space-s) var(--arco-space-l);
+  background: var(--media-player-bg-elevated);
+  border-top: 1px solid var(--media-player-border);
+}
+
+.arco-media-player__track {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-m);
+  min-width: 0;
+}
+
+.arco-media-player__track-meta {
+  min-width: 0;
+}
+
+.arco-media-player__track-title {
+  display: block;
+  font-size: var(--arco-text-md);
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.arco-media-player__track-subtitle {
+  display: block;
+  font-size: var(--arco-text-sm);
+  line-height: 1.2;
+  color: var(--media-player-text-subtle);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.arco-media-player__tag {
+  display: inline-flex;
+  margin-top: 2px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--media-player-tag-bg);
+  font-size: var(--arco-text-xs);
+  font-weight: 600;
+  color: var(--media-player-text-subtle);
+}
+
+.arco-media-player__controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--arco-space-s);
+}
+
+.arco-media-player__control-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--arco-space-m);
+}
+
+.arco-media-player__control-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--media-player-text-subtle);
+  cursor: pointer;
+}
+
+.arco-media-player__control-btn:hover {
+  color: var(--media-player-text);
+}
+
+.arco-media-player__control-btn--active {
+  color: var(--media-player-text);
+}
+
+.arco-media-player__play-pause-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 999px;
+  background: var(--media-player-text);
+  color: var(--media-player-on-primary);
+  cursor: pointer;
+}
+
+.arco-media-player__play-pause-btn:hover {
+  transform: scale(1.06);
+}
+
+.arco-media-player__progress-row {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  width: 100%;
+  max-width: 560px;
+}
+
+.arco-media-player__time-label {
+  min-width: 36px;
+  font-size: var(--arco-text-xs);
+  line-height: 1.2;
+  color: var(--media-player-text-subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+.arco-media-player__progress-track {
+  position: relative;
+  flex: 1;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--media-player-track-bg);
+  overflow: visible;
+  cursor: pointer;
+  touch-action: none;
+  transition: height 120ms ease;
+}
+
+.arco-media-player__progress-track:hover,
+.arco-media-player__progress-track:focus-visible,
+.arco-media-player__progress-track--scrubbing {
+  height: 6px;
+}
+
+.arco-media-player__progress-track:focus-visible {
+  outline: 2px solid var(--media-player-text);
+  outline-offset: 2px;
+}
+
+.arco-media-player__progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--media-player-text);
+  pointer-events: none;
+}
+
+.arco-media-player__progress-thumb {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--media-player-text);
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+.arco-media-player__progress-track:hover .arco-media-player__progress-thumb,
+.arco-media-player__progress-track:focus-visible .arco-media-player__progress-thumb,
+.arco-media-player__progress-track--scrubbing .arco-media-player__progress-thumb {
+  opacity: 1;
+}
+
+.arco-media-player__extras {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--arco-space-s);
+}
+
+.arco-media-player__volume-row {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  min-width: 120px;
+}
+
+.arco-media-player__volume-track {
+  flex: 1;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--media-player-track-bg);
+  overflow: hidden;
+}
+
+.arco-media-player__volume-fill {
+  display: block;
+  height: 100%;
+  width: 68%;
+  border-radius: inherit;
+  background: var(--media-player-text);
+}
+
+@media (max-width: 960px) {
+  .arco-media-player__bar {
+    grid-template-columns: 1fr;
+    gap: var(--arco-space-m);
+  }
+
+  .arco-media-player__extras {
+    display: none;
+  }
+}

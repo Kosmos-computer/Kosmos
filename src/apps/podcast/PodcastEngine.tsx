@@ -7,7 +7,6 @@ import { registerPodcastSeekHandler, usePodcastStore } from "./podcastStore";
 
 export function PodcastEngine() {
   const audioRef = useRef<HTMLAudioElement>(null);
-  const loadedEpisodeRef = useRef<string | null>(null);
   const init = usePodcastStore((s) => s.init);
   const streamSrc = usePodcastStore((s) => s.nowPlaying.episode.streamSrc);
   const episodeId = usePodcastStore((s) => s.nowPlaying.episode.id);
@@ -33,34 +32,29 @@ export function PodcastEngine() {
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !streamSrc) return;
+    audio.currentTime = 0;
+    audio.load();
+  }, [streamSrc, episodeId]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !streamSrc) return;
 
     if (!playing) {
       audio.pause();
       return;
     }
 
-    let cancelled = false;
     const start = () => {
-      if (cancelled) return;
       void audio.play().catch(() => stopPlayback());
     };
 
-    const onCanPlay = () => start();
-    audio.addEventListener("canplay", onCanPlay, { once: true });
-
-    const episodeChanged = loadedEpisodeRef.current !== episodeId;
-    if (episodeChanged) {
-      loadedEpisodeRef.current = episodeId;
-      audio.currentTime = 0;
-      audio.load();
-    } else if (audio.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
+    if (audio.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
       start();
+    } else {
+      audio.addEventListener("canplay", start, { once: true });
+      return () => audio.removeEventListener("canplay", start);
     }
-
-    return () => {
-      cancelled = true;
-      audio.removeEventListener("canplay", onCanPlay);
-    };
   }, [playing, streamSrc, episodeId, stopPlayback]);
 
   useEffect(() => {

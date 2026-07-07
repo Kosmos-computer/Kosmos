@@ -155,6 +155,7 @@ export function Dock() {
             </button>
           }
           aria-label="View all apps"
+          searchPlaceholder="Search apps"
           side="top"
           align="end"
           items={
@@ -163,6 +164,7 @@ export function Dock() {
                   id: entry.id,
                   label: entry.title,
                   icon: entry.icon,
+                  keywords: [entry.title, entry.id],
                   onSelect: () => openApp(entry),
                 }))
               : [{ id: "empty", label: "All pinned apps are on the tray.", disabled: true }]
@@ -178,12 +180,14 @@ export function Dock() {
             </button>
           }
           aria-label="More apps"
+          searchPlaceholder="Search apps"
           side="top"
           align="end"
           items={entries.map((entry) => ({
             id: entry.id,
             label: entry.title,
             icon: entry.icon,
+            keywords: [entry.title, entry.id],
             checked: pinnedIdSet.has(entry.id),
             onSelect: () =>
               setDockPinnedIds((prev) =>

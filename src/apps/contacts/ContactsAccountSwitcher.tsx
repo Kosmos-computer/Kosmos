@@ -51,6 +51,7 @@ export function ContactsAccountSwitcher({
         </span>
       ),
       checked: account.id === activeAccountId,
+      keywords: [account.label, CONTACT_ACCOUNT_KIND_LABELS[account.kind], account.email ?? ""],
       onSelect: () => onSelectAccount(account.id),
     })),
     {
@@ -85,6 +86,7 @@ export function ContactsAccountSwitcher({
       <Menu
         aria-label="Contact accounts"
         align="start"
+        searchPlaceholder="Search accounts"
         items={menuItems}
         trigger={
           <button type="button" className="arco-contacts__account-switcher">

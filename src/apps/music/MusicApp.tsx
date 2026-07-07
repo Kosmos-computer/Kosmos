@@ -1,7 +1,7 @@
 import { EmptyState } from "../../components/ui";
 import {
-  MusicHomeContent,
   MusicLibrarySidebar,
+  MusicMainContent,
   MusicNowPlayingPanel,
   MusicPlayerBar,
 } from "./MusicParts";
@@ -13,12 +13,12 @@ export function MusicApp() {
   if (vm.loading) {
     return (
       <div className="arco-music">
-        <EmptyState title="Loading library…">Importing tirufm seed tracks</EmptyState>
+        <EmptyState title="Loading library…">Importing tirufm seed tracks and broadcast feeds</EmptyState>
       </div>
     );
   }
 
-  if (vm.error || vm.tracks.length === 0) {
+  if ((vm.error || vm.tracks.length === 0) && vm.rssFeeds.length === 0) {
     return (
       <div className="arco-music">
         <EmptyState title="Music library unavailable">
@@ -32,30 +32,16 @@ export function MusicApp() {
   return (
     <div className="arco-music">
       <div className="arco-music__body">
-        <MusicLibrarySidebar
-          items={vm.libraryItems}
-          activeItemId={vm.activeLibraryItemId}
-          onSelectItem={vm.setActiveLibraryItemId}
-          libraryFilter={vm.libraryFilter}
-          onLibraryFilterChange={vm.setLibraryFilter}
-          searchQuery={vm.searchQuery}
-          onSearchChange={vm.setSearchQuery}
+        <MusicLibrarySidebar vm={vm} />
+        <MusicMainContent vm={vm} />
+        <MusicNowPlayingPanel
+          nowPlaying={vm.nowPlaying}
+          onPlayTrack={(id) => {
+            vm.playTrack(id, true);
+            if (id.startsWith("music-rss-")) vm.openSongDetail(id);
+          }}
         />
-
-        <MusicHomeContent
-          userName={vm.user.name}
-          quickAccess={vm.quickAccess}
-          featured={vm.featured}
-          mixes={vm.mixes}
-          contentFilter={vm.contentFilter}
-          onContentFilterChange={vm.setContentFilter}
-          onPlayFeatured={() => vm.playTrack(vm.featured.id, true)}
-          onPlayTrack={(id) => vm.playTrack(id, true)}
-        />
-
-        <MusicNowPlayingPanel nowPlaying={vm.nowPlaying} onPlayTrack={(id) => vm.playTrack(id, true)} />
       </div>
-
       <MusicPlayerBar vm={vm} />
     </div>
   );

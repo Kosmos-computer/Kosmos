@@ -42,6 +42,7 @@ export function MenuBar() {
         id: item.id,
         label: item.label,
         icon: item.icon,
+        keywords: [item.label, group.title, item.id],
         separatorAbove: groupIndex > 0 && itemIndex === 0,
         onSelect: () => openSettingsApp(item.id),
       })),
@@ -67,6 +68,7 @@ export function MenuBar() {
         }
         items={settingsMenuItems}
         aria-label="Settings"
+        searchPlaceholder="Search settings"
       />
       <span className="arco-menubar__title">{focused?.title ?? ""}</span>
       <div className="arco-menubar__right">

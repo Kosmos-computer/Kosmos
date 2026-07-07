@@ -6,6 +6,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Plug, X } from "lucide-react";
 import type { ConnectionDomain, ServiceConnection, ServiceProviderId } from "@shared/serviceConnections";
 import { presetById, presetsForDomain } from "@shared/serviceConnections";
+import { ListSearch } from "./ListSearch";
+import { matchesListSearch } from "../../lib/listSearch";
 import { Button, Chip, Input } from "../ui";
 import type { ConnectServiceInput } from "../../connections/useConnectionStore";
 
@@ -35,6 +37,7 @@ export function ConnectServiceModal({
   const [instanceUrl, setInstanceUrl] = useState("");
   const [accountHint, setAccountHint] = useState("");
   const [token, setToken] = useState("");
+  const [listSearch, setListSearch] = useState("");
 
   useEffect(() => {
     if (!open) return;
@@ -43,12 +46,19 @@ export function ConnectServiceModal({
     setInstanceUrl("");
     setAccountHint("");
     setToken("");
+    setListSearch("");
   }, [open, initialProvider, presets]);
 
   if (!open) return null;
 
   const preset = presetById(providerId);
   const domainConnections = existingConnections.filter((c) => c.domain === domain);
+  const filteredConnections = domainConnections.filter((connection) =>
+    matchesListSearch(listSearch, connection.label, presetById(connection.provider).label, connection.instanceUrl),
+  );
+  const filteredPresets = presets.filter((option) =>
+    matchesListSearch(listSearch, option.label, option.id, option.hint),
+  );
   const canSave =
     (!preset.requiresInstance || instanceUrl.trim().length > 0) &&
     (!preset.requiresToken || token.trim().length > 0);
@@ -84,11 +94,26 @@ export function ConnectServiceModal({
         </header>
 
         <div className="arco-connect-modal__body">
+          {(domainConnections.length > 0 || presets.length > 3) ? (
+            <div className="arco-connect-modal__search">
+              <ListSearch
+                value={listSearch}
+                onChange={setListSearch}
+                placeholder="Search providers and accounts"
+                ariaLabel="Search providers and accounts"
+                compact
+              />
+            </div>
+          ) : null}
+
           {domainConnections.length > 0 ? (
             <section className="arco-connect-modal__section">
               <h3 className="arco-connect-modal__label">Saved connections</h3>
               <ul className="arco-connect-modal__saved-list">
-                {domainConnections.map((connection) => (
+                {filteredConnections.length === 0 ? (
+                  <li className="arco-connect-modal__empty">No saved connections match your search</li>
+                ) : null}
+                {filteredConnections.map((connection) => (
                   <li key={connection.id}>
                     <button
                       type="button"
@@ -110,7 +135,10 @@ export function ConnectServiceModal({
           <section className="arco-connect-modal__section">
             <h3 className="arco-connect-modal__label">Provider</h3>
             <div className="arco-connect-modal__chips" role="listbox" aria-label="Service providers">
-              {presets.map((option) => (
+              {filteredPresets.length === 0 ? (
+                <p className="arco-connect-modal__empty">No providers match your search</p>
+              ) : null}
+              {filteredPresets.map((option) => (
                 <Chip
                   key={option.id}
                   role="option"

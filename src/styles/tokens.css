@@ -78,6 +78,12 @@ html[data-theme="dark"] {
 
   --arco-border: rgba(255, 255, 255, 0.09);
   --arco-border-strong: rgba(255, 255, 255, 0.16);
+
+  /* Longformer — speaker + chapter colors */
+  --arco-longformer-speaker-julian: #e879a8;
+  --arco-longformer-speaker-hunter: #f59a4a;
+  --arco-longformer-chapter-1: rgba(91, 130, 255, 0.55);
+  --arco-longformer-chapter-2: rgba(124, 157, 255, 0.45);
   --arco-shadow-window: 0 24px 64px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.35);
   --arco-shadow-chrome: 0 8px 32px rgba(0, 0, 0, 0.4);
   --arco-backdrop-blur: saturate(160%) blur(22px);
@@ -121,6 +127,11 @@ html[data-theme="light"] {
 
   --arco-border: rgba(15, 20, 30, 0.1);
   --arco-border-strong: rgba(15, 20, 30, 0.18);
+
+  --arco-longformer-speaker-julian: #db2777;
+  --arco-longformer-speaker-hunter: #ea580c;
+  --arco-longformer-chapter-1: rgba(59, 100, 224, 0.35);
+  --arco-longformer-chapter-2: rgba(59, 100, 224, 0.22);
   --arco-shadow-window: 0 24px 64px rgba(30, 40, 60, 0.28), 0 2px 8px rgba(30, 40, 60, 0.14);
   --arco-shadow-chrome: 0 8px 32px rgba(30, 40, 60, 0.18);
   --arco-backdrop-blur: saturate(160%) blur(22px);

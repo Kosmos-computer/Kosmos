@@ -11,29 +11,25 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const BUILD = join(ROOT, "build");
 
 // Keep in sync with src/components/spriteMarkSquares.ts
-const MARK_OFFSET_X = -138.004233;
-const MARK_OFFSET_Y = -2724.911895;
-const BASE_X = 168 + MARK_OFFSET_X;
-const BASE_Y = 2756 + MARK_OFFSET_Y;
 const SIZE = 15;
 
-const MARK_TRANSFORMS = [
-  [0, -1],
-  [15.004233, 13.911895],
-  [15.004233, 28.911895],
-  [30.004233, -1.088105],
-  [44.887621, -15.971492],
-  [44.887621, 14.028508],
-  [59.887621, 29.028508],
-  [15.004233, -16.088105],
-  [15.004233, -31.088105],
-  [60.004233, -31.088105],
-  [60.004233, -1.088105],
-  [-29.995767, -1.088105],
-  [-29.995767, -31.088105],
-  [-29.995767, 28.911895],
-  [-14.995767, -16.088105],
-  [-15.112379, 14.028508],
+const LOGO_CELLS = [
+  [0, 0],
+  [3, 0],
+  [6, 0],
+  [1, 1],
+  [3, 1],
+  [5, 1],
+  [0, 2],
+  [2, 2],
+  [4, 2],
+  [6, 2],
+  [1, 3],
+  [3, 3],
+  [5, 3],
+  [0, 4],
+  [3, 4],
+  [6, 4],
 ];
 
 const VIEWBOX = { width: 105, height: 75 };
@@ -41,9 +37,9 @@ const CANVAS = 1024;
 const CORNER_RADIUS = 230;
 const MARK_SCALE = 6.2;
 
-const rects = MARK_TRANSFORMS.map(
-  ([tx, ty]) =>
-    `<rect x="${(BASE_X + tx).toFixed(3)}" y="${(BASE_Y + ty).toFixed(3)}" width="${SIZE}" height="${SIZE}"/>`,
+const rects = LOGO_CELLS.map(
+  ([col, row]) =>
+    `<rect x="${col * SIZE}" y="${row * SIZE}" width="${SIZE}" height="${SIZE}"/>`,
 ).join("\n      ");
 
 const svg = `<?xml version="1.0" encoding="UTF-8"?>

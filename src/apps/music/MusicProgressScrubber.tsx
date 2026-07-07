@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { formatMusicTime, parseMusicTime } from "./musicStore";
+import { MediaProgressScrubber } from "../../components/patterns/MediaProgressScrubber";
 
 export interface MusicProgressScrubberProps {
   progress: number;
@@ -23,19 +24,28 @@ export function MusicProgressScrubber({
   onSeek,
   onScrubPreview,
   variant = "player",
-  showTimes = variant === "player",
+  showTimes,
   className = "",
 }: MusicProgressScrubberProps) {
+  if (variant === "player") {
+    return (
+      <MediaProgressScrubber
+        progress={progress}
+        elapsed={elapsed}
+        duration={duration}
+        onSeek={onSeek}
+        onScrubPreview={onScrubPreview}
+        showTimes={showTimes}
+        className={className}
+      />
+    );
+  }
+
   const trackRef = useRef<HTMLDivElement>(null);
   const [scrubbing, setScrubbing] = useState(false);
   const [scrubProgress, setScrubProgress] = useState<number | null>(null);
 
   const displayProgress = scrubProgress ?? progress;
-  const durationSeconds = parseMusicTime(duration);
-  const previewElapsed =
-    scrubProgress != null && durationSeconds > 0
-      ? formatMusicTime((scrubProgress / 100) * durationSeconds)
-      : elapsed;
 
   const progressFromClientX = useCallback((clientX: number) => {
     const track = trackRef.current;
@@ -102,15 +112,18 @@ export function MusicProgressScrubber({
     }
   };
 
+  const durationSeconds = parseMusicTime(duration);
+  const previewElapsed =
+    scrubProgress != null && durationSeconds > 0
+      ? formatMusicTime((scrubProgress / 100) * durationSeconds)
+      : elapsed;
+
   const trackClassName = [
-    variant === "widget" ? "arco-music-widget__progress" : "arco-music__progress-track",
+    "arco-music-widget__progress",
     scrubbing ? "arco-music__progress-track--scrubbing" : "",
   ]
     .filter(Boolean)
     .join(" ");
-
-  const fillClassName =
-    variant === "widget" ? "arco-music-widget__progress-fill" : "arco-music__progress-fill";
 
   const scrubber = (
     <div
@@ -129,22 +142,9 @@ export function MusicProgressScrubber({
       onPointerCancel={onPointerCancel}
       onKeyDown={onKeyDown}
     >
-      <span className={fillClassName} style={{ width: `${displayProgress}%` }} />
-      {variant === "player" ? (
-        <span className="arco-music__progress-thumb" style={{ left: `${displayProgress}%` }} />
-      ) : null}
+      <span className="arco-music-widget__progress-fill" style={{ width: `${displayProgress}%` }} />
     </div>
   );
 
-  if (!showTimes) {
-    return <div className={className}>{scrubber}</div>;
-  }
-
-  return (
-    <div className={["arco-music__progress-row", className].filter(Boolean).join(" ")}>
-      <span className="arco-music__time-label">{previewElapsed}</span>
-      {scrubber}
-      <span className="arco-music__time-label">{duration}</span>
-    </div>
-  );
+  return <div className={className}>{scrubber}</div>;
 }

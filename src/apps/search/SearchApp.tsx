@@ -1,14 +1,15 @@
 import { ArrowLeft } from "lucide-react";
 import {
   BrowserShell,
+  SearchAttribution,
   SearchHome,
   SearchResultsPage,
 } from "../../components/patterns/search";
 import { Button } from "../../components/ui";
-import { useSearchStub } from "./useSearchStub";
+import { useSearch } from "./useSearch";
 
 export function SearchApp() {
-  const vm = useSearchStub();
+  const vm = useSearch();
 
   if (vm.view === "browse") {
     return (
@@ -21,6 +22,7 @@ export function SearchApp() {
           <Button variant="ghost" onClick={vm.goHome}>
             Search home
           </Button>
+          <SearchAttribution className="arco-search-app__attribution" />
         </div>
         <BrowserShell
           url={vm.browseUrl}
@@ -59,6 +61,7 @@ export function SearchApp() {
         onPageChange={vm.setPage}
         onOpenResult={vm.openResult}
         loading={vm.loading}
+        error={vm.error}
       />
     );
   }

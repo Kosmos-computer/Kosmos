@@ -1,0 +1,595 @@
+/* Meet — professional video studio (Riverside-style conferencing UI) */
+
+.arco-meet {
+  --meet-bg: #1a1b1e;
+  --meet-bg-elevated: #25262b;
+  --meet-bg-sunk: #14151a;
+  --meet-text: #f1f3f5;
+  --meet-text-subtle: #909296;
+  --meet-border: rgba(255, 255, 255, 0.08);
+  --meet-accent: #6b4eff;
+  --meet-accent-soft: rgba(107, 78, 255, 0.18);
+  --meet-live: #fa5252;
+  --meet-record: #fa5252;
+  --meet-control: #2c2e33;
+  --meet-control-hover: #373a40;
+  --meet-tile-radius: 16px;
+
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--meet-bg);
+  color: var(--meet-text);
+  font-family: var(--arco-font-ui);
+}
+
+html[data-theme="light"] .arco-meet {
+  --meet-bg: #f4f5f7;
+  --meet-bg-elevated: #ffffff;
+  --meet-bg-sunk: #e9ecef;
+  --meet-text: #1a1b1e;
+  --meet-text-subtle: #5c5f66;
+  --meet-border: rgba(0, 0, 0, 0.08);
+  --meet-control: #e9ecef;
+  --meet-control-hover: #dee2e6;
+}
+
+/* Header */
+.arco-meet__header {
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--arco-space-m);
+  padding: var(--arco-space-m) var(--arco-space-l);
+  border-bottom: 1px solid var(--meet-border);
+}
+
+.arco-meet__header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-m);
+  min-width: 0;
+}
+
+.arco-meet__brand {
+  font-size: var(--arco-text-lg);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.arco-meet__room {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--arco-space-xs);
+  padding: var(--arco-space-xs) var(--arco-space-m);
+  border-radius: 999px;
+  background: var(--meet-bg-elevated);
+  color: var(--meet-text-subtle);
+  font-size: var(--arco-text-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.arco-meet__header-center {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-m);
+}
+
+.arco-meet__stat {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--arco-space-xs);
+  color: var(--meet-text-subtle);
+  font-size: var(--arco-text-sm);
+}
+
+.arco-meet__live {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--arco-space-xs);
+  padding: var(--arco-space-xs) var(--arco-space-m);
+  border-radius: 999px;
+  background: rgba(250, 82, 82, 0.14);
+  color: var(--meet-live);
+  font-size: var(--arco-text-sm);
+  font-weight: 600;
+}
+
+.arco-meet__live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--meet-live);
+  animation: arco-meet-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes arco-meet-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.arco-meet__header-right {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.arco-meet__host-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--meet-accent-soft);
+  color: var(--meet-accent);
+  font-size: var(--arco-text-sm);
+  font-weight: 700;
+}
+
+/* Main layout */
+.arco-meet__main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.arco-meet__stage {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: var(--arco-space-l);
+  gap: var(--arco-space-l);
+}
+
+/* Video grid */
+.arco-meet__grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  gap: var(--arco-space-m);
+}
+
+.arco-meet__grid--split {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr;
+}
+
+.arco-meet__grid--solo {
+  grid-template-columns: 1fr;
+}
+
+.arco-meet__grid--pip-left,
+.arco-meet__grid--pip-right,
+.arco-meet__grid--grid-4,
+.arco-meet__grid--spotlight {
+  grid-template-columns: 1fr 1fr;
+}
+
+.arco-meet__tile {
+  position: relative;
+  min-height: 0;
+  height: 100%;
+  border-radius: var(--meet-tile-radius);
+  overflow: hidden;
+  background: var(--meet-bg-sunk);
+  border: 1px solid var(--meet-border);
+}
+
+.arco-meet__tile-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.arco-meet__tile-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 40%, #2b2148 0%, #14151a 70%);
+}
+
+.arco-meet__tile-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: var(--meet-accent);
+  color: #fff;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.arco-meet__tile-name {
+  position: absolute;
+  left: var(--arco-space-m);
+  bottom: var(--arco-space-m);
+  padding: var(--arco-space-xs) var(--arco-space-s);
+  border-radius: var(--arco-radius-s);
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: var(--arco-text-sm);
+  font-weight: 600;
+}
+
+.arco-meet__tile-camera-off {
+  position: absolute;
+  right: var(--arco-space-m);
+  bottom: var(--arco-space-m);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--arco-radius-s);
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+}
+
+/* Control bar */
+.arco-meet__controls {
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: var(--arco-space-s) var(--arco-space-l);
+  border-radius: var(--arco-radius-l);
+  background: var(--meet-bg-elevated);
+  border: 1px solid var(--meet-border);
+}
+
+.arco-meet__controls-center {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+}
+
+.arco-meet__control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 50%;
+  background: var(--meet-control);
+  color: var(--meet-text);
+  cursor: pointer;
+  transition: background var(--arco-dur-fast) var(--arco-ease);
+}
+
+.arco-meet__control:hover {
+  background: var(--meet-control-hover);
+}
+
+.arco-meet__control--active {
+  color: var(--meet-accent);
+}
+
+.arco-meet__control--record {
+  width: 52px;
+  height: 52px;
+  background: var(--meet-record);
+  color: #fff;
+}
+
+.arco-meet__control--record:hover {
+  filter: brightness(1.08);
+}
+
+.arco-meet__control--recording {
+  box-shadow: 0 0 0 3px rgba(250, 82, 82, 0.28);
+}
+
+.arco-meet__control--end {
+  justify-self: end;
+  background: var(--meet-record);
+  color: #fff;
+}
+
+.arco-meet__control--end:hover {
+  filter: brightness(1.08);
+}
+
+/* Sidebar */
+.arco-meet__sidebar {
+  flex-shrink: 0;
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--meet-border);
+  background: var(--meet-bg-elevated);
+}
+
+.arco-meet__tabs {
+  flex-shrink: 0;
+  display: flex;
+  gap: var(--arco-space-xs);
+  padding: var(--arco-space-m);
+  border-bottom: 1px solid var(--meet-border);
+}
+
+.arco-meet__tabs button {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--arco-space-xs);
+  padding: var(--arco-space-s) var(--arco-space-m);
+  border: none;
+  border-radius: var(--arco-radius-m);
+  background: transparent;
+  color: var(--meet-text-subtle);
+  font-size: var(--arco-text-sm);
+  cursor: pointer;
+}
+
+.arco-meet__tabs button:hover {
+  background: var(--arco-bg-hover);
+  color: var(--meet-text);
+}
+
+.arco-meet__tab--active {
+  background: var(--meet-accent-soft) !important;
+  color: var(--meet-accent) !important;
+  font-weight: 600;
+}
+
+.arco-meet__tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--meet-accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.arco-meet__sidebar-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--arco-space-m);
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-l);
+}
+
+.arco-meet__section-title {
+  margin: 0 0 var(--arco-space-s);
+  font-size: var(--arco-text-sm);
+  font-weight: 600;
+  color: var(--meet-text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.arco-meet__participant-list,
+.arco-meet__waiting-list,
+.arco-meet__upload-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.arco-meet__participant {
+  padding: var(--arco-space-s) 0;
+  border-bottom: 1px solid var(--meet-border);
+}
+
+.arco-meet__participant:last-child {
+  border-bottom: none;
+}
+
+.arco-meet__participant-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--arco-space-s);
+}
+
+.arco-meet__participant-name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--arco-space-xs);
+  font-size: var(--arco-text-md);
+  font-weight: 600;
+}
+
+.arco-meet__host-tag {
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--meet-accent-soft);
+  color: var(--meet-accent);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.arco-meet__participant-meta {
+  margin: var(--arco-space-xs) 0 0;
+  font-size: var(--arco-text-xs);
+  color: var(--meet-text-subtle);
+  line-height: 1.4;
+}
+
+.arco-meet__audio-meter {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 14px;
+}
+
+.arco-meet__audio-meter span {
+  display: block;
+  width: 3px;
+  height: 6px;
+  border-radius: 1px;
+  background: var(--meet-border);
+}
+
+.arco-meet__audio-meter-bar--active {
+  background: var(--meet-accent) !important;
+}
+
+.arco-meet__audio-meter span:nth-child(2) {
+  height: 8px;
+}
+
+.arco-meet__audio-meter span:nth-child(3) {
+  height: 10px;
+}
+
+.arco-meet__audio-meter span:nth-child(4) {
+  height: 12px;
+}
+
+.arco-meet__waiting-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-s) 0;
+}
+
+.arco-meet__waiting-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+}
+
+.arco-meet__text-btn {
+  border: none;
+  background: transparent;
+  color: var(--meet-text-subtle);
+  font-size: var(--arco-text-sm);
+  cursor: pointer;
+}
+
+.arco-meet__text-btn:hover {
+  color: var(--meet-text);
+}
+
+.arco-meet__admit-btn {
+  padding: var(--arco-space-xs) var(--arco-space-m) !important;
+  font-size: var(--arco-text-sm) !important;
+  background: var(--meet-accent) !important;
+  border-color: var(--meet-accent) !important;
+}
+
+.arco-meet__recording-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--arco-space-s);
+}
+
+.arco-meet__recording-time {
+  font-family: var(--arco-font-mono);
+  font-size: var(--arco-text-sm);
+  color: var(--meet-text-subtle);
+}
+
+.arco-meet__upload {
+  padding: var(--arco-space-s) 0;
+}
+
+.arco-meet__upload-label {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--arco-space-s);
+  margin-bottom: var(--arco-space-xs);
+  font-size: var(--arco-text-xs);
+  color: var(--meet-text-subtle);
+}
+
+.arco-meet__upload-bar {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--meet-bg-sunk);
+  overflow: hidden;
+}
+
+.arco-meet__upload-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--meet-accent);
+}
+
+.arco-meet__layout-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--arco-space-s);
+}
+
+.arco-meet__layout-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  border: 1px solid var(--meet-border);
+  border-radius: var(--arco-radius-s);
+  background: var(--meet-bg-sunk);
+  color: var(--meet-text-subtle);
+  cursor: pointer;
+}
+
+.arco-meet__layout-btn:hover {
+  border-color: var(--meet-accent);
+  color: var(--meet-text);
+}
+
+.arco-meet__layout-btn--active {
+  border-color: var(--meet-accent);
+  background: var(--meet-accent-soft);
+  color: var(--meet-accent);
+}
+
+.arco-meet__chat-stub {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--arco-space-xl);
+  text-align: center;
+}
+
+.arco-meet__chat-stub p {
+  margin: 0;
+  font-size: var(--arco-text-sm);
+  color: var(--meet-text-subtle);
+  line-height: 1.5;
+}
+
+@media (max-width: 960px) {
+  .arco-meet__sidebar {
+    width: 260px;
+  }
+
+  .arco-meet__grid--split,
+  .arco-meet__grid--pip-left,
+  .arco-meet__grid--pip-right,
+  .arco-meet__grid--grid-4,
+  .arco-meet__grid--spotlight {
+    grid-template-columns: 1fr;
+  }
+}

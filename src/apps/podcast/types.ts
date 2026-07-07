@@ -1,4 +1,13 @@
-export type PodcastNavSection = "home" | "browse" | "library" | "downloads";
+export type PodcastEpisodeDetailTab = "episode" | "transcript";
+
+export type PodcastNavSection =
+  | "main-feed"
+  | "home"
+  | "browse"
+  | "library"
+  | "downloads"
+  | "transcripts"
+  | "settings";
 
 export type PodcastContentFilter = "all" | "podcasts" | "audiobooks";
 
@@ -40,6 +49,22 @@ export interface PodcastShow {
   title: string;
   host: string;
   episodeCount: number;
+  artTone: PodcastArtTone;
+  /** RSS feed URL — used to scope episodes to one subscribed show. */
+  feedUrl?: string;
+}
+
+export type PodcastFeedModuleKind = "continue" | "new-episode" | "show" | "discover";
+
+export interface PodcastFeedModule {
+  id: string;
+  kind: PodcastFeedModuleKind;
+  title: string;
+  subtitle: string;
+  description: string;
+  episodeCount?: number;
+  episode?: PodcastEpisode;
+  show?: PodcastShow;
   artTone: PodcastArtTone;
 }
 

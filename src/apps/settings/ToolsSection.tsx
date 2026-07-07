@@ -4,12 +4,14 @@
  * schema entirely (mirrors the MCP disabledTools pattern); the policy chip
  * writes `system#<tool>` rules for finer control (auto / confirm / deny).
  */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { AgentPolicyDecision, AgentToolInfo } from "@shared/types";
 import { api } from "../../lib/api";
 import { useCan } from "../../os/auth/authStore";
 import {
+  ListSearch,
   SettingsAlert,
+  SettingsEmpty,
   SettingsGroupLabel,
   SettingsPage,
   SettingsRow,
@@ -18,6 +20,7 @@ import {
   SettingsStack,
 } from "../../components/patterns";
 import { Chip } from "../../components/ui";
+import { matchesListSearch } from "../../lib/listSearch";
 
 /** Group tools by what they let the agent do, so the list scans well. */
 const TOOL_GROUPS: { label: string; match: (name: string) => boolean }[] = [
@@ -121,6 +124,7 @@ export function ToolsSection() {
   const [tools, setTools] = useState<AgentToolInfo[]>([]);
   const [rules, setRules] = useState<Record<string, AgentPolicyDecision>>({});
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const refresh = useCallback(async () => {
     try {
@@ -155,13 +159,37 @@ export function ToolsSection() {
 
   const enabledCount = tools.filter((t) => t.enabled).length;
 
+  const filteredGroups = useMemo(() => {
+    const groups = groupTools(tools);
+    if (!searchQuery.trim()) return groups;
+    return groups
+      .map((group) => ({
+        ...group,
+        tools: group.tools.filter((tool) =>
+          matchesListSearch(searchQuery, tool.name, tool.description, group.label, tool.access),
+        ),
+      }))
+      .filter((group) => group.tools.length > 0);
+  }, [tools, searchQuery]);
+
   return (
     <SettingsPage>
       <SettingsSection
         intro={`What the built-in agent is allowed to do (${enabledCount}/${tools.length} on). Switching a tool off hides it from the agent entirely; the policy chip keeps it available but controls approval.`}
       >
         {error ? <SettingsAlert tone="error">{error}</SettingsAlert> : null}
-        {groupTools(tools).map((group) => (
+        {tools.length > 0 ? (
+          <ListSearch
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder="Search agent tools"
+            ariaLabel="Search agent tools"
+          />
+        ) : null}
+        {filteredGroups.length === 0 && tools.length > 0 ? (
+          <SettingsEmpty>No tools match your search.</SettingsEmpty>
+        ) : null}
+        {filteredGroups.map((group) => (
           <div key={group.label}>
             <SettingsGroupLabel>{group.label}</SettingsGroupLabel>
             <SettingsStack>

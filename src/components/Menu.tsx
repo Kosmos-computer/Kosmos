@@ -13,6 +13,7 @@ import {
   isValidElement,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ReactElement,
@@ -20,12 +21,16 @@ import {
 } from "react";
 import { Check } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { filterMenuItems, shouldShowListSearch } from "../lib/listSearch";
 import { useDismiss } from "./useDismiss";
+import { ListSearch } from "./patterns/ListSearch";
 
 export interface MenuItem {
   id: string;
   label: ReactNode;
   icon?: LucideIcon;
+  /** Extra strings matched when the menu is searchable. */
+  keywords?: string[];
   /** Trailing check mark — for single-choice menus (model, list view). */
   checked?: boolean;
   disabled?: boolean;
@@ -48,6 +53,10 @@ export interface MenuProps {
   /** Controlled open state — e.g. to open the menu from a right-click instead of the trigger's click. */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  /** Show a search field to filter items. "auto" enables when item count >= searchMinItems. */
+  searchable?: boolean | "auto";
+  searchPlaceholder?: string;
+  searchMinItems?: number;
 }
 
 export function Menu({
@@ -59,28 +68,45 @@ export function Menu({
   className,
   open: openProp,
   onOpenChange,
+  searchable = "auto",
+  searchPlaceholder = "Search…",
+  searchMinItems = 4,
 }: MenuProps) {
   const [openState, setOpenState] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const open = openProp ?? openState;
   const setOpen = onOpenChange ?? setOpenState;
   const rootRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  const close = useCallback(() => setOpen(false), [setOpen]);
+  const showSearch =
+    searchable === true || (searchable === "auto" && shouldShowListSearch(items.length, searchMinItems));
+
+  const visibleItems = useMemo(
+    () => (showSearch ? filterMenuItems(items, searchQuery) : items),
+    [items, searchQuery, showSearch],
+  );
+
+  const close = useCallback(() => {
+    setOpen(false);
+    setSearchQuery("");
+  }, [setOpen]);
+
   useDismiss(open, close, rootRef);
 
-  // Focus the first enabled item on open so keyboard users land in the menu.
+  // Focus search (when present) or first enabled item on open.
   useEffect(() => {
     if (!open) return;
+    if (showSearch) return;
     panelRef.current?.querySelector<HTMLButtonElement>("button:not(:disabled)")?.focus();
-  }, [open]);
+  }, [open, showSearch]);
 
   // Roving focus: ArrowUp/Down cycle through enabled items.
   const onPanelKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
     e.preventDefault();
     const buttons = Array.from(
-      panelRef.current?.querySelectorAll<HTMLButtonElement>("button:not(:disabled)") ?? [],
+      panelRef.current?.querySelectorAll<HTMLButtonElement>(".arco-menu__item:not(:disabled)") ?? [],
     );
     if (buttons.length === 0) return;
     const index = buttons.indexOf(document.activeElement as HTMLButtonElement);
@@ -107,12 +133,28 @@ export function Menu({
           ref={panelRef}
           role="menu"
           aria-label={ariaLabel}
-          className={`arco-menu__panel arco-menu__panel--${side} arco-menu__panel--${align}`}
+          className={`arco-menu__panel arco-menu__panel--${side} arco-menu__panel--${align}${showSearch ? " arco-menu__panel--searchable" : ""}`}
           onKeyDown={onPanelKeyDown}
         >
-          {items.map((item) => (
-            <MenuRow key={item.id} item={item} onClose={close} />
-          ))}
+          {showSearch ? (
+            <div className="arco-menu__search">
+              <ListSearch
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder={searchPlaceholder}
+                ariaLabel={`Search ${ariaLabel ?? "menu"}`}
+                compact
+                autoFocus
+              />
+            </div>
+          ) : null}
+          <div className="arco-menu__items">
+            {visibleItems.length === 0 ? (
+              <div className="arco-menu__empty">No matches</div>
+            ) : (
+              visibleItems.map((item) => <MenuRow key={item.id} item={item} onClose={close} />)
+            )}
+          </div>
         </div>
       )}
     </div>

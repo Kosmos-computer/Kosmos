@@ -5,25 +5,27 @@
  * (AdaptiveSurface handles the per-container half).
  */
 import { ChevronLeft, Globe } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Bell } from "lucide-react";
+import { ListSearch } from "../components/patterns";
+import { matchesListSearch } from "../lib/listSearch";
 import { useOsStore } from "./osStore";
 import { useWindowStore } from "./windowStore";
-import { SYSTEM_APPS, systemApp } from "./systemApps";
+import { useShellApps } from "./shellApps";
+import { systemApp } from "./systemApps";
 import { AppSurface } from "../apps/appview/AppSurface";
 import { WebAppSurface } from "../apps/appview/WebAppSurface";
 import { AppHost } from "../apps/appview/AppHost";
-import { appIcon } from "../apps/appview/appIcon";
 import { MusicShell } from "../apps/music/MusicShell";
 import { MessengerShell } from "../apps/messenger/MessengerShell";
 import { VideoShell } from "../apps/video/VideoShell";
 import { PodcastShell } from "../apps/podcast/PodcastShell";
 
 export function MobileShell() {
-  const apps = useOsStore((s) => s.apps);
-  const webApps = useOsStore((s) => s.webApps);
-  const installedApps = useOsStore((s) => s.installedApps.filter((e) => e.enabled));
   const refreshApps = useOsStore((s) => s.refreshApps);
+  const shellApps = useShellApps();
+  const [homeSearch, setHomeSearch] = useState("");
+  const [dockSearch, setDockSearch] = useState("");
   const notifications = useOsStore((s) => s.notifications);
   const dismiss = useOsStore((s) => s.dismissNotification);
   const windows = useWindowStore((s) => s.windows);
@@ -36,6 +38,16 @@ export function MobileShell() {
   }, [refreshApps]);
 
   const active = [...windows.filter((w) => !w.minimized)].sort((a, b) => b.z - a.z)[0];
+
+  const filteredShellApps = useMemo(
+    () => shellApps.filter((entry) => matchesListSearch(homeSearch, entry.title, entry.id)),
+    [shellApps, homeSearch],
+  );
+
+  const filteredWindows = useMemo(
+    () => windows.filter((w) => matchesListSearch(dockSearch, w.title)),
+    [windows, dockSearch],
+  );
 
   return (
     <div className="arco-mobile-shell">
@@ -64,89 +76,57 @@ export function MobileShell() {
             </div>
           </>
         ) : (
-          <div className="arco-mobile-home">
-            {SYSTEM_APPS.map((def) => {
-              const Icon = def.icon;
-              return (
-                <button
-                  key={def.id}
-                  className="arco-mobile-home__icon"
-                  onClick={() => open({ type: "system", app: def.id }, def.title)}
-                >
-                  <span className="arco-mobile-home__glyph">
-                    <Icon size={26} strokeWidth={1.7} />
-                  </span>
-                  {def.title}
-                </button>
-              );
-            })}
-            {installedApps.map((entry) => {
-              const Icon = appIcon(entry.manifest.icon);
-              return (
-                <button
-                  key={entry.manifest.id}
-                  className="arco-mobile-home__icon"
-                  onClick={() =>
-                    open({ type: "installed", appId: entry.manifest.id }, entry.manifest.name)
-                  }
-                >
-                  <span className="arco-mobile-home__glyph">
-                    <Icon size={26} strokeWidth={1.7} />
-                  </span>
-                  {entry.manifest.name}
-                </button>
-              );
-            })}
-            {apps.map((app) => {
-              const Icon = appIcon(app.icon);
-              return (
-                <button
-                  key={app.id}
-                  className="arco-mobile-home__icon"
-                  onClick={() => open({ type: "generated", appId: app.id }, app.title)}
-                >
-                  <span className="arco-mobile-home__glyph" style={{ color: "var(--arco-accent)" }}>
-                    <Icon size={26} strokeWidth={1.7} />
-                  </span>
-                  {app.title}
-                </button>
-              );
-            })}
-            {webApps.map((app) => (
-              <button
-                key={app.id}
-                className="arco-mobile-home__icon"
-                onClick={() => open({ type: "web", webAppId: app.id }, app.name)}
-              >
-                <span className="arco-mobile-home__glyph" style={{ color: "var(--arco-accent)" }}>
-                  <Globe size={26} strokeWidth={1.7} />
-                </span>
-                {app.name}
-              </button>
-            ))}
-          </div>
+          <>
+            <div className="arco-mobile-home__search">
+              <ListSearch
+                value={homeSearch}
+                onChange={setHomeSearch}
+                placeholder="Search apps"
+                ariaLabel="Search apps"
+              />
+            </div>
+            <div className="arco-mobile-home">
+              {filteredShellApps.length === 0 ? (
+                <p className="arco-mobile-home__empty">No apps match your search</p>
+              ) : null}
+              {filteredShellApps.map((entry) => {
+                const Icon = entry.icon;
+                return (
+                  <button
+                    key={entry.id}
+                    className="arco-mobile-home__icon"
+                    onClick={() => open(entry.kind, entry.title)}
+                  >
+                    <span
+                      className="arco-mobile-home__glyph"
+                      style={entry.generated ? { color: "var(--arco-accent)" } : undefined}
+                    >
+                      <Icon size={26} strokeWidth={1.7} />
+                    </span>
+                    {entry.title}
+                  </button>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
 
       <nav className="arco-mobile-shell__dock" aria-label="Open surfaces">
-        {windows.map((w) => {
-          const def =
-            w.kind.type === "system" ? SYSTEM_APPS.find((a) => w.kind.type === "system" && a.id === w.kind.app) : null;
-          const installed =
-            w.kind.type === "installed"
-              ? installedApps.find((e) => w.kind.type === "installed" && e.manifest.id === w.kind.appId)
-              : null;
-          const generated =
-            w.kind.type === "generated"
-              ? apps.find((a) => w.kind.type === "generated" && a.id === w.kind.appId)
-              : null;
-          const Icon =
-            def?.icon ??
-            (installed
-              ? appIcon(installed.manifest.icon)
-              : w.kind.type === "web"
-                ? Globe
-                : appIcon(generated?.icon));
+        {windows.length > 3 ? (
+          <div className="arco-mobile-shell__dock-search">
+            <ListSearch
+              value={dockSearch}
+              onChange={setDockSearch}
+              placeholder="Filter open apps"
+              ariaLabel="Filter open apps"
+              compact
+            />
+          </div>
+        ) : null}
+        {filteredWindows.map((w) => {
+          const shellEntry = shellApps.find((a) => a.id === w.id);
+          const Icon = shellEntry?.icon ?? Globe;
           const isActive = active?.id === w.id;
           return (
             <button

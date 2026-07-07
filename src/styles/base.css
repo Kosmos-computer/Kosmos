@@ -191,6 +191,64 @@ select {
   color: var(--arco-text-tertiary);
 }
 
+.arco-menu__panel--searchable {
+  min-width: 220px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.arco-menu__search {
+  flex-shrink: 0;
+  padding: 6px;
+  border-bottom: 1px solid var(--arco-border);
+}
+
+.arco-menu__items {
+  flex: 1;
+  min-height: 0;
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+}
+
+.arco-menu__empty {
+  padding: 10px 12px;
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-tertiary);
+  text-align: center;
+}
+
+/* ── List search — shared field for menus, modals, and list panes ─────────── */
+
+.arco-list-search {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-xs);
+  width: 100%;
+}
+
+.arco-list-search__icon {
+  flex-shrink: 0;
+  color: var(--arco-text-tertiary);
+}
+
+.arco-list-search__input {
+  flex: 1;
+  min-width: 0;
+}
+
+.arco-list-search__clear {
+  flex-shrink: 0;
+  color: var(--arco-text-tertiary);
+}
+
+.arco-list-search--compact .arco-list-search__input {
+  font-size: var(--arco-text-sm);
+  padding: 5px 8px;
+}
+
 .arco-input {
   width: 100%;
   padding: 7px 10px;

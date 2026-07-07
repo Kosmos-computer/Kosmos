@@ -31,10 +31,13 @@ import {
   Map,
   CircleDollarSign,
   Music,
+  Video,
   Download,
   PlaySquare,
   Headphones,
   Search,
+  FileText,
+  Egg,
 } from "lucide-react";
 import type { SystemAppId } from "./windowStore";
 import { ChatApp } from "../apps/chat/ChatApp";
@@ -65,9 +68,12 @@ import { PayApp } from "../apps/pay/PayApp";
 import { MemoryApp } from "../apps/memory/MemoryApp";
 import { MusicApp } from "../apps/music/MusicApp";
 import { VideoApp } from "../apps/video/VideoApp";
+import { MeetApp } from "../apps/meet/MeetApp";
 import { PodcastApp } from "../apps/podcast/PodcastApp";
 import { DownloadsApp } from "../apps/downloads/DownloadsApp";
 import { SearchApp } from "../apps/search/SearchApp";
+import { LongformerApp } from "../apps/longformer/LongformerApp";
+import { KamijiApp } from "../apps/kamiji/KamijiApp";
 
 export interface SystemAppDef {
   id: SystemAppId;
@@ -88,8 +94,11 @@ export const SYSTEM_APPS: SystemAppDef[] = [
   { id: "files", title: "Drive", icon: HardDrive, component: FilesApp },
   { id: "maps", title: "Maps", icon: Map, component: MapsApp },
   { id: "search", title: "Search", icon: Search, component: SearchApp },
+  { id: "longformer", title: "Longformer", icon: FileText, component: LongformerApp },
+  { id: "kamiji", title: "Kamiji", icon: Egg, component: KamijiApp },
   { id: "music", title: "Music", icon: Music, component: MusicApp },
   { id: "video", title: "Video", icon: PlaySquare, component: VideoApp },
+  { id: "meet", title: "Meet", icon: Video, component: MeetApp },
   { id: "podcast", title: "Podcasts", icon: Headphones, component: PodcastApp },
   { id: "downloads", title: "Downloads", icon: Download, component: DownloadsApp },
   { id: "pay", title: "Pay", icon: CircleDollarSign, component: PayApp },

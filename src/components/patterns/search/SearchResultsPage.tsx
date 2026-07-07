@@ -1,6 +1,7 @@
 import { ArrowLeft, Settings2 } from "lucide-react";
 import { Button } from "../../ui";
 import type { SearchFilterDef, SearchKnowledgePanel, SearchResultItem, SearchSuggestion, SearchTabDef, SearchTabId } from "./searchTypes";
+import { SearchAttribution } from "./SearchAttribution";
 import { SearchBar } from "./SearchBar";
 import { SearchFilters } from "./SearchFilters";
 import { SearchKnowledgePanel as KnowledgePanel } from "./SearchKnowledgePanel";
@@ -33,6 +34,7 @@ export interface SearchResultsPageProps {
   onPageChange: (page: number) => void;
   onOpenResult: (url: string) => void;
   loading?: boolean;
+  error?: string | null;
 }
 
 export function SearchResultsPage({
@@ -60,6 +62,7 @@ export function SearchResultsPage({
   onPageChange,
   onOpenResult,
   loading = false,
+  error = null,
 }: SearchResultsPageProps) {
   return (
     <div className="arco-search-results">
@@ -90,6 +93,8 @@ export function SearchResultsPage({
           <div className="arco-search-results__stats">
             {loading ? (
               <span>Searching…</span>
+            ) : error ? (
+              <span className="arco-search-results__error">{error}</span>
             ) : (
               <span>
                 About {resultCount?.toLocaleString() ?? results.length.toLocaleString()} results
@@ -142,6 +147,7 @@ export function SearchResultsPage({
           <ArrowLeft size={14} aria-hidden />
           Back to search home
         </Button>
+        <SearchAttribution />
       </footer>
     </div>
   );

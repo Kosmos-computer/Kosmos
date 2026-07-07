@@ -25,6 +25,7 @@ export type SystemAppId =
   | "search"
   | "music"
   | "video"
+  | "meet"
   | "podcast"
   | "downloads"
   | "pay"
@@ -37,7 +38,9 @@ export type SystemAppId =
   | "settings"
   | "startup"
   | "onboarding"
-  | "memory";
+  | "memory"
+  | "longformer"
+  | "kamiji";
 
 export type WindowKind =
   | { type: "system"; app: SystemAppId }

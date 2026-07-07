@@ -1,0 +1,33 @@
+# Coolify Docker Compose stack: Arco OS + local model inference (Ollama).
+# Deploy as a new "Docker Compose" resource in the same Coolify project as Arco.
+#
+# Arco settings (Environment tab on the arco-os app, or data/settings.json):
+#   provider: ollama
+#   baseUrl: http://ollama:11434/v1
+#   model: qwen2.5:0.5b   (or whatever you `ollama pull`)
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: arco-ollama
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
+    expose:
+      - "11434"
+    networks:
+      - coolify
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+networks:
+  coolify:
+    external: true
+    name: coolify
+
+volumes:
+  ollama_data:

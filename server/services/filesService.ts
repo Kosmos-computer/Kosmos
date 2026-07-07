@@ -29,8 +29,10 @@ import { resolveSeedTrack } from "./musicSeedService.js";
 import { dataDirs } from "../env.js";
 import { announceAppEvent } from "../bus.js";
 
-/** Content larger than this is rejected — large enough for seed MP3s (Glow ≈ 10 MB). */
+/** Content larger than this is rejected for most files — large enough for seed MP3s (Glow ≈ 10 MB). */
 const MAX_CONTENT_BYTES = 12 * 1024 * 1024;
+/** Podcast episodes can be longer — allow up to 100 MB in Drive. */
+export const MAX_AUDIO_BYTES = 100 * 1024 * 1024;
 
 const BLOBS_DIR = path.join(dataDirs.root, "files");
 const SEED_PDF_PATH = path.join(import.meta.dirname, "../seeds/arco-test.pdf");
@@ -316,7 +318,7 @@ export const filesService = {
     return rows.map(toEntry);
   },
 
-  create(input: FileCreateInput): FileEntry {
+  create(input: FileCreateInput, options?: { maxBytes?: number }): FileEntry {
     const name = input.name?.trim();
     if (!name) throw new Error("name is required");
     const parentId = input.parentId ?? null;
@@ -326,6 +328,7 @@ export const filesService = {
     const mimeType = isFolder ? FOLDER_MIME : input.mimeType?.trim() || "text/plain";
     const content = isFolder ? undefined : (input.content ?? "");
     const contentBase64 = isFolder ? undefined : input.contentBase64;
+    const maxBytes = options?.maxBytes ?? MAX_CONTENT_BYTES;
     let size = 0;
     let blob: Buffer | string | undefined;
     if (contentBase64 !== undefined) {
@@ -335,7 +338,7 @@ export const filesService = {
       blob = content;
       size = Buffer.byteLength(content, "utf-8");
     }
-    if (size > MAX_CONTENT_BYTES) throw new Error("Content exceeds the 10 MB limit");
+    if (size > maxBytes) throw new Error(`Content exceeds the ${Math.round(maxBytes / (1024 * 1024))} MB limit`);
 
     const now = new Date().toISOString();
     const entry: FileEntry = {

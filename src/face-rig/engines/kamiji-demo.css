@@ -1,0 +1,89 @@
+/* KamijiDemoEngine — coral companion sprite from kamiji-demo. */
+
+.arco-kamiji-demo {
+  --face-mouth-open: 0;
+  display: inline-block;
+}
+
+.arco-kamiji-demo__sprite {
+  position: relative;
+  width: 4.8em;
+  height: 4.8em;
+  border-radius: 50%;
+  background: #ff6b6b;
+}
+
+.arco-kamiji-demo__eyes {
+  position: absolute;
+  top: 34%;
+  left: 50%;
+  display: flex;
+  gap: 1.1em;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.arco-kamiji-demo__eye {
+  width: 0.35em;
+  height: 0.35em;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.arco-kamiji-demo__mouth {
+  position: absolute;
+  left: 50%;
+  bottom: 28%;
+  width: 0.9em;
+  height: 0.35em;
+  margin-left: -0.45em;
+  border-radius: 0.2em;
+  background: rgba(255, 255, 255, 0.85);
+  transform-origin: center top;
+  transform: scaleY(calc(0.1 + var(--face-mouth-open) * 0.9));
+  opacity: 0;
+  transition: transform 40ms linear, opacity 200ms ease;
+}
+
+.arco-kamiji-demo:not([data-speaking="idle"]) .arco-kamiji-demo__eyes {
+  opacity: 1;
+}
+
+.arco-kamiji-demo[data-speaking="speaking"] .arco-kamiji-demo__mouth {
+  opacity: 1;
+}
+
+.arco-kamiji-demo[data-speaking="speaking"] .arco-kamiji-demo__sprite {
+  animation: arco-kamiji-demo-bounce 0.5s ease-in-out infinite;
+}
+
+.arco-kamiji-demo[data-speaking="thinking"] .arco-kamiji-demo__sprite {
+  animation: arco-kamiji-demo-bounce 0.8s ease-in-out infinite;
+}
+
+.arco-kamiji-demo[data-expression="happy"] .arco-kamiji-demo__mouth {
+  border-radius: 0 0 50% 50%;
+  height: 0.45em;
+}
+
+.arco-kamiji-demo[data-speaking="userSpeaking"] .arco-kamiji-demo__sprite {
+  transform: scaleX(-1);
+}
+
+@keyframes arco-kamiji-demo-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-0.15em);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arco-kamiji-demo[data-speaking="speaking"] .arco-kamiji-demo__sprite,
+  .arco-kamiji-demo[data-speaking="thinking"] .arco-kamiji-demo__sprite {
+    animation: none;
+  }
+}

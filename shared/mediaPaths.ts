@@ -15,3 +15,25 @@ export function podcastStreamPath(episodeId: string): string {
 export function podcastArtPath(episodeId: string): string {
   return `/api/podcast/art/${encodeURIComponent(episodeId)}`;
 }
+
+export function podcastFeedArtPath(feedUrl: string): string {
+  return `/api/podcast/rss/feed-art?url=${encodeURIComponent(feedUrl)}`;
+}
+
+export function musicRssStreamPath(songId: string, feedUrl?: string): string {
+  const base = `/api/music/rss/stream/${encodeURIComponent(songId)}`;
+  if (!feedUrl) return base;
+  return `${base}?feedUrl=${encodeURIComponent(feedUrl)}`;
+}
+
+export function musicRssArtPath(songId: string): string {
+  return `/api/music/rss/art/${encodeURIComponent(songId)}`;
+}
+
+export function musicRssFeedArtPath(feedUrl: string): string {
+  return `/api/music/rss/feed-art?url=${encodeURIComponent(feedUrl)}`;
+}
+
+export function musicLiveStreamPath(stationId: string): string {
+  return `/api/music/live/stream/${encodeURIComponent(stationId)}`;
+}

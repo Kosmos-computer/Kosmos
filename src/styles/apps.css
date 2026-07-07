@@ -24,6 +24,11 @@
   padding-bottom: var(--arco-space-s);
 }
 
+.arco-panel__search {
+  flex-shrink: 0;
+  padding-bottom: var(--arco-space-xs);
+}
+
 .arco-listrow {
   display: flex;
   align-items: center;

@@ -3,7 +3,7 @@
  * generated, and web) plus generated-app lifecycle actions (refine, version
  * history, restore, delete).
  */
-import { useCallback, useEffect, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import {
   Clock,
   EllipsisVertical,
@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import type { AppSummary, StoredApp, WebApp } from "@shared/types";
 import { Menu, type MenuItem } from "../../components/Menu";
+import { ListSearch } from "../../components/patterns";
+import { matchesListSearch } from "../../lib/listSearch";
 import { api } from "../../lib/api";
 import { useOsStore } from "../../os/osStore";
 import { useShellApps, type ShellAppEntry } from "../../os/shellApps";
@@ -134,6 +136,8 @@ export function AppsLibrary() {
   const closeWindow = useWindowStore((s) => s.close);
   const [historyApp, setHistoryApp] = useState<StoredApp | null>(null);
   const [view, setView] = useLibraryView();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [versionSearch, setVersionSearch] = useState("");
 
   useEffect(() => {
     void refreshApps();
@@ -248,7 +252,42 @@ export function AppsLibrary() {
     [apps, webApps, generatedMenuItems, openWindow, webMenuItems],
   );
 
+  const filteredShellApps = useMemo(
+    () =>
+      shellApps.filter((entry) => {
+        const { kind } = entry;
+        let generatedTitle: string | undefined;
+        let webName: string | undefined;
+        let webUrl: string | undefined;
+        if (kind.type === "generated") {
+          generatedTitle = apps.find((a) => a.id === kind.appId)?.title;
+        } else if (kind.type === "web") {
+          const web = webApps.find((a) => a.id === kind.webAppId);
+          webName = web?.name;
+          webUrl = web?.url;
+        }
+        return matchesListSearch(
+          searchQuery,
+          entry.title,
+          entry.id,
+          generatedTitle,
+          webName,
+          webUrl,
+          kind.type,
+        );
+      }),
+    [shellApps, searchQuery, apps, webApps],
+  );
+
   if (historyApp) {
+    const reversedVersions = [...historyApp.versions].reverse().map((v, revIdx) => ({
+      v,
+      realIdx: historyApp.versions.length - 1 - revIdx,
+    }));
+    const versions = reversedVersions.filter(({ v }) =>
+      matchesListSearch(versionSearch, v.source, v.content, new Date(v.timestamp).toLocaleString()),
+    );
+
     return (
       <div className="arco-panel arco-scroll">
         <div className="arco-panel__header">
@@ -257,23 +296,28 @@ export function AppsLibrary() {
             Back
           </button>
         </div>
-        {historyApp.versions.length === 0 && <div className="arco-empty">No prior versions</div>}
-        {[...historyApp.versions].reverse().map((v, revIdx) => {
-          const realIdx = historyApp.versions.length - 1 - revIdx;
-          return (
-            <div key={realIdx} className="arco-listrow">
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 600, fontSize: "var(--arco-text-sm)" }}>
-                  {v.source} · {new Date(v.timestamp).toLocaleString()}
-                </div>
-                <div className="arco-listrow__sub">{v.content.slice(0, 120)}…</div>
+        <div className="arco-panel__search">
+          <ListSearch
+            value={versionSearch}
+            onChange={setVersionSearch}
+            placeholder="Search versions"
+            ariaLabel="Search versions"
+          />
+        </div>
+        {versions.length === 0 && <div className="arco-empty">No versions match your search</div>}
+        {versions.map(({ v, realIdx }) => (
+          <div key={realIdx} className="arco-listrow">
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 600, fontSize: "var(--arco-text-sm)" }}>
+                {v.source} · {new Date(v.timestamp).toLocaleString()}
               </div>
-              <button className="arco-btn" onClick={() => void restore(historyApp.id, realIdx)}>
-                Restore
-              </button>
+              <div className="arco-listrow__sub">{v.content.slice(0, 120)}…</div>
             </div>
-          );
-        })}
+            <button className="arco-btn" onClick={() => void restore(historyApp.id, realIdx)}>
+              Restore
+            </button>
+          </div>
+        ))}
       </div>
     );
   }
@@ -287,11 +331,20 @@ export function AppsLibrary() {
         <ViewToggle view={view} onChange={setView} />
       </div>
 
+      <div className="arco-panel__search">
+        <ListSearch
+          value={searchQuery}
+          onChange={setSearchQuery}
+          placeholder="Search apps"
+          ariaLabel="Search apps"
+        />
+      </div>
+
       {view === "icons" ? (
         <div className="arco-apps-home arco-scroll">
           <section className="arco-apps-home__section" aria-label="All apps">
             <div className="arco-apps-home__grid">
-              {shellApps.map((entry) => {
+              {filteredShellApps.map((entry) => {
                 const Icon = entry.icon;
                 return (
                   <div key={entry.id} className="arco-apps-home__tile">
@@ -318,7 +371,10 @@ export function AppsLibrary() {
       ) : (
         <>
           <div className="arco-label">All apps</div>
-          {shellApps.map((entry) => {
+          {filteredShellApps.length === 0 ? (
+            <div className="arco-empty">No apps match your search</div>
+          ) : null}
+          {filteredShellApps.map((entry) => {
             const Icon = entry.icon;
             const { kind } = entry;
             const generated = kind.type === "generated" ? apps.find((a) => a.id === kind.appId) : undefined;

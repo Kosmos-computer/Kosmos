@@ -12,6 +12,7 @@ import { api } from "../../lib/api";
 import { useCan } from "../../os/auth/authStore";
 import { useOsStore } from "../../os/osStore";
 import {
+  ListSearch,
   SettingsAlert,
   SettingsEmpty,
   SettingsFieldRow,
@@ -26,6 +27,7 @@ import {
   SettingsSubhead,
 } from "../../components/patterns";
 import { Button, Chip, Input } from "../../components/ui";
+import { matchesListSearch } from "../../lib/listSearch";
 
 function GrantRow({
   app,
@@ -71,6 +73,11 @@ export function AppsSection() {
   const [installUrl, setInstallUrl] = useState("");
   const [installError, setInstallError] = useState<string | null>(null);
   const [installing, setInstalling] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredApps = installedApps.filter((app) =>
+    matchesListSearch(searchQuery, app.manifest.name, app.manifest.description, app.manifest.id, app.source),
+  );
 
   const install = async () => {
     if (!installUrl.trim()) return;
@@ -106,8 +113,16 @@ export function AppsSection() {
         {installedApps.length === 0 ? (
           <SettingsEmpty>No apps installed.</SettingsEmpty>
         ) : (
-          <SettingsStack>
-            {installedApps.map((app) => (
+          <>
+            <ListSearch
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Search installed apps"
+              ariaLabel="Search installed apps"
+            />
+            {filteredApps.length === 0 ? <SettingsEmpty>No apps match your search.</SettingsEmpty> : null}
+            <SettingsStack>
+            {filteredApps.map((app) => (
               <SettingsPanel key={app.manifest.id} disabled={!app.enabled}>
                 <SettingsPanelHeader>
                   <span className="arco-settings-panel__title">{app.manifest.name}</span>
@@ -159,6 +174,7 @@ export function AppsSection() {
               </SettingsPanel>
             ))}
           </SettingsStack>
+          </>
         )}
 
         {canManage && (

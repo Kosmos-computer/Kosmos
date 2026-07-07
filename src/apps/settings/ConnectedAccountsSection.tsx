@@ -4,9 +4,10 @@
 import { useCallback, useState } from "react";
 import { Link2, Trash2 } from "lucide-react";
 import { presetById } from "@shared/serviceConnections";
-import { ConnectServiceModal } from "../../components/patterns/ConnectServiceModal";
+import { ConnectServiceModal, ListSearch } from "../../components/patterns";
 import { useConnectionStore } from "../../connections/useConnectionStore";
 import { useCan } from "../../os/auth/authStore";
+import { matchesListSearch } from "../../lib/listSearch";
 import {
   SettingsEmpty,
   SettingsPage,
@@ -28,6 +29,17 @@ export function ConnectedAccountsSection() {
 
   const [connectOpen, setConnectOpen] = useState(false);
   const [connectDomain, setConnectDomain] = useState<"teams" | "social">("teams");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredConnections = connections.filter((connection) =>
+    matchesListSearch(
+      searchQuery,
+      connection.label,
+      presetById(connection.provider).label,
+      connection.instanceUrl,
+      connection.domain,
+    ),
+  );
 
   const openConnect = useCallback((domain: "teams" | "social") => {
     setConnectDomain(domain);
@@ -38,10 +50,20 @@ export function ConnectedAccountsSection() {
     <SettingsPage>
       <SettingsSection intro="Accounts linked to Groups and Social workspaces. OAuth and server-side token storage replace local stubs in a later phase.">
         <SettingsStack>
+          {connections.length > 0 ? (
+            <ListSearch
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Search connected accounts"
+              ariaLabel="Search connected accounts"
+            />
+          ) : null}
           {connections.length === 0 ? (
             <SettingsEmpty>No connected accounts yet.</SettingsEmpty>
+          ) : filteredConnections.length === 0 ? (
+            <SettingsEmpty>No accounts match your search.</SettingsEmpty>
           ) : (
-            connections.map((connection) => (
+            filteredConnections.map((connection) => (
               <SettingsPanel key={connection.id}>
                 <SettingsPanelHeader title={connection.label} />
                 <SettingsPanelBody>

@@ -1,0 +1,134 @@
+/* ChattyFaceEngine — ChatRTK-style screen bezel and expressive mouth. */
+
+.arco-chatty-face {
+  --face-mouth-open: 0;
+  display: inline-block;
+}
+
+.arco-chatty-face__screen {
+  position: relative;
+  width: 5.6em;
+  height: 5.6em;
+  padding: 0.55em;
+  border-radius: 0.9em;
+  border: 0.35em solid #333333;
+  background: #e2ffe5;
+  box-sizing: border-box;
+}
+
+.arco-chatty-face__face {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 0.55em;
+  background: #5daa77;
+  overflow: hidden;
+}
+
+.arco-chatty-face__eye {
+  position: absolute;
+  top: 32%;
+  width: 0.55em;
+  height: 0.55em;
+  border-radius: 50%;
+  background: #000000;
+  animation: arco-chatty-blink 4.2s infinite;
+}
+
+.arco-chatty-face__eye--left {
+  left: 28%;
+}
+
+.arco-chatty-face__eye--right {
+  right: 28%;
+}
+
+.arco-chatty-face__mouth {
+  position: absolute;
+  left: 50%;
+  bottom: 18%;
+  width: 1.8em;
+  height: 0.9em;
+  margin-left: -0.9em;
+  border-radius: 0.35em;
+  background: #333333;
+  overflow: hidden;
+  transform-origin: center top;
+  transform: scaleY(calc(0.15 + var(--face-mouth-open) * 0.85));
+  transition: transform 40ms linear, opacity 200ms ease;
+}
+
+.arco-chatty-face__teeth {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 120%;
+  height: 45%;
+  margin-left: -60%;
+  background: #ffffff;
+  border-radius: 0 0 0.2em 0.2em;
+}
+
+.arco-chatty-face__tongue {
+  position: absolute;
+  left: 50%;
+  bottom: -15%;
+  width: 70%;
+  height: 55%;
+  margin-left: -35%;
+  border-radius: 50%;
+  background: #ff7d9d;
+}
+
+.arco-chatty-face:not([data-speaking="speaking"]) .arco-chatty-face__mouth {
+  opacity: 0;
+  transform: scaleY(0);
+}
+
+.arco-chatty-face[data-speaking="speaking"] .arco-chatty-face__mouth {
+  opacity: 1;
+}
+
+.arco-chatty-face[data-expression="happy"] .arco-chatty-face__mouth {
+  border-radius: 0.35em 0.35em 0.8em 0.8em;
+}
+
+.arco-chatty-face[data-expression="thinking"] .arco-chatty-face__eye {
+  transform: translateY(-0.12em) scaleY(0.75);
+}
+
+.arco-chatty-face[data-speaking="thinking"] .arco-chatty-face__face {
+  animation: arco-chatty-ponder 1.4s ease-in-out infinite;
+}
+
+.arco-chatty-face[data-speaking="userSpeaking"] .arco-chatty-face__screen {
+  transform: rotate(-2deg);
+}
+
+@keyframes arco-chatty-blink {
+  0%,
+  94%,
+  100% {
+    transform: scaleY(1);
+  }
+  96% {
+    transform: scaleY(0.1);
+  }
+}
+
+@keyframes arco-chatty-ponder {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-0.1em);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arco-chatty-face__eye,
+  .arco-chatty-face[data-speaking="thinking"] .arco-chatty-face__face {
+    animation: none;
+  }
+}

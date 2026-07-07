@@ -32,6 +32,7 @@ import { invokeIntent } from "../capabilities/registry.js";
 import { appendAudit } from "../platform/grantStore.js";
 import { intentMeta } from "../../shared/capabilities/index.js";
 import { getActiveRoot, resolveProjectPath } from "../stores/projectStore.js";
+import { resolveSystemAppId, SYSTEM_APP_CATALOG } from "../../shared/systemApps.js";
 import { dbExecute, dbQuery } from "../stores/db.js";
 import { skillStore } from "../skills/skillStore.js";
 import { bus } from "../bus.js";
@@ -180,69 +181,9 @@ async function agentInvokeIntent(
   return invokeIntent(intentId, params);
 }
 
-// ── Web search (keyless — DuckDuckGo HTML endpoint) ──────────────────────────
-
-/** Minimal HTML-entity decode + tag strip for scraped titles/snippets. */
-function cleanHtmlText(html: string): string {
-  return html
-    .replace(/<[^>]+>/g, "")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#x?\d+;|&#39;|&#x27;/g, "'")
-    .replace(/&nbsp;/g, " ")
-    .trim();
-}
-
-interface SearchResult {
-  title: string;
-  url: string;
-  snippet: string;
-}
-
-/**
- * Scrape DuckDuckGo's no-JS HTML endpoint — the pragmatic keyless option.
- * Result links are redirect-wrapped (/l/?uddg=<encoded-url>), so unwrap
- * before returning. If DDG blocks or changes markup this degrades to an
- * empty list, which the tool reports as "no results".
- */
-async function duckDuckGoSearch(query: string, max: number): Promise<SearchResult[]> {
-  const res = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`, {
-    headers: {
-      "User-Agent":
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
-    },
-    signal: AbortSignal.timeout(15_000),
-  });
-  if (!res.ok) throw new Error(`Search request failed with status ${res.status}`);
-  const html = await res.text();
-
-  const results: SearchResult[] = [];
-  const linkRe = /<a[^>]*class="result__a"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g;
-  const snippetRe = /<a[^>]*class="result__snippet"[^>]*>([\s\S]*?)<\/a>/g;
-  const snippets = [...html.matchAll(snippetRe)].map((m) => cleanHtmlText(m[1]));
-
-  let match: RegExpExecArray | null;
-  while ((match = linkRe.exec(html)) !== null && results.length < max) {
-    let url = match[1];
-    const uddg = /[?&]uddg=([^&]+)/.exec(url);
-    if (uddg) url = decodeURIComponent(uddg[1]);
-    if (url.startsWith("//")) url = `https:${url}`;
-    // DDG interleaves ad slots that link back to duckduckgo.com — skip them.
-    if (url.includes("duckduckgo.com/y.js")) continue;
-    results.push({
-      title: cleanHtmlText(match[2]),
-      url,
-      snippet: snippets[results.length] ?? "",
-    });
-  }
-  return results;
-}
+import { webSearch } from "../services/searchService.js";
 
 // ── App id resolution for os_ui ──────────────────────────────────────────────
-
-const SYSTEM_APP_IDS = ["chat", "studio", "apps", "skills", "automations", "files", "notes", "terminal", "settings", "startup"];
 
 /**
  * Map whatever the model called the app — an exact id, a system id (possibly
@@ -255,9 +196,9 @@ async function resolveAppId(
 ): Promise<{ appId: string } | { error: string; availableApps: { id: string; title: string }[] }> {
   const wanted = raw.trim();
   const lower = wanted.toLowerCase();
-  if (SYSTEM_APP_IDS.includes(lower)) return { appId: lower };
-  const tail = lower.split(".").pop() ?? lower;
-  if (SYSTEM_APP_IDS.includes(tail)) return { appId: tail };
+
+  const systemAppId = resolveSystemAppId(wanted);
+  if (systemAppId) return { appId: systemAppId };
 
   const generated = await appStore.list();
   const installed = installedAppStore.list().filter((a) => a.enabled);
@@ -278,9 +219,9 @@ async function resolveAppId(
   if (byName) return { appId: byName.manifest.id };
 
   return {
-    error: `No app matches "${raw}". Pick an id from availableApps, or build it with app_create.`,
+    error: `No app matches "${raw}". Pick an id from availableApps. Built-in shell apps (Podcasts, Music, Tasks, …) are listed as system apps — use open_app with their title or id. Only use app_create when the user wants a new custom app.`,
     availableApps: [
-      ...SYSTEM_APP_IDS.map((id) => ({ id, title: `${id} (system app)` })),
+      ...SYSTEM_APP_CATALOG.map((entry) => ({ id: entry.id, title: `${entry.title} (system app)` })),
       ...installed.map((a) => ({ id: a.manifest.id, title: a.manifest.name })),
       ...generated.map((a) => ({ id: a.id, title: a.title })),
     ],
@@ -489,7 +430,7 @@ export const agentTools: AgentTool[] = [
       const query = String(args.query ?? "").trim();
       if (!query) return { error: "query is required" };
       const max = Math.min(Math.max(Number(args.maxResults) || 6, 1), 10);
-      const results = await duckDuckGoSearch(query, max);
+      const results = await webSearch(query, max);
       if (results.length === 0) {
         return { results: [], note: "No results — try different keywords." };
       }
@@ -1035,10 +976,9 @@ export const agentTools: AgentTool[] = [
         if ("error" in resolved) return resolved;
         action = { action: args.action, appId: resolved.appId };
       } else if (args.action === "open_system" && typeof args.app === "string") {
-        const lower = args.app.trim().toLowerCase();
-        const tail = lower.split(".").pop() ?? lower;
-        if (SYSTEM_APP_IDS.includes(lower) || SYSTEM_APP_IDS.includes(tail)) {
-          action = { action: "open_system", app: SYSTEM_APP_IDS.includes(lower) ? lower : tail };
+        const systemAppId = resolveSystemAppId(args.app);
+        if (systemAppId) {
+          action = { action: "open_system", app: systemAppId };
         } else {
           // Installed/generated apps (e.g. "Docs" → core.docs) are not system
           // apps — resolve and open through the unified open_app path.

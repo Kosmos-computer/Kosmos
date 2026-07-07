@@ -12,6 +12,7 @@ export function MusicEngine() {
   const previewSrc = useMusicStore((s) => s.nowPlaying.track.previewSrc);
   const trackId = useMusicStore((s) => s.nowPlaying.track.id);
   const playing = useMusicStore((s) => s.playing);
+  const isLive = useMusicStore((s) => s.nowPlaying.track.live);
   const stopPlayback = useMusicStore((s) => s.stopPlayback);
   const setPlaybackProgress = useMusicStore((s) => s.setPlaybackProgress);
   const playNext = useMusicStore((s) => s.playNext);
@@ -38,8 +39,24 @@ export function MusicEngine() {
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !previewSrc) return;
+
+    audio.pause();
+
+    const tryPlay = () => {
+      if (!playing) return;
+      void audio.play().catch(() => stopPlayback());
+    };
+
+    const onCanPlay = () => tryPlay();
+    audio.addEventListener("canplay", onCanPlay, { once: true });
     audio.load();
-  }, [previewSrc, trackId]);
+
+    if (playing && audio.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
+      tryPlay();
+    }
+
+    return () => audio.removeEventListener("canplay", onCanPlay);
+  }, [previewSrc, trackId, playing, stopPlayback]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -47,27 +64,15 @@ export function MusicEngine() {
 
     if (!playing) {
       audio.pause();
-      return;
     }
-
-    const start = () => {
-      void audio.play().catch(() => stopPlayback());
-    };
-
-    // Metadata can arrive after the first play attempt — retry once the track is ready.
-    if (audio.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
-      start();
-    } else {
-      audio.addEventListener("canplay", start, { once: true });
-      return () => audio.removeEventListener("canplay", start);
-    }
-  }, [playing, previewSrc, trackId, stopPlayback]);
+  }, [playing, previewSrc]);
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !previewSrc) return;
 
     const syncProgress = () => {
+      if (isLive) return;
       if (!Number.isFinite(audio.duration) || audio.duration <= 0) return;
       setPlaybackProgress(
         (audio.currentTime / audio.duration) * 100,
@@ -77,6 +82,7 @@ export function MusicEngine() {
     };
 
     const handleEnded = () => {
+      if (isLive) return;
       playNext();
     };
 
@@ -96,7 +102,7 @@ export function MusicEngine() {
       audio.removeEventListener("ended", handleEnded);
       audio.removeEventListener("error", handleError);
     };
-  }, [previewSrc, trackId, playNext, setPlaybackProgress, stopPlayback]);
+  }, [previewSrc, trackId, playNext, setPlaybackProgress, stopPlayback, isLive]);
 
   if (!previewSrc) return null;
 

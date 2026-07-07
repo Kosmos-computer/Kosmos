@@ -4,6 +4,7 @@
  * stores. Chat streams route their AgentEvents through here.
  */
 import type { AgentEvent } from "@shared/types";
+import { resolveSystemAppId } from "@shared/systemApps";
 import { api } from "../lib/api";
 import { useOsStore } from "./osStore";
 import { useWindowStore } from "./windowStore";
@@ -19,9 +20,9 @@ function openAppById(appId: string): void {
   const wm = useWindowStore.getState();
   const wanted = appId.trim();
   const lower = wanted.toLowerCase();
-  const tail = lower.split(".").pop() ?? lower;
 
-  const sys = SYSTEM_APPS.find((a) => a.id === wanted || a.id === tail);
+  const systemId = resolveSystemAppId(wanted);
+  const sys = systemId ? SYSTEM_APPS.find((a) => a.id === systemId) : undefined;
   if (sys) {
     wm.open({ type: "system", app: sys.id }, sys.title);
     return;
@@ -110,11 +111,9 @@ export function handleShellEvent(event: AgentEvent): void {
           `installed:${action.appId}`,
           `web:${action.appId}`,
         ];
-        // Models sometimes qualify system ids ("core.settings") — fall back
-        // to the last dot-segment when it names a system app.
-        const tail = action.appId.split(".").pop();
-        if (tail && tail !== action.appId && SYSTEM_APPS.some((a) => a.id === tail)) {
-          keys.push(`system:${tail}`);
+        const systemId = resolveSystemAppId(action.appId);
+        if (systemId && systemId !== action.appId) {
+          keys.push(`system:${systemId}`);
         }
         for (const key of keys) wm.close(key);
       } else if (action.action === "notify") {

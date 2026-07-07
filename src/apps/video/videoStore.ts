@@ -8,6 +8,7 @@ import { presetById } from "@shared/serviceConnections";
 import {
   filterVideos,
   formatVideoTime,
+  parseVideoTime,
   localToVideoItem,
   remoteToVideoItem,
   type LocalVideoRecord,
@@ -229,15 +230,6 @@ export const useVideoStore = create<VideoStore>((set, get) => ({
 
   stopPlayback: () => set({ playing: false }),
 }));
-
-function parseVideoTime(label: string): number {
-  const parts = label.split(":").map((part) => Number.parseInt(part, 10));
-  if (parts.some((part) => Number.isNaN(part))) return 0;
-  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
-  if (parts.length === 2) return parts[0] * 60 + parts[1];
-  if (parts.length === 1) return parts[0];
-  return 0;
-}
 
 export function useVideoViewModel() {
   const store = useVideoStore();

@@ -3,6 +3,8 @@ import { Plug, X } from "lucide-react";
 import type { PaymentProviderId } from "@shared/payments";
 import { PAYMENT_PROVIDER_META } from "@shared/payments";
 import { PAYMENT_PROVIDER_LIST } from "./paymentAdapters";
+import { ListSearch } from "../../components/patterns";
+import { matchesListSearch } from "../../lib/listSearch";
 import { Button, Chip, Input } from "../../components/ui";
 
 export interface ConnectPaymentModalProps {
@@ -20,6 +22,7 @@ export function ConnectPaymentModal({ open, onClose, initialProvider, onConnect 
   const [providerId, setProviderId] = useState<PaymentProviderId>("venmo");
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [providerSearch, setProviderSearch] = useState("");
 
   const preset = PAYMENT_PROVIDER_META[providerId];
 
@@ -27,6 +30,7 @@ export function ConnectPaymentModal({ open, onClose, initialProvider, onConnect 
     if (!open) return;
     setProviderId(initialProvider ?? "venmo");
     setFieldValues({});
+    setProviderSearch("");
   }, [open, initialProvider]);
 
   const canSave = useMemo(() => {
@@ -34,6 +38,15 @@ export function ConnectPaymentModal({ open, onClose, initialProvider, onConnect 
   }, [preset.connectFields, fieldValues]);
 
   if (!open) return null;
+
+  const filteredProviders = PAYMENT_PROVIDER_LIST.filter((option) =>
+    matchesListSearch(
+      providerSearch,
+      option.label,
+      option.id,
+      PAYMENT_PROVIDER_META[option.id].hint,
+    ),
+  );
 
   async function handleSave() {
     if (!canSave) return;
@@ -78,8 +91,18 @@ export function ConnectPaymentModal({ open, onClose, initialProvider, onConnect 
         <div className="arco-connect-modal__body">
           <section className="arco-connect-modal__section">
             <h3 className="arco-connect-modal__label">Provider</h3>
+            <ListSearch
+              value={providerSearch}
+              onChange={setProviderSearch}
+              placeholder="Search payment providers"
+              ariaLabel="Search payment providers"
+              compact
+            />
             <div className="arco-connect-modal__chips" role="listbox" aria-label="Payment providers">
-              {PAYMENT_PROVIDER_LIST.map((option) => (
+              {filteredProviders.length === 0 ? (
+                <p className="arco-connect-modal__empty">No providers match your search</p>
+              ) : null}
+              {filteredProviders.map((option) => (
                 <Chip
                   key={option.id}
                   role="option"

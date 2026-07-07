@@ -2,9 +2,10 @@
  * BrowserShell — reusable URL bar + iframe preview extracted from Studio's
  * Browser tab. Apps like Search use this to browse result URLs in-shell.
  */
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { ExternalLink, Globe, RotateCw } from "lucide-react";
 import { Button } from "../../ui";
+import { browseFrameSrc } from "./browseFrameSrc";
 
 export interface BrowserShellProps {
   url: string;
@@ -47,6 +48,8 @@ export function BrowserShell({
     [draft, onNavigate],
   );
 
+  const frameSrc = useMemo(() => browseFrameSrc(url), [url]);
+
   return (
     <div className={`arco-browser ${className}`.trim()}>
       <div className="arco-browser__urlbar">
@@ -80,9 +83,9 @@ export function BrowserShell({
         <iframe
           key={frameTick}
           className="arco-browser__frame"
-          src={url}
+          src={frameSrc}
           title={title}
-          sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox"
         />
       ) : (
         <div className="arco-empty arco-browser__empty">

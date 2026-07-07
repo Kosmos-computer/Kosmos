@@ -1,0 +1,119 @@
+/* KamijiRigEngine — circular Kamiji avatar from kamiji-rig. */
+
+.arco-kamiji-rig {
+  --face-mouth-open: 0;
+  display: inline-block;
+}
+
+.arco-kamiji-rig__face {
+  position: relative;
+  width: 5em;
+  height: 5em;
+  border-radius: 50%;
+  background: var(--arco-face-bg, #f5f5f5);
+  transition: background 200ms ease;
+}
+
+.arco-kamiji-rig__eyes {
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  display: flex;
+  gap: 1.4em;
+  transform: translateX(-50%);
+}
+
+.arco-kamiji-rig__eye {
+  width: 0.55em;
+  height: 0.55em;
+  border-radius: 50%;
+  background: var(--arco-face-feature, #ff6b6b);
+  animation: arco-kamiji-rig-blink 4.8s infinite;
+  transition: transform 280ms ease;
+}
+
+.arco-kamiji-rig__mouth {
+  position: absolute;
+  left: 50%;
+  bottom: 22%;
+  width: 1.6em;
+  height: 0.7em;
+  margin-left: -0.8em;
+  border-radius: 0.35em;
+  background: var(--arco-face-feature, #ff6b6b);
+  transform-origin: center top;
+  transform: scaleY(calc(0.2 + var(--face-mouth-open) * 0.8));
+  transition: transform 40ms linear, opacity 200ms ease, border-radius 280ms ease;
+}
+
+.arco-kamiji-rig:not([data-speaking="speaking"]) .arco-kamiji-rig__mouth {
+  opacity: 0;
+  transform: scaleY(0);
+}
+
+.arco-kamiji-rig[data-speaking="speaking"] .arco-kamiji-rig__mouth {
+  opacity: 1;
+}
+
+.arco-kamiji-rig[data-expression="happy"] .arco-kamiji-rig__mouth {
+  border-radius: 50% 50% 0 0;
+  transform: scaleY(calc(0.35 + var(--face-mouth-open) * 0.65)) translateY(-0.1em);
+}
+
+.arco-kamiji-rig[data-expression="thinking"] .arco-kamiji-rig__eye {
+  transform: scaleY(0.7);
+}
+
+.arco-kamiji-rig[data-expression="attentive"] .arco-kamiji-rig__eye {
+  transform: scale(1.15);
+}
+
+.arco-kamiji-rig[data-speaking="thinking"] .arco-kamiji-rig__face {
+  animation: arco-kamiji-rig-ponder 1.4s ease-in-out infinite;
+}
+
+.arco-kamiji-rig[data-speaking="userSpeaking"] .arco-kamiji-rig__face {
+  animation: arco-kamiji-rig-wiggle 0.4s ease-in-out infinite;
+}
+
+@keyframes arco-kamiji-rig-blink {
+  0%,
+  94%,
+  100% {
+    transform: scaleY(1);
+  }
+  96% {
+    transform: scaleY(0.08);
+  }
+}
+
+@keyframes arco-kamiji-rig-ponder {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-0.12em);
+  }
+}
+
+@keyframes arco-kamiji-rig-wiggle {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  25% {
+    transform: rotate(-4deg);
+  }
+  75% {
+    transform: rotate(4deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arco-kamiji-rig__eye,
+  .arco-kamiji-rig[data-speaking="thinking"] .arco-kamiji-rig__face,
+  .arco-kamiji-rig[data-speaking="userSpeaking"] .arco-kamiji-rig__face {
+    animation: none;
+  }
+}

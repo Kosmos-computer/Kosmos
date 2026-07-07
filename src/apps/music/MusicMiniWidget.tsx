@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { AlbumArt } from "./AlbumArt";
+import { MusicBroadcastCover } from "./MusicBroadcastCover";
 import { MusicProgressScrubber } from "./MusicProgressScrubber";
 import { formatMusicTime, parseMusicTime, useMusicStore } from "./musicStore";
 
@@ -91,17 +92,21 @@ export function MusicMiniWidget() {
         onPointerMove={onDragPointerMove}
         onPointerUp={onDragPointerUp}
       >
-        <AlbumArt
-          trackId={track.id !== "empty" ? track.id : undefined}
-          tone={track.albumArtTone}
-          size="sm"
-          alt={track.title}
-        />
+        {track.source === "rss" ? (
+          <MusicBroadcastCover songId={track.id} tone={track.albumArtTone} size="sm" alt={track.title} />
+        ) : (
+          <AlbumArt
+            trackId={track.source === "live" ? undefined : track.id !== "empty" ? track.id : undefined}
+            tone={track.albumArtTone}
+            size="sm"
+            alt={track.title}
+          />
+        )}
 
         <div className="arco-music-widget__meta">
           <span className="arco-music-widget__title">{track.title}</span>
           <span className="arco-music-widget__artist">{track.artists}</span>
-          {!widgetCollapsed ? (
+          {!widgetCollapsed && !track.live ? (
             <MusicProgressScrubber
               progress={progress}
               elapsed={elapsed}
@@ -111,6 +116,8 @@ export function MusicMiniWidget() {
               variant="widget"
               showTimes={false}
             />
+          ) : !widgetCollapsed && track.live ? (
+            <span className="arco-music-widget__live">Live broadcast</span>
           ) : null}
         </div>
 
@@ -123,7 +130,7 @@ export function MusicMiniWidget() {
           >
             {playing ? <Pause size={16} /> : <Play size={16} />}
           </button>
-          {!widgetCollapsed ? (
+          {!widgetCollapsed && !track.live ? (
             <button
               type="button"
               className="arco-music-widget__btn"
@@ -162,8 +169,8 @@ export function MusicMiniWidget() {
 
       {!widgetCollapsed ? (
         <div className="arco-music-widget__footer">
-          <span className="arco-music-widget__time">{displayElapsed}</span>
-          <span className="arco-music-widget__time">{track.duration}</span>
+          <span className="arco-music-widget__time">{track.live ? "Live" : displayElapsed}</span>
+          <span className="arco-music-widget__time">{track.live ? "" : track.duration}</span>
         </div>
       ) : null}
     </div>

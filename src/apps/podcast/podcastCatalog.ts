@@ -1,4 +1,4 @@
-import { podcastArtPath, podcastStreamPath } from "@shared/mediaPaths";
+import { podcastArtPath, podcastFeedArtPath, podcastStreamPath } from "@shared/mediaPaths";
 import type { PodcastArtTone, PodcastEpisode, PodcastProviderRail, PodcastShow } from "./types";
 
 export interface LocalEpisodeRecord {
@@ -115,20 +115,53 @@ export function filterEpisodes(
   );
 }
 
+function showGroupKey(episode: PodcastEpisode): string {
+  return episode.feedUrl ?? episode.showTitle;
+}
+
+function showIdFromEpisode(episode: PodcastEpisode): string {
+  if (episode.feedUrl) {
+    return `feed:${episode.feedUrl}`;
+  }
+  return episode.showTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+}
+
+export function episodesForShow(episodes: PodcastEpisode[], show: PodcastShow): PodcastEpisode[] {
+  if (show.feedUrl) {
+    return episodes.filter((episode) => episode.feedUrl === show.feedUrl);
+  }
+  return episodes.filter((episode) => episode.showTitle === show.title);
+}
+
+export function episodeBelongsToShow(episode: PodcastEpisode, show: PodcastShow): boolean {
+  if (show.feedUrl) return episode.feedUrl === show.feedUrl;
+  return episode.showTitle === show.title;
+}
+
+export function sortEpisodesNewestFirst(episodes: PodcastEpisode[]): PodcastEpisode[] {
+  return [...episodes].sort((a, b) => {
+    const aDate = a.publishedAt ? Date.parse(a.publishedAt) : 0;
+    const bDate = b.publishedAt ? Date.parse(b.publishedAt) : 0;
+    return bDate - aDate;
+  });
+}
+
 export function buildShows(episodes: PodcastEpisode[]): PodcastShow[] {
   const map = new Map<string, PodcastShow>();
   for (const episode of episodes) {
-    const existing = map.get(episode.showTitle);
+    const key = showGroupKey(episode);
+    const existing = map.get(key);
     if (existing) {
       existing.episodeCount += 1;
       continue;
     }
-    map.set(episode.showTitle, {
-      id: episode.showTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+    map.set(key, {
+      id: showIdFromEpisode(episode),
       title: episode.showTitle,
       host: episode.host,
       episodeCount: 1,
       artTone: episode.artTone,
+      feedUrl: episode.feedUrl,
     });
   }
   return [...map.values()];
@@ -150,3 +183,5 @@ export function formatPodcastTime(seconds: number): string {
 export function podcastCoverSrc(episodeId: string): string {
   return podcastArtPath(episodeId);
 }
+
+export { podcastFeedArtPath };

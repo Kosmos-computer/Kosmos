@@ -30,8 +30,12 @@ export interface DriveSeedFile {
 /** Root Music folder — surfaced by the Drive sidebar Music tab. */
 export const MUSIC_FOLDER_NAME = "Music";
 
+/** Podcast episodes saved from the Podcasts app land here. */
+export const PODCASTS_FOLDER_NAME = "Podcasts";
+
 export const DRIVE_SEED_FOLDERS: DriveSeedFolder[] = [
   { name: MUSIC_FOLDER_NAME },
+  { name: PODCASTS_FOLDER_NAME },
   { name: "Projects" },
   { name: "Shared" },
   { name: "Design", parent: "Projects" },

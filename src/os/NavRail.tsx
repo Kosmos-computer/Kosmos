@@ -188,10 +188,12 @@ export function NavRail() {
             </button>
           }
           aria-label="More apps"
+          searchPlaceholder="Search apps"
           items={entries.map((entry) => ({
             id: entry.id,
             label: entry.title,
             icon: entry.icon,
+            keywords: [entry.title, entry.id],
             checked: pinnedIdSet.has(entry.id),
             onSelect: () =>
               setNavPinnedIds((prev) =>

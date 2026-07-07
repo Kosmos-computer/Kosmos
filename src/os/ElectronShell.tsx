@@ -1,15 +1,10 @@
 /**
- * Sync the native Electron title-bar overlay with Arco theme tokens and mark
- * the document for electron-specific shell CSS (drag regions, control insets).
+ * Sync Electron window background with Arco theme tokens and mark the document
+ * for electron-specific shell CSS.
  */
 import { useEffect, type ReactNode } from "react";
 import { getArcoDesktop, isArcoDesktop } from "../lib/desktopBridge";
 import { useOsStore } from "./osStore";
-import { ElectronWindowChrome } from "./ElectronWindowChrome";
-
-function useWindowChromeTitle(explicit?: string): string {
-  return explicit ?? "Arco OS";
-}
 
 export function useElectronTitleBarThemeSync(): void {
   const theme = useOsStore((s) => s.theme);
@@ -21,15 +16,7 @@ export function useElectronTitleBarThemeSync(): void {
   }, [theme]);
 }
 
-export function ElectronShell({
-  children,
-  windowChromeTitle,
-}: {
-  children: ReactNode;
-  /** Standalone app windows pass their window title; the main shell defaults to Arco OS. */
-  windowChromeTitle?: string;
-}) {
-  const chromeTitle = useWindowChromeTitle(windowChromeTitle);
+export function ElectronShell({ children }: { children: ReactNode }) {
   useElectronTitleBarThemeSync();
 
   useEffect(() => {
@@ -39,10 +26,5 @@ export function ElectronShell({
     void desktop.setTitleBarTheme(useOsStore.getState().theme);
   }, []);
 
-  return (
-    <>
-      {children}
-      {isArcoDesktop() && <ElectronWindowChrome title={chromeTitle} />}
-    </>
-  );
+  return <>{children}</>;
 }

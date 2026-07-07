@@ -121,6 +121,16 @@
   color: var(--arco-text-tertiary);
 }
 
+.arco-connect-modal__search {
+  padding-bottom: var(--arco-space-s);
+}
+
+.arco-connect-modal__empty {
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-tertiary);
+  padding: var(--arco-space-s) 0;
+}
+
 .arco-connect-modal__footer {
   display: flex;
   justify-content: flex-end;

@@ -368,6 +368,13 @@
 
 .arco-settings-face-color {
   display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-m);
+  width: 100%;
+}
+
+.arco-settings-face-color__options {
+  display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--arco-space-m);
@@ -614,8 +621,37 @@
   cursor: pointer;
 }
 
-.arco-settings-face-color__preview {
+.arco-settings-face-preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-m);
+  padding: var(--arco-space-m);
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-m);
+  background: var(--arco-bg-surface);
+}
+
+.arco-settings-face-preview__face {
+  align-self: flex-start;
   font-size: 16px;
+}
+
+.arco-settings-face-preview__controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-s);
+}
+
+.arco-settings-face-preview__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-xs);
+}
+
+.arco-settings-face-preview__label {
+  font-size: var(--arco-text-xs);
+  font-weight: 600;
+  color: var(--arco-text-secondary);
 }
 
 /* ── Settings-scoped overrides (no boxed cards, Longformer-flat) ─────────── */

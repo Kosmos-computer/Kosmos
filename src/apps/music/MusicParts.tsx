@@ -1,34 +1,43 @@
 import {
   Heart,
+  Home,
   List,
   Maximize2,
   Mic,
   Monitor,
   PanelRight,
-  Pause,
   Play,
   Plus,
-  Repeat,
+  Radio,
   Search,
-  Shuffle,
-  SkipBack,
-  SkipForward,
   Square,
-  Volume2,
 } from "lucide-react";
+import { musicRssFeedSeedSummary } from "@shared/musicFeeds";
+import { musicLiveStationSummary } from "@shared/musicLiveStations";
 import { AlbumArt } from "./AlbumArt";
-import { MusicProgressScrubber } from "./MusicProgressScrubber";
-import { ListItem, NavSidebar, NavSidebarSectionHeader } from "../../components/patterns";
+import {
+  MusicBroadcastDirectory,
+  MusicBroadcastFeedDetail,
+  MusicSongDetail,
+} from "./MusicBroadcasts";
+import { MusicBroadcastCover } from "./MusicBroadcastCover";
+import { MediaPlayerBar, ListItem, NavSidebar, NavSidebarSectionHeader } from "../../components/patterns";
 import type {
   MusicContentFilter,
   MusicFeaturedCard,
   MusicLibraryFilter,
-  MusicLibraryItem,
   MusicMixCard,
+  MusicNavSection,
   MusicNowPlaying,
   MusicQuickAccess,
+  MusicTrack,
 } from "./types";
 import type { MusicViewModel } from "./useMusicStub";
+
+const NAV_ITEMS: { id: MusicNavSection; label: string; icon: typeof Home }[] = [
+  { id: "home", label: "Home", icon: Home },
+  { id: "broadcasts", label: "Broadcasts", icon: Radio },
+];
 
 const LIBRARY_FILTERS: { id: MusicLibraryFilter; label: string }[] = [
   { id: "playlists", label: "Playlists" },
@@ -44,29 +53,24 @@ const CONTENT_FILTERS: { id: MusicContentFilter; label: string }[] = [
   { id: "audiobooks", label: "Audiobooks" },
 ];
 
-export interface MusicLibrarySidebarProps {
-  items: MusicLibraryItem[];
-  activeItemId?: string;
-  onSelectItem: (id: string) => void;
-  libraryFilter: MusicLibraryFilter;
-  onLibraryFilterChange: (filter: MusicLibraryFilter) => void;
-  searchQuery: string;
-  onSearchChange: (value: string) => void;
+function TrackArtwork({ track, size = "sm" }: { track: MusicTrack; size?: "sm" | "md" | "lg" | "full" }) {
+  if (track.source === "rss") {
+    return (
+      <MusicBroadcastCover songId={track.id} tone={track.albumArtTone} size={size === "full" ? "lg" : size} alt={track.title} />
+    );
+  }
+  return <AlbumArt trackId={track.id} tone={track.albumArtTone} size={size} alt={track.title} />;
 }
 
-export function MusicLibrarySidebar({
-  items,
-  activeItemId,
-  onSelectItem,
-  libraryFilter,
-  onLibraryFilterChange,
-  searchQuery,
-  onSearchChange,
-}: MusicLibrarySidebarProps) {
-  const filteredItems = items.filter((item) => {
-    if (libraryFilter === "playlists") return item.kind === "playlist";
-    if (libraryFilter === "artists") return item.kind === "artist";
-    if (libraryFilter === "albums") return item.kind === "album";
+export interface MusicLibrarySidebarProps {
+  vm: MusicViewModel;
+}
+
+export function MusicLibrarySidebar({ vm }: MusicLibrarySidebarProps) {
+  const filteredItems = vm.libraryItems.filter((item) => {
+    if (vm.libraryFilter === "playlists") return item.kind === "playlist";
+    if (vm.libraryFilter === "artists") return item.kind === "artist";
+    if (vm.libraryFilter === "albums") return item.kind === "album";
     return item.kind === "podcast";
   });
 
@@ -94,8 +98,8 @@ export function MusicLibrarySidebar({
                 className="arco-music-library-nav__search-input"
                 type="search"
                 placeholder="What do you want to play?"
-                value={searchQuery}
-                onChange={(event) => onSearchChange(event.target.value)}
+                value={vm.searchQuery}
+                onChange={(event) => vm.setSearchQuery(event.target.value)}
                 aria-label="Search library"
               />
             </label>
@@ -107,13 +111,40 @@ export function MusicLibrarySidebar({
             <div>
               <NavSidebarSectionHeader title="Browse" />
               <div className="arco-nav-sidebar__section-items">
+                {NAV_ITEMS.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <ListItem
+                      key={item.id}
+                      className="arco-nav-sidebar__nav-item"
+                      leading={<Icon size={18} />}
+                      label={item.label}
+                      description={
+                        item.id === "broadcasts"
+                          ? `${musicLiveStationSummary(vm.liveStations, 2)} · ${musicRssFeedSeedSummary(vm.rssFeeds, 2)}`
+                          : undefined
+                      }
+                      active={vm.navSection === item.id && !vm.selectedBroadcastFeed && !vm.selectedSongId}
+                      onClick={() => vm.setNavSection(item.id)}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <NavSidebarSectionHeader title="Filter" />
+              <div className="arco-nav-sidebar__section-items">
                 {LIBRARY_FILTERS.map((filter) => (
                   <ListItem
                     key={filter.id}
                     className="arco-nav-sidebar__nav-item"
                     label={filter.label}
-                    active={libraryFilter === filter.id}
-                    onClick={() => onLibraryFilterChange(filter.id)}
+                    active={vm.libraryFilter === filter.id && vm.navSection === "home"}
+                    onClick={() => {
+                      vm.setNavSection("home");
+                      vm.setLibraryFilter(filter.id);
+                    }}
                   />
                 ))}
               </div>
@@ -136,8 +167,8 @@ export function MusicLibrarySidebar({
                     }
                     label={item.title}
                     description={item.subtitle}
-                    active={activeItemId === item.id}
-                    onClick={() => onSelectItem(item.id)}
+                    active={vm.activeLibraryItemId === item.id && vm.navSection === "home"}
+                    onClick={() => vm.setActiveLibraryItemId(item.id)}
                   />
                 ))}
               </div>
@@ -160,7 +191,7 @@ export interface MusicHomeContentProps {
   onPlayTrack: (trackId: string) => void;
 }
 
-export function MusicHomeContent({
+function MusicHomeFeed({
   userName,
   quickAccess,
   featured,
@@ -261,6 +292,37 @@ export function MusicHomeContent({
   );
 }
 
+export interface MusicMainContentProps {
+  vm: MusicViewModel;
+}
+
+export function MusicMainContent({ vm }: MusicMainContentProps) {
+  if (vm.selectedSongId) {
+    return <MusicSongDetail vm={vm} />;
+  }
+
+  if (vm.selectedBroadcastFeed) {
+    return <MusicBroadcastFeedDetail vm={vm} />;
+  }
+
+  if (vm.navSection === "broadcasts") {
+    return <MusicBroadcastDirectory vm={vm} />;
+  }
+
+  return (
+    <MusicHomeFeed
+      userName={vm.user.name}
+      quickAccess={vm.quickAccess}
+      featured={vm.featured}
+      mixes={vm.mixes}
+      contentFilter={vm.contentFilter}
+      onContentFilterChange={vm.setContentFilter}
+      onPlayFeatured={() => vm.playTrack(vm.featured.id, true)}
+      onPlayTrack={(id) => vm.playTrack(id, true)}
+    />
+  );
+}
+
 export interface MusicNowPlayingPanelProps {
   nowPlaying: MusicNowPlaying;
   onPlayTrack: (trackId: string) => void;
@@ -274,7 +336,7 @@ export function MusicNowPlayingPanel({ nowPlaying, onPlayTrack }: MusicNowPlayin
       <div className="arco-music__now-playing-header">{queueTitle ?? track.title}</div>
       <div className="arco-music__now-playing-scroll arco-music__scrollable">
         <div className="arco-music__now-playing-art">
-          <AlbumArt trackId={track.id} tone={track.albumArtTone} size="full" alt={track.title} />
+          <TrackArtwork track={track} size="full" />
           {track.hasVideo ? (
             <button type="button" className="arco-music__video-switch">
               Switch to video
@@ -304,7 +366,11 @@ export function MusicNowPlayingPanel({ nowPlaying, onPlayTrack }: MusicNowPlayin
                 className="arco-music__related-item"
                 onClick={() => onPlayTrack(video.id)}
               >
-                <AlbumArt trackId={video.id} tone={video.imageTone} size="sm" alt={video.title} />
+                {video.id.startsWith("music-rss-") ? (
+                  <MusicBroadcastCover songId={video.id} tone={video.imageTone} size="sm" alt={video.title} />
+                ) : (
+                  <AlbumArt trackId={video.id} tone={video.imageTone} size="sm" alt={video.title} />
+                )}
                 <span className="arco-music__related-meta">
                   <span className="arco-music__related-item-title">{video.title}</span>
                   <span className="arco-music__related-item-artists">{video.artists}</span>
@@ -324,83 +390,67 @@ export interface MusicPlayerBarProps {
 
 export function MusicPlayerBar({ vm }: MusicPlayerBarProps) {
   const { track, progress, elapsed } = vm.nowPlaying;
+  const hasPlayback = Boolean(track.previewSrc);
+
+  if (!hasPlayback) return null;
 
   return (
-    <footer className="arco-music__player-bar" aria-label="Playback controls">
-      <div className="arco-music__player-track">
-        <AlbumArt trackId={track.id} tone={track.albumArtTone} size="sm" alt={track.title} />
-        <div className="arco-music__player-track-meta">
-          <span className="arco-music__player-track-title">{track.title}</span>
-          <span className="arco-music__player-track-artists">{track.artists}</span>
-          {track.hasVideo ? <span className="arco-music__video-tag">Music video</span> : null}
-        </div>
-        <button type="button" className="arco-music__icon-btn" aria-label="Save track">
+    <MediaPlayerBar
+      artwork={<TrackArtwork track={track} size="sm" />}
+      title={track.title}
+      subtitle={track.artists}
+      subtitleTag={
+        track.live ? (
+          <span className="arco-media-player__tag arco-media-player__tag--live">Live</span>
+        ) : track.source === "rss" ? (
+          <span className="arco-media-player__tag">Broadcast</span>
+        ) : track.hasVideo ? (
+          <span className="arco-media-player__tag">Music video</span>
+        ) : undefined
+      }
+      playing={vm.playing}
+      progress={track.live ? 0 : progress}
+      elapsed={track.live ? "Live" : elapsed}
+      duration={track.live ? "" : track.duration}
+      onTogglePlay={vm.togglePlay}
+      onPrevious={vm.playPrevious}
+      onNext={vm.playNext}
+      onSeek={vm.seekPlayback}
+      live={track.live}
+      showShuffleRepeat
+      showVolume
+      trackAction={
+        <button type="button" className="arco-media-player__icon-btn" aria-label="Save track">
           <Heart size={16} />
         </button>
-      </div>
-
-      <div className="arco-music__player-controls">
-        <div className="arco-music__control-row">
-          <button type="button" className="arco-music__control-btn" aria-label="Shuffle">
-            <Shuffle size={16} />
+      }
+      extras={
+        <>
+          <button type="button" className="arco-media-player__icon-btn" aria-label="Now playing view">
+            <PanelRight size={16} />
           </button>
-          <button type="button" className="arco-music__control-btn" aria-label="Previous" onClick={vm.playPrevious}>
-            <SkipBack size={18} />
+          <button type="button" className="arco-media-player__icon-btn" aria-label="Lyrics">
+            <Mic size={16} />
+          </button>
+          <button type="button" className="arco-media-player__icon-btn" aria-label="Queue">
+            <List size={16} />
+          </button>
+          <button type="button" className="arco-media-player__icon-btn" aria-label="Connect to a device">
+            <Monitor size={16} />
           </button>
           <button
             type="button"
-            className="arco-music__play-pause-btn"
-            aria-label={vm.playing ? "Pause" : "Play"}
-            onClick={vm.togglePlay}
+            className="arco-media-player__icon-btn"
+            aria-label="Mini player"
+            onClick={vm.minimizeToWidget}
           >
-            {vm.playing ? <Pause size={18} /> : <Play size={18} />}
+            <Square size={14} />
           </button>
-          <button type="button" className="arco-music__control-btn" aria-label="Next" onClick={vm.playNext}>
-            <SkipForward size={18} />
+          <button type="button" className="arco-media-player__icon-btn" aria-label="Full screen">
+            <Maximize2 size={16} />
           </button>
-          <button type="button" className="arco-music__control-btn arco-music__control-btn--active" aria-label="Repeat">
-            <Repeat size={16} />
-          </button>
-        </div>
-        <MusicProgressScrubber
-          progress={progress}
-          elapsed={elapsed}
-          duration={track.duration}
-          onSeek={vm.seekPlayback}
-        />
-      </div>
-
-      <div className="arco-music__player-extras">
-        <button type="button" className="arco-music__icon-btn" aria-label="Now playing view">
-          <PanelRight size={16} />
-        </button>
-        <button type="button" className="arco-music__icon-btn" aria-label="Lyrics">
-          <Mic size={16} />
-        </button>
-        <button type="button" className="arco-music__icon-btn" aria-label="Queue">
-          <List size={16} />
-        </button>
-        <button type="button" className="arco-music__icon-btn" aria-label="Connect to a device">
-          <Monitor size={16} />
-        </button>
-        <div className="arco-music__volume-row">
-          <Volume2 size={16} />
-          <div className="arco-music__volume-track" aria-hidden="true">
-            <span className="arco-music__volume-fill" />
-          </div>
-        </div>
-        <button
-          type="button"
-          className="arco-music__icon-btn"
-          aria-label="Mini player"
-          onClick={vm.minimizeToWidget}
-        >
-          <Square size={14} />
-        </button>
-        <button type="button" className="arco-music__icon-btn" aria-label="Full screen">
-          <Maximize2 size={16} />
-        </button>
-      </div>
-    </footer>
+        </>
+      }
+    />
   );
 }

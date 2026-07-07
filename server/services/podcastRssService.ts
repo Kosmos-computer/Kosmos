@@ -1,8 +1,17 @@
 import crypto from "node:crypto";
 import { PODCAST_RSS_FEED_SEEDS, type PodcastRssFeedSeed } from "../../shared/podcastFeeds.js";
+import {
+  addSubscribedFeed,
+  listSubscribedFeedUrls,
+  listSubscribedFeeds,
+  removeSubscribedFeed,
+} from "./podcastFeedStore.js";
 import type { PodcastArtTone } from "./podcastSeedService.js";
 
 function resolvePodcastRssFeeds(): string[] {
+  const subscribed = listSubscribedFeedUrls();
+  if (subscribed.length > 0) return subscribed;
+
   const fromEnv = process.env.PODCAST_RSS_FEEDS?.trim();
   if (fromEnv) {
     return fromEnv
@@ -14,6 +23,11 @@ function resolvePodcastRssFeeds(): string[] {
 }
 
 export function listPodcastRssFeedSeeds(): PodcastRssFeedSeed[] {
+  const subscribed = listSubscribedFeeds();
+  if (subscribed.length > 0) {
+    return subscribed.map(({ url, label, publisher }) => ({ url, label, publisher }));
+  }
+
   const fromEnv = process.env.PODCAST_RSS_FEEDS?.trim();
   if (fromEnv) {
     return fromEnv
@@ -24,6 +38,8 @@ export function listPodcastRssFeedSeeds(): PodcastRssFeedSeed[] {
   }
   return PODCAST_RSS_FEED_SEEDS;
 }
+
+export { listSubscribedFeeds, addSubscribedFeed, removeSubscribedFeed };
 
 export function warmPodcastRssFeeds(): void {
   void listRssEpisodes().catch((err: unknown) => {
@@ -70,10 +86,12 @@ const MAX_EPISODES_PER_FEED = 20;
 interface FeedCacheEntry {
   fetchedAt: number;
   episodes: RssEpisodeRecord[];
+  channelCoverUrl?: string;
 }
 
 const feedCache = new Map<string, FeedCacheEntry>();
 const episodeIndex = new Map<string, RssEpisodeRecord>();
+const inFlightFeedRequests = new Map<string, Promise<string>>();
 
 function decodeXml(value: string): string {
   return value
@@ -94,7 +112,7 @@ function tagValue(block: string, tag: string): string | undefined {
 function attrValue(block: string, tag: string, attr: string): string | undefined {
   const re = new RegExp(`<${tag}\\b[^>]*\\s${attr}=["']([^"']+)["']`, "i");
   const match = re.exec(block);
-  return match?.[1];
+  return match?.[1] ? decodeXml(match[1]) : undefined;
 }
 
 function formatDuration(raw: string | undefined): string {
@@ -124,7 +142,50 @@ function episodeId(feedUrl: string, guid: string): string {
   return `rss-${hash}`;
 }
 
-function parseFeedXml(feedUrl: string, xml: string): RssEpisodeRecord[] {
+function channelCoverFromBlock(channel: string): string | undefined {
+  const imageBlock = channel.match(/<image\b[\s\S]*?<\/image>/i)?.[0];
+  return (
+    attrValue(channel, "itunes:image", "href") ??
+    (imageBlock ? tagValue(imageBlock, "url") : undefined) ??
+    (imageBlock ? tagValue(imageBlock, "link") : undefined) ??
+    attrValue(channel, "media:thumbnail", "url") ??
+    tagValue(channel, "logo") ??
+    tagValue(channel, "icon")
+  );
+}
+
+async function fetchFeedXml(feedUrl: string): Promise<string> {
+  const inFlight = inFlightFeedRequests.get(feedUrl);
+  if (inFlight) return inFlight;
+
+  const request = (async () => {
+    const response = await fetch(feedUrl, {
+      headers: {
+        Accept: "application/rss+xml, application/xml, text/xml, */*",
+        "User-Agent": "Arco-Podcasts/1.0",
+      },
+      signal: AbortSignal.timeout(15_000),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Feed request failed (${response.status})`);
+    }
+
+    return response.text();
+  })();
+
+  inFlightFeedRequests.set(feedUrl, request);
+  try {
+    return await request;
+  } finally {
+    inFlightFeedRequests.delete(feedUrl);
+  }
+}
+
+function parseFeedXml(
+  feedUrl: string,
+  xml: string,
+): { episodes: RssEpisodeRecord[]; channelCoverUrl?: string } {
   const channelMatch = /<channel\b[\s\S]*?<\/channel>/i.exec(xml);
   const channel = channelMatch?.[0] ?? xml;
   const showTitle = tagValue(channel, "title") ?? "RSS Podcast";
@@ -133,10 +194,7 @@ function parseFeedXml(feedUrl: string, xml: string): RssEpisodeRecord[] {
     tagValue(channel, "author") ??
     tagValue(channel, "managingEditor") ??
     "RSS";
-  const imageBlock = channel.match(/<image\b[\s\S]*?<\/image>/i)?.[0];
-  const channelCover =
-    attrValue(channel, "itunes:image", "href") ??
-    (imageBlock ? tagValue(imageBlock, "url") : undefined);
+  const channelCover = channelCoverFromBlock(channel);
 
   const itemBlocks = [...channel.matchAll(/<item\b[\s\S]*?<\/item>/gi)].map((match) => match[0]);
   const episodes: RssEpisodeRecord[] = [];
@@ -177,7 +235,10 @@ function parseFeedXml(feedUrl: string, xml: string): RssEpisodeRecord[] {
     episodeIndex.set(id, episode);
   }
 
-  return episodes.sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
+  return {
+    episodes: episodes.sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt)),
+    channelCoverUrl: channelCover,
+  };
 }
 
 async function fetchFeedEpisodes(feedUrl: string): Promise<RssEpisodeRecord[]> {
@@ -186,22 +247,63 @@ async function fetchFeedEpisodes(feedUrl: string): Promise<RssEpisodeRecord[]> {
     return cached.episodes;
   }
 
-  const response = await fetch(feedUrl, {
-    headers: {
-      Accept: "application/rss+xml, application/xml, text/xml, */*",
-      "User-Agent": "Arco-Podcasts/1.0",
-    },
-    signal: AbortSignal.timeout(15_000),
-  });
+  const xml = await fetchFeedXml(feedUrl);
+  const parsed = parseFeedXml(feedUrl, xml);
+  feedCache.set(feedUrl, { fetchedAt: Date.now(), ...parsed });
+  return parsed.episodes;
+}
 
-  if (!response.ok) {
-    throw new Error(`Feed request failed (${response.status})`);
+export { fetchFeedEpisodes };
+
+export function invalidateFeedCache(feedUrl: string): void {
+  feedCache.delete(feedUrl);
+}
+
+export async function fetchFeedMetadata(
+  feedUrl: string,
+): Promise<{ url: string; label: string; publisher: string; coverUrl?: string }> {
+  const cached = feedCache.get(feedUrl);
+  if (cached && Date.now() - cached.fetchedAt < CACHE_TTL_MS) {
+    const sample = cached.episodes[0];
+    const coverUrl =
+      cached.channelCoverUrl ?? cached.episodes.find((episode) => episode.coverUrl)?.coverUrl;
+    if (coverUrl || cached.episodes.length > 0) {
+      return {
+        url: feedUrl,
+        label: sample?.showTitle ?? feedUrl,
+        publisher: sample?.host ?? "RSS",
+        coverUrl,
+      };
+    }
   }
 
-  const xml = await response.text();
-  const episodes = parseFeedXml(feedUrl, xml);
-  feedCache.set(feedUrl, { fetchedAt: Date.now(), episodes });
-  return episodes;
+  const xml = await fetchFeedXml(feedUrl);
+  const channelMatch = /<channel\b[\s\S]*?<\/channel>/i.exec(xml);
+  const channel = channelMatch?.[0] ?? xml;
+  const label = tagValue(channel, "title") ?? feedUrl;
+  const publisher =
+    tagValue(channel, "itunes:author") ??
+    tagValue(channel, "author") ??
+    tagValue(channel, "managingEditor") ??
+    "RSS";
+  const coverUrl = channelCoverFromBlock(channel);
+
+  if (!feedCache.has(feedUrl)) {
+    feedCache.set(feedUrl, { fetchedAt: Date.now(), episodes: [], channelCoverUrl: coverUrl });
+  }
+
+  return { url: feedUrl, label, publisher, coverUrl };
+}
+
+async function resolveFeedCoverUrl(feedUrl: string): Promise<string | undefined> {
+  const cached = feedCache.get(feedUrl);
+  if (cached?.channelCoverUrl) return cached.channelCoverUrl;
+
+  const metadata = await fetchFeedMetadata(feedUrl);
+  if (metadata.coverUrl) return metadata.coverUrl;
+
+  const episodes = cached?.episodes.length ? cached.episodes : await fetchFeedEpisodes(feedUrl);
+  return episodes.find((episode) => episode.coverUrl)?.coverUrl;
 }
 
 export async function listRssEpisodes(): Promise<RssEpisodeRecord[]> {
@@ -270,13 +372,10 @@ export async function proxyRssEnclosure(
   };
 }
 
-export async function proxyRssCover(
-  episodeId: string,
+async function proxyCoverUrl(
+  coverUrl: string,
 ): Promise<{ body: ReadableStream<Uint8Array>; contentType: string } | null> {
-  const episode = await resolveRssEpisodeCached(episodeId);
-  if (!episode?.coverUrl) return null;
-
-  const response = await fetch(episode.coverUrl, {
+  const response = await fetch(coverUrl, {
     headers: { "User-Agent": "Arco-Podcasts/1.0" },
     signal: AbortSignal.timeout(15_000),
   });
@@ -284,4 +383,20 @@ export async function proxyRssCover(
   if (!response.ok || !response.body) return null;
   const contentType = response.headers.get("content-type") ?? "image/jpeg";
   return { body: response.body, contentType };
+}
+
+export async function proxyRssCover(
+  episodeId: string,
+): Promise<{ body: ReadableStream<Uint8Array>; contentType: string } | null> {
+  const episode = await resolveRssEpisodeCached(episodeId);
+  if (!episode?.coverUrl) return null;
+  return proxyCoverUrl(episode.coverUrl);
+}
+
+export async function proxyFeedCover(
+  feedUrl: string,
+): Promise<{ body: ReadableStream<Uint8Array>; contentType: string } | null> {
+  const coverUrl = await resolveFeedCoverUrl(feedUrl);
+  if (!coverUrl) return null;
+  return proxyCoverUrl(coverUrl);
 }

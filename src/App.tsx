@@ -10,7 +10,6 @@ import { MobileShell } from "./os/MobileShell";
 import { StandaloneAppWindow } from "./os/StandaloneAppWindow";
 import { CommandPalette } from "./os/CommandPalette";
 import { getStandaloneWindowKey } from "./os/nativeAppWindows";
-import { useStandaloneWindowTitle } from "./os/useStandaloneWindowTitle";
 
 function useIsMobile(): boolean {
   const [mobile, setMobile] = useState(() => window.matchMedia("(max-width: 767px)").matches);
@@ -25,12 +24,11 @@ function useIsMobile(): boolean {
 
 export default function App() {
   const standaloneKey = getStandaloneWindowKey();
-  const standaloneTitle = useStandaloneWindowTitle(standaloneKey ?? "");
   const isMobile = useIsMobile();
 
   if (standaloneKey) {
     return (
-      <ElectronShell windowChromeTitle={standaloneTitle}>
+      <ElectronShell>
         <StandaloneAppWindow windowKey={standaloneKey} />
       </ElectronShell>
     );

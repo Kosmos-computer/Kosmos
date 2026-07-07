@@ -1,0 +1,15 @@
+node_modules
+dist
+data
+.env
+.git
+.github
+.DS_Store
+*.log
+apps/desktop/dist
+apps/desktop/release
+model-manager/src-tauri/target
+model-manager/src-tauri/gen
+voice-server/.venv
+__pycache__
+docs/saas-plan.md

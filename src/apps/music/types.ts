@@ -1,3 +1,7 @@
+import type { MusicRssFeedCategory } from "@shared/musicFeeds";
+
+export type MusicNavSection = "home" | "broadcasts";
+
 export type MusicLibraryFilter = "playlists" | "artists" | "albums" | "podcasts";
 
 export type MusicContentFilter = "all" | "music" | "podcasts" | "audiobooks";
@@ -56,8 +60,11 @@ export interface MusicTrack {
   albumArtTone: MusicImageTone;
   duration: string;
   hasVideo?: boolean;
-  /** STUB: replace with signed stream URL from provider API */
+  source?: "local" | "rss" | "live";
+  /** Local seed or proxied RSS/live stream URL */
   previewSrc?: string;
+  /** True for continuous live radio streams (no seek, no auto-advance). */
+  live?: boolean;
 }
 
 export interface MusicRelatedVideo {
@@ -78,4 +85,22 @@ export interface MusicNowPlaying {
 export interface MusicUser {
   name: string;
   avatarSrc?: string;
+}
+
+export interface MusicBroadcastSong {
+  id: string;
+  title: string;
+  artists: string;
+  summary: string;
+  link: string;
+  publishedAt: string;
+  durationLabel: string;
+  feedUrl: string;
+  feedLabel: string;
+  publisher: string;
+  category: MusicRssFeedCategory;
+  artTone: MusicImageTone;
+  coverUrl?: string;
+  source: "rss";
+  previewSrc?: string;
 }

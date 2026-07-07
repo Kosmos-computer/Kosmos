@@ -7,19 +7,21 @@ import type { Role, UserSummary } from "@shared/types";
 import { api } from "../../lib/api";
 import { useAuthStore } from "../../os/auth/authStore";
 import {
+  ListSearch,
   SettingsAlert,
+  SettingsEmpty,
   SettingsFieldRow,
   SettingsPage,
   SettingsPanel,
   SettingsPanelBody,
   SettingsPanelHeader,
-  SettingsRow,
   SettingsRowActions,
   SettingsSection,
   SettingsStack,
   SettingsSubhead,
 } from "../../components/patterns";
 import { Button, Input } from "../../components/ui";
+import { matchesListSearch } from "../../lib/listSearch";
 
 const ROLES: { id: Role; label: string; hint: string }[] = [
   { id: "admin", label: "Admin", hint: "Everything except managing accounts" },
@@ -40,6 +42,11 @@ export function UsersSection() {
 
   const [resetId, setResetId] = useState<string | null>(null);
   const [resetValue, setResetValue] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredUsers = users.filter((u) =>
+    matchesListSearch(searchQuery, u.displayName, u.username, u.role, u.id),
+  );
 
   const refresh = useCallback(() => {
     api.listUsers().then(setUsers).catch(() => setUsers([]));
@@ -102,7 +109,18 @@ export function UsersSection() {
         {error ? <SettingsAlert tone="error">{error}</SettingsAlert> : null}
 
         <SettingsStack>
-          {users.map((u) => (
+          {users.length > 0 ? (
+            <ListSearch
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Search users"
+              ariaLabel="Search users"
+            />
+          ) : null}
+          {filteredUsers.length === 0 && users.length > 0 ? (
+            <SettingsEmpty>No users match your search.</SettingsEmpty>
+          ) : null}
+          {filteredUsers.map((u) => (
             <SettingsPanel key={u.id}>
               <SettingsPanelHeader>
                 <div className="arco-settings-row__control" style={{ flexDirection: "column", alignItems: "flex-start", gap: 2 }}>

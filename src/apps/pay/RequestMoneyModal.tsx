@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { formatMoney, parseAmountToCents } from "@shared/payments";
 import type { PaymentCounterparty, PaymentProviderId } from "@shared/payments";
 import { Avatar, Button, Input } from "../../components/ui";
@@ -28,16 +28,24 @@ export function RequestMoneyModal({
 }: RequestMoneyModalProps) {
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
+  const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<PayRecipient | null>(null);
 
   useEffect(() => {
     if (!open) return;
     setAmount("");
     setNote("");
+    setQuery("");
     setSelected(recipients.find((r) => r.recent) ?? null);
   }, [open, recipients]);
 
   if (!open) return null;
+
+  const filtered = recipients.filter(
+    (r) =>
+      r.name.toLowerCase().includes(query.toLowerCase()) ||
+      r.handle.toLowerCase().includes(query.toLowerCase()),
+  );
 
   const amountCents = parseAmountToCents(amount);
   const canRequest = amountCents !== null && selected !== null;
@@ -84,8 +92,21 @@ export function RequestMoneyModal({
 
           <section className="arco-connect-modal__section">
             <label className="arco-connect-modal__label">From</label>
+            <div className="arco-pay-action-modal__search">
+              <Search size={14} className="arco-icon--tertiary" />
+              <Input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search name, @handle, email"
+                aria-label="Search recipients"
+                width="auto"
+              />
+            </div>
             <ul className="arco-pay-recipient-list arco-pay-recipient-list--compact">
-              {recipients.filter((r) => r.recent).map((recipient) => (
+              {filtered.length === 0 ? (
+                <li className="arco-pay-recipient-list__empty">No recipients match your search</li>
+              ) : null}
+              {filtered.map((recipient) => (
                 <li key={recipient.id}>
                   <button
                     type="button"

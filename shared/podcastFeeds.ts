@@ -5,6 +5,13 @@ export interface PodcastRssFeedSeed {
   publisher: string;
 }
 
+/** User-subscribed podcast RSS feed (persisted server-side). */
+export interface PodcastFeedSubscription extends PodcastRssFeedSeed {
+  id: string;
+  addedAt: string;
+  autoDownload: boolean;
+}
+
 export const PODCAST_RSS_FEED_SEEDS: PodcastRssFeedSeed[] = [
   {
     url: "https://feeds.npr.org/510289/podcast.xml",
@@ -51,9 +58,13 @@ export const PODCAST_RSS_FEED_SEEDS: PodcastRssFeedSeed[] = [
 /** @deprecated Use PODCAST_RSS_FEED_SEEDS */
 export const DEFAULT_PODCAST_RSS_FEEDS = PODCAST_RSS_FEED_SEEDS.map((feed) => feed.url);
 
-export function podcastRssFeedSeedSummary(limit = 3): string {
-  const labels = PODCAST_RSS_FEED_SEEDS.slice(0, limit).map((feed) => feed.label);
-  const remaining = PODCAST_RSS_FEED_SEEDS.length - labels.length;
+export function podcastRssFeedSeedSummary(
+  feeds: Pick<PodcastRssFeedSeed, "label">[] = PODCAST_RSS_FEED_SEEDS,
+  limit = 3,
+): string {
+  if (feeds.length === 0) return "No feeds subscribed";
+  const labels = feeds.slice(0, limit).map((feed) => feed.label);
+  const remaining = feeds.length - labels.length;
   if (remaining <= 0) return labels.join(", ");
   return `${labels.join(", ")} +${remaining} more`;
 }

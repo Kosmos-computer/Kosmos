@@ -32,7 +32,8 @@ import { MemorySection } from "./MemorySection";
 import { ToolsSection } from "./ToolsSection";
 import { WALLPAPER_GROUPS, type WallpaperId } from "../../os/wallpaper/wallpapers";
 import { AUTH_WALLPAPER_GROUPS, type AuthWallpaperId } from "../../os/wallpaper/authWallpapers";
-import { FACE_BG_OPTIONS, FaceWidget, isCustomFaceBg, useFacePreferencesStore } from "../../face-rig";
+import { FACE_BG_OPTIONS, FACE_RIG_OPTIONS, isCustomFaceBg, useFacePreferencesStore } from "../../face-rig";
+import { FacePreviewWidget } from "./FacePreviewWidget";
 import {
   SettingsChipRow,
   SettingsFieldRow,
@@ -98,6 +99,8 @@ export function SettingsApp() {
   } = useOsStore();
   const faceBg = useFacePreferencesStore((s) => s.faceBg);
   const setFaceBg = useFacePreferencesStore((s) => s.setFaceBg);
+  const faceRigId = useFacePreferencesStore((s) => s.faceRigId);
+  const setFaceRigId = useFacePreferencesStore((s) => s.setFaceRigId);
   const canManageUsers = useCan("users:manage");
   const canWriteSettings = useCan("settings:write");
   const [settings, setSettings] = useState<Settings | null>(null);
@@ -497,40 +500,58 @@ export function SettingsApp() {
                     </SettingsFieldRow>
                   )}
                   <SettingsFieldRow
+                    label="Space rig"
+                    hint="Choose the assistant face renderer used in voice chat and previews."
+                  >
+                    <SettingsChipRow>
+                      {FACE_RIG_OPTIONS.map((option) => (
+                        <Chip
+                          key={option.id}
+                          active={faceRigId === option.id}
+                          onClick={() => setFaceRigId(option.id)}
+                        >
+                          {option.label}
+                        </Chip>
+                      ))}
+                    </SettingsChipRow>
+                  </SettingsFieldRow>
+                  <SettingsFieldRow
                     label="Assistant face"
-                    hint="Background color for the Arco face in voice chat."
+                    hint="Background color for rigs that support it (Minimal and Round). Use the preview to try speaking states and expressions."
                     alignTop
                   >
                     <div className="arco-settings-face-color">
-                      <div className="arco-face-color-grid">
-                        {FACE_BG_OPTIONS.map((option) => (
-                          <button
-                            key={option.id}
-                            type="button"
-                            className={`arco-face-color-swatch ${faceBg === option.id ? "arco-face-color-swatch--active" : ""}`}
-                            onClick={() => setFaceBg(option.id)}
-                            aria-pressed={faceBg === option.id}
-                            aria-label={`${option.label} face background`}
-                          >
-                            <span
-                              className={`arco-face-color-swatch__preview ${option.preview ? "" : "arco-face-color-swatch__preview--mono"}`}
-                              style={option.preview ? { background: option.preview } : undefined}
-                            />
-                            <span className="arco-face-color-swatch__label">{option.label}</span>
-                          </button>
-                        ))}
+                      <div className="arco-settings-face-color__options">
+                        <div className="arco-face-color-grid">
+                          {FACE_BG_OPTIONS.map((option) => (
+                            <button
+                              key={option.id}
+                              type="button"
+                              className={`arco-face-color-swatch ${faceBg === option.id ? "arco-face-color-swatch--active" : ""}`}
+                              onClick={() => setFaceBg(option.id)}
+                              aria-pressed={faceBg === option.id}
+                              aria-label={`${option.label} face background`}
+                            >
+                              <span
+                                className={`arco-face-color-swatch__preview ${option.preview ? "" : "arco-face-color-swatch__preview--mono"}`}
+                                style={option.preview ? { background: option.preview } : undefined}
+                              />
+                              <span className="arco-face-color-swatch__label">{option.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                        <label className="arco-settings-face-color__custom">
+                          <span className="arco-settings-face-color__custom-label">Custom</span>
+                          <input
+                            type="color"
+                            className="arco-settings-face-color__input"
+                            value={isCustomFaceBg(faceBg) ? faceBg : "#7c9dff"}
+                            onChange={(e) => setFaceBg(e.target.value)}
+                            aria-label="Custom face background color"
+                          />
+                        </label>
                       </div>
-                      <label className="arco-settings-face-color__custom">
-                        <span className="arco-settings-face-color__custom-label">Custom</span>
-                        <input
-                          type="color"
-                          className="arco-settings-face-color__input"
-                          value={isCustomFaceBg(faceBg) ? faceBg : "#7c9dff"}
-                          onChange={(e) => setFaceBg(e.target.value)}
-                          aria-label="Custom face background color"
-                        />
-                      </label>
-                      <FaceWidget className="arco-settings-face-color__preview" />
+                      <FacePreviewWidget />
                     </div>
                   </SettingsFieldRow>
                   <SettingsFieldRow label="Nav brand" hint="Shown at the top of the left nav rail." alignTop>

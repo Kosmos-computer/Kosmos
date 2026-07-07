@@ -13,7 +13,12 @@ export function PodcastApp() {
   const searchQuery = usePodcastStore((s) => s.searchQuery);
   const contentFilter = usePodcastStore((s) => s.contentFilter);
   const refreshRemote = usePodcastStore((s) => s.refreshRemote);
+  const init = usePodcastStore((s) => s.init);
   const [connectOpen, setConnectOpen] = useState(false);
+
+  useEffect(() => {
+    init();
+  }, [init]);
 
   useEffect(() => {
     if (sourceFilter === "remote") {

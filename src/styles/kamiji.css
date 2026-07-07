@@ -1,0 +1,652 @@
+/* Kamiji — Tamagotchi-style virtual pet app */
+
+.arco-kamiji {
+  --kamiji-shell: #ff6b9d;
+  --kamiji-shell-dark: #e84d82;
+  --kamiji-shell-border: #d44a78;
+  --kamiji-screen: #c8e6b8;
+  --kamiji-screen-dark: #2a3d28;
+  --kamiji-screen-text: #2d4a2d;
+  --kamiji-screen-text-dark: #8ab880;
+  --kamiji-meter-hunger: #f5a623;
+  --kamiji-meter-happy: #ff6b9d;
+  --kamiji-meter-energy: #4cd964;
+  --kamiji-meter-clean: #5ac8fa;
+  --kamiji-meter-health: #ff3b30;
+  --kamiji-btn-bg: #e8f5e0;
+  --kamiji-btn-border: #8ab080;
+
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--arco-space-l);
+  background: radial-gradient(ellipse at 50% 0%, #2a1f3d 0%, #1a1225 50%, #0d0812 100%);
+  font-family: var(--arco-font-ui);
+  overflow: auto;
+}
+
+.arco-kamiji__device {
+  width: 320px;
+  background: linear-gradient(145deg, #ffb8d0 0%, var(--kamiji-shell) 50%, var(--kamiji-shell-dark) 100%);
+  border-radius: 40px 40px 50px 50px;
+  padding: 20px 16px 16px;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    inset 0 2px 4px rgba(255, 255, 255, 0.3),
+    inset 0 -4px 8px rgba(0, 0, 0, 0.15);
+  border: 3px solid var(--kamiji-shell-border);
+}
+
+.arco-kamiji__header {
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.arco-kamiji__title {
+  font-size: 28px;
+  font-weight: 800;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  letter-spacing: 2px;
+  margin: 0;
+}
+
+.arco-kamiji__subtitle {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.8);
+  text-transform: uppercase;
+  letter-spacing: 4px;
+}
+
+.arco-kamiji__screen {
+  background: var(--kamiji-screen);
+  border-radius: 12px;
+  border: 3px solid #5a7a50;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  transition: background 0.5s, filter 0.5s;
+}
+
+.arco-kamiji__screen--dark {
+  background: var(--kamiji-screen-dark);
+  filter: brightness(0.6);
+}
+
+.arco-kamiji__screen-info {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 10px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--kamiji-screen-text);
+  border-bottom: 1px solid rgba(90, 122, 80, 0.3);
+}
+
+.arco-kamiji__screen--dark .arco-kamiji__screen-info {
+  color: var(--kamiji-screen-text-dark);
+}
+
+.arco-kamiji__pet-area {
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.arco-kamiji__mood-bar {
+  text-align: center;
+  padding: 4px 8px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #3d5a35;
+  font-style: italic;
+}
+
+.arco-kamiji__screen--dark .arco-kamiji__mood-bar {
+  color: #9ac890;
+}
+
+.arco-kamiji__message {
+  margin: 0 8px 8px;
+  padding: 6px 10px;
+  background: rgba(45, 74, 45, 0.15);
+  border-radius: 6px;
+  font-size: 10px;
+  color: var(--kamiji-screen-text);
+  text-align: center;
+  cursor: pointer;
+  animation: arco-kamiji-fade-in 0.3s ease;
+}
+
+.arco-kamiji__screen--dark .arco-kamiji__message {
+  background: rgba(154, 200, 144, 0.15);
+  color: #b8d8b0;
+}
+
+.arco-kamiji__controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px 4px;
+}
+
+.arco-kamiji__speed {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  color: white;
+  text-transform: uppercase;
+}
+
+.arco-kamiji__speed input[type="range"] {
+  flex: 1;
+  accent-color: white;
+  height: 4px;
+}
+
+.arco-kamiji__light-btn,
+.arco-kamiji__reset-btn {
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.25);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.arco-kamiji__light-btn:hover,
+.arco-kamiji__reset-btn:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.arco-kamiji__reset-btn {
+  font-size: 10px;
+  font-weight: 700;
+  color: white;
+  text-transform: uppercase;
+}
+
+.arco-kamiji__hint {
+  margin-top: 20px;
+  max-width: 320px;
+  text-align: center;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.5;
+}
+
+/* Status meters */
+.arco-kamiji-meters {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 12px;
+}
+
+.arco-kamiji-meters__row {
+  display: grid;
+  grid-template-columns: 20px 48px 1fr 28px;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: var(--kamiji-screen-text);
+}
+
+.arco-kamiji-meters__icon {
+  text-align: center;
+  font-size: 11px;
+}
+
+.arco-kamiji-meters__label {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.arco-kamiji-meters__bar {
+  height: 8px;
+  background: #b8d4b0;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--kamiji-btn-border);
+}
+
+.arco-kamiji-meters__fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.arco-kamiji-meters__value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* Action buttons */
+.arco-kamiji-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 12px 16px 16px;
+}
+
+.arco-kamiji-actions__btn {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 10px 6px;
+  background: linear-gradient(180deg, var(--kamiji-btn-bg) 0%, #c8ddb8 100%);
+  border: 2px solid var(--kamiji-btn-border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+  box-shadow: 0 3px 0 #7a9e70;
+  font-family: inherit;
+}
+
+.arco-kamiji-actions__btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 0 #7a9e70;
+}
+
+.arco-kamiji-actions__btn:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #7a9e70;
+}
+
+.arco-kamiji-actions__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.arco-kamiji-actions__btn--sleep {
+  grid-column: span 3;
+}
+
+.arco-kamiji-actions__icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.arco-kamiji-actions__label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--kamiji-screen-text);
+}
+
+.arco-kamiji-actions__badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  background: #8b6914;
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #f5f0e0;
+}
+
+.arco-kamiji-actions__badge--alert {
+  background: var(--kamiji-meter-health);
+}
+
+/* Kamiji pet sprite */
+.arco-kamiji-pet {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.arco-kamiji-pet__scene {
+  position: relative;
+  width: 140px;
+  height: 120px;
+}
+
+.arco-kamiji-pet__egg {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 64px;
+  height: 80px;
+  animation: arco-kamiji-wobble 2s ease-in-out infinite;
+}
+
+.arco-kamiji-pet__egg-shell {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(145deg, #fff8e7 0%, #f5d9a8 50%, #e8b86d 100%);
+  border-radius: 50% 50% 45% 45%;
+  border: 2px solid #c9954a;
+  box-shadow: inset -4px -6px 12px rgba(0, 0, 0, 0.1);
+}
+
+.arco-kamiji-pet__egg-spot {
+  position: absolute;
+  border-radius: 50%;
+  background: #ff8a80;
+  opacity: 0.7;
+}
+
+.arco-kamiji-pet__egg-spot--1 {
+  width: 12px;
+  height: 12px;
+  top: 30%;
+  left: 25%;
+}
+
+.arco-kamiji-pet__egg-spot--2 {
+  width: 8px;
+  height: 8px;
+  top: 55%;
+  right: 20%;
+}
+
+.arco-kamiji-pet__body {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 90px;
+  height: 90px;
+}
+
+.arco-kamiji-pet--happy .arco-kamiji-pet__body {
+  animation: arco-kamiji-bounce 0.8s ease-in-out infinite;
+}
+
+.arco-kamiji-pet--hungry .arco-kamiji-pet__body {
+  animation: arco-kamiji-shake 0.4s ease-in-out infinite;
+}
+
+.arco-kamiji-pet--tired .arco-kamiji-pet__body {
+  animation: arco-kamiji-sway 2s ease-in-out infinite;
+}
+
+.arco-kamiji-pet--sleeping .arco-kamiji-pet__body {
+  transform: translate(-50%, -42%);
+}
+
+.arco-kamiji-pet__ears {
+  position: absolute;
+  top: -8px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 8px;
+}
+
+.arco-kamiji-pet__ear {
+  width: 18px;
+  height: 22px;
+  background: #ff7b7b;
+  border-radius: 50% 50% 20% 20%;
+  border: 2px solid #e05555;
+}
+
+.arco-kamiji-pet__ear--left { transform: rotate(-15deg); }
+.arco-kamiji-pet__ear--right { transform: rotate(15deg); }
+
+.arco-kamiji-pet--baby .arco-kamiji-pet__body { width: 70px; height: 70px; }
+.arco-kamiji-pet--baby .arco-kamiji-pet__ear { width: 14px; height: 16px; }
+.arco-kamiji-pet--adult .arco-kamiji-pet__body { width: 100px; height: 100px; }
+
+.arco-kamiji-pet__face {
+  position: relative;
+  width: 100%;
+  height: 72%;
+  background: linear-gradient(180deg, #ff8a8a 0%, #ff6b6b 60%, #ff5252 100%);
+  border-radius: 50%;
+  border: 3px solid #e04545;
+  box-shadow: inset 0 -8px 16px rgba(0, 0, 0, 0.12);
+}
+
+.arco-kamiji-pet__eyes {
+  position: absolute;
+  top: 32%;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 22px;
+}
+
+.arco-kamiji-pet--baby .arco-kamiji-pet__eyes { gap: 16px; }
+
+.arco-kamiji-pet__eye {
+  width: 12px;
+  height: 14px;
+  background: #1a1a2e;
+  border-radius: 50%;
+  position: relative;
+}
+
+.arco-kamiji-pet__eye::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 4px;
+  height: 4px;
+  background: white;
+  border-radius: 50%;
+}
+
+.arco-kamiji-pet__eye--sleeping {
+  width: 14px;
+  height: 4px;
+  background: transparent;
+  border-top: 3px solid #1a1a2e;
+  border-radius: 0;
+}
+
+.arco-kamiji-pet__eye--sleeping::after { display: none; }
+
+.arco-kamiji-pet__eye--sick,
+.arco-kamiji-pet__eye--tired { transform: scaleY(0.7); }
+
+.arco-kamiji-pet__eye--hungry { animation: arco-kamiji-blink 1.5s infinite; }
+
+.arco-kamiji-pet__mouth {
+  position: absolute;
+  bottom: 22%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.arco-kamiji-pet__mouth--happy {
+  width: 18px;
+  height: 10px;
+  border-bottom: 3px solid #1a1a2e;
+  border-radius: 0 0 50% 50%;
+}
+
+.arco-kamiji-pet__mouth--neutral {
+  width: 10px;
+  height: 3px;
+  background: #1a1a2e;
+  border-radius: 2px;
+}
+
+.arco-kamiji-pet__mouth--hungry {
+  width: 14px;
+  height: 14px;
+  border: 3px solid #1a1a2e;
+  border-radius: 50%;
+  background: #ff4444;
+}
+
+.arco-kamiji-pet__mouth--tired,
+.arco-kamiji-pet__mouth--sick {
+  width: 12px;
+  height: 6px;
+  border-top: 3px solid #1a1a2e;
+  border-radius: 50% 50% 0 0;
+}
+
+.arco-kamiji-pet__mouth--sleeping {
+  width: 8px;
+  height: 8px;
+  border: 2px solid #1a1a2e;
+  border-radius: 50%;
+}
+
+.arco-kamiji-pet__mouth--dead::before {
+  content: "×";
+  color: #1a1a2e;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.arco-kamiji-pet__belly {
+  position: absolute;
+  bottom: 8%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 18px;
+  background: #ffb4b4;
+  border-radius: 50%;
+  opacity: 0.6;
+}
+
+.arco-kamiji-pet__feet {
+  position: absolute;
+  bottom: -6px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+.arco-kamiji-pet__foot {
+  width: 16px;
+  height: 10px;
+  background: #ff5252;
+  border-radius: 50%;
+  border: 2px solid #e04545;
+}
+
+.arco-kamiji-pet__sweat {
+  position: absolute;
+  top: 18%;
+  right: 12%;
+  font-size: 12px;
+  animation: arco-kamiji-drip 1s ease-in-out infinite;
+}
+
+.arco-kamiji-pet__zzz {
+  position: absolute;
+  top: -16px;
+  right: -8px;
+  font-size: 11px;
+  color: #4a6741;
+  font-weight: bold;
+  letter-spacing: 2px;
+  animation: arco-kamiji-float 1.5s ease-in-out infinite;
+}
+
+.arco-kamiji-pet__poops {
+  position: absolute;
+  bottom: 4px;
+  left: 0;
+  right: 0;
+  height: 16px;
+}
+
+.arco-kamiji-pet__poop {
+  position: absolute;
+  bottom: 0;
+  width: 14px;
+  height: 12px;
+  background: #8b6914;
+  border-radius: 40% 40% 30% 30%;
+  border: 1px solid #6b4f10;
+}
+
+.arco-kamiji-pet__poop::before {
+  content: "";
+  position: absolute;
+  top: -5px;
+  left: 3px;
+  width: 8px;
+  height: 7px;
+  background: #8b6914;
+  border-radius: 50%;
+  border: 1px solid #6b4f10;
+}
+
+@keyframes arco-kamiji-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes arco-kamiji-bounce {
+  0%, 100% { transform: translate(-50%, -50%); }
+  50% { transform: translate(-50%, -58%); }
+}
+
+@keyframes arco-kamiji-shake {
+  0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+  25% { transform: translate(-50%, -50%) rotate(-3deg); }
+  75% { transform: translate(-50%, -50%) rotate(3deg); }
+}
+
+@keyframes arco-kamiji-sway {
+  0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+  50% { transform: translate(-50%, -52%) rotate(2deg); }
+}
+
+@keyframes arco-kamiji-wobble {
+  0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+  33% { transform: translate(-50%, -52%) rotate(-4deg); }
+  66% { transform: translate(-50%, -48%) rotate(4deg); }
+}
+
+@keyframes arco-kamiji-blink {
+  0%, 90%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.1); }
+}
+
+@keyframes arco-kamiji-drip {
+  0%, 100% { transform: translateY(0); opacity: 1; }
+  50% { transform: translateY(4px); opacity: 0.6; }
+}
+
+@keyframes arco-kamiji-float {
+  0%, 100% { transform: translateY(0); opacity: 0.8; }
+  50% { transform: translateY(-6px); opacity: 1; }
+}
+
+@media (max-width: 400px) {
+  .arco-kamiji__device {
+    width: 100%;
+    max-width: 320px;
+  }
+}

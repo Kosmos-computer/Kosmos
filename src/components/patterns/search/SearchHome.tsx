@@ -1,4 +1,5 @@
 import type { SearchSuggestion } from "./searchTypes";
+import { SearchAttribution } from "./SearchAttribution";
 import { SearchBar } from "./SearchBar";
 
 export interface SearchHomeProps {
@@ -57,6 +58,8 @@ export function SearchHome({
           </ul>
         </section>
       ) : null}
+
+      <SearchAttribution />
     </div>
   );
 }

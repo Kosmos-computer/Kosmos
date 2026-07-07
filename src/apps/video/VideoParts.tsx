@@ -18,6 +18,7 @@ import { Button, Chip, EmptyState } from "../../components/ui";
 import { useConnectionStore } from "../../connections/useConnectionStore";
 import type { VideoItem, VideoNavSection } from "./types";
 import type { VideoViewModel } from "./useVideo";
+import { VideoProgressScrubber } from "./VideoProgressScrubber";
 import { VIDEO_CHANNELS } from "./videoCatalog";
 
 const NAV_ITEMS: { id: VideoNavSection; label: string; icon: typeof Home }[] = [
@@ -32,6 +33,11 @@ function VideoThumbnail({ video }: { video: VideoItem }) {
   return (
     <div
       className={`arco-video__thumb arco-video__thumb--${video.artTone}`}
+      style={
+        video.thumbnailUrl
+          ? { backgroundImage: `url(${video.thumbnailUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
+          : undefined
+      }
       aria-hidden="true"
     >
       <span className="arco-video__thumb-duration">{video.durationLabel}</span>
@@ -226,6 +232,31 @@ export function VideoFeed({ vm }: VideoFeedProps) {
                 playsInline
                 aria-label={active.title}
               />
+              <div className="arco-video__player-overlay">
+                <VideoProgressScrubber
+                  variant="inline"
+                  showTimes={false}
+                  progress={vm.nowPlaying.progress}
+                  elapsed={vm.nowPlaying.elapsed}
+                  duration={vm.nowPlaying.duration}
+                  onSeek={vm.seekPlayback}
+                />
+                <div className="arco-video__player-overlay-row">
+                  <button
+                    type="button"
+                    className="arco-video__overlay-btn"
+                    onClick={() => vm.togglePlay()}
+                    aria-label={vm.playing ? "Pause" : "Play"}
+                  >
+                    {vm.playing ? <Pause size={20} /> : <Play size={20} />}
+                  </button>
+                  <span className="arco-video__overlay-time">
+                    {vm.nowPlaying.elapsed}
+                    <span aria-hidden="true"> / </span>
+                    {vm.nowPlaying.duration}
+                  </span>
+                </div>
+              </div>
             </div>
             <div className="arco-video__player-meta">
               <h1>{active.title}</h1>
@@ -288,7 +319,7 @@ export interface VideoPlayerBarProps {
 }
 
 export function VideoPlayerBar({ vm }: VideoPlayerBarProps) {
-  const { video } = vm.nowPlaying;
+  const { video, progress, elapsed, duration } = vm.nowPlaying;
   if (!video.id || video.source === "remote") return null;
 
   return (
@@ -300,10 +331,21 @@ export function VideoPlayerBar({ vm }: VideoPlayerBarProps) {
           <span>{video.channel}</span>
         </div>
       </div>
-      <div className="arco-video__player-bar-controls">
-        <button type="button" className="arco-video__icon-btn" onClick={() => vm.togglePlay()} aria-label={vm.playing ? "Pause" : "Play"}>
-          {vm.playing ? <Pause size={20} /> : <Play size={20} />}
+      <div className="arco-video__player-bar-center">
+        <button
+          type="button"
+          className="arco-video__play-pause-btn"
+          onClick={() => vm.togglePlay()}
+          aria-label={vm.playing ? "Pause" : "Play"}
+        >
+          {vm.playing ? <Pause size={18} /> : <Play size={18} />}
         </button>
+        <VideoProgressScrubber
+          progress={progress}
+          elapsed={elapsed}
+          duration={duration}
+          onSeek={vm.seekPlayback}
+        />
       </div>
       <div className="arco-video__player-bar-extra">
         <button type="button" className="arco-video__icon-btn" aria-label="Volume">

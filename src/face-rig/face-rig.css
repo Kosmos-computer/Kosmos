@@ -30,21 +30,22 @@
 
 .arco-face__eye {
   position: absolute;
-  top: 32%;
+  top: 24%;
   width: 0.65em;
-  height: 0.72em;
-  border-radius: 0.16em;
+  height: 1.76em;
+  border-radius: 0.3em;
   background: var(--arco-face-feature, var(--arco-bg-surface-solid));
   overflow: hidden;
   animation: arco-face-blink 4.6s infinite;
+  transition: height 280ms ease, top 280ms ease;
 }
 
 .arco-face__eye--left {
-  left: 24%;
+  left: 30%;
 }
 
 .arco-face__eye--right {
-  right: 24%;
+  right: 30%;
 }
 
 .arco-face__pupil {
@@ -52,25 +53,55 @@
   left: 50%;
   top: 50%;
   width: 0.32em;
-  height: 0.36em;
-  margin: -0.18em 0 0 -0.16em;
-  border-radius: 0.1em;
+  height: 0.84em;
+  margin: -0.42em 0 0 -0.16em;
+  border-radius: 0.15em;
   background: var(--arco-face-feature, var(--arco-bg-surface-solid));
-  transition: transform 300ms ease;
+  animation: arco-face-look-around 14s ease-in-out infinite;
 }
 
 /* Thinking: pupils drift up, eyes narrow slightly. */
 .arco-face[data-expression="thinking"] .arco-face__pupil {
+  animation: none;
   transform: translate(0.12em, -0.3em);
+  transition: transform 300ms ease;
 }
 
 .arco-face[data-expression="thinking"] .arco-face__eye {
-  height: 0.58em;
+  height: 1.4em;
 }
 
-/* Attentive: eyes open a touch wider. */
-.arco-face[data-expression="attentive"] .arco-face__eye {
-  height: 0.82em;
+/* Attentive: eyes open a touch wider while speaking. */
+.arco-face[data-speaking="speaking"][data-expression="attentive"] .arco-face__eye {
+  height: 2em;
+}
+
+/* Idle / listening: no mouth — eyes stretch into the lower face. */
+.arco-face:not([data-speaking="speaking"]) .arco-face__eye {
+  top: 20%;
+  height: 2.75em;
+}
+
+.arco-face:not([data-speaking="speaking"]) .arco-face__pupil {
+  width: 0.38em;
+  height: 1.05em;
+  margin: -0.525em 0 0 -0.19em;
+  transition: width 280ms ease, height 280ms ease, margin 280ms ease;
+}
+
+.arco-face:not([data-speaking="speaking"])[data-expression="attentive"] .arco-face__eye {
+  height: 2.55em;
+}
+
+.arco-face:not([data-speaking="speaking"])[data-expression="thinking"] .arco-face__eye {
+  top: 24%;
+  height: 1.4em;
+}
+
+.arco-face:not([data-speaking="speaking"])[data-expression="thinking"] .arco-face__pupil {
+  width: 0.32em;
+  height: 0.84em;
+  margin: -0.42em 0 0 -0.16em;
 }
 
 /* Mouth — openness rides --face-mouth-open via transform only. */
@@ -78,26 +109,29 @@
 .arco-face__mouth {
   position: absolute;
   left: 50%;
-  bottom: 16%;
+  bottom: 11%;
   width: 1.6em;
   height: 1.1em;
   margin-left: -0.8em;
-  border-radius: 0.35em 0.35em 0.8em 0.8em;
+  border-radius: 0.2em;
   background: var(--arco-face-feature, var(--arco-bg-surface-solid));
   transform-origin: center top;
   transform: scaleY(calc(0.12 + var(--face-mouth-open) * 0.88));
-  transition: transform 40ms linear;
+  transition: transform 40ms linear, opacity 200ms ease;
 }
 
-/* Closed smile while listening/idle instead of a slack mouth. */
+/* Hidden until the bot is speaking. */
 .arco-face:not([data-speaking="speaking"]) .arco-face__mouth {
-  height: 0.5em;
-  border-radius: 0 0 0.8em 0.8em;
-  transform: scaleY(0.55);
+  opacity: 0;
+  transform: scaleY(0);
+}
+
+.arco-face[data-speaking="speaking"] .arco-face__mouth {
+  opacity: 1;
 }
 
 .arco-face[data-expression="happy"] .arco-face__mouth {
-  border-radius: 0.2em 0.2em 1em 1em;
+  border-radius: 0.2em;
 }
 
 /* User speaking: subtle attentive tilt. */
@@ -121,6 +155,27 @@
   }
 }
 
+@keyframes arco-face-look-around {
+  0%,
+  16%,
+  84%,
+  100% {
+    transform: translate(0, 0);
+  }
+  28% {
+    transform: translate(-0.06em, -0.03em);
+  }
+  44% {
+    transform: translate(0.07em, 0.02em);
+  }
+  58% {
+    transform: translate(0.04em, 0.05em);
+  }
+  72% {
+    transform: translate(-0.04em, 0.03em);
+  }
+}
+
 @keyframes arco-face-ponder {
   0%,
   100% {
@@ -133,6 +188,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .arco-face__eye,
+  .arco-face__pupil,
   .arco-face[data-speaking="thinking"] .arco-face__head {
     animation: none;
   }

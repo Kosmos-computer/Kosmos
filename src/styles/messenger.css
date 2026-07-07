@@ -432,15 +432,8 @@
 }
 
 .arco-messenger__sidebar-search {
-  display: flex;
-  align-items: center;
-  gap: var(--arco-space-s);
   padding: var(--arco-space-s) var(--arco-space-m);
   color: var(--arco-text-tertiary);
-}
-
-.arco-messenger__sidebar-search .arco-input {
-  flex: 1;
 }
 
 .arco-messenger__sidebar-list {

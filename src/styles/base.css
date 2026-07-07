@@ -222,31 +222,98 @@ select {
 
 /* ── List search — shared field for menus, modals, and list panes ─────────── */
 
-.arco-list-search {
+.arco-list-search,
+:is(
+  .arco-email__search,
+  .arco-contacts__search,
+  .arco-pay-action-modal__search,
+  .arco-settings-nav-search
+) {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: var(--arco-space-xs);
   width: 100%;
-}
-
-.arco-list-search__icon {
-  flex-shrink: 0;
-  color: var(--arco-text-tertiary);
-}
-
-.arco-list-search__input {
-  flex: 1;
   min-width: 0;
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-s);
+  background: var(--arco-bg-sunk);
+  transition: border-color var(--arco-dur-fast);
+}
+
+.arco-list-search:focus-within,
+:is(
+  .arco-email__search,
+  .arco-contacts__search,
+  .arco-pay-action-modal__search,
+  .arco-settings-nav-search
+):focus-within {
+  border-color: var(--arco-accent);
+}
+
+.arco-list-search__icon,
+:is(
+  .arco-email__search,
+  .arco-contacts__search,
+  .arco-maps__search,
+  .arco-pay-action-modal__search,
+  .arco-imagegen__gallery-search,
+  .arco-generator__catalog-search,
+  .arco-messenger__sidebar-search
+) > svg:first-of-type {
+  position: absolute;
+  left: calc(var(--arco-search-field-gutter) + var(--arco-search-icon-inset));
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+  color: var(--arco-text-tertiary);
+  pointer-events: none;
 }
 
 .arco-list-search__clear {
-  flex-shrink: 0;
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
   color: var(--arco-text-tertiary);
 }
 
-.arco-list-search--compact .arco-list-search__input {
-  font-size: var(--arco-text-sm);
-  padding: 5px 8px;
+.arco-list-search--compact .arco-list-search__icon {
+  left: calc(var(--arco-search-field-gutter) + var(--arco-search-icon-inset-compact));
+}
+
+/* App search rows — padded layout strips (input keeps its own border) */
+:is(.arco-maps__search, .arco-imagegen__gallery-search, .arco-generator__catalog-search) {
+  --arco-search-field-gutter: var(--arco-space-m);
+}
+
+.arco-messenger__sidebar-search {
+  --arco-search-field-gutter: var(--arco-space-m);
+}
+
+:is(
+  .arco-maps__search,
+  .arco-imagegen__gallery-search,
+  .arco-generator__catalog-search,
+  .arco-messenger__sidebar-search
+) {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+
+.arco-maps__search:has(.arco-maps__clear) > .arco-input {
+  padding-right: 34px;
+}
+
+.arco-maps__search .arco-maps__clear {
+  position: absolute;
+  right: calc(var(--arco-space-m) + 4px);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
 }
 
 .arco-input {
@@ -261,6 +328,48 @@ select {
 }
 .arco-input:focus {
   border-color: var(--arco-accent);
+}
+
+/* Inset search icons — after .arco-input so padding beats the shorthand above */
+.arco-list-search .arco-input,
+:is(
+  .arco-email__search,
+  .arco-contacts__search,
+  .arco-pay-action-modal__search,
+  .arco-settings-nav-search
+) > .arco-input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  padding: 7px 10px 7px var(--arco-search-field-padding-left);
+}
+
+.arco-list-search:has(.arco-list-search__clear) .arco-input {
+  padding-right: 34px;
+}
+
+.arco-list-search--compact .arco-input {
+  font-size: var(--arco-text-sm);
+  padding: 5px 8px 5px var(--arco-search-field-padding-left-compact);
+}
+
+.arco-list-search--compact:has(.arco-list-search__clear) .arco-input {
+  padding-right: 28px;
+}
+
+:is(
+  .arco-maps__search,
+  .arco-imagegen__gallery-search,
+  .arco-generator__catalog-search,
+  .arco-messenger__sidebar-search
+) > .arco-input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  padding: 7px 10px 7px var(--arco-search-field-padding-left);
 }
 
 .arco-label {

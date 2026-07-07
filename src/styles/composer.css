@@ -224,26 +224,34 @@
 }
 
 .arco-emoji__searchrow {
+  --arco-search-field-gutter: var(--arco-space-s);
+  position: relative;
   display: flex;
   align-items: center;
-  gap: var(--arco-space-xs);
   flex-shrink: 0;
   padding: var(--arco-space-s);
   border-bottom: 1px solid var(--arco-border);
 }
 
 .arco-emoji__searchicon {
-  flex-shrink: 0;
+  position: absolute;
+  left: calc(var(--arco-search-field-gutter) + var(--arco-search-icon-inset-compact));
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
   color: var(--arco-text-tertiary);
+  pointer-events: none;
 }
 
 .arco-emoji__searchinput {
   flex: 1;
   min-width: 0;
+  width: 100%;
   border: none;
   background: transparent;
   outline: none;
   font-size: var(--arco-text-sm);
+  padding-left: var(--arco-search-field-padding-left-compact);
 }
 .arco-emoji__searchinput::placeholder {
   color: var(--arco-text-tertiary);

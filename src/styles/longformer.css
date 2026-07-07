@@ -547,14 +547,22 @@
 }
 
 .arco-longformer-toolbar__search {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: var(--arco-space-xs);
   padding: 4px 8px;
   border-radius: var(--arco-radius-s);
   border: 1px solid var(--arco-border);
   background: var(--arco-bg-surface);
   color: var(--arco-text-tertiary);
+}
+
+.arco-longformer-toolbar__search > svg {
+  position: absolute;
+  left: var(--arco-search-icon-inset);
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
 }
 
 .arco-longformer-toolbar__search input {
@@ -564,6 +572,7 @@
   color: var(--arco-text-primary);
   width: 120px;
   outline: none;
+  padding: 0 0 0 var(--arco-search-field-padding-left);
 }
 
 .arco-longformer-toolbar__format {

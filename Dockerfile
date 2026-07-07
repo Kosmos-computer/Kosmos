@@ -13,8 +13,6 @@ COPY packages/app-sdk/package.json packages/app-sdk/
 COPY packages/editor-kit/package.json packages/editor-kit/
 COPY apps/desktop/package.json apps/desktop/
 COPY apps/docs/package.json apps/docs/
-COPY apps/www/package.json apps/www/
-COPY apps/arco-docs/package.json apps/arco-docs/
 
 ENV ARCO_SKIP_POSTINSTALL=1
 RUN npm ci --ignore-scripts

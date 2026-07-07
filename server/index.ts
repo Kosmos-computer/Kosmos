@@ -37,6 +37,7 @@ import { runAgentTurn } from "./agent/loop.js";
 import { runAcpTurn, stopAllAcpRuns } from "./acp/acpAgent.js";
 import { runCursorTurn, stopAllCursorRuns } from "./cursor/cursorAgent.js";
 import { listCursorModels, testCursorConnection } from "./cursor/cursorConnect.js";
+import { listOpenRouterModels } from "./openrouter/openrouterModels.js";
 import { openaiCompatRoutes } from "./agent/openaiCompat.js";
 import { invokeRuntimeTool, runExec } from "./agent/tools.js";
 import { resolveClientRequest } from "./agent/clientRequests.js";
@@ -2161,6 +2162,17 @@ app.get("/api/cursor/models", requireCap("settings:write"), async (c) => {
     return c.json({ models });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to list Cursor models";
+    return c.json({ error: message, models: [] as { id: string; displayName: string }[] }, 400);
+  }
+});
+
+app.post("/api/openrouter/models", requireCap("settings:write"), async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as { apiKey?: string };
+  try {
+    const models = await listOpenRouterModels(body.apiKey);
+    return c.json({ models });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to list OpenRouter models";
     return c.json({ error: message, models: [] as { id: string; displayName: string }[] }, 400);
   }
 });

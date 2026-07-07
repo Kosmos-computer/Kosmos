@@ -23,6 +23,7 @@ import { UsersSection } from "./UsersSection";
 import { AppsSection } from "./AppsSection";
 import { AgentSection } from "./AgentSection";
 import { CursorConnectionFields } from "./CursorConnectionFields";
+import { OpenRouterModelPicker } from "./OpenRouterModelPicker";
 import { ChannelsSection } from "./ChannelsSection";
 import { ConnectedAccountsSection } from "./ConnectedAccountsSection";
 import { ExternalAccessSection } from "./ExternalAccessSection";
@@ -169,6 +170,7 @@ export function SettingsApp() {
     const result = await api.saveSettings(settings);
     setSettings(result);
     setSaved(true);
+    useSettingsStore.getState().bumpSettingsRevision();
   };
 
   const activeAgentChip =
@@ -302,13 +304,29 @@ export function SettingsApp() {
                           onChange={(e) => update({ baseUrl: e.target.value })}
                         />
                       </SettingsFieldRow>
-                      <SettingsFieldRow label="Model" htmlFor="set-model">
-                        <Input
-                          id="set-model"
-                          width="auto"
-                          value={settings.model}
-                          onChange={(e) => update({ model: e.target.value })}
-                        />
+                      <SettingsFieldRow
+                        label="Model"
+                        htmlFor={settings.provider === "openrouter" ? "set-openrouter-model" : "set-model"}
+                        hint={
+                          settings.provider === "openrouter"
+                            ? "Loaded from OpenRouter's catalog — search by name or id."
+                            : undefined
+                        }
+                      >
+                        {settings.provider === "openrouter" ? (
+                          <OpenRouterModelPicker
+                            model={settings.model}
+                            apiKey={settings.apiKey}
+                            onModelChange={(model) => update({ model })}
+                          />
+                        ) : (
+                          <Input
+                            id="set-model"
+                            width="auto"
+                            value={settings.model}
+                            onChange={(e) => update({ model: e.target.value })}
+                          />
+                        )}
                       </SettingsFieldRow>
                       <SettingsFieldRow label="API key" htmlFor="set-key">
                         <Input

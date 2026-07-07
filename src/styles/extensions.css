@@ -59,11 +59,12 @@
 }
 
 .arco-module__search {
+  --arco-search-field-gutter: var(--arco-space-s);
+  position: relative;
   flex: 1;
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: var(--arco-space-xs);
   padding: 0 var(--arco-space-s);
   border: 1px solid var(--arco-border);
   border-radius: var(--arco-radius-m);
@@ -74,12 +75,34 @@
   border-color: var(--arco-accent);
 }
 
+.arco-module__search > svg:first-of-type {
+  position: absolute;
+  left: calc(var(--arco-search-field-gutter) + var(--arco-search-icon-inset));
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+  color: var(--arco-text-tertiary);
+  pointer-events: none;
+}
+
 .arco-module__search .arco-input {
   flex: 1;
   min-width: 0;
   border: none;
   background: transparent;
-  padding-block: 8px;
+  padding: 8px 8px 8px var(--arco-search-field-padding-left);
+}
+
+.arco-module__search:has(> .arco-btn--icon) .arco-input {
+  padding-right: 34px;
+}
+
+.arco-module__search > .arco-btn--icon {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
 }
 
 .arco-module__search .arco-input:focus {

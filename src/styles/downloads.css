@@ -233,7 +233,7 @@
 
 .arco-downloads-sidebar__search-icon {
   position: absolute;
-  left: 10px;
+  left: var(--arco-search-icon-inset);
   top: 50%;
   transform: translateY(-50%);
   color: var(--arco-text-tertiary);
@@ -242,7 +242,7 @@
 
 .arco-downloads-sidebar__search-input {
   width: 100%;
-  padding-left: 32px;
+  padding: 7px 10px 7px var(--arco-search-field-padding-left);
 }
 
 .arco-downloads-sidebar__count {

@@ -10,6 +10,7 @@ import {
   Agent,
   CursorAgentError,
   type AgentOptions,
+  type InteractionUpdate,
   type McpServerConfig as SdkMcpServerConfig,
   type SDKAgent,
 } from "@cursor/sdk";
@@ -28,6 +29,8 @@ interface CursorRun {
   agent: SDKAgent;
   emit: (event: AgentEvent) => void;
   turnText: string;
+  /** True once text-delta events arrive via onDelta — skip assistant snapshots in stream(). */
+  streamedViaDelta: boolean;
 }
 
 const runs = new Map<string, CursorRun>();
@@ -109,6 +112,7 @@ async function createRun(
     agent,
     emit,
     turnText: "",
+    streamedViaDelta: false,
   };
   runs.set(arcoSessionId, run);
   return run;
@@ -131,24 +135,91 @@ async function ensureRun(
   return createRun(arcoSessionId, settings, emit);
 }
 
+function toolCallArgs(toolCall: { type: string; args?: unknown }): Record<string, unknown> {
+  if (toolCall.args && typeof toolCall.args === "object" && !Array.isArray(toolCall.args)) {
+    return toolCall.args as Record<string, unknown>;
+  }
+  return {};
+}
+
+function toolCallResult(toolCall: { type: string; result?: unknown }): string {
+  const { result } = toolCall;
+  if (typeof result === "string") return result;
+  if (result == null) return "";
+  return JSON.stringify(result);
+}
+
+function applyInteractionUpdate(state: CursorRun, update: InteractionUpdate): void {
+  switch (update.type) {
+    case "text-delta":
+      if (!update.text) return;
+      state.streamedViaDelta = true;
+      state.emit({ type: "text_delta", delta: update.text });
+      state.turnText += update.text;
+      return;
+    case "tool-call-started":
+      state.emit({
+        type: "tool_start",
+        callId: update.callId,
+        name: update.toolCall.type,
+        args: toolCallArgs(update.toolCall),
+      });
+      return;
+    case "tool-call-completed":
+      state.emit({
+        type: "tool_end",
+        callId: update.callId,
+        name: update.toolCall.type,
+        result: toolCallResult(update.toolCall),
+      });
+      return;
+    case "turn-ended":
+      if (update.usage) {
+        state.emit({
+          type: "usage",
+          promptTokens: update.usage.inputTokens,
+          completionTokens: update.usage.outputTokens,
+          totalTokens:
+            update.usage.inputTokens +
+            update.usage.outputTokens +
+            update.usage.cacheReadTokens +
+            update.usage.cacheWriteTokens,
+        });
+      }
+      return;
+    default:
+      return;
+  }
+}
+
+/** Fallback when onDelta is unavailable — only emit the new suffix of cumulative snapshots. */
+function emitAssistantSnapshot(state: CursorRun, text: string): void {
+  if (!text) return;
+  if (text.startsWith(state.turnText)) {
+    const delta = text.slice(state.turnText.length);
+    if (!delta) return;
+    state.emit({ type: "text_delta", delta });
+    state.turnText += delta;
+    return;
+  }
+  // Incremental chunk (not a prefix extension) — append as-is.
+  state.emit({ type: "text_delta", delta: text });
+  state.turnText += text;
+}
+
 async function consumeStream(
   run: Awaited<ReturnType<SDKAgent["send"]>>,
   state: CursorRun,
 ): Promise<void> {
-  let emittedLen = 0;
   try {
     for await (const msg of run.stream()) {
       if (msg.type === "assistant") {
+        if (state.streamedViaDelta) continue;
         const text = msg.message.content
           .filter((block) => block.type === "text")
           .map((block) => block.text)
           .join("");
-        if (text.length > emittedLen) {
-          const delta = text.slice(emittedLen);
-          state.emit({ type: "text_delta", delta });
-          state.turnText += delta;
-          emittedLen = text.length;
-        }
+        emitAssistantSnapshot(state, text);
       } else if (msg.type === "tool_call") {
         if (msg.status === "running") {
           state.emit({
@@ -205,10 +276,14 @@ export async function runCursorTurn(opts: RunTurnOptions): Promise<string> {
   const state = await ensureRun(opts.sessionId, settings, opts.emit);
   state.emit = opts.emit;
   state.turnText = "";
+  state.streamedViaDelta = false;
 
   const sendOptions = {
     mode: (opts.readOnly ? "plan" : "agent") as "plan" | "agent",
     mcpServers: cursorMcpServers(),
+    onDelta: ({ update }: { update: InteractionUpdate }) => {
+      applyInteractionUpdate(state, update);
+    },
     ...(settings.cursorRuntime === "local" ? { local: { force: false } } : {}),
   };
 

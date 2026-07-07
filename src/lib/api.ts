@@ -42,6 +42,7 @@ import type {
   Settings,
   CursorConnectionStatus,
   CursorModelInfo,
+  OpenRouterModelInfo,
   Skill,
   SkillMeta,
   StoredApp,
@@ -681,6 +682,13 @@ export const api = {
     fetch("/api/cursor/models").then((r) =>
       json<{ models: CursorModelInfo[]; error?: string }>(r),
     ),
+
+  listOpenRouterModels: (apiKey?: string) =>
+    fetch("/api/openrouter/models", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(apiKey ? { apiKey } : {}),
+    }).then((r) => json<{ models: OpenRouterModelInfo[]; error?: string }>(r)),
 };
 
 /**

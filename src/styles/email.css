@@ -52,9 +52,7 @@
 }
 
 .arco-email__search {
-  display: flex;
-  align-items: center;
-  gap: var(--arco-space-s);
+  width: 100%;
 }
 
 .arco-email__filters {

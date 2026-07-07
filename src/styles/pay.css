@@ -351,9 +351,6 @@
 }
 
 .arco-pay-action-modal__search {
-  display: flex;
-  align-items: center;
-  gap: var(--arco-space-s);
   margin-bottom: var(--arco-space-s);
 }
 

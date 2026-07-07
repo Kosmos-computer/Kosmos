@@ -649,6 +649,14 @@ export interface CursorModelInfo {
   displayName: string;
 }
 
+/** One model entry from GET /api/openrouter/models. */
+export interface OpenRouterModelInfo {
+  id: string;
+  displayName: string;
+  description?: string;
+  contextLength?: number;
+}
+
 /** Default Cursor model when none is configured. */
 export const CURSOR_DEFAULT_MODEL = "composer-2.5";
 

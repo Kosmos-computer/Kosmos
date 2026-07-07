@@ -25,9 +25,6 @@
 }
 
 .arco-generator__catalog-search {
-  display: flex;
-  align-items: center;
-  gap: var(--arco-space-s);
   padding: var(--arco-space-m);
   border-bottom: 1px solid var(--arco-border);
 }

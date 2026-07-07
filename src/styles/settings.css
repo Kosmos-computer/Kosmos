@@ -808,14 +808,15 @@
 
 .arco-settings-nav-search__icon {
   position: absolute;
-  left: var(--arco-space-s);
+  left: var(--arco-search-icon-inset);
+  top: 50%;
+  transform: translateY(-50%);
   color: var(--arco-text-tertiary);
   pointer-events: none;
 }
 
 .arco-settings-nav-search__input {
   width: 100%;
-  padding-left: calc(var(--arco-space-l) + 14px);
 }
 
 .arco-settings-nav-sub__group {
@@ -1043,4 +1044,16 @@
     grid-area: switch;
     align-self: start;
   }
+}
+
+.arco-settings-openrouter-models {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-2);
+  width: 100%;
+}
+
+.arco-settings-openrouter-models__select {
+  width: 100%;
+  max-height: 12rem;
 }

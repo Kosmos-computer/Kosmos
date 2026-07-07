@@ -23,6 +23,22 @@
   --arco-space-xl: 24px;
   --arco-space-2xl: 32px;
 
+  /* Inset search fields — icon position + text start (inset + icon + gap) */
+  --arco-search-icon-inset: 10px;
+  --arco-search-icon-size: 14px;
+  --arco-search-icon-gap: 8px;
+  --arco-search-field-padding-left: calc(
+    var(--arco-search-icon-inset) + var(--arco-search-icon-size) + var(--arco-search-icon-gap)
+  );
+  --arco-search-icon-inset-compact: 8px;
+  --arco-search-icon-size-compact: 13px;
+  --arco-search-icon-gap-compact: 7px;
+  --arco-search-field-padding-left-compact: calc(
+    var(--arco-search-icon-inset-compact) + var(--arco-search-icon-size-compact) +
+      var(--arco-search-icon-gap-compact)
+  );
+  --arco-search-field-gutter: 0px;
+
   /* Radii */
   --arco-radius-s: 6px;
   --arco-radius-m: 10px;

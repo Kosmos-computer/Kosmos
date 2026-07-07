@@ -47,6 +47,62 @@
   flex-shrink: 0;
 }
 
+.arco-input-affix {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+
+.arco-input-affix--start {
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-s);
+  background: var(--arco-bg-sunk);
+  transition: border-color var(--arco-dur-fast);
+}
+
+.arco-input-affix--start:focus-within {
+  border-color: var(--arco-accent);
+}
+
+.arco-input-affix .arco-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.arco-input-affix--start .arco-input {
+  padding: 7px 10px 7px var(--arco-search-field-padding-left);
+}
+
+.arco-input-affix--end .arco-input {
+  padding-right: 34px;
+}
+
+.arco-input-affix__start {
+  position: absolute;
+  left: calc(var(--arco-search-field-gutter) + var(--arco-search-icon-inset));
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  color: var(--arco-text-tertiary);
+  pointer-events: none;
+}
+
+.arco-input-affix__end {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+}
+
 .arco-password-input {
   position: relative;
   display: grid;

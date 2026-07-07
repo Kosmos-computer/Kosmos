@@ -226,19 +226,8 @@
 }
 
 .arco-maps__search {
-  display: flex;
-  align-items: center;
-  gap: var(--arco-space-s);
   padding: var(--arco-space-m);
   border-bottom: 1px solid var(--arco-border);
-}
-
-.arco-maps__search .arco-input {
-  flex: 1;
-}
-
-.arco-maps__clear {
-  flex-shrink: 0;
 }
 
 .arco-maps__results {

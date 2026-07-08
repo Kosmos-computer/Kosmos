@@ -91,7 +91,7 @@ async function tokenRequest(body: Record<string, string>): Promise<{ access_toke
   return { access_token: data.access_token };
 }
 
-async function githubLogin(accessToken: string): Promise<string> {
+export async function resolveGitHubLogin(accessToken: string): Promise<string> {
   const res = await fetch(USER_URL, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -117,6 +117,6 @@ export async function exchangeGitHubCode(code: string): Promise<{
     redirect_uri: githubRedirectUri(),
     grant_type: "authorization_code",
   });
-  const login = await githubLogin(tokens.access_token);
+  const login = await resolveGitHubLogin(tokens.access_token);
   return { login, accessToken: tokens.access_token };
 }

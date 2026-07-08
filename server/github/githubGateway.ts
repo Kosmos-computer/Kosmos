@@ -2,7 +2,7 @@
  * GitHub gateway — account status, repo listing, and disconnect.
  */
 import type { GitHubAccountInfo, GitHubRepoSummary } from "../../shared/github.js";
-import { isGitHubOAuthConfigured } from "./githubOAuth.js";
+import { isGitHubOAuthConfigured, resolveGitHubLogin } from "./githubOAuth.js";
 import { githubStore } from "./githubStore.js";
 
 async function withAccessToken<T>(
@@ -88,5 +88,16 @@ export const githubGateway = {
 
   accessTokenFor(userId: string, accountId?: string): string | undefined {
     return githubStore.accessTokenFor(userId, accountId);
+  },
+
+  async connectWithPat(userId: string, token: string): Promise<GitHubAccountInfo> {
+    const trimmed = token.trim();
+    if (!trimmed) throw new Error("Personal access token is required");
+    const login = await resolveGitHubLogin(trimmed);
+    return githubStore.upsertAccount({
+      userId,
+      login,
+      accessToken: trimmed,
+    });
   },
 };

@@ -1949,6 +1949,19 @@ app.delete("/api/github/accounts/:id", requireCap("settings:write"), (c) => {
   return c.json({ ok: true });
 });
 
+app.post("/api/github/accounts/pat", requireCap("settings:write"), async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as { token?: string };
+  try {
+    const account = await githubGateway.connectWithPat(currentUser(c).id, body.token ?? "");
+    return c.json(account);
+  } catch (err) {
+    return c.json(
+      { error: err instanceof Error ? err.message : "Could not connect GitHub account" },
+      400,
+    );
+  }
+});
+
 app.get("/api/github/repos", async (c) => {
   const query = c.req.query("q") ?? undefined;
   const accountId = c.req.query("accountId") ?? undefined;

@@ -13,6 +13,7 @@ export interface GitHubConnectionState {
   oauthError: string | null;
   refresh: () => Promise<void>;
   connect: () => void;
+  connectWithPat: (token: string) => Promise<void>;
   disconnect: () => Promise<void>;
 }
 
@@ -72,6 +73,14 @@ export function useGitHubConnection(): GitHubConnectionState {
     api.connectGitHub();
   }, []);
 
+  const connectWithPat = useCallback(
+    async (token: string) => {
+      await api.connectGitHubPat(token);
+      await refresh();
+    },
+    [refresh],
+  );
+
   const disconnect = useCallback(async () => {
     if (!account) return;
     await api.disconnectGitHubAccount(account.id);
@@ -86,6 +95,7 @@ export function useGitHubConnection(): GitHubConnectionState {
     oauthError,
     refresh,
     connect,
+    connectWithPat,
     disconnect,
   };
 }

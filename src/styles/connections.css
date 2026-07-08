@@ -232,6 +232,24 @@
   gap: var(--arco-space-xs);
 }
 
+.arco-github-connect__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-xs);
+}
+
+.arco-github-connect__field-label {
+  font-size: var(--arco-text-sm);
+  font-weight: 500;
+  color: var(--arco-text-primary);
+}
+
+.arco-github-connect__divider {
+  margin: 0;
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-tertiary);
+}
+
 .arco-github-connect--inline .arco-github-connect__btn {
   align-self: stretch;
   justify-content: center;

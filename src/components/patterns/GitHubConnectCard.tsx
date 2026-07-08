@@ -1,12 +1,13 @@
 import { I18nKey } from "../../i18n/declaration";
 import { T } from "../../i18n/T";
 /**
- * GitHubConnectCard — OAuth connect UI for cloning and pushing to GitHub repos.
+ * GitHubConnectCard — OAuth or PAT connect UI for cloning and pushing to GitHub repos.
  * Used in Settings → Connected accounts, Studio project picker, and Git tab.
  */
 import { Github, Loader2, LogOut, Plug } from "lucide-react";
+import { useState } from "react";
 import type { GitHubConnectionState } from "../../connections/useGitHubConnection";
-import { Button } from "../ui";
+import { Button, PasswordInput } from "../ui";
 
 export interface GitHubConnectCardProps {
   connection: GitHubConnectionState;
@@ -30,8 +31,13 @@ export function GitHubConnectCard({
     isConnected,
     oauthError,
     connect,
+    connectWithPat,
     disconnect,
   } = connection;
+
+  const [patToken, setPatToken] = useState("");
+  const [patSubmitting, setPatSubmitting] = useState(false);
+  const [patError, setPatError] = useState<string | null>(null);
 
   const rootClass = [
     variant === "card" ? "arco-github-connect" : "arco-github-connect arco-github-connect--inline",
@@ -39,6 +45,21 @@ export function GitHubConnectCard({
   ]
     .filter(Boolean)
     .join(" ");
+
+  const handlePatConnect = async () => {
+    const trimmed = patToken.trim();
+    if (!trimmed) return;
+    setPatSubmitting(true);
+    setPatError(null);
+    try {
+      await connectWithPat(trimmed);
+      setPatToken("");
+    } catch (err) {
+      setPatError(err instanceof Error ? err.message : "Could not connect GitHub account");
+    } finally {
+      setPatSubmitting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -78,6 +99,8 @@ export function GitHubConnectCard({
     );
   }
 
+  const displayError = patError ?? oauthError;
+
   return (
     <div className={rootClass}>
       <div className="arco-github-connect__card">
@@ -88,33 +111,72 @@ export function GitHubConnectCard({
           </h2>
         </div>
         <p className="arco-github-connect__lead">
-          <T k={I18nKey.APPS$GITHUB_CONNECT_LEAD} />
+          <T
+            k={
+              oauthConfigured
+                ? I18nKey.APPS$GITHUB_CONNECT_LEAD
+                : I18nKey.APPS$GITHUB_CONNECT_PAT_LEAD
+            }
+          />
         </p>
         {showRepoHint ? (
           <p className="arco-github-connect__hint">
             <T k={I18nKey.APPS$GITHUB_CONNECT_REPO_HINT} />
           </p>
         ) : null}
-        {!oauthConfigured ? (
-          <p className="arco-github-connect__note">
-            <T k={I18nKey.APPS$GITHUB_CONNECT_NOT_CONFIGURED} />
-            <code>GITHUB_CLIENT_ID</code>
-            <T k={I18nKey.APPS$EMAIL_AND} />
-            <code>GITHUB_CLIENT_SECRET</code>
-            <T k={I18nKey.APPS$GITHUB_CONNECT_CALLBACK_HINT} />
-            <code>/api/github/oauth/callback</code>.
-          </p>
+
+        {oauthConfigured ? (
+          <>
+            {displayError ? <p className="arco-github-connect__error">{displayError}</p> : null}
+            <Button variant="primary" onClick={connect} className="arco-github-connect__btn">
+              <Plug size={14} />
+              <T k={I18nKey.APPS$GITHUB_CONNECT_OAUTH} />
+            </Button>
+            <p className="arco-github-connect__divider">
+              <T k={I18nKey.APPS$GITHUB_CONNECT_OR_PAT} />
+            </p>
+          </>
         ) : null}
-        {oauthError ? <p className="arco-github-connect__error">{oauthError}</p> : null}
+
+        <label className="arco-github-connect__field">
+          <span className="arco-github-connect__field-label">
+            <T k={I18nKey.APPS$GITHUB_CONNECT_PAT_LABEL} />
+          </span>
+          <PasswordInput
+            value={patToken}
+            onChange={(event) => setPatToken(event.target.value)}
+            placeholder="ghp_…"
+            width="full"
+            autoComplete="off"
+            disabled={patSubmitting}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") void handlePatConnect();
+            }}
+          />
+        </label>
+
+        {!oauthConfigured && displayError ? (
+          <p className="arco-github-connect__error">{displayError}</p>
+        ) : null}
+
         <Button
-          variant="primary"
-          onClick={connect}
-          disabled={!oauthConfigured}
+          variant={oauthConfigured ? "default" : "primary"}
+          onClick={() => void handlePatConnect()}
+          disabled={patSubmitting || !patToken.trim()}
           className="arco-github-connect__btn"
         >
-          <Plug size={14} />
-          <T k={I18nKey.APPS$STUDIO_GITHUB_CONNECT} />
+          {patSubmitting ? <Loader2 size={14} className="arco-spin" aria-hidden /> : <Plug size={14} />}
+          <T k={I18nKey.APPS$GITHUB_CONNECT_WITH_PAT} />
         </Button>
+
+        {!oauthConfigured ? (
+          <p className="arco-github-connect__note">
+            <T
+              k={I18nKey.APPS$GITHUB_CONNECT_OAUTH_ADMIN_NOTE}
+              values={{ callbackUrl: "/api/github/oauth/callback" }}
+            />
+          </p>
+        ) : null}
       </div>
     </div>
   );

@@ -6117,6 +6117,118 @@
     "ja": "Clone & open",
     "zh-CN": "Clone & open"
   },
+  "APPS$STUDIO_GITHUB_CONNECT": {
+    "en": "Connect GitHub",
+    "es": "Connect GitHub",
+    "de": "Connect GitHub",
+    "ja": "Connect GitHub",
+    "zh-CN": "Connect GitHub"
+  },
+  "APPS$STUDIO_GITHUB_CONNECTED_AS": {
+    "en": "Connected as @{{login}}",
+    "es": "Connected as @{{login}}",
+    "de": "Connected as @{{login}}",
+    "ja": "Connected as @{{login}}",
+    "zh-CN": "Connected as @{{login}}"
+  },
+  "APPS$STUDIO_GITHUB_NO_REPOS": {
+    "en": "No repositories found",
+    "es": "No repositories found",
+    "de": "No repositories found",
+    "ja": "No repositories found",
+    "zh-CN": "No repositories found"
+  },
+  "APPS$STUDIO_GITHUB_PRIVATE": {
+    "en": "Private",
+    "es": "Private",
+    "de": "Private",
+    "ja": "Private",
+    "zh-CN": "Private"
+  },
+  "APPS$GITHUB_CONNECT_LOADING": {
+    "en": "Loading GitHub connection…",
+    "es": "Loading GitHub connection…",
+    "de": "Loading GitHub connection…",
+    "ja": "Loading GitHub connection…",
+    "zh-CN": "Loading GitHub connection…"
+  },
+  "APPS$GITHUB_CONNECTED_TITLE": {
+    "en": "GitHub connected",
+    "es": "GitHub connected",
+    "de": "GitHub connected",
+    "ja": "GitHub connected",
+    "zh-CN": "GitHub connected"
+  },
+  "APPS$GITHUB_CONNECTED_LEAD": {
+    "en": "Clone and work with your repositories from Studio.",
+    "es": "Clone and work with your repositories from Studio.",
+    "de": "Clone and work with your repositories from Studio.",
+    "ja": "Clone and work with your repositories from Studio.",
+    "zh-CN": "Clone and work with your repositories from Studio."
+  },
+  "APPS$GITHUB_CONNECT_TITLE": {
+    "en": "Connect GitHub",
+    "es": "Connect GitHub",
+    "de": "Connect GitHub",
+    "ja": "Connect GitHub",
+    "zh-CN": "Connect GitHub"
+  },
+  "APPS$GITHUB_CONNECT_LEAD": {
+    "en": "Sign in with GitHub to browse and clone your repositories.",
+    "es": "Sign in with GitHub to browse and clone your repositories.",
+    "de": "Sign in with GitHub to browse and clone your repositories.",
+    "ja": "Sign in with GitHub to browse and clone your repositories.",
+    "zh-CN": "Sign in with GitHub to browse and clone your repositories."
+  },
+  "APPS$GITHUB_CONNECT_PAT_LEAD": {
+    "en": "Paste a personal access token with repo scope. Create one at github.com → Settings → Developer settings → Personal access tokens.",
+    "es": "Paste a personal access token with repo scope. Create one at github.com → Settings → Developer settings → Personal access tokens.",
+    "de": "Paste a personal access token with repo scope. Create one at github.com → Settings → Developer settings → Personal access tokens.",
+    "ja": "Paste a personal access token with repo scope. Create one at github.com → Settings → Developer settings → Personal access tokens.",
+    "zh-CN": "Paste a personal access token with repo scope. Create one at github.com → Settings → Developer settings → Personal access tokens."
+  },
+  "APPS$GITHUB_CONNECT_REPO_HINT": {
+    "en": "Your token is stored on this server and used only for Git operations.",
+    "es": "Your token is stored on this server and used only for Git operations.",
+    "de": "Your token is stored on this server and used only for Git operations.",
+    "ja": "Your token is stored on this server and used only for Git operations.",
+    "zh-CN": "Your token is stored on this server and used only for Git operations."
+  },
+  "APPS$GITHUB_CONNECT_PAT_LABEL": {
+    "en": "Personal access token",
+    "es": "Personal access token",
+    "de": "Personal access token",
+    "ja": "Personal access token",
+    "zh-CN": "Personal access token"
+  },
+  "APPS$GITHUB_CONNECT_WITH_PAT": {
+    "en": "Connect with token",
+    "es": "Connect with token",
+    "de": "Connect with token",
+    "ja": "Connect with token",
+    "zh-CN": "Connect with token"
+  },
+  "APPS$GITHUB_CONNECT_OAUTH": {
+    "en": "Connect with GitHub",
+    "es": "Connect with GitHub",
+    "de": "Connect with GitHub",
+    "ja": "Connect with GitHub",
+    "zh-CN": "Connect with GitHub"
+  },
+  "APPS$GITHUB_CONNECT_OR_PAT": {
+    "en": "Or paste a personal access token",
+    "es": "Or paste a personal access token",
+    "de": "Or paste a personal access token",
+    "ja": "Or paste a personal access token",
+    "zh-CN": "Or paste a personal access token"
+  },
+  "APPS$GITHUB_CONNECT_OAUTH_ADMIN_NOTE": {
+    "en": "Admins can enable one-click OAuth by setting GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET, with callback URL {{callbackUrl}}.",
+    "es": "Admins can enable one-click OAuth by setting GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET, with callback URL {{callbackUrl}}.",
+    "de": "Admins can enable one-click OAuth by setting GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET, with callback URL {{callbackUrl}}.",
+    "ja": "Admins can enable one-click OAuth by setting GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET, with callback URL {{callbackUrl}}.",
+    "zh-CN": "Admins can enable one-click OAuth by setting GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET, with callback URL {{callbackUrl}}."
+  },
   "APPS$STUDIO_HOSTED_BROWSE_HINT": {
     "en": "Browse folders on this server — not your local machine.",
     "es": "Browse folders on this server — not your local machine.",

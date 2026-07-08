@@ -53,6 +53,25 @@ The explicit `name:` is important — it prevents Coolify from creating a fresh 
 
 4. **Redeploy safely**: push code → CI publishes a new GHCR image → redeploy the compose service. The named volume at `/data` is untouched.
 
+## GitHub connect (optional)
+
+Users can connect GitHub in **Settings → Connected accounts** or **Studio → Open from GitHub** without any server env vars — paste a [personal access token](https://github.com/settings/tokens) with `repo` scope (same approach as self-hosted OpenHands).
+
+For one-click OAuth instead, register a [GitHub OAuth App](https://github.com/settings/developers) and add to Coolify env:
+
+```
+GITHUB_CLIENT_ID=…
+GITHUB_CLIENT_SECRET=…
+GITHUB_REDIRECT_URI=https://your-domain/api/github/oauth/callback
+ARCO_WEB_ORIGIN=https://your-domain
+```
+
+Optional server-wide fallback for cloning public repos when no user is connected:
+
+```
+GITHUB_TOKEN=ghp_…
+```
+
 ## Auto-deploy on push to main
 
 `kosmos.tiru.fm` runs a **pinned GHCR image** (`ghcr.io/kosmos-computer/kosmos:<sha>-amd64`), not a live git build. Pushing to GitHub alone does not update production until:

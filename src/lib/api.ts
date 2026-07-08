@@ -742,6 +742,8 @@ export const api = {
     fetch(`/api/github/accounts/${encodeURIComponent(id)}`, { method: "DELETE" }).then((r) =>
       json<{ ok: true }>(r),
     ),
+  connectGitHubPat: (token: string) =>
+    post<GitHubAccountInfo>("/api/github/accounts/pat", { token }),
   connectGitHub: () => {
     window.location.href = "/api/github/oauth/start";
   },

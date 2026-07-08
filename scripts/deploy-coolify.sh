@@ -12,17 +12,24 @@ SHORT_SHA="${1:-$(git rev-parse --short HEAD)}"
 TAG="${SHORT_SHA}-amd64"
 IMAGE="${IMAGE_REPO}:${TAG}"
 
+SSH_OPTS="${SSH_OPTS:--o BatchMode=yes}"
+
 echo "Deploying ${IMAGE} to ${HOST} …"
 
-ssh -o BatchMode=yes "${HOST}" bash -s <<EOF
+# Pass GHCR creds from the local environment into the remote deploy.
+REMOTE_GHCR_TOKEN="${GHCR_TOKEN:-}"
+REMOTE_GHCR_USER="${GHCR_USER:-github}"
+
+ssh ${SSH_OPTS} "${HOST}" bash -s <<EOF
 set -euo pipefail
 COMPOSE_DIR="${COMPOSE_DIR}"
 IMAGE="${IMAGE}"
 TAG="${TAG}"
+GHCR_TOKEN="${REMOTE_GHCR_TOKEN}"
+GHCR_USER="${REMOTE_GHCR_USER}"
 
-# Log in to GHCR if a token is available (optional — public packages skip this).
-if [[ -n "\${GHCR_TOKEN:-}" ]]; then
-  echo "\${GHCR_TOKEN}" | docker login ghcr.io -u "\${GHCR_USER:-github}" --password-stdin
+if [[ -n "\${GHCR_TOKEN}" ]]; then
+  echo "\${GHCR_TOKEN}" | docker login ghcr.io -u "\${GHCR_USER}" --password-stdin
 fi
 
 docker pull "\${IMAGE}"

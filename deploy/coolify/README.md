@@ -57,17 +57,14 @@ The explicit `name:` is important — it prevents Coolify from creating a fresh 
 
 `kosmos.tiru.fm` runs a **pinned GHCR image** (`ghcr.io/kosmos-computer/kosmos:<sha>-amd64`), not a live git build. Pushing to GitHub alone does not update production until:
 
-1. **GitHub Actions** (`.github/workflows/publish-docker.yml`) builds and pushes a new image on every `main` push.
-2. You **redeploy** the Coolify compose service to pull that tag:
+1. **GitHub Actions** (`.github/workflows/publish-docker.yml`) builds and pushes a new image on every `main` push, then **deploys to kosmos.tiru.fm** via SSH (secrets: `COOLIFY_SSH_KEY`, `COOLIFY_HOST`).
+2. Manual redeploy (if needed):
 
    ```bash
-   ./scripts/deploy-coolify.sh        # uses current git HEAD short sha
-   ./scripts/deploy-coolify.sh a0d3e70 # or an explicit tag
+   GHCR_TOKEN=$(gh auth token) GHCR_USER=$(gh api user -q .login) ./scripts/deploy-coolify.sh
    ```
 
-   On the server this updates `/data/coolify/applications/kosmos-os/docker-compose.yaml` and runs `docker compose up -d`.
-
-To make GHCR pulls work on the host, either make the package public or set `GHCR_TOKEN` + `GHCR_USER` when running the deploy script.
+   Requires a GitHub token with `read:packages` for private GHCR pulls when run locally.
 
 ### Verify persistence
 

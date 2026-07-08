@@ -36,7 +36,8 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=${{ github.sha }}-amd64
+            type=sha,prefix=,suffix=-amd64,format=long
+            type=sha,prefix=,suffix=-amd64,format=short
             type=raw,value=${{ github.ref_name }}-amd64
             type=raw,value=latest-amd64
 
@@ -51,3 +52,31 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.COOLIFY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H kosmos.tiru.fm >> ~/.ssh/known_hosts
+
+      - name: Deploy to kosmos.tiru.fm
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER: ${{ github.actor }}
+          SHORT_SHA: ${{ github.sha }}
+        run: |
+          chmod +x scripts/deploy-coolify.sh
+          SSH_OPTS="-i ~/.ssh/deploy_key -o BatchMode=yes" \
+          COOLIFY_HOST="${{ secrets.COOLIFY_HOST }}" \
+          GHCR_TOKEN="${GHCR_TOKEN}" \
+          GHCR_USER="${GHCR_USER}" \
+          ./scripts/deploy-coolify.sh "${SHORT_SHA::7}"

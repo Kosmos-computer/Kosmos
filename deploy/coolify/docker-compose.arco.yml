@@ -1,0 +1,56 @@
+# Reference Coolify compose for Arco OS with persistent state.
+# kosmos.tiru.fm uses this pattern today (volume name may differ per app).
+#
+# In Coolify: Application → Persistent Storage
+#   Destination path: /data
+#   Named volume: kosmos-os-data   (or your-app-data)
+#
+# Required env (Application → Environment):
+#   ARCO_DATA_DIR=/data
+#   ARCO_SECURE_COOKIES=1
+#   NODE_ENV=production
+#   PORT=4600
+
+services:
+  arco-os:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    # Or pin a registry image after CI builds:
+    # image: ghcr.io/your-org/arco:latest
+    restart: unless-stopped
+    expose:
+      - "4600"
+    networks:
+      coolify:
+        aliases:
+          - arco-os
+    environment:
+      NODE_ENV: production
+      PORT: "4600"
+      ARCO_DATA_DIR: /data
+      ARCO_SECURE_COOKIES: "1"
+    volumes:
+      - arco-os-data:/data
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:4600/api/system/install-status').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
+
+networks:
+  coolify:
+    external: true
+    name: coolify
+
+volumes:
+  arco-os-data:
+    # Pin the volume name so Coolify redeploys reuse the same disk.
+    name: arco-os-data

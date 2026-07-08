@@ -1,10 +1,102 @@
-# Coolify local models for Arco
+# Coolify deployment for Arco OS
+
+Arco stores all user state on disk under `ARCO_DATA_DIR` (default `./data`, Docker: `/data`):
+
+- `settings.json`, `users.json`, auth sessions
+- Chat sessions, generated apps, skills
+- SQLite databases (`db/`)
+- Agent workspace files (`workspace/`)
+
+**Redeploys must mount a named Docker volume at `/data`.** Without it, every push wipes chats, apps, and settings.
+
+## Persistent storage (required)
+
+### Production: kosmos.tiru.fm
+
+Verified on the server:
+
+| Setting | Value |
+|---------|-------|
+| Volume name | `kosmos-os-data` |
+| Mount path | `/data` |
+| Env | `ARCO_DATA_DIR=/data` |
+| Host path | `/var/lib/docker/volumes/kosmos-os-data/_data` |
+
+Coolify compose includes:
+
+```yaml
+volumes:
+  - kosmos-os-data:/data
+
+volumes:
+  kosmos-os-data:
+    name: kosmos-os-data
+```
+
+The explicit `name:` is important — it prevents Coolify from creating a fresh anonymous volume on redeploy.
+
+### New Coolify app checklist
+
+1. **Persistent Storage** (Application → Storages):
+   - Destination: `/data`
+   - Name: `<app>-data` (e.g. `kosmos-os-data`)
+
+2. **Environment variables**:
+   ```
+   ARCO_DATA_DIR=/data
+   ARCO_SECURE_COOKIES=1
+   NODE_ENV=production
+   PORT=4600
+   ```
+
+3. **Dockerfile**: use repo root `Dockerfile` (runs `npm run build`). Do **not** use `Dockerfile.prod` — it skips the UI build.
+
+4. **Redeploy safely**: push code → Coolify rebuilds the **image** only. The named volume at `/data` is untouched.
+
+### Verify persistence
+
+On the host:
+
+```bash
+# Volume exists and is mounted
+docker inspect <container> --format '{{json .Mounts}}' | jq .
+
+# Data is present
+docker exec <container> ls -la /data
+```
+
+From the app: `GET /api/system/install-status` should show `"data_dir": { "ok": true }`.
+
+### Backup before risky changes
+
+```bash
+# Snapshot the volume on the Coolify host
+docker run --rm \
+  -v kosmos-os-data:/data:ro \
+  -v $(pwd):/backup \
+  alpine tar czf /backup/kosmos-os-data-$(date +%Y%m%d).tar.gz -C /data .
+```
+
+Restore (stop the app first):
+
+```bash
+docker run --rm \
+  -v kosmos-os-data:/data \
+  -v $(pwd):/backup \
+  alpine sh -c "cd /data && tar xzf /backup/kosmos-os-data-YYYYMMDD.tar.gz"
+```
+
+Reference compose: `docker-compose.arco.yml`.
+
+---
+
+## Local models (Ollama)
 
 The **Arco Models** desktop app (`model-manager/`, Tauri + `llama-server` on `:4650`) is macOS/desktop-only and does not run inside Coolify containers.
 
 For Coolify deployments, use **Ollama** on the same Docker network as Arco.
 
-## Quick setup (already applied in your test instance)
+### Quick setup
 
 1. Ollama container on network `coolify`:
    ```bash
@@ -15,7 +107,15 @@ For Coolify deployments, use **Ollama** on the same Docker network as Arco.
    docker exec arco-ollama ollama pull qwen2.5:0.5b
    ```
 
-2. Point Arco at Ollama (`data/settings.json` or Settings app):
+2. Point Arco at Ollama (env vars override persisted `settings.json` in Docker):
+   ```bash
+   LLM_PROVIDER=ollama
+   LLM_BASE_URL=http://arco-ollama:11434/v1
+   LLM_MODEL=qwen2.5:0.5b
+   LLM_API_KEY=
+   ```
+
+   Or edit `data/settings.json` on the volume:
    ```json
    {
      "provider": "ollama",
@@ -27,9 +127,9 @@ For Coolify deployments, use **Ollama** on the same Docker network as Arco.
 
 3. Open Arco and chat — the agent uses the local model.
 
-## Coolify UI (optional)
+### Coolify UI (optional)
 
-Add `docker-compose.stack.yml` as a **Docker Compose** resource in the same project as `arco-os` so Ollama appears in Coolify and survives redeploys.
+Add `docker-compose.stack.yml` as a **Docker Compose** resource in the same project as Arco so Ollama appears in Coolify and survives redeploys.
 
 ## Desktop vs Coolify
 

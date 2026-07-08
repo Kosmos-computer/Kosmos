@@ -1,5 +1,9 @@
+import { createRequire } from "node:module";
 import { app, type BrowserWindow } from "electron";
-import { autoUpdater } from "electron-updater";
+import type { ProgressInfo, UpdateDownloadedEvent, UpdateInfo } from "electron-updater";
+
+const require = createRequire(import.meta.url);
+const { autoUpdater } = require("electron-updater");
 import { UPDATE_IPC, type DesktopUpdateState, type UpdateStatus } from "./ipc.js";
 import {
   clearSnooze,
@@ -67,7 +71,7 @@ export class AutoUpdateService {
       this.broadcast();
     });
 
-    autoUpdater.on("update-available", (info) => {
+    autoUpdater.on("update-available", (info: UpdateInfo) => {
       if (isVersionSkipped(info.version)) return;
       this.pending = {
         version: info.version,
@@ -87,7 +91,7 @@ export class AutoUpdateService {
       this.broadcast();
     });
 
-    autoUpdater.on("download-progress", (progress) => {
+    autoUpdater.on("download-progress", (progress: ProgressInfo) => {
       if (!this.pending || isVersionSkipped(this.pending.version)) return;
       this.pending = {
         ...this.pending,
@@ -97,7 +101,7 @@ export class AutoUpdateService {
       this.broadcast();
     });
 
-    autoUpdater.on("update-downloaded", (info) => {
+    autoUpdater.on("update-downloaded", (info: UpdateDownloadedEvent) => {
       if (isVersionSkipped(info.version)) return;
       this.pending = {
         version: info.version,
@@ -110,7 +114,7 @@ export class AutoUpdateService {
       this.broadcast();
     });
 
-    autoUpdater.on("error", (err) => {
+    autoUpdater.on("error", (err: Error) => {
       console.error("[arco-desktop] auto-update error:", err);
       this.activeStatus = "error";
       this.error = err instanceof Error ? err.message : String(err);

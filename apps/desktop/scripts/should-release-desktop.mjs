@@ -24,9 +24,23 @@ function latestDesktopTag() {
   }
 }
 
+function rootCommit() {
+  try {
+    return execSync("git rev-list --max-parents=0 HEAD", {
+      cwd: repoRoot,
+      encoding: "utf8",
+    })
+      .trim()
+      .split("\n")[0];
+  } catch {
+    return null;
+  }
+}
+
 function changedFilesSince(tag) {
-  const range = tag ? `${tag}..HEAD` : "HEAD";
-  const out = execSync(`git diff --name-only ${range}`, {
+  const base = tag ?? rootCommit();
+  if (!base) return [];
+  const out = execSync(`git diff --name-only ${base}..HEAD`, {
     cwd: repoRoot,
     encoding: "utf8",
   }).trim();
@@ -46,7 +60,7 @@ if (relevant.length === 0) {
   console.log(
     lastTag
       ? `[desktop-release] no desktop-relevant changes since ${lastTag}; skipping`
-      : "[desktop-release] no tracked file changes; skipping",
+      : "[desktop-release] no desktop-relevant changes since initial commit; skipping",
   );
   process.exit(1);
 }

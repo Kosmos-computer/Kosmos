@@ -108,6 +108,7 @@ jobs:
         env:
           DESKTOP_VERSION: ${{ steps.version.outputs.version }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DESKTOP_UPDATE_GH_TOKEN: ${{ secrets.DESKTOP_UPDATE_GH_TOKEN }}
           CSC_LINK: ${{ secrets.DESKTOP_CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.DESKTOP_CSC_KEY_PASSWORD }}
           APPLE_ID: ${{ secrets.DESKTOP_APPLE_ID }}

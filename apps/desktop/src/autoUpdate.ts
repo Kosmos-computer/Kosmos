@@ -5,6 +5,7 @@ import type { ProgressInfo, UpdateDownloadedEvent, UpdateInfo } from "electron-u
 const require = createRequire(import.meta.url);
 const { autoUpdater } = require("electron-updater");
 import { UPDATE_IPC, type DesktopUpdateState, type UpdateStatus } from "./ipc.js";
+import { PRIVATE_GITHUB_UPDATE_HINT, resolveGithubUpdateToken } from "./updateGithubToken.js";
 import {
   clearSnooze,
   getSnoozeUntil,
@@ -31,6 +32,33 @@ function formatReleaseNotes(notes: unknown): string | undefined {
     return text.trim() || undefined;
   }
   return undefined;
+}
+
+function configureUpdateFeed(): void {
+  const genericFeed = process.env.ARCO_UPDATE_FEED_URL?.trim();
+  if (genericFeed) {
+    autoUpdater.setFeedURL({ provider: "generic", url: genericFeed.replace(/\/$/, "") });
+    return;
+  }
+
+  const token = resolveGithubUpdateToken();
+  autoUpdater.setFeedURL({
+    provider: "github",
+    owner: "Kosmos-computer",
+    repo: "Kosmos",
+    releaseType: "release",
+    private: true,
+    ...(token ? { token } : {}),
+  });
+}
+
+function formatUpdateError(err: unknown): string {
+  const message = err instanceof Error ? err.message : String(err);
+  if (message.includes("releases.atom") || message.includes("404")) {
+    if (!resolveGithubUpdateToken()) return PRIVATE_GITHUB_UPDATE_HINT;
+    return `Could not reach GitHub releases (${message})`;
+  }
+  return message;
 }
 
 function isEnabled(): boolean {
@@ -60,10 +88,7 @@ export class AutoUpdateService {
     autoUpdater.autoInstallOnAppQuit = true;
     autoUpdater.disableWebInstaller = false;
 
-    const feedUrl = process.env.ARCO_UPDATE_FEED_URL?.trim();
-    if (feedUrl) {
-      autoUpdater.setFeedURL({ provider: "generic", url: feedUrl.replace(/\/$/, "") });
-    }
+    configureUpdateFeed();
 
     autoUpdater.on("checking-for-update", () => {
       this.activeStatus = "checking";
@@ -117,7 +142,7 @@ export class AutoUpdateService {
     autoUpdater.on("error", (err: Error) => {
       console.error("[arco-desktop] auto-update error:", err);
       this.activeStatus = "error";
-      this.error = err instanceof Error ? err.message : String(err);
+      this.error = formatUpdateError(err);
       this.broadcast();
     });
 
@@ -153,7 +178,7 @@ export class AutoUpdateService {
     try {
       await autoUpdater.checkForUpdates();
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
+      const message = formatUpdateError(err);
       console.error("[arco-desktop] checkForUpdates failed:", message);
       this.activeStatus = "error";
       this.error = message;

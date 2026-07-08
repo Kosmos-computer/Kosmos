@@ -2,6 +2,7 @@ node_modules/
 dist/
 apps/desktop/dist/
 apps/desktop/release/
+apps/desktop/build/update-gh-token
 data/
 .env
 *.log

@@ -11,7 +11,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import type { Settings } from "../shared/types.js";
+import type { OpenhandsBackend, Settings } from "../shared/types.js";
 
 const ROOT = process.env.ARCO_DATA_DIR
   ? path.resolve(process.env.ARCO_DATA_DIR)
@@ -74,6 +74,8 @@ const DEFAULT_SETTINGS: Settings = {
   cursorModel: process.env.CURSOR_MODEL ?? "composer-2.5",
   cursorRuntime: "local",
   cursorRepoUrl: "",
+  openhandsBackends: [],
+  openhandsActiveBackendId: null,
   locale: "en",
 };
 
@@ -100,6 +102,30 @@ export function resolveCursorApiKey(settings: Settings): string {
   return settings.cursorApiKey.trim() || process.env.CURSOR_API_KEY?.trim() || "";
 }
 
+/**
+ * Active OpenHands backend — the registered entry matching
+ * openhandsActiveBackendId, or (if none registered) a synthetic default
+ * built from OPENHANDS_HOST/OPENHANDS_API_KEY env vars, mirroring how
+ * agent-canvas seeds a default local backend when none is registered.
+ */
+export function resolveActiveOpenhandsBackend(settings: Settings): OpenhandsBackend | null {
+  const backends = settings.openhandsBackends ?? [];
+  const active = backends.find((b) => b.id === settings.openhandsActiveBackendId);
+  if (active) return active;
+  if (backends.length === 1) return backends[0];
+  const host = process.env.OPENHANDS_HOST?.trim();
+  if (host) {
+    return {
+      id: "env-default",
+      name: "Local (env)",
+      host,
+      apiKey: process.env.OPENHANDS_API_KEY?.trim() ?? "",
+      kind: "local",
+    };
+  }
+  return null;
+}
+
 export function loadSettings(): Settings {
   try {
     const raw = fs.readFileSync(SETTINGS_FILE, "utf-8");
@@ -122,6 +148,10 @@ export function maskSettings(s: Settings): Settings {
     ...s,
     apiKey: s.apiKey ? `••••${s.apiKey.slice(-4)}` : "",
     cursorApiKey: s.cursorApiKey ? `••••${s.cursorApiKey.slice(-4)}` : "",
+    openhandsBackends: (s.openhandsBackends ?? []).map((b) => ({
+      ...b,
+      apiKey: b.apiKey ? `••••${b.apiKey.slice(-4)}` : "",
+    })),
     ...(s.apiKeys
       ? {
           apiKeys: Object.fromEntries(

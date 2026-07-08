@@ -44,6 +44,8 @@ import type {
   UsageResponse,
   CursorConnectionStatus,
   CursorModelInfo,
+  OpenhandsBackend,
+  OpenhandsConnectionStatus,
   OpenRouterModelInfo,
   Skill,
   SkillMeta,
@@ -884,6 +886,35 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(apiKey ? { apiKey } : {}),
     }).then((r) => json<{ models: OpenRouterModelInfo[]; error?: string }>(r)),
+
+  testOpenhandsConnection: (host: string, apiKey?: string) =>
+    fetch("/api/openhands/test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ host, apiKey }),
+    }).then((r) => json<OpenhandsConnectionStatus>(r)),
+
+  listOpenhandsBackends: () =>
+    fetch("/api/openhands/backends").then((r) =>
+      json<{ backends: OpenhandsBackend[]; activeId: string | null }>(r),
+    ),
+
+  addOpenhandsBackend: (backend: Omit<OpenhandsBackend, "id">) =>
+    fetch("/api/openhands/backends", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(backend),
+    }).then((r) => json<{ backend: OpenhandsBackend; activeId: string | null }>(r)),
+
+  activateOpenhandsBackend: (id: string) =>
+    fetch(`/api/openhands/backends/${id}/activate`, { method: "POST" }).then((r) =>
+      json<{ activeId: string | null }>(r),
+    ),
+
+  removeOpenhandsBackend: (id: string) =>
+    fetch(`/api/openhands/backends/${id}`, { method: "DELETE" }).then((r) =>
+      json<{ backends: OpenhandsBackend[]; activeId: string | null }>(r),
+    ),
 };
 
 /**

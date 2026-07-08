@@ -1,0 +1,16 @@
+[
+  "apps/desktop/",
+  "apps/docs/",
+  "apps/menubar-tasks/",
+  "server/",
+  "shared/",
+  "src/",
+  "public/",
+  "packages/",
+  "scripts/generate-prompts.ts",
+  "scripts/postinstall.mts",
+  "vite.config.ts",
+  "index.html",
+  "package.json",
+  "package-lock.json"
+]

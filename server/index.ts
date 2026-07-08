@@ -29,6 +29,7 @@ import type {
   AgentEvent,
   AutomationTrigger,
   DirListing,
+  OpenhandsBackend,
   Settings,
 } from "../shared/types.js";
 import { requireAuth, requireCap, currentUser, type AuthEnv } from "./auth/middleware.js";
@@ -37,6 +38,8 @@ import { runAgentTurn } from "./agent/loop.js";
 import { runAcpTurn, stopAllAcpRuns } from "./acp/acpAgent.js";
 import { runCursorTurn, stopAllCursorRuns } from "./cursor/cursorAgent.js";
 import { listCursorModels, testCursorConnection } from "./cursor/cursorConnect.js";
+import { runOpenhandsTurn, stopAllOpenhandsRuns } from "./openhands/openhandsAgent.js";
+import { testOpenhandsConnection } from "./openhands/openhandsConnect.js";
 import { listOpenRouterModels } from "./openrouter/openrouterModels.js";
 import { openaiCompatRoutes } from "./agent/openaiCompat.js";
 import { invokeRuntimeTool, runExec } from "./agent/tools.js";
@@ -274,7 +277,13 @@ app.post("/api/chat", requireCap("chat"), async (c) => {
       // has unresolved lifecycle semantics — see the extensibility plan).
       const agentKind = loadSettings().agent;
       const turnRunner =
-        agentKind === "acp" ? runAcpTurn : agentKind === "cursor" ? runCursorTurn : runAgentTurn;
+        agentKind === "acp"
+          ? runAcpTurn
+          : agentKind === "cursor"
+            ? runCursorTurn
+            : agentKind === "openhands"
+              ? runOpenhandsTurn
+              : runAgentTurn;
       await turnRunner({
         sessionId: session.id,
         userMessage: message,
@@ -2351,19 +2360,30 @@ app.put("/api/settings", requireCap("settings:write"), async (c) => {
       ]),
     );
   }
-  // Agent config changes tear down live ACP subprocesses so the next turn
-  // respawns with the new command; running turns fail fast rather than
-  // continuing on stale settings.
+  if (patch.openhandsBackends) {
+    // A masked apiKey echoed back for an existing backend must not clobber the real one.
+    const saved = new Map(loadSettings().openhandsBackends.map((b) => [b.id, b]));
+    patch.openhandsBackends = patch.openhandsBackends.map((b) => ({
+      ...b,
+      apiKey: b.apiKey.startsWith("••••") ? (saved.get(b.id)?.apiKey ?? "") : b.apiKey,
+    }));
+  }
+  // Agent config changes tear down live ACP/Cursor/OpenHands runs so the
+  // next turn respawns with the new command/connection; running turns fail
+  // fast rather than continuing on stale settings.
   if (
     patch.agent !== undefined ||
     patch.acpCommand !== undefined ||
     patch.cursorApiKey !== undefined ||
     patch.cursorModel !== undefined ||
     patch.cursorRuntime !== undefined ||
-    patch.cursorRepoUrl !== undefined
+    patch.cursorRepoUrl !== undefined ||
+    patch.openhandsBackends !== undefined ||
+    patch.openhandsActiveBackendId !== undefined
   ) {
     stopAllAcpRuns();
     stopAllCursorRuns();
+    stopAllOpenhandsRuns();
   }
   const merged = saveSettings(patch);
   // Legacy write path: keep the model registry's agent.chat slot in step
@@ -2389,6 +2409,64 @@ app.get("/api/cursor/models", requireCap("settings:write"), async (c) => {
     const message = err instanceof Error ? err.message : "Failed to list Cursor models";
     return c.json({ error: message, models: [] as { id: string; displayName: string }[] }, 400);
   }
+});
+
+// ── OpenHands backends ───────────────────────────────────────────────────────
+
+app.post("/api/openhands/test", requireCap("settings:write"), async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as { host?: string; apiKey?: string };
+  return c.json(await testOpenhandsConnection(body.host ?? "", body.apiKey));
+});
+
+app.get("/api/openhands/backends", requireCap("settings:write"), (c) => {
+  const settings = loadSettings();
+  return c.json({
+    backends: settings.openhandsBackends.map((b) => ({ ...b, apiKey: b.apiKey ? "••••" : "" })),
+    activeId: settings.openhandsActiveBackendId,
+  });
+});
+
+app.post("/api/openhands/backends", requireCap("settings:write"), async (c) => {
+  const body = (await c.req.json()) as Omit<OpenhandsBackend, "id">;
+  if (!body.host?.trim()) return c.json({ error: "Host is required" }, 400);
+  const backend: OpenhandsBackend = {
+    id: crypto.randomUUID(),
+    name: body.name?.trim() || body.host.trim(),
+    host: body.host.trim(),
+    apiKey: body.apiKey?.trim() ?? "",
+    kind: body.kind === "cloud" ? "cloud" : "local",
+  };
+  const settings = loadSettings();
+  stopAllOpenhandsRuns();
+  const merged = saveSettings({
+    openhandsBackends: [...settings.openhandsBackends, backend],
+    openhandsActiveBackendId: backend.id,
+  });
+  return c.json({ backend, activeId: merged.openhandsActiveBackendId });
+});
+
+app.post("/api/openhands/backends/:id/activate", requireCap("settings:write"), (c) => {
+  const id = c.req.param("id");
+  const settings = loadSettings();
+  if (!settings.openhandsBackends.some((b) => b.id === id)) {
+    return c.json({ error: "Backend not found" }, 404);
+  }
+  stopAllOpenhandsRuns();
+  const merged = saveSettings({ openhandsActiveBackendId: id });
+  return c.json({ activeId: merged.openhandsActiveBackendId });
+});
+
+app.delete("/api/openhands/backends/:id", requireCap("settings:write"), (c) => {
+  const id = c.req.param("id");
+  const settings = loadSettings();
+  const remaining = settings.openhandsBackends.filter((b) => b.id !== id);
+  stopAllOpenhandsRuns();
+  const merged = saveSettings({
+    openhandsBackends: remaining,
+    openhandsActiveBackendId:
+      settings.openhandsActiveBackendId === id ? null : settings.openhandsActiveBackendId,
+  });
+  return c.json({ backends: merged.openhandsBackends, activeId: merged.openhandsActiveBackendId });
 });
 
 app.post("/api/openrouter/models", requireCap("settings:write"), async (c) => {

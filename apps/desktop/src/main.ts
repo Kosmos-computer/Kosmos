@@ -2,6 +2,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { app, BrowserWindow, dialog, nativeImage, shell } from "electron";
 import { registerAppWindowIpc } from "./appWindows.js";
+import { registerAutoUpdateIpc } from "./autoUpdateIpc.js";
+import { autoUpdateService } from "./autoUpdate.js";
 import { appIconPath, desktopDataDir, repoRoot } from "./paths.js";
 import { attachServerLogging, resolveServerPort, startServerProcess, waitForUrl } from "./serverProcess.js";
 import { registerTitleBarIpc } from "./titleBarIpc.js";
@@ -137,6 +139,8 @@ if (!gotLock) {
         return windows;
       });
       registerWindowControlsIpc();
+      registerAutoUpdateIpc();
+      autoUpdateService.init(() => BrowserWindow.getAllWindows().filter((win) => !win.isDestroyed()));
       createWindow();
     } catch (err) {
       console.error("[arco-desktop] failed to start:", err);

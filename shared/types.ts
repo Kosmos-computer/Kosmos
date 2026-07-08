@@ -616,13 +616,32 @@ export type LlmProvider = "openai" | "anthropic" | "openrouter" | "ollama" | "lo
 /**
  * Which brain answers chat turns: the built-in tool loop, or an external
  * coding agent driven over ACP (Agent Client Protocol — Zed's editor↔agent
- * standard). ACP agents manage their own LLM and tools; Arco relays turns
- * and renders what comes back. Automations always use the built-in loop.
+ * standard), the Cursor SDK, or a remote OpenHands Agent Server. All three
+ * external kinds manage their own LLM and tools; Arco relays turns and
+ * renders what comes back. Automations always use the built-in loop.
  */
-export type AgentKind = "builtin" | "acp" | "cursor";
+export type AgentKind = "builtin" | "acp" | "cursor" | "openhands";
 
 /** Where a Cursor SDK agent executes — local machine or Cursor cloud VM. */
 export type CursorRuntime = "local" | "cloud";
+
+/** Whether an OpenHands backend is a self-hosted Agent Server or OpenHands Cloud. */
+export type OpenhandsBackendKind = "local" | "cloud";
+
+/**
+ * One registered OpenHands Agent Server connection (when agent="openhands").
+ * Multiple backends can be registered; one is active at a time via
+ * openhandsActiveBackendId — mirrors agent-canvas's backend registry so
+ * Arco can switch between a local Agent Server and OpenHands Cloud.
+ */
+export interface OpenhandsBackend {
+  id: string;
+  name: string;
+  host: string;
+  /** Session API key (local) or bearer token (cloud) — masked on read like apiKey. */
+  apiKey: string;
+  kind: OpenhandsBackendKind;
+}
 
 export interface Settings {
   provider: LlmProvider;
@@ -649,6 +668,10 @@ export interface Settings {
   cursorRuntime: CursorRuntime;
   /** GitHub repo URL for cloud Cursor agents. */
   cursorRepoUrl: string;
+  /** Registered OpenHands Agent Server connections (when agent="openhands"). */
+  openhandsBackends: OpenhandsBackend[];
+  /** Which entry in openhandsBackends is active; null falls back to OPENHANDS_HOST env. */
+  openhandsActiveBackendId: string | null;
   /** UI locale — BCP-47 tag, e.g. en, es, de, ja, zh-CN. */
   locale: string;
   /**
@@ -685,6 +708,13 @@ export interface OpenRouterModelInfo {
 
 /** Default Cursor model when none is configured. */
 export const CURSOR_DEFAULT_MODEL = "composer-2.5";
+
+/** Result of POST /api/openhands/test — validates a backend's host + API key. */
+export interface OpenhandsConnectionStatus {
+  connected: boolean;
+  version?: string;
+  error?: string;
+}
 
 /** Cumulative local token meter (data/usage.json) — all completions since first boot. */
 export interface LocalUsageTotals {

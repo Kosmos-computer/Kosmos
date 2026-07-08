@@ -33,6 +33,7 @@ import {
   migrateAppWindowHost,
   shouldUseNativeAppWindows,
 } from "./nativeAppWindows";
+import { UpdateModal } from "./UpdateModal";
 
 function Notifications() {
   const notifications = useOsStore((s) => s.notifications);
@@ -162,6 +163,7 @@ export function Desktop() {
       </HoverDock>
       <Notifications />
       <ShellConfirms />
+      <UpdateModal />
       <BentoDrawer />
       <MusicShell />
       <MessengerShell />

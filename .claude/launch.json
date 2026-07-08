@@ -14,6 +14,18 @@
       "port": 4611
     },
     {
+      "name": "openhands-backend-verify",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "ARCO_DATA_DIR=/private/tmp/claude-501/-Users-paulbloch-Documents-github-OpenHands-agent-canvas/f0068fc0-e962-4463-803b-17bfda5fdd8f/scratchpad/kosmos-data",
+        "npm",
+        "run",
+        "dev"
+      ],
+      "port": 4610,
+      "autoPort": true
+    },
+    {
       "name": "saas-demo-dev",
       "runtimeExecutable": "bash",
       "runtimeArgs": [

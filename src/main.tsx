@@ -37,6 +37,7 @@ import "./styles/social.css";
 import "./styles/connections.css";
 import "./styles/sheets.css";
 import "./styles/memory.css";
+import "./styles/agents.css";
 import "./styles/longformer.css";
 import "./styles/kamiji.css";
 import "./styles/generator.css";

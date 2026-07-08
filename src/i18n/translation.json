@@ -335,6 +335,13 @@
     "ja": "スキル",
     "zh-CN": "技能"
   },
+  "OS$APP_AGENTS": {
+    "en": "Agents",
+    "es": "Agentes",
+    "de": "Agenten",
+    "ja": "エージェント",
+    "zh-CN": "智能体"
+  },
   "OS$APP_MEMORY": {
     "en": "Memory",
     "es": "Memoria",
@@ -621,6 +628,433 @@
     "de": "rating",
     "ja": "rating",
     "zh-CN": "rating"
+  },
+  "APPS$AGENTS_SUBTITLE": {
+    "en": "Mission control for agent personas — profile, approved models, memory grants, and document sets.",
+    "es": "Mission control for agent personas — profile, approved models, memory grants, and document sets.",
+    "de": "Mission control for agent personas — profile, approved models, memory grants, and document sets.",
+    "ja": "Mission control for agent personas — profile, approved models, memory grants, and document sets.",
+    "zh-CN": "Mission control for agent personas — profile, approved models, memory grants, and document sets."
+  },
+  "APPS$AGENTS_NEW_AGENT": {
+    "en": "New agent",
+    "es": "New agent",
+    "de": "New agent",
+    "ja": "New agent",
+    "zh-CN": "New agent"
+  },
+  "APPS$AGENTS_SEARCH": {
+    "en": "Search agents",
+    "es": "Search agents",
+    "de": "Search agents",
+    "ja": "Search agents",
+    "zh-CN": "Search agents"
+  },
+  "APPS$AGENTS_RUNTIME_FILTER": {
+    "en": "Agent runtime filter",
+    "es": "Agent runtime filter",
+    "de": "Agent runtime filter",
+    "ja": "Agent runtime filter",
+    "zh-CN": "Agent runtime filter"
+  },
+  "APPS$AGENTS_STATUS_FILTER": {
+    "en": "Agent status filter",
+    "es": "Agent status filter",
+    "de": "Agent status filter",
+    "ja": "Agent status filter",
+    "zh-CN": "Agent status filter"
+  },
+  "APPS$AGENTS_FILTER_ALL": {
+    "en": "All",
+    "es": "All",
+    "de": "All",
+    "ja": "All",
+    "zh-CN": "All"
+  },
+  "APPS$AGENTS_FILTER_BUILTIN": {
+    "en": "Built-in",
+    "es": "Built-in",
+    "de": "Built-in",
+    "ja": "Built-in",
+    "zh-CN": "Built-in"
+  },
+  "APPS$AGENTS_FILTER_ACP": {
+    "en": "ACP",
+    "es": "ACP",
+    "de": "ACP",
+    "ja": "ACP",
+    "zh-CN": "ACP"
+  },
+  "APPS$AGENTS_FILTER_CURSOR": {
+    "en": "Cursor",
+    "es": "Cursor",
+    "de": "Cursor",
+    "ja": "Cursor",
+    "zh-CN": "Cursor"
+  },
+  "APPS$AGENTS_FILTER_AUTOMATION": {
+    "en": "Automation",
+    "es": "Automation",
+    "de": "Automation",
+    "ja": "Automation",
+    "zh-CN": "Automation"
+  },
+  "APPS$AGENTS_FILTER_CHANNEL": {
+    "en": "Channel",
+    "es": "Channel",
+    "de": "Channel",
+    "ja": "Channel",
+    "zh-CN": "Channel"
+  },
+  "APPS$AGENTS_STATUS_ALL": {
+    "en": "Any status",
+    "es": "Any status",
+    "de": "Any status",
+    "ja": "Any status",
+    "zh-CN": "Any status"
+  },
+  "APPS$AGENTS_STATUS_ENABLED": {
+    "en": "Enabled",
+    "es": "Enabled",
+    "de": "Enabled",
+    "ja": "Enabled",
+    "zh-CN": "Enabled"
+  },
+  "APPS$AGENTS_STATUS_RUNNING": {
+    "en": "Running",
+    "es": "Running",
+    "de": "Running",
+    "ja": "Running",
+    "zh-CN": "Running"
+  },
+  "APPS$AGENTS_STATUS_DISABLED": {
+    "en": "Disabled",
+    "es": "Disabled",
+    "de": "Disabled",
+    "ja": "Disabled",
+    "zh-CN": "Disabled"
+  },
+  "APPS$AGENTS_NO_MATCH": {
+    "en": "No matching agents",
+    "es": "No matching agents",
+    "de": "No matching agents",
+    "ja": "No matching agents",
+    "zh-CN": "No matching agents"
+  },
+  "APPS$AGENTS_NO_MATCH_HINT": {
+    "en": "Try a different search term or filter, or create a new agent.",
+    "es": "Try a different search term or filter, or create a new agent.",
+    "de": "Try a different search term or filter, or create a new agent.",
+    "ja": "Try a different search term or filter, or create a new agent.",
+    "zh-CN": "Try a different search term or filter, or create a new agent."
+  },
+  "APPS$AGENTS_GROUP_RUNNING": {
+    "en": "Running now",
+    "es": "Running now",
+    "de": "Running now",
+    "ja": "Running now",
+    "zh-CN": "Running now"
+  },
+  "APPS$AGENTS_GROUP_ACTIVE": {
+    "en": "Active",
+    "es": "Active",
+    "de": "Active",
+    "ja": "Active",
+    "zh-CN": "Active"
+  },
+  "APPS$AGENTS_GROUP_INACTIVE": {
+    "en": "Inactive",
+    "es": "Inactive",
+    "de": "Inactive",
+    "ja": "Inactive",
+    "zh-CN": "Inactive"
+  },
+  "APPS$AGENTS_TAB_PROFILE": {
+    "en": "Profile",
+    "es": "Profile",
+    "de": "Profile",
+    "ja": "Profile",
+    "zh-CN": "Profile"
+  },
+  "APPS$AGENTS_TAB_MODELS": {
+    "en": "Models",
+    "es": "Models",
+    "de": "Models",
+    "ja": "Models",
+    "zh-CN": "Models"
+  },
+  "APPS$AGENTS_TAB_MEMORY": {
+    "en": "Memory",
+    "es": "Memory",
+    "de": "Memory",
+    "ja": "Memory",
+    "zh-CN": "Memory"
+  },
+  "APPS$AGENTS_TAB_DOCUMENTS": {
+    "en": "Documents",
+    "es": "Documents",
+    "de": "Documents",
+    "ja": "Documents",
+    "zh-CN": "Documents"
+  },
+  "APPS$AGENTS_TAB_ACCESS": {
+    "en": "Access",
+    "es": "Access",
+    "de": "Access",
+    "ja": "Access",
+    "zh-CN": "Access"
+  },
+  "APPS$AGENTS_PROFILE_INTRO": {
+    "en": "Persona, avatar, and identity. Each agent has its own principal ID for memory isolation.",
+    "es": "Persona, avatar, and identity. Each agent has its own principal ID for memory isolation.",
+    "de": "Persona, avatar, and identity. Each agent has its own principal ID for memory isolation.",
+    "ja": "Persona, avatar, and identity. Each agent has its own principal ID for memory isolation.",
+    "zh-CN": "Persona, avatar, and identity. Each agent has its own principal ID for memory isolation."
+  },
+  "APPS$AGENTS_AVATAR_EMOJI": {
+    "en": "Avatar",
+    "es": "Avatar",
+    "de": "Avatar",
+    "ja": "Avatar",
+    "zh-CN": "Avatar"
+  },
+  "APPS$AGENTS_AVATAR_COLOR": {
+    "en": "Color",
+    "es": "Color",
+    "de": "Color",
+    "ja": "Color",
+    "zh-CN": "Color"
+  },
+  "APPS$AGENTS_NAME": {
+    "en": "Name",
+    "es": "Name",
+    "de": "Name",
+    "ja": "Name",
+    "zh-CN": "Name"
+  },
+  "APPS$AGENTS_TAGLINE": {
+    "en": "Tagline",
+    "es": "Tagline",
+    "de": "Tagline",
+    "ja": "Tagline",
+    "zh-CN": "Tagline"
+  },
+  "APPS$AGENTS_DESCRIPTION": {
+    "en": "Description",
+    "es": "Description",
+    "de": "Description",
+    "ja": "Description",
+    "zh-CN": "Description"
+  },
+  "APPS$AGENTS_RUNTIME": {
+    "en": "Runtime",
+    "es": "Runtime",
+    "de": "Runtime",
+    "ja": "Runtime",
+    "zh-CN": "Runtime"
+  },
+  "APPS$AGENTS_PRINCIPAL": {
+    "en": "Principal ID",
+    "es": "Principal ID",
+    "de": "Principal ID",
+    "ja": "Principal ID",
+    "zh-CN": "Principal ID"
+  },
+  "APPS$AGENTS_MODELS_INTRO": {
+    "en": "Approved models this agent may use. Default model is used when no override is set in chat.",
+    "es": "Approved models this agent may use. Default model is used when no override is set in chat.",
+    "de": "Approved models this agent may use. Default model is used when no override is set in chat.",
+    "ja": "Approved models this agent may use. Default model is used when no override is set in chat.",
+    "zh-CN": "Approved models this agent may use. Default model is used when no override is set in chat."
+  },
+  "APPS$AGENTS_MODEL_SLOT": {
+    "en": "Model slot",
+    "es": "Model slot",
+    "de": "Model slot",
+    "ja": "Model slot",
+    "zh-CN": "Model slot"
+  },
+  "APPS$AGENTS_OPEN_MODELS": {
+    "en": "Open Models",
+    "es": "Open Models",
+    "de": "Open Models",
+    "ja": "Open Models",
+    "zh-CN": "Open Models"
+  },
+  "APPS$AGENTS_DEFAULT_MODEL": {
+    "en": "Default",
+    "es": "Default",
+    "de": "Default",
+    "ja": "Default",
+    "zh-CN": "Default"
+  },
+  "APPS$AGENTS_SET_DEFAULT": {
+    "en": "Set default",
+    "es": "Set default",
+    "de": "Set default",
+    "ja": "Set default",
+    "zh-CN": "Set default"
+  },
+  "APPS$AGENTS_MODELS_HINT": {
+    "en": "Per-agent model allowlists will be enforced at spawn time once the agent registry API ships.",
+    "es": "Per-agent model allowlists will be enforced at spawn time once the agent registry API ships.",
+    "de": "Per-agent model allowlists will be enforced at spawn time once the agent registry API ships.",
+    "ja": "Per-agent model allowlists will be enforced at spawn time once the agent registry API ships.",
+    "zh-CN": "Per-agent model allowlists will be enforced at spawn time once the agent registry API ships."
+  },
+  "APPS$AGENTS_MEMORY_INTRO": {
+    "en": "Memory principal and grants — what this agent can read and write in the memory store.",
+    "es": "Memory principal and grants — what this agent can read and write in the memory store.",
+    "de": "Memory principal and grants — what this agent can read and write in the memory store.",
+    "ja": "Memory principal and grants — what this agent can read and write in the memory store.",
+    "zh-CN": "Memory principal and grants — what this agent can read and write in the memory store."
+  },
+  "APPS$AGENTS_MEMORY_PRINCIPAL": {
+    "en": "Memory principal",
+    "es": "Memory principal",
+    "de": "Memory principal",
+    "ja": "Memory principal",
+    "zh-CN": "Memory principal"
+  },
+  "APPS$AGENTS_MEMORY_ENTRIES": {
+    "en": "Entries",
+    "es": "Entries",
+    "de": "Entries",
+    "ja": "Entries",
+    "zh-CN": "Entries"
+  },
+  "APPS$AGENTS_MEMORY_GRANTS": {
+    "en": "Grants",
+    "es": "Grants",
+    "de": "Grants",
+    "ja": "Grants",
+    "zh-CN": "Grants"
+  },
+  "APPS$AGENTS_NO_MEMORY_GRANTS": {
+    "en": "No memory grants configured.",
+    "es": "No memory grants configured.",
+    "de": "No memory grants configured.",
+    "ja": "No memory grants configured.",
+    "zh-CN": "No memory grants configured."
+  },
+  "APPS$AGENTS_OPEN_MEMORY": {
+    "en": "Open Memory",
+    "es": "Open Memory",
+    "de": "Open Memory",
+    "ja": "Open Memory",
+    "zh-CN": "Open Memory"
+  },
+  "APPS$AGENTS_MEMORY_SETTINGS": {
+    "en": "Memory settings",
+    "es": "Memory settings",
+    "de": "Memory settings",
+    "ja": "Memory settings",
+    "zh-CN": "Memory settings"
+  },
+  "APPS$AGENTS_DOCUMENTS_INTRO": {
+    "en": "Markdown document set — soul, instructions, and persona files the agent loads into context.",
+    "es": "Markdown document set — soul, instructions, and persona files the agent loads into context.",
+    "de": "Markdown document set — soul, instructions, and persona files the agent loads into context.",
+    "ja": "Markdown document set — soul, instructions, and persona files the agent loads into context.",
+    "zh-CN": "Markdown document set — soul, instructions, and persona files the agent loads into context."
+  },
+  "APPS$AGENTS_NO_DOCUMENTS": {
+    "en": "No documents linked to this agent yet.",
+    "es": "No documents linked to this agent yet.",
+    "de": "No documents linked to this agent yet.",
+    "ja": "No documents linked to this agent yet.",
+    "zh-CN": "No documents linked to this agent yet."
+  },
+  "APPS$AGENTS_ACCESS_INTRO": {
+    "en": "Tools, policy, skills, and MCP servers this agent may use.",
+    "es": "Tools, policy, skills, and MCP servers this agent may use.",
+    "de": "Tools, policy, skills, and MCP servers this agent may use.",
+    "ja": "Tools, policy, skills, and MCP servers this agent may use.",
+    "zh-CN": "Tools, policy, skills, and MCP servers this agent may use."
+  },
+  "APPS$AGENTS_TOOL_COUNT": {
+    "en": "Tools available",
+    "es": "Tools available",
+    "de": "Tools available",
+    "ja": "Tools available",
+    "zh-CN": "Tools available"
+  },
+  "APPS$AGENTS_POLICY_LEVEL": {
+    "en": "Policy level",
+    "es": "Policy level",
+    "de": "Policy level",
+    "ja": "Policy level",
+    "zh-CN": "Policy level"
+  },
+  "APPS$AGENTS_SAFETY_LEVEL": {
+    "en": "Safety level",
+    "es": "Safety level",
+    "de": "Safety level",
+    "ja": "Safety level",
+    "zh-CN": "Safety level"
+  },
+  "APPS$AGENTS_SKILL_GATES": {
+    "en": "Skill gates",
+    "es": "Skill gates",
+    "de": "Skill gates",
+    "ja": "Skill gates",
+    "zh-CN": "Skill gates"
+  },
+  "APPS$AGENTS_MCP_SERVERS": {
+    "en": "MCP servers",
+    "es": "MCP servers",
+    "de": "MCP servers",
+    "ja": "MCP servers",
+    "zh-CN": "MCP servers"
+  },
+  "APPS$AGENTS_TOOL_POLICY": {
+    "en": "Tool policy",
+    "es": "Tool policy",
+    "de": "Tool policy",
+    "ja": "Tool policy",
+    "zh-CN": "Tool policy"
+  },
+  "APPS$AGENTS_BUILTIN_TOOLS": {
+    "en": "Built-in tools",
+    "es": "Built-in tools",
+    "de": "Built-in tools",
+    "ja": "Built-in tools",
+    "zh-CN": "Built-in tools"
+  },
+  "APPS$AGENTS_SKILLS": {
+    "en": "Skills",
+    "es": "Skills",
+    "de": "Skills",
+    "ja": "Skills",
+    "zh-CN": "Skills"
+  },
+  "APPS$AGENTS_MCP_SETTINGS": {
+    "en": "MCP settings",
+    "es": "MCP settings",
+    "de": "MCP settings",
+    "ja": "MCP settings",
+    "zh-CN": "MCP settings"
+  },
+  "APPS$AGENTS_CREATE_NAME_PLACEHOLDER": {
+    "en": "Research Scout",
+    "es": "Research Scout",
+    "de": "Research Scout",
+    "ja": "Research Scout",
+    "zh-CN": "Research Scout"
+  },
+  "APPS$AGENTS_CREATE_TAGLINE_PLACEHOLDER": {
+    "en": "Custom — web research and synthesis",
+    "es": "Custom — web research and synthesis",
+    "de": "Custom — web research and synthesis",
+    "ja": "Custom — web research and synthesis",
+    "zh-CN": "Custom — web research and synthesis"
+  },
+  "APPS$AGENTS_CREATE_DESC_PLACEHOLDER": {
+    "en": "What is this agent for? Describe its role and boundaries.",
+    "es": "What is this agent for? Describe its role and boundaries.",
+    "de": "What is this agent for? Describe its role and boundaries.",
+    "ja": "What is this agent for? Describe its role and boundaries.",
+    "zh-CN": "What is this agent for? Describe its role and boundaries."
   },
   "APPS$APPVIEW_STARTING": {
     "en": "Starting",
@@ -5647,6 +6081,48 @@
     "de": "Choose in Finder…",
     "ja": "Choose in Finder…",
     "zh-CN": "Choose in Finder…"
+  },
+  "APPS$STUDIO_OPEN_FROM_GITHUB": {
+    "en": "Open from GitHub…",
+    "es": "Open from GitHub…",
+    "de": "Open from GitHub…",
+    "ja": "Open from GitHub…",
+    "zh-CN": "Open from GitHub…"
+  },
+  "APPS$STUDIO_GITHUB_CLONE_HINT": {
+    "en": "Clone a public repo into this server's workspace. Use owner/repo or a full URL.",
+    "es": "Clone a public repo into this server's workspace. Use owner/repo or a full URL.",
+    "de": "Clone a public repo into this server's workspace. Use owner/repo or a full URL.",
+    "ja": "Clone a public repo into this server's workspace. Use owner/repo or a full URL.",
+    "zh-CN": "Clone a public repo into this server's workspace. Use owner/repo or a full URL."
+  },
+  "APPS$STUDIO_GITHUB_REPO_LABEL": {
+    "en": "Repository",
+    "es": "Repository",
+    "de": "Repository",
+    "ja": "Repository",
+    "zh-CN": "Repository"
+  },
+  "APPS$STUDIO_GITHUB_BRANCH_LABEL": {
+    "en": "Branch (optional)",
+    "es": "Branch (optional)",
+    "de": "Branch (optional)",
+    "ja": "Branch (optional)",
+    "zh-CN": "Branch (optional)"
+  },
+  "APPS$STUDIO_GITHUB_CLONE_OPEN": {
+    "en": "Clone & open",
+    "es": "Clone & open",
+    "de": "Clone & open",
+    "ja": "Clone & open",
+    "zh-CN": "Clone & open"
+  },
+  "APPS$STUDIO_HOSTED_BROWSE_HINT": {
+    "en": "Browse folders on this server — not your local machine.",
+    "es": "Browse folders on this server — not your local machine.",
+    "de": "Browse folders on this server — not your local machine.",
+    "ja": "Browse folders on this server — not your local machine.",
+    "zh-CN": "Browse folders on this server — not your local machine."
   },
   "APPS$STUDIO_CONVERSATIONS": {
     "en": "Conversations",

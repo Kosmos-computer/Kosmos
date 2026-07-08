@@ -151,6 +151,7 @@ function formatAcpError(err: unknown): string {
  */
 function spawnEnv(settings: Settings): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = { ...process.env, NO_BROWSER: "1" };
+  env.CODEX_HOME = path.join(dataDirs.root, ".codex");
   const openaiKey = resolveOpenAiKey(settings);
   if (openaiKey) {
     env.OPENAI_API_KEY = openaiKey;

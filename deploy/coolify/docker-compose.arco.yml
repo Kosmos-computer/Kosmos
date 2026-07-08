@@ -1,4 +1,4 @@
-# Reference Coolify compose for Arco OS with persistent state.
+# Reference Coolify compose for Arco OS with persistent state + ops mounts.
 # kosmos.tiru.fm uses this pattern today (volume name may differ per app).
 #
 # In Coolify: Application → Persistent Storage
@@ -10,14 +10,17 @@
 #   ARCO_SECURE_COOKIES=1
 #   NODE_ENV=production
 #   PORT=4600
+#   ARCO_OPS_ENABLED=1
+#   ARCO_SELF_HEAL=1
+#   ARCO_COOLIFY_APPS_DIR=/host-coolify/applications
 
 services:
   arco-os:
     build:
       context: ../..
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.prod
     # Or pin a registry image after CI builds:
-    # image: ghcr.io/your-org/arco:latest
+    # image: ghcr.io/kosmos-computer/kosmos:latest
     restart: unless-stopped
     expose:
       - "4600"
@@ -30,8 +33,15 @@ services:
       PORT: "4600"
       ARCO_DATA_DIR: /data
       ARCO_SECURE_COOKIES: "1"
+      ARCO_OPS_ENABLED: "1"
+      ARCO_SELF_HEAL: "1"
+      ARCO_COOLIFY_APPS_DIR: /host-coolify/applications
     volumes:
       - arco-os-data:/data
+      # Ops: build images + scaffold Coolify apps (read/write host applications tree)
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/bin/docker:/usr/bin/docker:ro
+      - /data/coolify/applications:/host-coolify/applications
     healthcheck:
       test:
         [

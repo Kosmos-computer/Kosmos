@@ -8,6 +8,7 @@ export const SYSTEM_APP_TITLE_KEYS: Record<SystemAppId, I18nKey> = {
   studio: I18nKey.OS$APP_STUDIO,
   apps: I18nKey.OS$APP_APPS,
   skills: I18nKey.OS$APP_SKILLS,
+  agents: I18nKey.OS$APP_AGENTS,
   memory: I18nKey.OS$APP_MEMORY,
   keywallet: I18nKey.OS$APP_KEY_WALLET,
   apis: I18nKey.OS$APP_APIS,

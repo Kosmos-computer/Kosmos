@@ -12,6 +12,7 @@ export type SystemAppId =
   | "studio"
   | "apps"
   | "skills"
+  | "agents"
   | "keywallet"
   | "apis"
   | "automations"

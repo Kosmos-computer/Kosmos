@@ -13,6 +13,7 @@ export const SYSTEM_APP_CATALOG: SystemAppCatalogEntry[] = [
   { id: "studio", title: "Techno Studio" },
   { id: "apps", title: "Apps" },
   { id: "skills", title: "Skills" },
+  { id: "agents", title: "Agents" },
   { id: "memory", title: "Memory" },
   { id: "keywallet", title: "Key Wallet" },
   { id: "apis", title: "APIs" },

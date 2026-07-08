@@ -29,6 +29,27 @@ export function ensureDataDirs(): void {
   for (const dir of Object.values(dataDirs)) fs.mkdirSync(dir, { recursive: true });
   const scriptsDir = path.join(dataDirs.workspace, "scripts");
   fs.mkdirSync(scriptsDir, { recursive: true });
+  const projectsDir = path.join(dataDirs.workspace, "projects");
+  fs.mkdirSync(projectsDir, { recursive: true });
+  ensureCodexConfig();
+}
+
+/** Codex ACP reads sandbox settings from $CODEX_HOME/config.toml. */
+function ensureCodexConfig(): void {
+  const codexHome = path.join(ROOT, ".codex");
+  fs.mkdirSync(codexHome, { recursive: true });
+  const configPath = path.join(codexHome, "config.toml");
+  if (fs.existsSync(configPath)) return;
+  fs.writeFileSync(
+    configPath,
+    [
+      "# Kosmos defaults — Codex file tools in Docker/containers",
+      'sandbox_mode = "workspace-write"',
+      'approval_policy = "on-request"',
+      "",
+    ].join("\n"),
+    "utf-8",
+  );
 }
 
 // ── Settings ─────────────────────────────────────────────────────────────────

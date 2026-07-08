@@ -71,6 +71,7 @@ import { getProviders, setProvider } from "./capabilities/registry.js";
 import { CONTRACTS } from "../shared/capabilities/index.js";
 import { mcpServerStore } from "./mcp/serverStore.js";
 import { mcpSupervisor } from "./mcp/supervisor.js";
+import { seedMcpPresets } from "./mcp/seedPresets.js";
 import { mcpLogFile } from "./mcp/client.js";
 import "./mcp/tools.js"; // registers the MCP tool contributor with the agent registry
 import "./platform/appTools.js"; // registers installed apps' tool contributions
@@ -149,6 +150,10 @@ import {
 } from "./mail/googleOAuth.js";
 import { mailStore } from "./mail/mailStore.js";
 import { getInstallStatus } from "./system/installStatus.js";
+import { getWorkspaceFeatures } from "./system/workspaceFeatures.js";
+import { cloneGitRepo } from "./gitClone.js";
+import { getOpsStatus } from "./ops/deployOps.js";
+import { startSelfHeal } from "./ops/selfHeal.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -502,7 +507,10 @@ function parseTrigger(raw: unknown, scheduleFallback?: string): AutomationTrigge
 }
 
 app.get("/api/automations/health", async (c) =>
-  c.json({ status: "ok" satisfies import("../shared/types.js").AutomationHealthResponse["status"] }),
+  c.json({
+    status: "ok" satisfies import("../shared/types.js").AutomationHealthResponse["status"],
+    ops: await getOpsStatus(),
+  }),
 );
 
 app.get("/api/automations", async (c) => {
@@ -1474,6 +1482,19 @@ app.post("/api/projects", requireCap("files:write"), async (c) => {
   }
 });
 
+/** Clone owner/repo or a URL into the managed projects directory, then register it. */
+app.post("/api/projects/clone-git", requireCap("files:write"), async (c) => {
+  const body = (await c.req.json()) as { repo: string; branch?: string };
+  if (!body.repo?.trim()) return c.json({ error: "repo is required" }, 400);
+  try {
+    const dest = await cloneGitRepo(body.repo, body.branch);
+    const project = projectStore.add(dest);
+    return c.json(project);
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Clone failed" }, 400);
+  }
+});
+
 app.post("/api/projects/active", requireCap("files:write"), async (c) => {
   const body = (await c.req.json()) as { id: string | null };
   try {
@@ -1725,6 +1746,8 @@ app.delete("/api/runs/:id", requireCap("exec"), (c) => c.json({ ok: stopRun(c.re
 // local server can: it pops the real Finder folder chooser (which carries
 // user-intent weight with TCC and triggers consent prompts), and deep-links
 // into the Privacy & Security pane when access was already denied.
+
+app.get("/api/system/workspace-features", async (c) => c.json(await getWorkspaceFeatures()));
 
 app.post("/api/system/native-pick", requireCap("files:write"), async (c) => {
   try {
@@ -2326,7 +2349,9 @@ if (process.env.NODE_ENV === "production") {
 }
 
 const port = Number(process.env.PORT ?? 4600);
+seedMcpPresets();
 startScheduler();
+startSelfHeal();
 // Connect enabled MCP servers in the background — a slow or dead server
 // must not delay the shell from coming up.
 void mcpSupervisor.start();

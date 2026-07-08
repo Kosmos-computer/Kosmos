@@ -1,8 +1,9 @@
 FROM node:22-bookworm-slim
 
-# Native deps for better-sqlite3; git for workspace tools at runtime.
+# Native deps for better-sqlite3; git for workspace tools; bubblewrap for Codex ACP.
+# Docker CLI comes from the host mount (/usr/bin/docker) when ops mode is enabled.
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends python3 make g++ git ca-certificates \
+  && apt-get install -y --no-install-recommends python3 make g++ git ca-certificates bubblewrap \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

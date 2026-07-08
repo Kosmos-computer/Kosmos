@@ -1022,6 +1022,47 @@
   color: var(--arco-accent);
 }
 
+.arco-projectpicker__hint {
+  margin: 6px 10px 2px;
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-secondary);
+  line-height: 1.4;
+}
+
+.arco-projectpicker__github {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-xs);
+  padding: 4px 0 8px;
+  min-width: 280px;
+}
+
+.arco-projectpicker__githubtitle {
+  flex: 1;
+  font-size: var(--arco-text-sm);
+  font-weight: 600;
+  color: var(--arco-text-primary);
+}
+
+.arco-projectpicker__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 10px;
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-secondary);
+}
+
+.arco-projectpicker__field .arco-input {
+  font-size: var(--arco-text-sm);
+}
+
+.arco-projectpicker__clonebtn {
+  margin: 4px 10px 0;
+  align-self: stretch;
+  justify-content: center;
+}
+
 /* ── Git tab ──────────────────────────────────────────────────────────────── */
 
 .arco-studio__git {

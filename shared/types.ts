@@ -595,6 +595,18 @@ export interface InstallStatus {
   optional: InstallCheck[];
 }
 
+/** Workspace open flows available on this host (GET /api/system/workspace-features). */
+export interface WorkspaceFeatures {
+  /** macOS Finder dialog via osascript — unavailable in Docker / Linux. */
+  nativeFolderPicker: boolean;
+  /** Remote / container deployment — browse shows server paths, not the user's Mac. */
+  hosted: boolean;
+  /** Default root for the in-app folder browser. */
+  defaultBrowsePath: string;
+  /** Server can clone owner/repo or URLs into the managed projects directory. */
+  githubClone: boolean;
+}
+
 // ── Settings ─────────────────────────────────────────────────────────────────
 
 export type LlmProvider = "openai" | "anthropic" | "openrouter" | "ollama" | "local" | "custom" | "mock";
@@ -711,9 +723,28 @@ export interface AgentToolInfo {
  * subscription sessions are auto-detected), or an API key from Settings.
  */
 export const ACP_PRESETS: { id: string; label: string; command: string }[] = [
-  { id: "claude-code", label: "Claude Code", command: "npx -y @zed-industries/claude-code-acp" },
-  { id: "codex", label: "Codex", command: "npx -y @zed-industries/codex-acp" },
+  { id: "claude-code", label: "Claude Code", command: "npx -y @agentclientprotocol/claude-code-acp" },
+  { id: "codex", label: "Codex", command: "npx -y @agentclientprotocol/codex-acp" },
   { id: "gemini", label: "Gemini CLI", command: "npx -y @google/gemini-cli --experimental-acp" },
+];
+
+/** Curated MCP servers — one-click add from Settings → MCP. */
+export const MCP_PRESETS: {
+  id: string;
+  label: string;
+  description: string;
+  transport: McpTransport;
+}[] = [
+  {
+    id: "kosmos-ops",
+    label: "Kosmos Ops",
+    description: "Folders, Docker builds, Coolify app scaffolding (builtin + ACP agents).",
+    transport: {
+      kind: "stdio",
+      command: "node",
+      args: ["--import", "tsx/esm", "scripts/kosmos-ops-mcp.ts"],
+    },
+  },
 ];
 
 /** Provider presets shown in the Settings app. */

@@ -40,6 +40,7 @@ import {
   FileText,
   Egg,
   Boxes,
+  Bot,
 } from "lucide-react";
 import type { SystemAppId } from "./windowStore";
 import { I18nKey } from "../i18n/declaration";
@@ -49,6 +50,7 @@ import { STUDIO_ID } from "../apps/studio/studioMeta";
 import { AppsLibrary } from "../apps/library/AppsLibrary";
 import { AutomationsApp } from "../apps/automations/AutomationsApp";
 import { SkillsApp } from "../apps/skills/SkillsApp";
+import { AgentsApp } from "../apps/agents/AgentsApp";
 import { KeyWalletApp } from "../apps/key-wallet/KeyWalletApp";
 import { ApisApp } from "../apps/apis/ApisApp";
 import { FilesApp } from "../apps/files/FilesApp";
@@ -92,6 +94,7 @@ export const SYSTEM_APPS: SystemAppDef[] = [
   { id: STUDIO_ID, titleKey: I18nKey.OS$APP_STUDIO, icon: PanelsTopLeft, component: StudioApp },
   { id: "apps", titleKey: I18nKey.OS$APP_APPS, icon: LayoutGrid, component: AppsLibrary },
   { id: "skills", titleKey: I18nKey.OS$APP_SKILLS, icon: Layers, component: SkillsApp },
+  { id: "agents", titleKey: I18nKey.OS$APP_AGENTS, icon: Bot, component: AgentsApp },
   { id: "memory", titleKey: I18nKey.OS$APP_MEMORY, icon: Brain, component: MemoryApp },
   { id: "keywallet", titleKey: I18nKey.OS$APP_KEY_WALLET, icon: Wallet, component: KeyWalletApp },
   { id: "apis", titleKey: I18nKey.OS$APP_APIS, icon: Plug, component: ApisApp },

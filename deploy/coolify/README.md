@@ -154,3 +154,30 @@ Add `docker-compose.stack.yml` as a **Docker Compose** resource in the same proj
 | GPU | Apple Metal | CPU in Colima VM (slow; use small models) |
 
 On your Mac, keep using `npm run models` for the full model-manager experience with Metal. Use Ollama in Coolify for server-style local inference tests.
+
+## Agent ops (Docker + Coolify)
+
+When `ARCO_OPS_ENABLED=1` and the host mounts are present, Kosmos auto-seeds a **Kosmos Ops** MCP server with tools for:
+
+- `create_directory` — workspace or Coolify app folders
+- `docker_build` — build images (needs Docker socket)
+- `coolify_create_app` — scaffold Dockerfile + compose under `/host-coolify/applications`
+- `docker_compose_up` — deploy a compose stack
+
+Required compose mounts (see `docker-compose.arco.yml`):
+
+```yaml
+volumes:
+  - /var/run/docker.sock:/var/run/docker.sock
+  - /data/coolify/applications:/host-coolify/applications
+environment:
+  ARCO_OPS_ENABLED: "1"
+  ARCO_SELF_HEAL: "1"
+  ARCO_COOLIFY_APPS_DIR: /host-coolify/applications
+```
+
+**Self-heal:** with `ARCO_SELF_HEAL=1`, Kosmos restarts failed MCP servers every 5 minutes and logs to `/data/ops-heal.log`.
+
+**Codex in Docker:** the prod image installs `bubblewrap` and writes `/data/.codex/config.toml` for sandboxed file edits.
+
+Local dev: Settings → MCP → **Kosmos Ops** quick-add, or set `ARCO_SEED_OPS_MCP=1`.

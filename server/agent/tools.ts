@@ -38,6 +38,7 @@ import { skillStore } from "../skills/skillStore.js";
 import { bus } from "../bus.js";
 import { requestClientAction } from "./clientRequests.js";
 import { isRiskyCommand, requestConfirmation } from "./confirmations.js";
+import { opsAgentTools } from "./opsTools.js";
 import {
   checkWorkspaceQuota,
   invalidateWorkspaceUsage,
@@ -1338,6 +1339,9 @@ export const agentTools: AgentTool[] = [
       };
     },
   },
+
+  // ── Deploy / ops (shared with kosmos-ops MCP) ───────────────────────────────
+  ...opsAgentTools,
 ];
 
 export const toolDefs: LlmToolDef[] = agentTools.map(({ name, description, parameters }) => ({

@@ -25,6 +25,7 @@ import type {
   ExternalClientScope,
   GitInfo,
   InstallStatus,
+  WorkspaceFeatures,
   McpServerInfo,
   McpTransport,
   Project,
@@ -126,6 +127,8 @@ export const api = {
     settings?: Partial<Settings>;
   }) => post<{ user: AuthUser }>("/api/auth/setup", data),
   installStatus: () => fetch("/api/system/install-status").then((r) => json<InstallStatus>(r)),
+  workspaceFeatures: () =>
+    fetch("/api/system/workspace-features").then((r) => json<WorkspaceFeatures>(r)),
   authLogin: (username: string, password: string) =>
     post<{ user: AuthUser }>("/api/auth/login", { username, password }),
   authLogout: () => post<{ ok: true }>("/api/auth/logout"),
@@ -509,6 +512,12 @@ export const api = {
     }).then((r) => json<ProjectsInfo>(r)),
   removeProject: (id: string) =>
     fetch(`/api/projects/${id}`, { method: "DELETE" }).then((r) => json<ProjectsInfo>(r)),
+  cloneGitRepo: (repo: string, branch?: string) =>
+    fetch("/api/projects/clone-git", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ repo, ...(branch ? { branch } : {}) }),
+    }).then((r) => json<Project>(r)),
   browseDirs: (path?: string) =>
     fetch(`/api/fs/browse${path ? `?path=${encodeURIComponent(path)}` : ""}`).then((r) =>
       json<DirListing>(r),

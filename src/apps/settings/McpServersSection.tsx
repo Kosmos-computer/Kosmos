@@ -16,6 +16,7 @@ import type {
   McpToolInfo,
   McpTransport,
 } from "@shared/types";
+import { MCP_PRESETS } from "@shared/types";
 import { api } from "../../lib/api";
 import { useCan } from "../../os/auth/authStore";
 import {
@@ -256,6 +257,25 @@ export function McpServersSection() {
     void refresh();
   }, [refresh]);
 
+  const addPreset = async (presetId: string) => {
+    const preset = MCP_PRESETS.find((p) => p.id === presetId);
+    if (!preset) return;
+    if (servers.some((s) => s.config.id === preset.id)) {
+      setError(`"${preset.label}" is already configured.`);
+      return;
+    }
+    setAdding(true);
+    setError(null);
+    try {
+      await api.addMcpServer({ name: preset.label, transport: preset.transport });
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to add preset");
+    } finally {
+      setAdding(false);
+    }
+  };
+
   const add = async () => {
     setAdding(true);
     setError(null);
@@ -308,6 +328,24 @@ export function McpServersSection() {
               />
             ))}
           </SettingsStack>
+        )}
+
+        {canManage && MCP_PRESETS.length > 0 && (
+          <>
+            <SettingsSubhead>Quick add</SettingsSubhead>
+            <SettingsRow>
+              {MCP_PRESETS.map((preset) => (
+                <Chip
+                  key={preset.id}
+                  active={servers.some((s) => s.config.id === preset.id)}
+                  onClick={() => void addPreset(preset.id)}
+                  title={preset.description}
+                >
+                  {preset.label}
+                </Chip>
+              ))}
+            </SettingsRow>
+          </>
         )}
 
         {canManage && (

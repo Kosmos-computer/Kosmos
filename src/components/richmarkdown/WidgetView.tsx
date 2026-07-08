@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import { T } from "../../i18n/T";
 /**
  * Render a validated widget instance with design-token styling.
  */
@@ -110,7 +112,7 @@ export function WidgetFallback({
   }
   return (
     <div className="arco-widget arco-widget--error">
-      <div className="arco-widget__error-label">Widget error</div>
+      <div className="arco-widget__error-label"><T k={I18nKey.COMPONENTS$RICHMARKDOWN_WIDGET_ERROR} /></div>
       <div className="arco-widget__error-msg">{error}</div>
       {source ? <pre className="arco-richmd__pre">{source.trim()}</pre> : null}
     </div>

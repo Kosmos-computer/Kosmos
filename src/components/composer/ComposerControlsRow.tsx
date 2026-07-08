@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
 /**
  * ComposerControlsRow — the single row of controls under the textarea:
  * scrollable left cluster (attach, emoji, formatting toggle, mode, model)
@@ -230,7 +232,7 @@ export function ComposerControlsRow({
               <Menu
                 side="top"
                 align="start"
-                aria-label="Conversation mode"
+                aria-label={i18n.t(I18nKey.COMPONENTS$COMPOSER_CONVERSATION_MODE)}
                 items={modeItems}
                 trigger={
                   <button type="button" className="arco-composer__pickertrigger">
@@ -246,7 +248,7 @@ export function ComposerControlsRow({
               <Menu
                 side="top"
                 align="start"
-                aria-label="Choose model"
+                aria-label={i18n.t(I18nKey.COMPONENTS$COMPOSER_CHOOSE_MODEL)}
                 items={modelItems ?? []}
                 trigger={
                   <button type="button" className="arco-composer__pickertrigger">
@@ -264,14 +266,14 @@ export function ComposerControlsRow({
             <Menu
               side="top"
               align="end"
-              aria-label="More composer actions"
+              aria-label={i18n.t(I18nKey.COMPONENTS$COMPOSER_MORE_COMPOSER_ACTIONS)}
               items={overflowItems}
               trigger={
                 <button
                   type="button"
                   className="arco-btn arco-btn--ghost arco-btn--icon"
-                  aria-label="More actions"
-                  title="More actions"
+                  aria-label={i18n.t(I18nKey.APPS$FILES_MORE_ACTIONS)}
+                  title={i18n.t(I18nKey.APPS$FILES_MORE_ACTIONS)}
                 >
                   <MoreHorizontal size={15} />
                 </button>
@@ -305,8 +307,8 @@ export function ComposerControlsRow({
           <button
             type="button"
             className="arco-btn arco-btn--danger arco-btn--icon"
-            aria-label="Stop"
-            title="Stop"
+            aria-label={i18n.t(I18nKey.APPS$NOTES_STOP)}
+            title={i18n.t(I18nKey.APPS$NOTES_STOP)}
             onClick={onStop}
           >
             <Square size={13} />
@@ -315,8 +317,8 @@ export function ComposerControlsRow({
           <button
             type="button"
             className="arco-btn arco-btn--primary arco-btn--icon"
-            aria-label="Send message"
-            title="Send message"
+            aria-label={i18n.t(I18nKey.COMPONENTS$COMPOSER_SEND_MESSAGE)}
+            title={i18n.t(I18nKey.COMPONENTS$COMPOSER_SEND_MESSAGE)}
             disabled={disabled || !canSubmit}
             onClick={onSubmit}
           >

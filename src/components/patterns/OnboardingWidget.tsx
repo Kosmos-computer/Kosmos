@@ -1,3 +1,7 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
+import { useTranslation } from "react-i18next";
 /**
  * Embeddable onboarding widget — drop into empty states, banners, side panels,
  * or full cards. Controlled or uncontrolled step index.
@@ -8,6 +12,7 @@ import { Button } from "../ui";
 import type { OnboardingStep, OnboardingWidgetProps } from "./onboardingTypes";
 
 function clampStepIndex(index: number, length: number) {
+  const { t } = useTranslation();
   return Math.max(0, Math.min(length - 1, index));
 }
 
@@ -20,8 +25,9 @@ function ProgressDots({
   active: number;
   completeBefore: number;
 }) {
+  const { t } = useTranslation();
   return (
-    <div className="arco-onboard__dots" role="tablist" aria-label="Onboarding progress">
+    <div className="arco-onboard__dots" role="tablist" aria-label={i18n.t(I18nKey.COMPONENTS$PATTERNS_ONBOARDING_PROGRESS)}>
       {Array.from({ length: count }, (_, index) => (
         <span
           key={index}
@@ -125,9 +131,7 @@ function WidgetFooter({
     <footer className="arco-onboard__footer">
       <div className="arco-onboard__footer-start">
         {skippable && onSkip ? (
-          <Button variant="ghost" onClick={onSkip}>
-            Skip tour
-          </Button>
+          <Button variant="ghost" onClick={onSkip}><T k={I18nKey.COMPONENTS$PATTERNS_SKIP_TOUR} /></Button>
         ) : null}
       </div>
       <div className="arco-onboard__footer-actions">
@@ -190,13 +194,12 @@ function CardVariant(props: {
           {flowTitle ? <div className="arco-onboard__eyebrow">{flowTitle}</div> : null}
           {flowSubtitle ? <p className="arco-onboard__subtitle">{flowSubtitle}</p> : null}
           {showProgress ? (
-            <div className="arco-onboard__progress-meta">
-              Step {stepIndex + 1} of {steps.length}
+            <div className="arco-onboard__progress-meta"><T k={I18nKey.COMPONENTS$PATTERNS_STEP} />{stepIndex + 1}<T k={I18nKey.COMPONENTS$PATTERNS_OF} />{steps.length}
             </div>
           ) : null}
         </div>
         {dismissible && onDismiss ? (
-          <Button variant="ghost" size="icon" aria-label="Dismiss onboarding" onClick={onDismiss}>
+          <Button variant="ghost" size="icon" aria-label={i18n.t(I18nKey.COMPONENTS$PATTERNS_DISMISS_ONBOARDING)} onClick={onDismiss}>
             <X size={16} />
           </Button>
         ) : null}
@@ -247,7 +250,7 @@ function CompactVariant(props: {
           {primaryLabel}
         </Button>
         {dismissible && onDismiss ? (
-          <Button variant="ghost" size="icon" aria-label="Dismiss" onClick={onDismiss}>
+          <Button variant="ghost" size="icon" aria-label={i18n.t(I18nKey.APPS$LONGFORMER_DISMISS)} onClick={onDismiss}>
             <X size={16} />
           </Button>
         ) : null}

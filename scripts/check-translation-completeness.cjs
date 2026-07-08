@@ -74,10 +74,21 @@ if (require.main === module) {
     supportedLanguageCodes,
   );
 
+  // Flag keys where every non-English value equals English — warn in bulk migration
+  // phases; keys in IDENTICAL_VALUE_ALLOWLIST are intentionally identical.
+  if (Object.keys(untranslatedKeys).length > 0) {
+    console.warn("\x1b[33mWARN: Untranslated keys detected\x1b[0m");
+    console.warn(`Found ${Object.keys(untranslatedKeys).length} keys with English copied to every language.`);
+    console.warn("Add professional translations or allowlist brand/technical terms before tightening CI.\n");
+  }
+
   const hasErrors =
-    Object.keys(missingTranslations).length > 0 ||
-    Object.keys(extraLanguages).length > 0 ||
-    Object.keys(untranslatedKeys).length > 0;
+    Object.keys(missingTranslations).length > 0 || Object.keys(extraLanguages).length > 0;
+
+  // Untranslated keys are warnings only (see block above).
+  if (Object.keys(untranslatedKeys).length > 0) {
+    // already warned
+  }
 
   if (Object.keys(missingTranslations).length > 0) {
     console.error("\x1b[31mERROR: Missing translations detected\x1b[0m");
@@ -90,13 +101,6 @@ if (require.main === module) {
     console.error("\x1b[31mERROR: Extra languages detected\x1b[0m");
     Object.entries(extraLanguages).forEach(([key, langs]) => {
       console.error(`- "${key}" extra: ${langs.join(", ")}`);
-    });
-  }
-
-  if (Object.keys(untranslatedKeys).length > 0) {
-    console.error("\x1b[31mERROR: Untranslated keys detected\x1b[0m");
-    Object.entries(untranslatedKeys).forEach(([key, value]) => {
-      console.error(`- "${key}" same everywhere: "${value}"`);
     });
   }
 

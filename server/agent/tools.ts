@@ -1008,6 +1008,77 @@ export const agentTools: AgentTool[] = [
     },
   },
 
+  {
+    name: "share_create",
+    description:
+      "Create a public share link for a Drive file or folder. Pauses for user approval. Returns an opaque URL — never expose internal file ids in external messages.",
+    parameters: {
+      type: "object",
+      properties: {
+        fileId: { type: "string", description: "Drive file or folder id" },
+        mode: { type: "string", enum: ["download", "view"], default: "download" },
+        allowDownload: { type: "boolean" },
+        password: { type: "string", description: "Optional link password" },
+        expiresAt: { type: "string", description: "ISO date or YYYY-MM-DD" },
+        label: { type: "string" },
+      },
+      required: ["fileId"],
+    },
+    execute: async (args, ctx) =>
+      agentInvokeIntent(
+        "shares.create",
+        {
+          fileId: String(args.fileId ?? ""),
+          ...(typeof args.mode === "string" ? { mode: args.mode } : {}),
+          ...(typeof args.allowDownload === "boolean" ? { allowDownload: args.allowDownload } : {}),
+          ...(typeof args.password === "string" ? { password: args.password } : {}),
+          ...(typeof args.expiresAt === "string" ? { expiresAt: args.expiresAt } : {}),
+          ...(typeof args.label === "string" ? { label: args.label } : {}),
+          actorId: `agent:${ctx.sessionId}`,
+        },
+        `Create share link for file ${String(args.fileId ?? "")}`,
+        ctx,
+      ),
+  },
+  {
+    name: "share_list",
+    description: "List active share links for a Drive file (or all links created in this session context).",
+    parameters: {
+      type: "object",
+      properties: {
+        fileId: { type: "string", description: "Optional filter by file id" },
+      },
+    },
+    execute: async (args, ctx) =>
+      agentInvokeIntent(
+        "shares.list",
+        {
+          ...(typeof args.fileId === "string" ? { fileId: args.fileId } : {}),
+          actorId: `agent:${ctx.sessionId}`,
+        },
+        "List share links",
+        ctx,
+      ),
+  },
+  {
+    name: "share_revoke",
+    description: "Revoke a public share link by its internal share id. Pauses for user approval.",
+    parameters: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "Internal share id from share_list" },
+      },
+      required: ["id"],
+    },
+    execute: async (args, ctx) =>
+      agentInvokeIntent(
+        "shares.revoke",
+        { id: String(args.id ?? "") },
+        `Revoke share ${String(args.id ?? "")}`,
+        ctx,
+      ),
+  },
+
   // ── Skills (demand-paged knowledge) ─────────────────────────────────────────
   {
     name: "read_skill",

@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 /**
  * ComposerEmojiPicker — emoji trigger + searchable popover with category
  * navigation. The panel anchors above the trigger inside the composer (no
@@ -67,8 +70,8 @@ export function ComposerEmojiPicker({ onSelect, disabled }: ComposerEmojiPickerP
       <button
         type="button"
         className="arco-emoji__trigger"
-        aria-label="Insert emoji"
-        title="Insert emoji"
+        aria-label={i18n.t(I18nKey.COMPONENTS$COMPOSER_INSERT_EMOJI)}
+        title={i18n.t(I18nKey.COMPONENTS$COMPOSER_INSERT_EMOJI)}
         aria-haspopup="dialog"
         aria-expanded={open}
         disabled={disabled}
@@ -78,7 +81,7 @@ export function ComposerEmojiPicker({ onSelect, disabled }: ComposerEmojiPickerP
       </button>
 
       {open && (
-        <div role="dialog" aria-label="Emoji picker" className="arco-emoji__panel">
+        <div role="dialog" aria-label={i18n.t(I18nKey.COMPONENTS$COMPOSER_EMOJI_PICKER)} className="arco-emoji__panel">
           <div className="arco-emoji__searchrow">
             <Search size={13} className="arco-emoji__searchicon" aria-hidden="true" />
             <input
@@ -86,14 +89,14 @@ export function ComposerEmojiPicker({ onSelect, disabled }: ComposerEmojiPickerP
               className="arco-emoji__searchinput"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search emoji…"
-              aria-label="Search emoji"
+              placeholder={i18n.t(I18nKey.COMPONENTS$COMPOSER_SEARCH_EMOJI_2)}
+              aria-label={i18n.t(I18nKey.COMPONENTS$COMPOSER_SEARCH_EMOJI)}
             />
             {query && (
               <button
                 type="button"
                 className="arco-btn arco-btn--ghost arco-btn--icon"
-                aria-label="Clear search"
+                aria-label={i18n.t(I18nKey.APPS$MAPS_CLEAR_SEARCH)}
                 onClick={() => setQuery("")}
               >
                 <X size={12} />
@@ -102,7 +105,7 @@ export function ComposerEmojiPicker({ onSelect, disabled }: ComposerEmojiPickerP
           </div>
 
           {showCategoryNav && (
-            <div className="arco-emoji__categories" role="tablist" aria-label="Emoji categories">
+            <div className="arco-emoji__categories" role="tablist" aria-label={i18n.t(I18nKey.COMPONENTS$COMPOSER_EMOJI_CATEGORIES)}>
               {emojiCategories.map((category) => (
                 <button
                   key={category.id}
@@ -122,7 +125,7 @@ export function ComposerEmojiPicker({ onSelect, disabled }: ComposerEmojiPickerP
 
           <div ref={scrollRef} className="arco-emoji__scroll arco-scroll" onScroll={handleScroll}>
             {filteredCategories.length === 0 ? (
-              <div className="arco-emoji__empty">No emoji match your search.</div>
+              <div className="arco-emoji__empty"><T k={I18nKey.COMPONENTS$COMPOSER_NO_EMOJI_MATCH_YOUR_SEARCH} /></div>
             ) : (
               filteredCategories.map((category) => (
                 <div

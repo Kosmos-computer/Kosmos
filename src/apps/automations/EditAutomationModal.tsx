@@ -1,4 +1,8 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
 import type { Automation, AutomationTrigger, ChannelInfo, DeliveryTarget } from "@shared/types";
 import { api } from "../../lib/api";
@@ -13,7 +17,11 @@ import {
 
 type FrequencyKey = SchedulePresetKind | "custom";
 
-const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+function localizedWeekdayLabels(locale: string): string[] {
+  return Array.from({ length: 7 }, (_, index) =>
+    new Date(2024, 0, 7 + index).toLocaleDateString(locale, { weekday: "short" }),
+  );
+}
 
 function deliveryOptions(channels: ChannelInfo[]): { value: string; label: string }[] {
   return channels
@@ -97,6 +105,8 @@ export function EditAutomationModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { t, i18n } = useTranslation();
+  const weekdays = useMemo(() => localizedWeekdayLabels(i18n.language), [i18n.language]);
   const initial = useMemo(() => buildInitialTrigger(automation), [automation]);
   const [name, setName] = useState(automation.name);
   const [prompt, setPrompt] = useState(automation.prompt);
@@ -163,7 +173,7 @@ export function EditAutomationModal({
 
   async function handleSave() {
     if (!name.trim() || !prompt.trim()) {
-      setError("Name and prompt are required.");
+      setError(t(I18nKey.APPS$AUTOMATIONS_NAME_AND_PROMPT_REQUIRED));
       return;
     }
     setSaving(true);
@@ -179,7 +189,7 @@ export function EditAutomationModal({
       onSaved();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Save failed");
+      setError(err instanceof Error ? err.message : t(I18nKey.APPS$AUTOMATIONS_SAVE_FAILED));
     } finally {
       setSaving(false);
     }
@@ -196,20 +206,16 @@ export function EditAutomationModal({
         style={{ maxWidth: 560 }}
       >
         <header className="arco-task-modal__header">
-          <h2 id="edit-automation-title">Edit automation</h2>
-          <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onClose} aria-label="Close">
+          <h2 id="edit-automation-title"><T k={I18nKey.APPS$AUTOMATIONS_EDIT_AUTOMATION} /></h2>
+          <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onClose} aria-label={i18n.t(I18nKey.COMMON$CLOSE)}>
             <X size={16} />
           </button>
         </header>
         <div className="arco-task-modal__body" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <label className="arco-label" htmlFor="edit-auto-name">
-            Name
-          </label>
+          <label className="arco-label" htmlFor="edit-auto-name"><T k={I18nKey.APPS$AUTOMATIONS_NAME} /></label>
           <Input id="edit-auto-name" value={name} onChange={(e) => setName(e.target.value)} />
 
-          <label className="arco-label" htmlFor="edit-auto-prompt">
-            Prompt
-          </label>
+          <label className="arco-label" htmlFor="edit-auto-prompt"><T k={I18nKey.APPS$AUTOMATIONS_PROMPT} /></label>
           <textarea
             id="edit-auto-prompt"
             className="arco-input"
@@ -218,36 +224,32 @@ export function EditAutomationModal({
             onChange={(e) => setPrompt(e.target.value)}
           />
 
-          <label className="arco-label">Trigger type</label>
+          <label className="arco-label"><T k={I18nKey.APPS$AUTOMATIONS_TRIGGER_TYPE} /></label>
           <div className="arco-chip-row">
             <button
               type="button"
               className={`arco-chip${triggerType === "schedule" ? " arco-chip--active" : ""}`}
               onClick={() => setTriggerType("schedule")}
-            >
-              Schedule
-            </button>
+            ><T k={I18nKey.APPS$AUTOMATIONS_SCHEDULE} /></button>
             <button
               type="button"
               className={`arco-chip${triggerType === "event" ? " arco-chip--active" : ""}`}
               onClick={() => setTriggerType("event")}
-            >
-              Event
-            </button>
+            ><T k={I18nKey.APPS$AUTOMATIONS_EVENT} /></button>
           </div>
 
           {triggerType === "schedule" ? (
             <>
-              <label className="arco-label">Frequency</label>
+              <label className="arco-label"><T k={I18nKey.APPS$AUTOMATIONS_FREQUENCY} /></label>
               <select className="arco-input" value={frequency} onChange={(e) => setFrequency(e.target.value as FrequencyKey)}>
-                <option value="daily">Daily</option>
-                <option value="weekdays">Weekdays</option>
-                <option value="weekly">Weekly</option>
-                <option value="custom">Custom cron</option>
+                <option value="daily"><T k={I18nKey.APPS$AUTOMATIONS_DAILY} /></option>
+                <option value="weekdays"><T k={I18nKey.APPS$AUTOMATIONS_WEEKDAYS} /></option>
+                <option value="weekly"><T k={I18nKey.APPS$AUTOMATIONS_WEEKLY} /></option>
+                <option value="custom"><T k={I18nKey.APPS$AUTOMATIONS_CUSTOM_CRON} /></option>
               </select>
               {frequency === "weekly" ? (
                 <select className="arco-input" value={weekday} onChange={(e) => setWeekday(Number(e.target.value))}>
-                  {WEEKDAYS.map((label, index) => (
+                  {weekdays.map((label, index) => (
                     <option key={label} value={index}>
                       {label}
                     </option>
@@ -260,52 +262,43 @@ export function EditAutomationModal({
                 <Input
                   value={rawSchedule}
                   onChange={(e) => setRawSchedule(e.target.value)}
-                  placeholder="0 9 * * *"
+                  placeholder={i18n.t(I18nKey.APPS$AUTOMATIONS_0_9)}
                 />
               )}
             </>
           ) : (
             <>
-              <label className="arco-label" htmlFor="edit-auto-source">
-                Source
-              </label>
+              <label className="arco-label" htmlFor="edit-auto-source"><T k={I18nKey.APPS$AUTOMATIONS_SOURCE} /></label>
               <Input id="edit-auto-source" value={eventSource} onChange={(e) => setEventSource(e.target.value)} />
-              <label className="arco-label" htmlFor="edit-auto-on">
-                Events (comma-separated)
-              </label>
+              <label className="arco-label" htmlFor="edit-auto-on"><T k={I18nKey.APPS$AUTOMATIONS_EVENTS_COMMA_SEPARATED} /></label>
               <Input
                 id="edit-auto-on"
                 value={eventOn}
                 onChange={(e) => setEventOn(e.target.value)}
-                placeholder="pull_request.opened"
+                placeholder={i18n.t(I18nKey.APPS$AUTOMATIONS_PULL_REQUEST_OPENED)}
               />
-              <label className="arco-label" htmlFor="edit-auto-filter">
-                Filter (JSON)
-              </label>
+              <label className="arco-label" htmlFor="edit-auto-filter"><T k={I18nKey.APPS$AUTOMATIONS_FILTER_JSON} /></label>
               <Input
                 id="edit-auto-filter"
                 value={eventFilter}
                 onChange={(e) => setEventFilter(e.target.value)}
                 placeholder='{"action":"opened"}'
               />
-              <p className="arco-listrow__sub">
-                Webhook URL: <code>/api/webhooks/automations/{automation.id}</code>
+              <p className="arco-listrow__sub"><T k={I18nKey.APPS$AUTOMATIONS_WEBHOOK_URL} /><code><T k={I18nKey.APPS$AUTOMATIONS_API_WEBHOOKS_AUTOMATIONS} />{automation.id}</code>
               </p>
             </>
           )}
 
           {deliveryOptions(channels).length > 0 ? (
             <>
-              <label className="arco-label" htmlFor="edit-auto-deliver">
-                Deliver result to
-              </label>
+              <label className="arco-label" htmlFor="edit-auto-deliver"><T k={I18nKey.APPS$AUTOMATIONS_DELIVER_RESULT_TO} /></label>
               <select
                 id="edit-auto-deliver"
                 className="arco-input"
                 value={deliver}
                 onChange={(e) => setDeliver(e.target.value)}
               >
-                <option value="">In Arco only</option>
+                <option value=""><T k={I18nKey.APPS$AUTOMATIONS_IN_ARCO_ONLY} /></option>
                 {deliveryOptions(channels).map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
@@ -318,9 +311,9 @@ export function EditAutomationModal({
           {error ? <p style={{ color: "var(--arco-danger)", margin: 0 }}>{error}</p> : null}
         </div>
         <footer className="arco-task-modal__footer">
-          <Button onClick={onClose}>Cancel</Button>
+          <Button onClick={onClose}><T k={I18nKey.COMMON$CANCEL} /></Button>
           <Button variant="primary" disabled={saving} onClick={() => void handleSave()}>
-            {saving ? "Saving…" : "Save"}
+            {saving ? t(I18nKey.APPS$AUTOMATIONS_SAVING) : t(I18nKey.COMMON$SAVE)}
           </Button>
         </footer>
       </div>

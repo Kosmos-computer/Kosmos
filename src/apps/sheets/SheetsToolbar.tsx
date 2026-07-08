@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
 import {
   AlignCenter,
   AlignLeft,
@@ -38,7 +40,7 @@ export function SheetsToolbar({
   onToolAction: (toolId: string) => void;
 }) {
   return (
-    <div className="arco-sheets__format-toolbar" role="toolbar" aria-label="Spreadsheet formatting">
+    <div className="arco-sheets__format-toolbar" role="toolbar" aria-label={i18n.t(I18nKey.APPS$SHEETS_SPREADSHEET_FORMATTING)}>
       {SHEETS_TOOLBAR_GROUPS.map((group) => (
         <div key={group.id} className="arco-sheets__toolbar-group">
           {group.items.map((item) => {
@@ -88,7 +90,7 @@ export function FormulaBar({
         onKeyDown={(event) => {
           if (event.key === "Enter") onCommit();
         }}
-        aria-label="Formula bar"
+        aria-label={i18n.t(I18nKey.APPS$SHEETS_FORMULA_BAR)}
       />
     </div>
   );

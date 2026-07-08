@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { useState, type MouseEvent } from "react";
 import { Check, ChevronLeft, Loader2, Play, Plus } from "lucide-react";
 import { Button, EmptyState } from "../../components/ui";
@@ -44,16 +47,14 @@ export function PodcastDirectoryShowDetail({ vm }: PodcastDirectoryProps) {
           type="button"
           className="arco-podcast__back-btn"
           onClick={() => vm.closeDirectoryShow()}
-          aria-label="Back to browse"
+          aria-label={i18n.t(I18nKey.APPS$PODCAST_BACK_TO_BROWSE)}
         >
-          <ChevronLeft size={18} strokeWidth={1.75} />
-          Back
-        </button>
+          <ChevronLeft size={18} strokeWidth={1.75} /><T k={I18nKey.COMMON$BACK} /></button>
 
         <section className="arco-podcast__show-hero">
           <PodcastCover feedUrl={show.url} tone={tone} coverUrl={coverEpisode?.coverUrl} size="lg" alt={show.label} />
           <div className="arco-podcast__show-hero-copy">
-            <span className="arco-podcast__featured-label">Podcast</span>
+            <span className="arco-podcast__featured-label"><T k={I18nKey.APPS$PODCAST_PODCAST} /></span>
             <h1>{show.label}</h1>
             <p>
               {show.publisher}
@@ -67,8 +68,7 @@ export function PodcastDirectoryShowDetail({ vm }: PodcastDirectoryProps) {
                   className="arco-podcast__play-btn"
                   onClick={() => vm.playEpisode(latestPlayable.id, true)}
                 >
-                  <Play size={18} /> Play latest
-                </button>
+                  <Play size={18} /><T k={I18nKey.APPS$PODCAST_PLAY_LATEST} /></button>
               ) : null}
               <Button
                 variant={subscribed ? "secondary" : "primary"}
@@ -80,12 +80,10 @@ export function PodcastDirectoryShowDetail({ vm }: PodcastDirectoryProps) {
                   <Loader2 size={16} className="arco-podcast__spin" />
                 ) : subscribed ? (
                   <>
-                    <Check size={16} /> Following
-                  </>
+                    <Check size={16} /><T k={I18nKey.APPS$PODCAST_FOLLOWING} /></>
                 ) : (
                   <>
-                    <Plus size={16} /> Follow
-                  </>
+                    <Plus size={16} /><T k={I18nKey.APPS$PODCAST_FOLLOW} /></>
                 )}
               </Button>
             </div>
@@ -93,15 +91,14 @@ export function PodcastDirectoryShowDetail({ vm }: PodcastDirectoryProps) {
         </section>
 
         <section className="arco-podcast__section">
-          <h2 className="arco-podcast__section-title">Episodes</h2>
+          <h2 className="arco-podcast__section-title"><T k={I18nKey.APPS$PODCAST_EPISODES} /></h2>
           {vm.directoryShowLoading && episodes.length === 0 ? (
             <p className="arco-podcast__downloads-hint">
-              <Loader2 size={16} className="arco-podcast__spin" /> Loading episodes…
-            </p>
+              <Loader2 size={16} className="arco-podcast__spin" /><T k={I18nKey.APPS$PODCAST_LOADING_EPISODES} /></p>
           ) : vm.directoryShowError && episodes.length === 0 ? (
             <p className="arco-podcast__feed-error">{vm.directoryShowError}</p>
           ) : episodes.length === 0 ? (
-            <p className="arco-podcast__downloads-hint">No episodes found for this feed.</p>
+            <p className="arco-podcast__downloads-hint"><T k={I18nKey.APPS$PODCAST_NO_EPISODES_FOUND_FOR_THIS_FEED} /></p>
           ) : (
             <div className="arco-podcast__episode-list">
               {episodes.map((episode) => (
@@ -111,8 +108,7 @@ export function PodcastDirectoryShowDetail({ vm }: PodcastDirectoryProps) {
           )}
           {vm.directoryShowLoading && episodes.length > 0 ? (
             <p className="arco-podcast__downloads-hint">
-              <Loader2 size={14} className="arco-podcast__spin" /> Refreshing episodes…
-            </p>
+              <Loader2 size={14} className="arco-podcast__spin" /><T k={I18nKey.APPS$PODCAST_REFRESHING_EPISODES} /></p>
           ) : null}
         </section>
       </div>
@@ -160,24 +156,20 @@ export function PodcastDirectory({ vm }: PodcastDirectoryProps) {
       <div className="arco-podcast__main-scroll arco-podcast__scrollable">
         <header className="arco-podcast__directory-header">
           <div>
-            <h1 className="arco-podcast__directory-title">Browse podcasts</h1>
-            <p className="arco-podcast__directory-subtitle">
-              Follow shows to add them to your home feed. {vm.followedShowCount} followed ·{" "}
-              {entries.length} in directory
-            </p>
+            <h1 className="arco-podcast__directory-title"><T k={I18nKey.APPS$PODCAST_BROWSE_PODCASTS} /></h1>
+            <p className="arco-podcast__directory-subtitle"><T k={I18nKey.APPS$PODCAST_FOLLOW_SHOWS_TO_ADD_THEM_TO_YOUR_HOME_FEED} />{vm.followedShowCount}<T k={I18nKey.APPS$PODCAST_FOLLOWED} />{" "}
+              {entries.length}<T k={I18nKey.APPS$PODCAST_IN_DIRECTORY} /></p>
           </div>
         </header>
 
-        <div className="arco-podcast__directory-categories" role="tablist" aria-label="Podcast categories">
+        <div className="arco-podcast__directory-categories" role="tablist" aria-label={i18n.t(I18nKey.APPS$PODCAST_PODCAST_CATEGORIES)}>
           <button
             type="button"
             role="tab"
             aria-selected={category === "all"}
             className={`arco-podcast__filter-chip${category === "all" ? " arco-podcast__filter-chip--active" : ""}`}
             onClick={() => setCategory("all")}
-          >
-            All
-          </button>
+          ><T k={I18nKey.COMMON$ALL} /></button>
           {PODCAST_DIRECTORY_CATEGORIES.map((item) => (
             <button
               key={item.id}
@@ -193,7 +185,7 @@ export function PodcastDirectory({ vm }: PodcastDirectoryProps) {
         </div>
 
         {entries.length === 0 ? (
-          <EmptyState title="No podcasts found">Try another category or search term.</EmptyState>
+          <EmptyState title={i18n.t(I18nKey.APPS$PODCAST_NO_PODCASTS_FOUND)}><T k={I18nKey.APPS$PODCAST_TRY_ANOTHER_CATEGORY_OR_SEARCH_TERM} /></EmptyState>
         ) : showGrouped ? (
           PODCAST_DIRECTORY_CATEGORIES.map((section) => {
             const sectionEntries = grouped.get(section.id);
@@ -208,7 +200,7 @@ export function PodcastDirectory({ vm }: PodcastDirectoryProps) {
             );
           })
         ) : (
-          <DirectorySection title="Results" entries={entries} vm={vm} />
+          <DirectorySection title={i18n.t(I18nKey.APPS$PODCAST_RESULTS)} entries={entries} vm={vm} />
         )}
       </div>
     </main>
@@ -291,12 +283,10 @@ function DirectoryCard({
             <Loader2 size={16} className="arco-podcast__spin" />
           ) : subscribed ? (
             <>
-              <Check size={16} /> Following
-            </>
+              <Check size={16} /><T k={I18nKey.APPS$PODCAST_FOLLOWING} /></>
           ) : (
             <>
-              <Plus size={16} /> Follow
-            </>
+              <Plus size={16} /><T k={I18nKey.APPS$PODCAST_FOLLOW} /></>
           )}
         </Button>
       </div>

@@ -28,10 +28,13 @@ function inferProjectId(session: Session): string | null {
     if (blob.includes(project.path)) return project.id;
   }
 
-  // Agent Studio ui snapshots record the active project picker label in the top bar.
+  // Techno Studio ui snapshots record the active project picker label in the top bar.
   for (const project of projects) {
     const pickerLabel = `button \\"${project.name}\\"`;
-    if (blob.includes(pickerLabel) && blob.includes("Agent Studio")) {
+    if (
+      blob.includes(pickerLabel) &&
+      (blob.includes("Techno Studio") || blob.includes("Agent Studio"))
+    ) {
       return project.id;
     }
   }

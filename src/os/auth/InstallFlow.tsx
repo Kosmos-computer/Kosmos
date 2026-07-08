@@ -1,3 +1,4 @@
+import i18n from "../../i18n/index";
 /**
  * First-run install wizard — walks a fresh instance from welcome through LLM
  * provider choice to owner account creation. Replaces the bare SetupScreen
@@ -34,7 +35,7 @@ function InstallCard({ children }: { children: React.ReactNode }) {
 function StepProgress({ step, total }: { step: number; total: number }) {
   const { t } = useTranslation();
   return (
-    <div className="arco-install__progress" aria-label={t(I18nKey.INSTALL$STEP_PROGRESS, { step, total })}>
+    <div className="arco-install__progress" aria-label={i18n.t(I18nKey.INSTALL$STEP_PROGRESS, { step, total })}>
       {Array.from({ length: total }, (_, index) => (
         <span
           key={index}
@@ -57,17 +58,17 @@ function InstallChecks({ status }: { status: InstallStatus | null }) {
   return (
     <div className="arco-install__checks" role="status">
       <div className="arco-install__checks-title">
-        {packaged ? t(I18nKey.INSTALL$CHECKS_TITLE_PACKAGED) : t(I18nKey.INSTALL$CHECKS_TITLE_DEV)}
+        {packaged ? i18n.t(I18nKey.INSTALL$CHECKS_TITLE_PACKAGED) : i18n.t(I18nKey.INSTALL$CHECKS_TITLE_DEV)}
       </div>
       <p className="arco-install__checks-lead">
         {packaged ? (
-          t(I18nKey.INSTALL$CHECKS_LEAD_PACKAGED)
+          i18n.t(I18nKey.INSTALL$CHECKS_LEAD_PACKAGED)
         ) : (
           <>
-            {t(I18nKey.INSTALL$CHECKS_LEAD_DEV_PREFIX)}{" "}
+            {i18n.t(I18nKey.INSTALL$CHECKS_LEAD_DEV_PREFIX)}{" "}
             {/* eslint-disable-next-line i18next/no-literal-string -- shell command */}
             <code>npm run setup</code>
-            {t(I18nKey.INSTALL$CHECKS_LEAD_DEV_SUFFIX)}
+            {i18n.t(I18nKey.INSTALL$CHECKS_LEAD_DEV_SUFFIX)}
           </>
         )}
       </p>
@@ -111,10 +112,10 @@ export function InstallFlow() {
   const modelPaths = useMemo(
     () =>
       [
-        { id: "mock" as const, label: t(I18nKey.INSTALL$MODEL_PATH_MOCK_LABEL), hint: t(I18nKey.INSTALL$MODEL_PATH_MOCK_HINT) },
-        { id: "cloud" as const, label: t(I18nKey.INSTALL$MODEL_PATH_CLOUD_LABEL), hint: t(I18nKey.INSTALL$MODEL_PATH_CLOUD_HINT) },
-        { id: "local" as const, label: t(I18nKey.INSTALL$MODEL_PATH_LOCAL_LABEL), hint: t(I18nKey.INSTALL$MODEL_PATH_LOCAL_HINT) },
-        { id: "ollama" as const, label: t(I18nKey.INSTALL$MODEL_PATH_OLLAMA_LABEL), hint: t(I18nKey.INSTALL$MODEL_PATH_OLLAMA_HINT) },
+        { id: "mock" as const, label: i18n.t(I18nKey.INSTALL$MODEL_PATH_MOCK_LABEL), hint: i18n.t(I18nKey.INSTALL$MODEL_PATH_MOCK_HINT) },
+        { id: "cloud" as const, label: i18n.t(I18nKey.INSTALL$MODEL_PATH_CLOUD_LABEL), hint: i18n.t(I18nKey.INSTALL$MODEL_PATH_CLOUD_HINT) },
+        { id: "local" as const, label: i18n.t(I18nKey.INSTALL$MODEL_PATH_LOCAL_LABEL), hint: i18n.t(I18nKey.INSTALL$MODEL_PATH_LOCAL_HINT) },
+        { id: "ollama" as const, label: i18n.t(I18nKey.INSTALL$MODEL_PATH_OLLAMA_LABEL), hint: i18n.t(I18nKey.INSTALL$MODEL_PATH_OLLAMA_HINT) },
       ] satisfies { id: ModelPath; label: string; hint: string }[],
     [t],
   );
@@ -160,7 +161,7 @@ export function InstallFlow() {
   const submitAccount = async (e: FormEvent) => {
     e.preventDefault();
     if (password !== confirm) {
-      setLocalError(t(I18nKey.INSTALL$PASSWORD_MISMATCH));
+      setLocalError(i18n.t(I18nKey.INSTALL$PASSWORD_MISMATCH));
       return;
     }
     setLocalError(null);
@@ -182,12 +183,12 @@ export function InstallFlow() {
       {step === "welcome" && (
         <>
           <div className="arco-authscreen__header">
-            <div className="arco-authscreen__lead">{t(I18nKey.INSTALL$WELCOME_LEAD)}</div>
-            <div className="arco-authscreen__subtitle">{t(I18nKey.INSTALL$WELCOME_SUBTITLE)}</div>
+            <div className="arco-authscreen__lead">{i18n.t(I18nKey.INSTALL$WELCOME_LEAD)}</div>
+            <div className="arco-authscreen__subtitle">{i18n.t(I18nKey.INSTALL$WELCOME_SUBTITLE)}</div>
           </div>
           <InstallChecks status={installStatus} />
           <Button variant="primary" style={{ justifyContent: "center" }} onClick={() => setStep("model-path")}>
-            {t(I18nKey.INSTALL$GET_STARTED)}
+            {i18n.t(I18nKey.INSTALL$GET_STARTED)}
           </Button>
         </>
       )}
@@ -195,8 +196,8 @@ export function InstallFlow() {
       {step === "model-path" && (
         <>
           <div className="arco-authscreen__header">
-            <div className="arco-authscreen__title">{t(I18nKey.INSTALL$MODEL_PATH_TITLE)}</div>
-            <div className="arco-authscreen__subtitle">{t(I18nKey.INSTALL$MODEL_PATH_SUBTITLE)}</div>
+            <div className="arco-authscreen__title">{i18n.t(I18nKey.INSTALL$MODEL_PATH_TITLE)}</div>
+            <div className="arco-authscreen__subtitle">{i18n.t(I18nKey.INSTALL$MODEL_PATH_SUBTITLE)}</div>
           </div>
           <div className="arco-startup-preview__path-grid">
             {modelPaths.map((option) => (
@@ -214,10 +215,10 @@ export function InstallFlow() {
           </div>
           <div className="arco-startup-preview__actions">
             <Button variant="ghost" onClick={() => setStep("welcome")}>
-              {t(I18nKey.COMMON$BACK)}
+              {i18n.t(I18nKey.COMMON$BACK)}
             </Button>
             <Button variant="primary" onClick={goNextFromModelPath}>
-              {t(I18nKey.COMMON$CONTINUE)}
+              {i18n.t(I18nKey.COMMON$CONTINUE)}
             </Button>
           </div>
         </>
@@ -226,8 +227,8 @@ export function InstallFlow() {
       {step === "provider" && (
         <>
           <div className="arco-authscreen__header">
-            <div className="arco-authscreen__title">{t(I18nKey.INSTALL$PROVIDER_TITLE)}</div>
-            <div className="arco-authscreen__subtitle">{t(I18nKey.INSTALL$PROVIDER_SUBTITLE)}</div>
+            <div className="arco-authscreen__title">{i18n.t(I18nKey.INSTALL$PROVIDER_TITLE)}</div>
+            <div className="arco-authscreen__subtitle">{i18n.t(I18nKey.INSTALL$PROVIDER_SUBTITLE)}</div>
           </div>
           <form
             className="arco-authscreen__form"
@@ -237,7 +238,7 @@ export function InstallFlow() {
             }}
           >
             <div>
-              <label className="arco-label">{t(I18nKey.INSTALL$PROVIDER_LABEL)}</label>
+              <label className="arco-label">{i18n.t(I18nKey.INSTALL$PROVIDER_LABEL)}</label>
               <div className="arco-startup-preview__chips">
                 {cloudProviders.map((entry) => (
                   <Chip
@@ -252,23 +253,23 @@ export function InstallFlow() {
             </div>
             <div>
               <label className="arco-label" htmlFor="install-api-key">
-                {t(I18nKey.INSTALL$API_KEY_LABEL)}
+                {i18n.t(I18nKey.INSTALL$API_KEY_LABEL)}
               </label>
               <Input
                 id="install-api-key"
                 width="auto"
                 type="password"
-                placeholder={t(I18nKey.INSTALL$API_KEY_PLACEHOLDER)}
+                placeholder={i18n.t(I18nKey.INSTALL$API_KEY_PLACEHOLDER)}
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
               />
             </div>
             <div className="arco-startup-preview__actions">
               <Button type="button" variant="ghost" onClick={() => setStep("model-path")}>
-                {t(I18nKey.COMMON$BACK)}
+                {i18n.t(I18nKey.COMMON$BACK)}
               </Button>
               <Button type="submit" variant="primary">
-                {t(I18nKey.COMMON$CONTINUE)}
+                {i18n.t(I18nKey.COMMON$CONTINUE)}
               </Button>
             </div>
           </form>
@@ -279,13 +280,13 @@ export function InstallFlow() {
         <>
           <div className="arco-authscreen__header">
             <div className="arco-authscreen__mark" />
-            <div className="arco-authscreen__title">{t(I18nKey.INSTALL$ACCOUNT_TITLE)}</div>
-            <div className="arco-authscreen__subtitle">{t(I18nKey.INSTALL$ACCOUNT_SUBTITLE)}</div>
+            <div className="arco-authscreen__title">{i18n.t(I18nKey.INSTALL$ACCOUNT_TITLE)}</div>
+            <div className="arco-authscreen__subtitle">{i18n.t(I18nKey.INSTALL$ACCOUNT_SUBTITLE)}</div>
           </div>
           <form className="arco-authscreen__form" onSubmit={(e) => void submitAccount(e)}>
             <div>
               <label className="arco-label" htmlFor="install-username">
-                {t(I18nKey.INSTALL$USERNAME_LABEL)}
+                {i18n.t(I18nKey.INSTALL$USERNAME_LABEL)}
               </label>
               <Input
                 id="install-username"
@@ -299,7 +300,7 @@ export function InstallFlow() {
             </div>
             <div>
               <label className="arco-label" htmlFor="install-display">
-                {t(I18nKey.INSTALL$DISPLAY_NAME_LABEL)}
+                {i18n.t(I18nKey.INSTALL$DISPLAY_NAME_LABEL)}
               </label>
               <Input
                 id="install-display"
@@ -310,7 +311,7 @@ export function InstallFlow() {
             </div>
             <div>
               <label className="arco-label" htmlFor="install-password">
-                {t(I18nKey.INSTALL$PASSWORD_LABEL)}
+                {i18n.t(I18nKey.INSTALL$PASSWORD_LABEL)}
               </label>
               <Input
                 id="install-password"
@@ -325,7 +326,7 @@ export function InstallFlow() {
             </div>
             <div>
               <label className="arco-label" htmlFor="install-confirm">
-                {t(I18nKey.INSTALL$CONFIRM_PASSWORD_LABEL)}
+                {i18n.t(I18nKey.INSTALL$CONFIRM_PASSWORD_LABEL)}
               </label>
               <Input
                 id="install-confirm"
@@ -353,10 +354,10 @@ export function InstallFlow() {
                 variant="ghost"
                 onClick={() => setStep(modelPath === "cloud" ? "provider" : "model-path")}
               >
-                {t(I18nKey.COMMON$BACK)}
+                {i18n.t(I18nKey.COMMON$BACK)}
               </Button>
               <Button variant="primary" type="submit" disabled={busy}>
-                {busy ? t(I18nKey.INSTALL$CREATING) : t(I18nKey.INSTALL$FINISH_SETUP)}
+                {busy ? i18n.t(I18nKey.INSTALL$CREATING) : i18n.t(I18nKey.INSTALL$FINISH_SETUP)}
               </Button>
             </div>
           </form>

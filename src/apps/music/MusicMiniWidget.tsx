@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 /**
  * Floating mini player — shown when the Music window is minimized or the user
  * pops out playback to keep listening while using other apps.
@@ -84,7 +87,7 @@ export function MusicMiniWidget() {
         .join(" ")}
       style={{ left: widgetPosition.x, top: widgetPosition.y }}
       role="region"
-      aria-label="Music mini player"
+      aria-label={i18n.t(I18nKey.APPS$MUSIC_MUSIC_MINI_PLAYER)}
     >
       <div
         className="arco-music-widget__drag-handle"
@@ -117,7 +120,7 @@ export function MusicMiniWidget() {
               showTimes={false}
             />
           ) : !widgetCollapsed && track.live ? (
-            <span className="arco-music-widget__live">Live broadcast</span>
+            <span className="arco-music-widget__live"><T k={I18nKey.APPS$MUSIC_LIVE_BROADCAST} /></span>
           ) : null}
         </div>
 
@@ -134,7 +137,7 @@ export function MusicMiniWidget() {
             <button
               type="button"
               className="arco-music-widget__btn"
-              aria-label="Next track"
+              aria-label={i18n.t(I18nKey.APPS$MUSIC_NEXT_TRACK)}
               onClick={playNext}
             >
               <SkipForward size={15} />
@@ -151,7 +154,7 @@ export function MusicMiniWidget() {
           <button
             type="button"
             className="arco-music-widget__btn"
-            aria-label="Open Music app"
+            aria-label={i18n.t(I18nKey.APPS$MUSIC_OPEN_MUSIC_APP)}
             onClick={restoreMusicWindow}
           >
             <Maximize2 size={14} />
@@ -159,7 +162,7 @@ export function MusicMiniWidget() {
           <button
             type="button"
             className="arco-music-widget__btn arco-music-widget__btn--close"
-            aria-label="Close mini player"
+            aria-label={i18n.t(I18nKey.APPS$MUSIC_CLOSE_MINI_PLAYER)}
             onClick={hideWidget}
           >
             <X size={14} />

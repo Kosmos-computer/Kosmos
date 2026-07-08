@@ -1,3 +1,6 @@
+import { I18nKey } from "../../../i18n/declaration";
+import i18n from "../../../i18n/index";
+import { T } from "../../../i18n/T";
 import { ArrowLeft, Settings2 } from "lucide-react";
 import { Button } from "../../ui";
 import type { SearchFilterDef, SearchKnowledgePanel, SearchResultItem, SearchSuggestion, SearchTabDef, SearchTabId } from "./searchTypes";
@@ -8,6 +11,7 @@ import { SearchKnowledgePanel as KnowledgePanel } from "./SearchKnowledgePanel";
 import { SearchPagination } from "./SearchPagination";
 import { SearchResultItem as ResultItem } from "./SearchResultItem";
 import { SearchTabs } from "./SearchTabs";
+import { useTranslation } from "react-i18next";
 
 export interface SearchResultsPageProps {
   query: string;
@@ -64,13 +68,12 @@ export function SearchResultsPage({
   loading = false,
   error = null,
 }: SearchResultsPageProps) {
+  const { t } = useTranslation();
   return (
     <div className="arco-search-results">
       <header className="arco-search-results__header">
         <div className="arco-search-results__header-top">
-          <button type="button" className="arco-search-results__logo" onClick={onHome} aria-label="Search home">
-            Search
-          </button>
+          <button type="button" className="arco-search-results__logo" onClick={onHome} aria-label={i18n.t(I18nKey.COMPONENTS$PATTERNS_SEARCH_HOME)}><T k={I18nKey.COMMON$SEARCH} /></button>
           <SearchBar
             variant="compact"
             value={query}
@@ -80,7 +83,7 @@ export function SearchResultsPage({
             showSuggestions={showSuggestions}
             onSelectSuggestion={onSelectSuggestion}
           />
-          <Button variant="ghost" className="arco-btn--icon" aria-label="Search settings">
+          <Button variant="ghost" className="arco-btn--icon" aria-label={i18n.t(I18nKey.APPS$SETTINGS_SEARCH_SETTINGS)}>
             <Settings2 size={18} />
           </Button>
         </div>
@@ -92,13 +95,11 @@ export function SearchResultsPage({
         <main className="arco-search-results__main">
           <div className="arco-search-results__stats">
             {loading ? (
-              <span>Searching…</span>
+              <span><T k={I18nKey.COMPONENTS$PATTERNS_SEARCHING} /></span>
             ) : error ? (
               <span className="arco-search-results__error">{error}</span>
             ) : (
-              <span>
-                About {resultCount?.toLocaleString() ?? results.length.toLocaleString()} results
-                {elapsedMs != null ? ` (${(elapsedMs / 1000).toFixed(2)} seconds)` : ""}
+              <span><T k={I18nKey.COMPONENTS$PATTERNS_ABOUT} />{resultCount?.toLocaleString() ?? results.length.toLocaleString()}<T k={I18nKey.COMPONENTS$PATTERNS_RESULTS} />{elapsedMs != null ? ` (${(elapsedMs / 1000).toFixed(2)} seconds)` : ""}
               </span>
             )}
           </div>
@@ -118,8 +119,8 @@ export function SearchResultsPage({
               </div>
 
               {relatedSearches.length > 0 ? (
-                <section className="arco-search-results__related" aria-label="Related searches">
-                  <h2>Related searches</h2>
+                <section className="arco-search-results__related" aria-label={i18n.t(I18nKey.COMPONENTS$PATTERNS_RELATED_SEARCHES)}>
+                  <h2><T k={I18nKey.COMPONENTS$PATTERNS_RELATED_SEARCHES} /></h2>
                   <ul>
                     {relatedSearches.map((term) => (
                       <li key={term}>
@@ -144,9 +145,7 @@ export function SearchResultsPage({
 
       <footer className="arco-search-results__footer">
         <Button variant="ghost" onClick={onHome}>
-          <ArrowLeft size={14} aria-hidden />
-          Back to search home
-        </Button>
+          <ArrowLeft size={14} aria-hidden /><T k={I18nKey.COMPONENTS$PATTERNS_BACK_TO_SEARCH_HOME} /></Button>
         <SearchAttribution />
       </footer>
     </div>

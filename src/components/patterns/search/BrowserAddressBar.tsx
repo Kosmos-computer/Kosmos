@@ -1,3 +1,5 @@
+import { I18nKey } from "../../../i18n/declaration";
+import i18n from "../../../i18n/index";
 /**
  * BrowserAddressBar — back/forward/reload + omnibox row ported from Longformer
  * BrowserToolbar, shared by BrowserShell and Search surfaces.
@@ -63,7 +65,7 @@ export function BrowserAddressBar({
             className="arco-btn--icon"
             disabled={!canGoBack}
             onClick={onBack}
-            aria-label="Back"
+            aria-label={i18n.t(I18nKey.COMMON$BACK)}
           >
             <ChevronLeft size={16} />
           </Button>
@@ -72,7 +74,7 @@ export function BrowserAddressBar({
             className="arco-btn--icon"
             disabled={!canGoForward}
             onClick={onForward}
-            aria-label="Forward"
+            aria-label={i18n.t(I18nKey.COMPONENTS$PATTERNS_FORWARD)}
           >
             <ChevronRight size={16} />
           </Button>
@@ -80,7 +82,7 @@ export function BrowserAddressBar({
             variant="ghost"
             className="arco-btn--icon"
             onClick={onReload}
-            aria-label="Reload"
+            aria-label={i18n.t(I18nKey.COMPONENTS$PATTERNS_RELOAD)}
           >
             <RotateCw size={14} />
           </Button>
@@ -115,7 +117,7 @@ export function BrowserAddressBar({
             className="arco-btn--icon"
             disabled={!openUrl}
             onClick={onOpenExternal ?? (() => openUrl && window.open(openUrl, "_blank", "noopener"))}
-            aria-label="Open in new tab"
+            aria-label={i18n.t(I18nKey.COMPONENTS$PATTERNS_OPEN_IN_NEW_TAB)}
           >
             <ExternalLink size={12} />
           </Button>

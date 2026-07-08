@@ -1,3 +1,6 @@
+import { I18nKey } from "../../../i18n/declaration";
+import i18n from "../../../i18n/index";
+import { T } from "../../../i18n/T";
 import { Mic, X } from "lucide-react";
 import { Button } from "../../ui";
 import { BrowserAddressBar } from "./BrowserAddressBar";
@@ -60,13 +63,13 @@ export function SearchBar({
                 <Button
                   variant="ghost"
                   className="arco-btn--icon arco-search-bar__clear"
-                  aria-label="Clear search"
+                  aria-label={i18n.t(I18nKey.APPS$MAPS_CLEAR_SEARCH)}
                   onClick={() => onChange("")}
                 >
                   <X size={16} />
                 </Button>
               ) : null}
-              <Button variant="ghost" className="arco-btn--icon arco-search-bar__mic" aria-label="Voice search">
+              <Button variant="ghost" className="arco-btn--icon arco-search-bar__mic" aria-label={i18n.t(I18nKey.COMPONENTS$PATTERNS_VOICE_SEARCH)}>
                 <Mic size={16} />
               </Button>
             </>
@@ -83,8 +86,8 @@ export function SearchBar({
 
       {isHome && showHomeActions ? (
         <div className="arco-search-bar__home-actions">
-          <Button onClick={onSubmit}>Search</Button>
-          <Button onClick={onLucky}>I&apos;m Feeling Lucky</Button>
+          <Button onClick={onSubmit}><T k={I18nKey.COMMON$SEARCH} /></Button>
+          <Button onClick={onLucky}><T k={I18nKey.COMPONENTS$PATTERNS_I_APOS_M_FEELING_LUCKY} /></Button>
         </div>
       ) : null}
     </div>

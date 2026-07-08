@@ -1,7 +1,10 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
+import { useTranslation } from "react-i18next";
 import {
   Download,
   ExternalLink,
-  Image as ImageIcon,
   MoreVertical,
   Play,
   Users,
@@ -35,6 +38,10 @@ export interface FilePreviewPaneProps {
   onRestore?: () => void;
   onDeleteForever?: () => void;
   onMoveToTrash?: () => void;
+  onShare?: () => void;
+  onDownload?: () => void;
+  onRename?: () => void;
+  onMove?: () => void;
 }
 
 export function FilePreviewPane({
@@ -46,6 +53,10 @@ export function FilePreviewPane({
   onRestore,
   onDeleteForever,
   onMoveToTrash,
+  onShare,
+  onDownload,
+  onRename,
+  onMove,
 }: FilePreviewPaneProps) {
   const Icon = FILE_KIND_ICON[file.kind];
   const tone = FILE_KIND_TONE[file.kind];
@@ -61,14 +72,14 @@ export function FilePreviewPane({
           <span className="arco-drive-preview__file-name">{file.name}</span>
         </div>
         <div className="arco-drive-preview__header-actions">
-          <Button variant="ghost" size="icon" aria-label="Download">
+          <Button variant="ghost" size="icon" aria-label={i18n.t(I18nKey.APPS$MODELS_DOWNLOAD)} onClick={onDownload}>
             <Download size={15} />
           </Button>
-          <Button variant="ghost" size="icon" aria-label="More options">
+          <Button variant="ghost" size="icon" aria-label={i18n.t(I18nKey.APPS$FILES_MORE_OPTIONS)}>
             <MoreVertical size={15} />
           </Button>
           {onClose ? (
-            <Button variant="ghost" size="icon" aria-label="Close preview" onClick={onClose}>
+            <Button variant="ghost" size="icon" aria-label={i18n.t(I18nKey.APPS$FILES_CLOSE_PREVIEW)} onClick={onClose}>
               <X size={15} />
             </Button>
           ) : null}
@@ -78,14 +89,16 @@ export function FilePreviewPane({
       <div className="arco-drive-preview__scroll arco-scroll">
         <div className="arco-drive-preview__preview-area">
           {file.kind === "image" ? (
-            <div className={["arco-drive-preview__placeholder", `arco-drive-preview__placeholder--${tone}`].join(" ")}>
-              <ImageIcon size={42} strokeWidth={1.5} />
-              <span>Image preview</span>
-            </div>
+            <img
+              src={api.driveBlobUrl(file.id)}
+              alt={file.name}
+              className="arco-drive-preview__image"
+              style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+            />
           ) : file.kind === "video" ? (
             <div className={["arco-drive-preview__placeholder", `arco-drive-preview__placeholder--${tone}`].join(" ")}>
               <Play size={42} strokeWidth={1.5} />
-              <span>Video preview</span>
+              <span><T k={I18nKey.APPS$FILES_VIDEO_PREVIEW} /></span>
             </div>
           ) : file.kind === "audio" ? (
             <audio controls className="arco-drive-preview__audio" src={api.driveBlobUrl(file.id)}>
@@ -98,29 +111,29 @@ export function FilePreviewPane({
           ) : (
             <div className={["arco-drive-preview__placeholder", `arco-drive-preview__placeholder--${tone}`].join(" ")}>
               <Icon size={42} strokeWidth={1.5} />
-              <span>{file.kind.toUpperCase()} preview</span>
+              <span>{file.kind.toUpperCase()}<T k={I18nKey.APPS$FILES_PREVIEW_2} /></span>
             </div>
           )}
         </div>
 
         <div className="arco-drive-preview__meta-section">
-          <h3 className="arco-drive-preview__section-title">Details</h3>
+          <h3 className="arco-drive-preview__section-title"><T k={I18nKey.APPS$FILES_DETAILS} /></h3>
           <dl className="arco-drive-preview__meta-list">
             <div className="arco-drive-preview__meta-row">
-              <dt>Type</dt>
+              <dt><T k={I18nKey.APPS$FILES_TYPE} /></dt>
               <dd>{file.kind}</dd>
             </div>
             <div className="arco-drive-preview__meta-row">
-              <dt>Size</dt>
+              <dt><T k={I18nKey.APPS$FILES_SIZE} /></dt>
               <dd>{file.sizeLabel ?? "—"}</dd>
             </div>
             <div className="arco-drive-preview__meta-row">
-              <dt>Modified</dt>
+              <dt><T k={I18nKey.APPS$FILES_MODIFIED} /></dt>
               <dd>{file.modifiedLabel ?? "—"}</dd>
             </div>
             {file.owner ? (
               <div className="arco-drive-preview__meta-row">
-                <dt>Owner</dt>
+                <dt><T k={I18nKey.APPS$FILES_OWNER} /></dt>
                 <dd className="arco-drive-preview__owner">
                   <Avatar name={file.owner.name} size="sm" />
                   {file.owner.name}
@@ -132,8 +145,16 @@ export function FilePreviewPane({
 
         {file.kind !== "folder" && file.kind !== "pdf" ? (
           <div className="arco-drive-preview__text-section">
-            <h3 className="arco-drive-preview__section-title">Preview</h3>
+            <h3 className="arco-drive-preview__section-title"><T k={I18nKey.APPS$FILES_PREVIEW} /></h3>
             <p className="arco-drive-preview__text">{body}</p>
+          </div>
+        ) : file.kind === "folder" ? (
+          <div className="arco-drive-preview__text-section">
+            <p className="arco-drive-preview__text">
+              {file.itemCount !== undefined
+                ? `${file.itemCount} item${file.itemCount === 1 ? "" : "s"} in this folder.`
+                : "Folder — open to browse contents."}
+            </p>
           </div>
         ) : null}
       </div>
@@ -141,27 +162,28 @@ export function FilePreviewPane({
       <div className="arco-drive-preview__footer">
         {inTrash ? (
           <>
-            <Button variant="primary" onClick={onRestore}>
-              Restore
-            </Button>
-            <Button variant="danger" onClick={onDeleteForever}>
-              Delete forever
-            </Button>
+            <Button variant="primary" onClick={onRestore}><T k={I18nKey.APPS$FILES_RESTORE} /></Button>
+            <Button variant="danger" onClick={onDeleteForever}><T k={I18nKey.APPS$FILES_DELETE_FOREVER} /></Button>
           </>
         ) : (
           <>
-            <Button variant="primary" onClick={onOpen}>
-              <ExternalLink size={14} />
-              Open
-            </Button>
-            <Button variant="default">
-              <Users size={14} />
-              Share
-            </Button>
+            {file.kind === "folder" ? (
+              <Button variant="primary" onClick={onOpen}>
+                <ExternalLink size={14} />Open folder</Button>
+            ) : (
+              <Button variant="primary" onClick={onOpen}>
+                <ExternalLink size={14} /><T k={I18nKey.COMMON$OPEN} /></Button>
+            )}
+            <Button variant="default" onClick={onShare}>
+              <Users size={14} /><T k={I18nKey.APPS$FILES_SHARE} /></Button>
+            {onRename ? (
+              <Button variant="ghost" onClick={onRename}>Rename</Button>
+            ) : null}
+            {onMove ? (
+              <Button variant="ghost" onClick={onMove}>Move</Button>
+            ) : null}
             {onMoveToTrash ? (
-              <Button variant="ghost" onClick={onMoveToTrash}>
-                Move to trash
-              </Button>
+              <Button variant="ghost" onClick={onMoveToTrash}><T k={I18nKey.APPS$FILES_MOVE_TO_TRASH} /></Button>
             ) : null}
           </>
         )}
@@ -171,11 +193,10 @@ export function FilePreviewPane({
 }
 
 export function FilePreviewEmpty() {
+  const { t } = useTranslation();
   return (
     <div className="arco-drive-preview arco-drive-preview--empty">
-      <EmptyState title="Select a file">
-        Choose a file from the list to preview it here — like Finder Quick Look or Drive&apos;s details pane.
-      </EmptyState>
+      <EmptyState title={i18n.t(I18nKey.APPS$FILES_SELECT_A_FILE)}><T k={I18nKey.APPS$FILES_CHOOSE_A_FILE_FROM_THE_LIST_TO_PREVIEW_IT_HERE_LIKE_FIND} /></EmptyState>
     </div>
   );
 }

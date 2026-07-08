@@ -1,3 +1,7 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
+import { useTranslation } from "react-i18next";
 /**
  * Apps library — launcher for every app on the shell (system, installed,
  * generated, and web) plus generated-app lifecycle actions (refine, version
@@ -47,6 +51,7 @@ function iconHue(seed: string): number {
 }
 
 function iconMarkStyle(seed: string): CSSProperties {
+  const { t } = useTranslation();
   const hue = iconHue(seed);
   return {
     background: `hsl(${hue} 68% 52%)`,
@@ -55,23 +60,21 @@ function iconMarkStyle(seed: string): CSSProperties {
 
 function ViewToggle({ view, onChange }: { view: LibraryView; onChange: (view: LibraryView) => void }) {
   return (
-    <div className="arco-chip-row" role="group" aria-label="Apps view">
+    <div className="arco-chip-row" role="group" aria-label={i18n.t(I18nKey.APPS$LIBRARY_APPS_VIEW)}>
       <button
         type="button"
         className={`arco-chip${view === "icons" ? " arco-chip--active" : ""}`}
         aria-pressed={view === "icons"}
         onClick={() => onChange("icons")}
       >
-        <LayoutGrid size={13} aria-hidden="true" /> Icons
-      </button>
+        <LayoutGrid size={13} aria-hidden="true" /><T k={I18nKey.APPS$LIBRARY_ICONS} /></button>
       <button
         type="button"
         className={`arco-chip${view === "list" ? " arco-chip--active" : ""}`}
         aria-pressed={view === "list"}
         onClick={() => onChange("list")}
       >
-        <List size={13} aria-hidden="true" /> List
-      </button>
+        <List size={13} aria-hidden="true" /><T k={I18nKey.APPS$LIBRARY_LIST} /></button>
     </div>
   );
 }
@@ -291,20 +294,18 @@ export function AppsLibrary() {
     return (
       <div className="arco-panel arco-scroll">
         <div className="arco-panel__header">
-          <strong>{historyApp.title} — versions</strong>
-          <button className="arco-btn" onClick={() => setHistoryApp(null)}>
-            Back
-          </button>
+          <strong>{historyApp.title}<T k={I18nKey.APPS$LIBRARY_VERSIONS} /></strong>
+          <button className="arco-btn" onClick={() => setHistoryApp(null)}><T k={I18nKey.COMMON$BACK} /></button>
         </div>
         <div className="arco-panel__search">
           <ListSearch
             value={versionSearch}
             onChange={setVersionSearch}
-            placeholder="Search versions"
+            placeholder={i18n.t(I18nKey.APPS$LIBRARY_SEARCH_VERSIONS)}
             ariaLabel="Search versions"
           />
         </div>
-        {versions.length === 0 && <div className="arco-empty">No versions match your search</div>}
+        {versions.length === 0 && <div className="arco-empty"><T k={I18nKey.APPS$LIBRARY_NO_VERSIONS_MATCH_YOUR_SEARCH} /></div>}
         {versions.map(({ v, realIdx }) => (
           <div key={realIdx} className="arco-listrow">
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -313,9 +314,7 @@ export function AppsLibrary() {
               </div>
               <div className="arco-listrow__sub">{v.content.slice(0, 120)}…</div>
             </div>
-            <button className="arco-btn" onClick={() => void restore(historyApp.id, realIdx)}>
-              Restore
-            </button>
+            <button className="arco-btn" onClick={() => void restore(historyApp.id, realIdx)}><T k={I18nKey.APPS$LIBRARY_RESTORE} /></button>
           </div>
         ))}
       </div>
@@ -327,7 +326,7 @@ export function AppsLibrary() {
   return (
     <div className={`arco-panel${view === "icons" ? " arco-panel--apps-launcher" : " arco-scroll"}`}>
       <div className="arco-panel__header">
-        <strong>Apps</strong>
+        <strong><T k={I18nKey.APPS$LIBRARY_APPS} /></strong>
         <ViewToggle view={view} onChange={setView} />
       </div>
 
@@ -335,14 +334,14 @@ export function AppsLibrary() {
         <ListSearch
           value={searchQuery}
           onChange={setSearchQuery}
-          placeholder="Search apps"
+          placeholder={i18n.t(I18nKey.APPS$LIBRARY_SEARCH_APPS)}
           ariaLabel="Search apps"
         />
       </div>
 
       {view === "icons" ? (
         <div className="arco-apps-home arco-scroll">
-          <section className="arco-apps-home__section" aria-label="All apps">
+          <section className="arco-apps-home__section" aria-label={i18n.t(I18nKey.APPS$LIBRARY_ALL_APPS)}>
             <div className="arco-apps-home__grid">
               {filteredShellApps.map((entry) => {
                 const Icon = entry.icon;
@@ -363,16 +362,14 @@ export function AppsLibrary() {
 
           {noUserApps && (
             <p className="arco-apps-home__hint">
-              <Sparkles size={14} aria-hidden="true" />
-              Ask Arco to build an app in Chat, or add a project from Studio&apos;s Browser tab.
-            </p>
+              <Sparkles size={14} aria-hidden="true" /><T k={I18nKey.APPS$LIBRARY_ASK_ARCO_TO_BUILD_AN_APP_IN_CHAT_OR_ADD_A_PROJECT_FROM_S} /></p>
           )}
         </div>
       ) : (
         <>
-          <div className="arco-label">All apps</div>
+          <div className="arco-label"><T k={I18nKey.APPS$LIBRARY_ALL_APPS} /></div>
           {filteredShellApps.length === 0 ? (
-            <div className="arco-empty">No apps match your search</div>
+            <div className="arco-empty"><T k={I18nKey.APPS$LIBRARY_NO_APPS_MATCH_YOUR_SEARCH} /></div>
           ) : null}
           {filteredShellApps.map((entry) => {
             const Icon = entry.icon;
@@ -395,17 +392,15 @@ export function AppsLibrary() {
                   </div>
                 </div>
                 <button className="arco-btn" onClick={() => openWindow(kind, entry.title)}>
-                  <ExternalLink size={13} /> Open
-                </button>
+                  <ExternalLink size={13} /><T k={I18nKey.COMMON$OPEN} /></button>
                 {generated && (
                   <>
                     <button className="arco-btn" onClick={() => refine(generated.id, generated.title)}>
-                      <Sparkles size={13} /> Refine
-                    </button>
+                      <Sparkles size={13} /><T k={I18nKey.APPS$LIBRARY_REFINE} /></button>
                     <button
                       className="arco-btn"
                       onClick={() => void showHistory(generated.id)}
-                      aria-label="Version history"
+                      aria-label={i18n.t(I18nKey.APPS$LIBRARY_VERSION_HISTORY)}
                     >
                       <Clock size={13} />
                     </button>
@@ -433,9 +428,7 @@ export function AppsLibrary() {
 
           {noUserApps && (
             <p className="arco-apps-home__hint">
-              <Sparkles size={14} aria-hidden="true" />
-              Ask Arco to build an app in Chat, or add a project from Studio&apos;s Browser tab.
-            </p>
+              <Sparkles size={14} aria-hidden="true" /><T k={I18nKey.APPS$LIBRARY_ASK_ARCO_TO_BUILD_AN_APP_IN_CHAT_OR_ADD_A_PROJECT_FROM_S} /></p>
           )}
         </>
       )}

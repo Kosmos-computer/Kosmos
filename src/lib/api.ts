@@ -54,6 +54,7 @@ import type { CreateUseCaseSlotInput, EngineStatus, RegisteredModel, UseCaseSlot
 import type { CalendarEvent, CalendarEventInput } from "@shared/capabilities/calendar";
 import type { Task, TaskInput, TaskStatus } from "@shared/capabilities/tasks";
 import type { FileCreateInput, FileEntry } from "@shared/capabilities/files";
+import type { ShareCreateInput, ShareRecord } from "@shared/capabilities/shares";
 import type { InstalledAppInfo, GrantState } from "@shared/manifest";
 import type {
   MailAccountInfo,
@@ -346,6 +347,82 @@ export const api = {
     fetch(`/api/drive/entries/${encodeURIComponent(id)}`, { method: "DELETE" }).then((r) =>
       json<{ deleted: boolean }>(r),
     ),
+  uploadDriveFile: async (file: File, parentId: string | null = null) => {
+    const contentBase64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result;
+        if (typeof dataUrl !== "string") {
+          reject(new Error("Could not read file"));
+          return;
+        }
+        const base64 = dataUrl.split(",")[1];
+        if (!base64) {
+          reject(new Error("Could not encode file"));
+          return;
+        }
+        resolve(base64);
+      };
+      reader.onerror = () => reject(reader.error ?? new Error("Could not read file"));
+      reader.readAsDataURL(file);
+    });
+    return fetch("/api/drive/entries", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: file.name,
+        kind: "file",
+        mimeType: file.type || "application/octet-stream",
+        parentId,
+        contentBase64,
+      } satisfies FileCreateInput),
+    }).then((r) => json<FileEntry>(r));
+  },
+  downloadDriveFile: async (id: string, name: string) => {
+    const res = await fetch(`/api/drive/blob/${encodeURIComponent(id)}`);
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      throw new Error(`${res.status} ${res.statusText}${body ? `: ${body.slice(0, 200)}` : ""}`);
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = name;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  },
+
+  // Shares (os.shares@1)
+  listShares: (fileId?: string) => {
+    const qs = fileId ? `?fileId=${encodeURIComponent(fileId)}` : "";
+    return fetch(`/api/shares${qs}`).then((r) => json<(ShareRecord & { url: string })[]>(r));
+  },
+  createShare: (input: ShareCreateInput) =>
+    fetch("/api/shares", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    }).then((r) => json<ShareRecord & { url: string }>(r)),
+  revokeShare: (id: string) =>
+    fetch(`/api/shares/${encodeURIComponent(id)}`, { method: "DELETE" }).then((r) =>
+      json<ShareRecord>(r),
+    ),
+  updateShare: (
+    id: string,
+    patch: {
+      mode?: "download" | "view";
+      allowDownload?: boolean;
+      password?: string;
+      expiresAt?: string | null;
+      label?: string | null;
+    },
+  ) =>
+    fetch(`/api/shares/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    }).then((r) => json<ShareRecord & { url: string }>(r)),
 
   // Calendar (os.calendar@1)
   listCalendarEvents: (params: { from?: string; to?: string } = {}) => {

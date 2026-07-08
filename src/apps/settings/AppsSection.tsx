@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 /**
  * Settings → Apps — the permission surface of the app platform: per-app
  * grant toggles (the bridge enforces these on every call), enable/disable,
@@ -107,27 +110,26 @@ export function AppsSection() {
 
   return (
     <SettingsPage>
-      <SettingsSection intro="Manage installed apps, permissions, and agent tools contributed by each app.">
+      <SettingsSection intro={i18n.t(I18nKey.APPS$SETTINGS_MANAGE_INSTALLED_APPS_PERMISSIONS_AND_AGENT_TOOLS_CONTRI)}>
         {installError ? <SettingsAlert tone="error">{installError}</SettingsAlert> : null}
 
         {installedApps.length === 0 ? (
-          <SettingsEmpty>No apps installed.</SettingsEmpty>
+          <SettingsEmpty><T k={I18nKey.APPS$SETTINGS_NO_APPS_INSTALLED} /></SettingsEmpty>
         ) : (
           <>
             <ListSearch
               value={searchQuery}
               onChange={setSearchQuery}
-              placeholder="Search installed apps"
+              placeholder={i18n.t(I18nKey.APPS$SETTINGS_SEARCH_INSTALLED_APPS)}
               ariaLabel="Search installed apps"
             />
-            {filteredApps.length === 0 ? <SettingsEmpty>No apps match your search.</SettingsEmpty> : null}
+            {filteredApps.length === 0 ? <SettingsEmpty><T k={I18nKey.APPS$SETTINGS_NO_APPS_MATCH_YOUR_SEARCH} /></SettingsEmpty> : null}
             <SettingsStack>
             {filteredApps.map((app) => (
               <SettingsPanel key={app.manifest.id} disabled={!app.enabled}>
                 <SettingsPanelHeader>
                   <span className="arco-settings-panel__title">{app.manifest.name}</span>
-                  <span className="arco-settings-panel__meta">
-                    v{app.manifest.version} · {app.manifest.tier} · {app.source}
+                  <span className="arco-settings-panel__meta"><T k={I18nKey.APPS$SETTINGS_V} />{app.manifest.version} · {app.manifest.tier} · {app.source}
                   </span>
                   {canManage && (
                     <SettingsRowActions>
@@ -166,10 +168,7 @@ export function AppsSection() {
                   </SettingsPanelBody>
                 )}
                 {(app.manifest.tools?.length ?? 0) > 0 && (
-                  <p className="arco-settings-panel__meta">
-                    Contributes agent tools: {app.manifest.tools!.map((t) => t.name).join(", ")} — calls run
-                    under this app&apos;s permissions above.
-                  </p>
+                  <p className="arco-settings-panel__meta"><T k={I18nKey.APPS$SETTINGS_CONTRIBUTES_AGENT_TOOLS} />{app.manifest.tools!.map((t) => t.name).join(", ")}<T k={I18nKey.APPS$SETTINGS_CALLS_RUN_UNDER_THIS_APP_APOS_S_PERMISSIONS_ABOVE} /></p>
                 )}
               </SettingsPanel>
             ))}
@@ -179,8 +178,8 @@ export function AppsSection() {
 
         {canManage && (
           <>
-            <SettingsSubhead>Install from URL</SettingsSubhead>
-            <SettingsFieldRow label="Manifest" htmlFor="app-install-url">
+            <SettingsSubhead><T k={I18nKey.APPS$SETTINGS_INSTALL_FROM_URL} /></SettingsSubhead>
+            <SettingsFieldRow label={i18n.t(I18nKey.APPS$SETTINGS_MANIFEST)} htmlFor="app-install-url">
               <Input
                 id="app-install-url"
                 width="auto"

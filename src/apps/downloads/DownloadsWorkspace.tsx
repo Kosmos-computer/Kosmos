@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { useCallback, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { SidebarPane } from "../../components/patterns";
 import { DownloadsSidebar } from "./DownloadsSidebar";
@@ -53,7 +56,7 @@ export function DownloadsWorkspace({ vm }: DownloadsWorkspaceProps) {
       <SidebarPane
         width={vm.sidebarWidth}
         onWidthChange={vm.setSidebarWidth}
-        handleLabel="Resize Downloads sidebar"
+        handleLabel={i18n.t(I18nKey.APPS$DOWNLOADS_RESIZE_DOWNLOADS_SIDEBAR)}
       >
         <DownloadsSidebar
           categories={vm.categories}
@@ -86,7 +89,7 @@ export function DownloadsWorkspace({ vm }: DownloadsWorkspaceProps) {
           <div
             role="separator"
             aria-orientation="horizontal"
-            aria-label="Resize detail pane"
+            aria-label={i18n.t(I18nKey.APPS$DOWNLOADS_RESIZE_DETAIL_PANE)}
             tabIndex={0}
             className={[
               "arco-downloads__split-handle",
@@ -108,14 +111,14 @@ export function DownloadsWorkspace({ vm }: DownloadsWorkspaceProps) {
           </div>
         </div>
 
-        <footer className="arco-downloads__status-bar" aria-label="Transfer status">
-          <span>{vm.globalStats.globalDownSpeed} down</span>
+        <footer className="arco-downloads__status-bar" aria-label={i18n.t(I18nKey.APPS$DOWNLOADS_TRANSFER_STATUS)}>
+          <span>{vm.globalStats.globalDownSpeed}<T k={I18nKey.APPS$DOWNLOADS_DOWN} /></span>
           <span aria-hidden="true">·</span>
-          <span>{vm.globalStats.globalUpSpeed} up</span>
+          <span>{vm.globalStats.globalUpSpeed}<T k={I18nKey.APPS$DOWNLOADS_UP} /></span>
           <span aria-hidden="true">·</span>
-          <span>{vm.allTorrents.length} torrents</span>
+          <span>{vm.allTorrents.length}<T k={I18nKey.APPS$DOWNLOADS_TORRENTS} /></span>
           <span className="arco-downloads__status-bar-spacer" aria-hidden="true" />
-          <span>{vm.globalStats.freeSpace} free</span>
+          <span>{vm.globalStats.freeSpace}<T k={I18nKey.APPS$DOWNLOADS_FREE} /></span>
           <span aria-hidden="true">·</span>
           <span>{vm.globalStats.clientVersion}</span>
         </footer>

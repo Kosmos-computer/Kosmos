@@ -1,4 +1,7 @@
+import { I18nKey } from "../../../i18n/declaration";
+import i18n from "../../../i18n/index";
 import type { SearchFilterDef } from "./searchTypes";
+import { useTranslation } from "react-i18next";
 
 export interface SearchFiltersProps {
   filters: SearchFilterDef[];
@@ -7,8 +10,9 @@ export interface SearchFiltersProps {
 }
 
 export function SearchFilters({ filters, values, onChange }: SearchFiltersProps) {
+  const { t } = useTranslation();
   return (
-    <div className="arco-search-filters" aria-label="Search filters">
+    <div className="arco-search-filters" aria-label={i18n.t(I18nKey.COMPONENTS$PATTERNS_SEARCH_FILTERS)}>
       {filters.map((filter) => (
         <label key={filter.id} className="arco-search-filters__item">
           <span className="arco-search-filters__label">{filter.label}</span>

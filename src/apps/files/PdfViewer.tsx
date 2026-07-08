@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from "lucide-react";
 import { Document, Page, pdfjs } from "react-pdf";
@@ -60,7 +63,7 @@ export function PdfViewer({ fileId, variant = "reader" }: PdfViewerProps) {
   }
 
   if (!fileSource) {
-    return <div className="arco-pdf-viewer__status">Loading PDF…</div>;
+    return <div className="arco-pdf-viewer__status"><T k={I18nKey.APPS$FILES_LOADING_PDF} /></div>;
   }
 
   const isPreview = variant === "preview";
@@ -73,19 +76,18 @@ export function PdfViewer({ fileId, variant = "reader" }: PdfViewerProps) {
             <Button
               variant="ghost"
               size="icon"
-              aria-label="Previous page"
+              aria-label={i18n.t(I18nKey.APPS$FILES_PREVIOUS_PAGE)}
               disabled={pageNumber <= 1}
               onClick={() => setPageNumber((page) => Math.max(1, page - 1))}
             >
               <ChevronLeft size={15} />
             </Button>
-            <span className="arco-pdf-viewer__page-label">
-              Page {pageNumber} of {numPages || "…"}
+            <span className="arco-pdf-viewer__page-label"><T k={I18nKey.APPS$FILES_PAGE} />{pageNumber}<T k={I18nKey.APPS$FILES_OF} />{numPages || "…"}
             </span>
             <Button
               variant="ghost"
               size="icon"
-              aria-label="Next page"
+              aria-label={i18n.t(I18nKey.APPS$FILES_NEXT_PAGE)}
               disabled={numPages === 0 || pageNumber >= numPages}
               onClick={() => setPageNumber((page) => Math.min(numPages, page + 1))}
             >
@@ -96,7 +98,7 @@ export function PdfViewer({ fileId, variant = "reader" }: PdfViewerProps) {
             <Button
               variant="ghost"
               size="icon"
-              aria-label="Zoom out"
+              aria-label={i18n.t(I18nKey.APPS$FILES_ZOOM_OUT)}
               disabled={scale <= 0.5}
               onClick={() => setScale((value) => Math.max(0.5, value - 0.1))}
             >
@@ -106,7 +108,7 @@ export function PdfViewer({ fileId, variant = "reader" }: PdfViewerProps) {
             <Button
               variant="ghost"
               size="icon"
-              aria-label="Zoom in"
+              aria-label={i18n.t(I18nKey.APPS$FILES_ZOOM_IN)}
               disabled={scale >= 2}
               onClick={() => setScale((value) => Math.min(2, value + 0.1))}
             >
@@ -119,8 +121,8 @@ export function PdfViewer({ fileId, variant = "reader" }: PdfViewerProps) {
       <div className="arco-pdf-viewer__canvas arco-scroll">
         <Document
           file={fileSource}
-          loading={<div className="arco-pdf-viewer__status">Rendering…</div>}
-          error={<div className="arco-pdf-viewer__status arco-pdf-viewer__status--error">Could not render PDF.</div>}
+          loading={<div className="arco-pdf-viewer__status"><T k={I18nKey.APPS$FILES_RENDERING} /></div>}
+          error={<div className="arco-pdf-viewer__status arco-pdf-viewer__status--error"><T k={I18nKey.APPS$FILES_COULD_NOT_RENDER_PDF} /></div>}
           onLoadSuccess={({ numPages: totalPages }) => setNumPages(totalPages)}
         >
           {isPreview ? (

@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { useEffect, useState } from "react";
 import { CalendarDays, X } from "lucide-react";
 import { Button, Input } from "../../components/ui";
@@ -72,14 +75,14 @@ export function EventModal({
             <CalendarDays size={18} aria-hidden />
             <h2 id="cal-event-title">{editing ? "Edit event" : "New event"}</h2>
           </div>
-          <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onClose} aria-label="Close">
+          <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onClose} aria-label={i18n.t(I18nKey.COMMON$CLOSE)}>
             <X size={16} />
           </button>
         </div>
 
         <div className="arco-cal-modal__body">
           <label className="arco-cal-modal__field">
-            <span>Title</span>
+            <span><T k={I18nKey.APPS$CALENDAR_TITLE} /></span>
             <Input
               value={form.title}
               onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
@@ -92,13 +95,11 @@ export function EventModal({
               type="checkbox"
               checked={form.allDay}
               onChange={(event) => setForm((current) => ({ ...current, allDay: event.target.checked }))}
-            />
-            All day
-          </label>
+            /><T k={I18nKey.APPS$CALENDAR_ALL_DAY_2} /></label>
 
           <div className="arco-cal-modal__row">
             <label className="arco-cal-modal__field">
-              <span>Start date</span>
+              <span><T k={I18nKey.APPS$CALENDAR_START_DATE} /></span>
               <Input
                 type="date"
                 value={form.startDate}
@@ -107,7 +108,7 @@ export function EventModal({
             </label>
             {!form.allDay ? (
               <label className="arco-cal-modal__field">
-                <span>Start time</span>
+                <span><T k={I18nKey.APPS$CALENDAR_START_TIME} /></span>
                 <Input
                   type="time"
                   value={form.startTime}
@@ -119,7 +120,7 @@ export function EventModal({
 
           <div className="arco-cal-modal__row">
             <label className="arco-cal-modal__field">
-              <span>End date</span>
+              <span><T k={I18nKey.APPS$CALENDAR_END_DATE} /></span>
               <Input
                 type="date"
                 value={form.endDate}
@@ -128,7 +129,7 @@ export function EventModal({
             </label>
             {!form.allDay ? (
               <label className="arco-cal-modal__field">
-                <span>End time</span>
+                <span><T k={I18nKey.APPS$CALENDAR_END_TIME} /></span>
                 <Input
                   type="time"
                   value={form.endTime}
@@ -139,7 +140,7 @@ export function EventModal({
           </div>
 
           <label className="arco-cal-modal__field">
-            <span>Location</span>
+            <span><T k={I18nKey.APPS$CALENDAR_LOCATION} /></span>
             <Input
               value={form.location}
               onChange={(event) => setForm((current) => ({ ...current, location: event.target.value }))}
@@ -147,7 +148,7 @@ export function EventModal({
           </label>
 
           <label className="arco-cal-modal__field">
-            <span>Notes</span>
+            <span><T k={I18nKey.APPS$CALENDAR_NOTES} /></span>
             <textarea
               className="arco-input arco-cal-modal__notes"
               value={form.notes}
@@ -161,14 +162,10 @@ export function EventModal({
 
         <div className="arco-cal-modal__footer">
           {editing ? (
-            <Button variant="danger" onClick={() => void handleDelete()} disabled={saving}>
-              Delete
-            </Button>
+            <Button variant="danger" onClick={() => void handleDelete()} disabled={saving}><T k={I18nKey.COMMON$DELETE} /></Button>
           ) : null}
           <div className="arco-cal-modal__footer-right">
-            <Button variant="ghost" onClick={onClose} disabled={saving}>
-              Cancel
-            </Button>
+            <Button variant="ghost" onClick={onClose} disabled={saving}><T k={I18nKey.COMMON$CANCEL} /></Button>
             <Button variant="primary" onClick={() => void handleSave()} disabled={!canSave || saving}>
               {saving ? "Saving…" : editing ? "Save changes" : "Create event"}
             </Button>

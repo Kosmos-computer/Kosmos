@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { useMemo } from "react";
 import { Folder, FileText } from "lucide-react";
 import { PreviewPane, SidebarPane } from "../../components/patterns";
@@ -8,6 +11,7 @@ import { FileRow } from "./FileRow";
 import { FilesSidebar } from "./FilesSidebar";
 import { FilesToolbar } from "./FilesToolbar";
 import type { DriveFileItem, DriveNewItemType, FilesLocation, FilesViewMode } from "./types";
+import { useTranslation } from "react-i18next";
 
 const LOCATION_LABELS: Record<FilesLocation, string> = {
   home: "Home",
@@ -43,6 +47,11 @@ export interface FilesWorkspaceProps {
   onTrashFile: (id: string) => void;
   onRestoreFile: (id: string) => void;
   onDeleteForever: (id: string) => void;
+  onRenameFile?: (file: DriveFileItem) => void;
+  onMoveFile?: (file: DriveFileItem) => void;
+  onShareFile?: (file: DriveFileItem) => void;
+  onDownloadFile?: (file: DriveFileItem) => void;
+  onUpload?: () => void;
 }
 
 export function FilesWorkspace({
@@ -70,6 +79,11 @@ export function FilesWorkspace({
   onTrashFile,
   onRestoreFile,
   onDeleteForever,
+  onRenameFile,
+  onMoveFile,
+  onShareFile,
+  onDownloadFile,
+  onUpload,
 }: FilesWorkspaceProps) {
   const pageTitle =
     location === "drive" && !searchQuery.trim()
@@ -96,16 +110,18 @@ export function FilesWorkspace({
   );
 
   const previewFile = selectedFile && selectedFile.kind !== "folder" ? selectedFile : null;
+  const previewFolder = selectedFile && selectedFile.kind === "folder" && location !== "trash" ? selectedFile : null;
   const trashSelection = location === "trash" ? selectedFile : null;
 
   function openEntry(file: DriveFileItem) {
+  const { t } = useTranslation();
     if (file.kind === "folder") onOpenFile(file);
     else onOpenFileEditor(file);
   }
 
   return (
     <div className="arco-drive">
-      <SidebarPane width={sidebarWidth} onWidthChange={onSidebarWidthChange} handleLabel="Resize Drive sidebar">
+      <SidebarPane width={sidebarWidth} onWidthChange={onSidebarWidthChange} handleLabel={i18n.t(I18nKey.APPS$FILES_RESIZE_DRIVE_SIDEBAR)}>
         <FilesSidebar
           location={location}
           onLocationChange={onLocationChange}
@@ -120,13 +136,14 @@ export function FilesWorkspace({
           onSearchChange={onSearchChange}
           viewMode={viewMode}
           onViewModeChange={onViewModeChange}
+          onUpload={location === "drive" || location === "music" ? onUpload : undefined}
         />
 
         {error ? <div className="arco-drive__error">{error}</div> : null}
 
         {location === "home" && suggestedFolders.length > 0 ? (
           <section className="arco-drive__home-section">
-            <h3 className="arco-drive__section-heading">Suggested folders</h3>
+            <h3 className="arco-drive__section-heading"><T k={I18nKey.APPS$FILES_SUGGESTED_FOLDERS} /></h3>
             <div className="arco-drive__home-folders">
               {suggestedFolders.map((folder) => (
                 <FileCard
@@ -147,15 +164,15 @@ export function FilesWorkspace({
         {viewMode === "list" ? (
           <>
             <div className="arco-drive__column-header">
-              <span>Name</span>
-              <span className="arco-drive__column-header-owner">Owner</span>
-              <span className="arco-drive__column-header-modified">Last modified</span>
-              <span className="arco-drive__column-header-size">File size</span>
+              <span><T k={I18nKey.APPS$FILES_NAME} /></span>
+              <span className="arco-drive__column-header-owner"><T k={I18nKey.APPS$FILES_OWNER} /></span>
+              <span className="arco-drive__column-header-modified"><T k={I18nKey.APPS$FILES_LAST_MODIFIED} /></span>
+              <span className="arco-drive__column-header-size"><T k={I18nKey.APPS$FILES_FILE_SIZE} /></span>
               <span aria-hidden="true" />
             </div>
             <div className="arco-drive__scroll arco-scroll">
               {loading ? (
-                <EmptyState title="Loading…" />
+                <EmptyState title={i18n.t(I18nKey.APPS$FILES_LOADING)} />
               ) : files.length === 0 ? (
                 <EmptyState title={emptyCopy.title}>{emptyCopy.description}</EmptyState>
               ) : (
@@ -175,7 +192,7 @@ export function FilesWorkspace({
         ) : (
           <div className={["arco-drive__scroll arco-scroll", "arco-drive__scroll--grid"].filter(Boolean).join(" ")}>
             {loading ? (
-              <EmptyState title="Loading…" />
+              <EmptyState title={i18n.t(I18nKey.APPS$FILES_LOADING)} />
             ) : files.length === 0 ? (
               <EmptyState title={emptyCopy.title}>{emptyCopy.description}</EmptyState>
             ) : (
@@ -204,7 +221,7 @@ export function FilesWorkspace({
         )}
 
         {selectedFile ? (
-          <div className="arco-drive__path-bar" aria-label="Selected item path">
+          <div className="arco-drive__path-bar" aria-label={i18n.t(I18nKey.APPS$FILES_SELECTED_ITEM_PATH)}>
             <Folder size={13} strokeWidth={1.75} />
             {breadcrumb.map((item) => item.label).join(" › ")}
             {breadcrumb.length > 0 ? " › " : ""}
@@ -218,7 +235,7 @@ export function FilesWorkspace({
         ) : null}
       </div>
 
-      <PreviewPane width={previewWidth} onWidthChange={onPreviewWidthChange} handleLabel="Resize file preview">
+      <PreviewPane width={previewWidth} onWidthChange={onPreviewWidthChange} handleLabel={i18n.t(I18nKey.APPS$FILES_RESIZE_FILE_PREVIEW)}>
         {previewFile ? (
           <FilePreviewPane
             file={previewFile}
@@ -229,6 +246,20 @@ export function FilesWorkspace({
             onRestore={() => onRestoreFile(previewFile.id)}
             onDeleteForever={() => onDeleteForever(previewFile.id)}
             onMoveToTrash={() => onTrashFile(previewFile.id)}
+            onShare={() => onShareFile?.(previewFile)}
+            onDownload={() => onDownloadFile?.(previewFile)}
+            onRename={() => onRenameFile?.(previewFile)}
+            onMove={() => onMoveFile?.(previewFile)}
+          />
+        ) : previewFolder ? (
+          <FilePreviewPane
+            file={previewFolder}
+            onClose={() => onSelectFile(null)}
+            onOpen={() => onOpenFile(previewFolder)}
+            onShare={() => onShareFile?.(previewFolder)}
+            onRename={() => onRenameFile?.(previewFolder)}
+            onMove={() => onMoveFile?.(previewFolder)}
+            onMoveToTrash={() => onTrashFile(previewFolder.id)}
           />
         ) : trashSelection ? (
           <div className="arco-drive-preview">
@@ -238,12 +269,8 @@ export function FilesWorkspace({
               </div>
             </div>
             <div className="arco-drive-preview__footer">
-              <Button variant="primary" onClick={() => onRestoreFile(trashSelection.id)}>
-                Restore
-              </Button>
-              <Button variant="danger" onClick={() => onDeleteForever(trashSelection.id)}>
-                Delete forever
-              </Button>
+              <Button variant="primary" onClick={() => onRestoreFile(trashSelection.id)}><T k={I18nKey.APPS$FILES_RESTORE} /></Button>
+              <Button variant="danger" onClick={() => onDeleteForever(trashSelection.id)}><T k={I18nKey.APPS$FILES_DELETE_FOREVER} /></Button>
             </div>
           </div>
         ) : (

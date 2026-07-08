@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
 import { useCallback, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { formatVideoTime, parseVideoTime } from "./videoCatalog";
 
@@ -118,7 +120,7 @@ export function VideoProgressScrubber({
       className={trackClassName}
       role="slider"
       tabIndex={0}
-      aria-label="Seek"
+      aria-label={i18n.t(I18nKey.APPS$MUSIC_SEEK)}
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={Math.round(displayProgress)}

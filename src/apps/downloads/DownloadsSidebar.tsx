@@ -1,8 +1,11 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
 import { Filter, Radio, Search } from "lucide-react";
 import { NavSidebar } from "../../components/patterns";
 import { Input } from "../../components/ui";
 import type { CategoryFilter, TrackerGroup } from "./types";
 import type { TorrentCategory } from "./types";
+import { useTranslation } from "react-i18next";
 
 export interface DownloadsSidebarProps {
   categories: CategoryFilter[];
@@ -25,6 +28,7 @@ export function DownloadsSidebar({
   searchQuery,
   onSearchChange,
 }: DownloadsSidebarProps) {
+  const { t } = useTranslation();
   return (
     <NavSidebar
       className="arco-downloads-sidebar"
@@ -34,8 +38,8 @@ export function DownloadsSidebar({
           <Input
             value={searchQuery}
             onChange={(event) => onSearchChange(event.target.value)}
-            placeholder="Filter torrents"
-            aria-label="Filter torrents"
+            placeholder={i18n.t(I18nKey.APPS$DOWNLOADS_FILTER_TORRENTS)}
+            aria-label={i18n.t(I18nKey.APPS$DOWNLOADS_FILTER_TORRENTS)}
             className="arco-downloads-sidebar__search-input"
           />
         </div>

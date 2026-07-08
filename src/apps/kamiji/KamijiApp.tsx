@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { useEffect } from "react";
 import { KamijiPet } from "./KamijiPet";
 import { StatusMeters } from "./StatusMeters";
@@ -54,14 +57,14 @@ export function KamijiApp() {
     <div className="arco-kamiji">
       <div className="arco-kamiji__device">
         <div className="arco-kamiji__header">
-          <h1 className="arco-kamiji__title">Kamiji</h1>
-          <span className="arco-kamiji__subtitle">virtual pet</span>
+          <h1 className="arco-kamiji__title"><T k={I18nKey.APPS$KAMIJI_KAMIJI} /></h1>
+          <span className="arco-kamiji__subtitle"><T k={I18nKey.APPS$KAMIJI_VIRTUAL_PET} /></span>
         </div>
 
         <div className={`arco-kamiji__screen ${!isLightsOn ? "arco-kamiji__screen--dark" : ""}`}>
           <div className="arco-kamiji__screen-info">
             <span>{stageLabels[pet.stage]}</span>
-            <span>Age {formatAge(pet.ageMinutes)}</span>
+            <span><T k={I18nKey.APPS$KAMIJI_AGE} />{formatAge(pet.ageMinutes)}</span>
           </div>
 
           <div className="arco-kamiji__pet-area">
@@ -95,7 +98,7 @@ export function KamijiApp() {
 
         <div className="arco-kamiji__controls">
           <label className="arco-kamiji__speed">
-            <span>Speed</span>
+            <span><T k={I18nKey.APPS$KAMIJI_SPEED} /></span>
             <input
               type="range"
               min="1"
@@ -103,27 +106,23 @@ export function KamijiApp() {
               value={timeScale}
               onChange={(e) => setTimeScale(Number(e.target.value))}
             />
-            <span>{timeScale}x</span>
+            <span>{timeScale}<T k={I18nKey.APPS$KAMIJI_X} /></span>
           </label>
           <button
             type="button"
             className="arco-kamiji__light-btn"
             onClick={toggleLights}
-            title="Toggle lights"
+            title={i18n.t(I18nKey.APPS$KAMIJI_TOGGLE_LIGHTS)}
           >
             {isLightsOn ? "💡" : "🌑"}
           </button>
           {pet.isDead && (
-            <button type="button" className="arco-kamiji__reset-btn" onClick={resetPet}>
-              New Egg
-            </button>
+            <button type="button" className="arco-kamiji__reset-btn" onClick={resetPet}><T k={I18nKey.APPS$KAMIJI_NEW_EGG} /></button>
           )}
         </div>
       </div>
 
-      <p className="arco-kamiji__hint">
-        Feed, play, and clean your Kamiji. Turn off the lights so they can sleep.
-      </p>
+      <p className="arco-kamiji__hint"><T k={I18nKey.APPS$KAMIJI_FEED_PLAY_AND_CLEAN_YOUR_KAMIJI_TURN_OFF_THE_LIGHTS_SO_T} /></p>
     </div>
   );
 }

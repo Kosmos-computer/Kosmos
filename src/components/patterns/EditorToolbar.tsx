@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
 import { useState } from "react";
 import {
   AlignCenter,
@@ -154,11 +156,11 @@ export function EditorToolbar({
     <div
       className={["arco-editor-toolbar", className].filter(Boolean).join(" ")}
       role="toolbar"
-      aria-label="Formatting"
+      aria-label={i18n.t(I18nKey.COMPONENTS$PATTERNS_FORMATTING)}
     >
       <Menu
         align="start"
-        aria-label="Block type"
+        aria-label={i18n.t(I18nKey.COMPONENTS$PATTERNS_BLOCK_TYPE)}
         trigger={
           <button type="button" className="arco-editor-toolbar__format-trigger">
             <Pilcrow size={15} strokeWidth={1.75} />
@@ -172,43 +174,43 @@ export function EditorToolbar({
       <span className="arco-editor-toolbar__divider" role="separator" aria-orientation="vertical" />
 
       <div className="arco-editor-toolbar__group">
-        <ToolButton label="Bold" pressed={hasMark("bold")} onClick={() => toggleMark("bold")}>
+        <ToolButton label={i18n.t(I18nKey.APPS$LONGFORMER_BOLD)} pressed={hasMark("bold")} onClick={() => toggleMark("bold")}>
           <Bold size={15} strokeWidth={1.75} />
         </ToolButton>
-        <ToolButton label="Italic" pressed={hasMark("italic")} onClick={() => toggleMark("italic")}>
+        <ToolButton label={i18n.t(I18nKey.APPS$LONGFORMER_ITALIC)} pressed={hasMark("italic")} onClick={() => toggleMark("italic")}>
           <Italic size={15} strokeWidth={1.75} />
         </ToolButton>
-        <ToolButton label="Underline" pressed={hasMark("underline")} onClick={() => toggleMark("underline")}>
+        <ToolButton label={i18n.t(I18nKey.COMPONENTS$PATTERNS_UNDERLINE)} pressed={hasMark("underline")} onClick={() => toggleMark("underline")}>
           <Underline size={15} strokeWidth={1.75} />
         </ToolButton>
         <ToolButton
-          label="Strikethrough"
+          label={i18n.t(I18nKey.APPS$LONGFORMER_STRIKETHROUGH)}
           pressed={hasMark("strikethrough")}
           onClick={() => toggleMark("strikethrough")}
         >
           <Strikethrough size={15} strokeWidth={1.75} />
         </ToolButton>
-        <ToolButton label="Inline code" pressed={hasMark("code")} onClick={() => toggleMark("code")}>
+        <ToolButton label={i18n.t(I18nKey.COMPONENTS$PATTERNS_INLINE_CODE)} pressed={hasMark("code")} onClick={() => toggleMark("code")}>
           <Code size={15} strokeWidth={1.75} />
         </ToolButton>
       </div>
 
       <span className="arco-editor-toolbar__divider" role="separator" aria-orientation="vertical" />
 
-      <ToolButton label="Link" onClick={onInsertLink}>
+      <ToolButton label={i18n.t(I18nKey.APPS$LONGFORMER_LINK)} onClick={onInsertLink}>
         <Link2 size={15} strokeWidth={1.75} />
       </ToolButton>
 
       <span className="arco-editor-toolbar__divider" role="separator" aria-orientation="vertical" />
 
       <div className="arco-editor-toolbar__group">
-        <ToolButton label="Align left" pressed={align === "left"} onClick={() => setAlign("left")}>
+        <ToolButton label={i18n.t(I18nKey.COMPONENTS$PATTERNS_ALIGN_LEFT)} pressed={align === "left"} onClick={() => setAlign("left")}>
           <AlignLeft size={15} strokeWidth={1.75} />
         </ToolButton>
-        <ToolButton label="Align center" pressed={align === "center"} onClick={() => setAlign("center")}>
+        <ToolButton label={i18n.t(I18nKey.COMPONENTS$PATTERNS_ALIGN_CENTER)} pressed={align === "center"} onClick={() => setAlign("center")}>
           <AlignCenter size={15} strokeWidth={1.75} />
         </ToolButton>
-        <ToolButton label="Align right" pressed={align === "right"} onClick={() => setAlign("right")}>
+        <ToolButton label={i18n.t(I18nKey.COMPONENTS$PATTERNS_ALIGN_RIGHT)} pressed={align === "right"} onClick={() => setAlign("right")}>
           <AlignRight size={15} strokeWidth={1.75} />
         </ToolButton>
       </div>
@@ -243,7 +245,7 @@ export function EditorToolbar({
               </ToolButton>
             ) : null}
             {onAiAssist ? (
-              <ToolButton label="AI assist" pressed={aiOpen} onClick={onAiAssist}>
+              <ToolButton label={i18n.t(I18nKey.APPS$LONGFORMER_AI_ASSIST)} pressed={aiOpen} onClick={onAiAssist}>
                 <Sparkles size={15} strokeWidth={1.75} />
               </ToolButton>
             ) : null}
@@ -255,14 +257,14 @@ export function EditorToolbar({
 
       <div className="arco-editor-toolbar__group">
         <ToolButton
-          label="Undo"
+          label={i18n.t(I18nKey.COMPONENTS$PATTERNS_UNDO)}
           disabled={controlled ? !canUndo : true}
           onClick={onUndo}
         >
           <Undo2 size={15} strokeWidth={1.75} />
         </ToolButton>
         <ToolButton
-          label="Redo"
+          label={i18n.t(I18nKey.COMPONENTS$PATTERNS_REDO)}
           disabled={controlled ? !canRedo : true}
           onClick={onRedo}
         >

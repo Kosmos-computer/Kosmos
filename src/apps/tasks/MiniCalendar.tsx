@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 const WEEKDAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
 function padISO(year: number, month: number, day: number): string {
@@ -37,17 +40,15 @@ export function MiniCalendar({
   return (
     <div className="arco-mini-calendar">
       <div className="arco-mini-calendar__header">
-        <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onPrevMonth} aria-label="Previous month">
+        <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onPrevMonth} aria-label={i18n.t(I18nKey.APPS$CALENDAR_PREVIOUS_MONTH)}>
           ‹
         </button>
         <div className="arco-mini-calendar__title">{monthLabel}</div>
-        <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onNextMonth} aria-label="Next month">
+        <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onNextMonth} aria-label={i18n.t(I18nKey.APPS$CALENDAR_NEXT_MONTH)}>
           ›
         </button>
       </div>
-      <button type="button" className="arco-btn arco-mini-calendar__today" onClick={onToday}>
-        Today
-      </button>
+      <button type="button" className="arco-btn arco-mini-calendar__today" onClick={onToday}><T k={I18nKey.COMMON$TODAY} /></button>
       <div className="arco-mini-calendar__weekdays">
         {WEEKDAY_LABELS.map((label) => (
           <span key={label}>{label}</span>

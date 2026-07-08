@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 /**
  * UsersSection — account management inside Settings.
  */
@@ -105,7 +108,7 @@ export function UsersSection() {
 
   return (
     <SettingsPage>
-      <SettingsSection intro="Create accounts, assign roles, and reset passwords. The server enforces owner-protection rules.">
+      <SettingsSection intro={i18n.t(I18nKey.APPS$SETTINGS_CREATE_ACCOUNTS_ASSIGN_ROLES_AND_RESET_PASSWORDS_THE_SER)}>
         {error ? <SettingsAlert tone="error">{error}</SettingsAlert> : null}
 
         <SettingsStack>
@@ -113,12 +116,12 @@ export function UsersSection() {
             <ListSearch
               value={searchQuery}
               onChange={setSearchQuery}
-              placeholder="Search users"
+              placeholder={i18n.t(I18nKey.APPS$SETTINGS_SEARCH_USERS)}
               ariaLabel="Search users"
             />
           ) : null}
           {filteredUsers.length === 0 && users.length > 0 ? (
-            <SettingsEmpty>No users match your search.</SettingsEmpty>
+            <SettingsEmpty><T k={I18nKey.APPS$SETTINGS_NO_USERS_MATCH_YOUR_SEARCH} /></SettingsEmpty>
           ) : null}
           {filteredUsers.map((u) => (
             <SettingsPanel key={u.id}>
@@ -126,7 +129,7 @@ export function UsersSection() {
                 <div className="arco-settings-row__control" style={{ flexDirection: "column", alignItems: "flex-start", gap: 2 }}>
                   <span className="arco-settings-panel__title">
                     {u.displayName}
-                    {u.id === me?.id ? <span className="arco-settings-panel__meta"> (you)</span> : null}
+                    {u.id === me?.id ? <span className="arco-settings-panel__meta"><T k={I18nKey.APPS$SETTINGS_YOU} /></span> : null}
                   </span>
                   <span className="arco-settings-panel__meta">@{u.username}</span>
                 </div>
@@ -152,7 +155,7 @@ export function UsersSection() {
                     disabled={u.id === me?.id}
                     aria-label={`Reset password for ${u.username}`}
                     aria-expanded={resetId === u.id}
-                    title="Reset password"
+                    title={i18n.t(I18nKey.APPS$SETTINGS_RESET_PASSWORD)}
                   >
                     <KeyRound size={13} />
                   </Button>
@@ -171,7 +174,7 @@ export function UsersSection() {
                   <form onSubmit={(e) => void resetPassword(e)} className="arco-settings-tool-row">
                     <Input
                       type="password"
-                      placeholder="New password (8+ chars)"
+                      placeholder={i18n.t(I18nKey.APPS$SETTINGS_NEW_PASSWORD_8_CHARS)}
                       aria-label={`New password for ${u.username}`}
                       autoComplete="new-password"
                       autoFocus
@@ -180,12 +183,8 @@ export function UsersSection() {
                       onChange={(e) => setResetValue(e.target.value)}
                       required
                     />
-                    <Button variant="primary" type="submit">
-                      Set
-                    </Button>
-                    <Button type="button" onClick={() => setResetId(null)}>
-                      Cancel
-                    </Button>
+                    <Button variant="primary" type="submit"><T k={I18nKey.APPS$SETTINGS_SET} /></Button>
+                    <Button type="button" onClick={() => setResetId(null)}><T k={I18nKey.COMMON$CANCEL} /></Button>
                   </form>
                 </SettingsPanelBody>
               )}
@@ -193,24 +192,24 @@ export function UsersSection() {
           ))}
         </SettingsStack>
 
-        <SettingsSubhead>Add account</SettingsSubhead>
+        <SettingsSubhead><T k={I18nKey.APPS$SETTINGS_ADD_ACCOUNT} /></SettingsSubhead>
         <form onSubmit={(e) => void create(e)}>
           <SettingsStack>
-            <SettingsFieldRow label="Username">
+            <SettingsFieldRow label={i18n.t(I18nKey.OS_AUTH_USERNAME)}>
               <Input
                 width="auto"
-                placeholder="username"
+                placeholder={i18n.t(I18nKey.APPS$SETTINGS_USERNAME)}
                 autoComplete="off"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
               />
             </SettingsFieldRow>
-            <SettingsFieldRow label="Password">
+            <SettingsFieldRow label={i18n.t(I18nKey.OS_AUTH_PASSWORD)}>
               <Input
                 width="auto"
                 type="password"
-                placeholder="8+ characters"
+                placeholder={i18n.t(I18nKey.APPS$SETTINGS_8_CHARACTERS)}
                 autoComplete="new-password"
                 minLength={8}
                 value={password}
@@ -218,11 +217,11 @@ export function UsersSection() {
                 required
               />
             </SettingsFieldRow>
-            <SettingsFieldRow label="Role">
+            <SettingsFieldRow label={i18n.t(I18nKey.APPS$SETTINGS_ROLE)}>
               <select
                 className="arco-input arco-input--auto"
                 value={role}
-                aria-label="Role for the new account"
+                aria-label={i18n.t(I18nKey.APPS$SETTINGS_ROLE_FOR_THE_NEW_ACCOUNT)}
                 onChange={(e) => setRole(e.target.value as Role)}
               >
                 {ROLES.map((r) => (

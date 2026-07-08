@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import { T } from "../../i18n/T";
 import { useMemo, type CSSProperties } from "react";
 import { CalendarEventBlock } from "./CalendarEventBlock";
 import { EventChip } from "./EventChip";
@@ -57,7 +59,7 @@ export function DayGrid({
 
       {allDayEvents.length > 0 ? (
         <div className="arco-cal-day__allday">
-          <div className="arco-cal-day__allday-label">all-day</div>
+          <div className="arco-cal-day__allday-label"><T k={I18nKey.APPS$CALENDAR_ALL_DAY} /></div>
           <div className="arco-cal-day__allday-events">
             {allDayEvents.map((event) => (
               <EventChip key={event.id} event={event} onClick={() => onSelectEvent?.(event)} />

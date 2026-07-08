@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
 import { Plus, Search } from "lucide-react";
 import { Input } from "../../components/ui";
 import { NavSidebar, SidebarUserFooter } from "../../components/patterns";
@@ -37,8 +39,8 @@ export function NotesSidebar({
           <Input
             autoFocus
             value={searchQuery}
-            placeholder="Search notes…"
-            aria-label="Search notes"
+            placeholder={i18n.t(I18nKey.APPS$NOTES_SEARCH_NOTES_2)}
+            aria-label={i18n.t(I18nKey.APPS$NOTES_SEARCH_NOTES)}
             onChange={(event) => onSearchQueryChange(event.target.value)}
           />
         ) : null

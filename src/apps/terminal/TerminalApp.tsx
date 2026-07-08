@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 /**
  * Terminal — a command runner against the same workspace exec the agent and
  * generated apps use (one-shot commands, not a pty; enough to inspect what
@@ -58,25 +61,25 @@ export function TerminalApp() {
     <div className="arco-terminal">
       <div ref={scrollRef} className="arco-terminal__output arco-scroll">
         {history.length === 0 && (
-          <div style={{ color: "var(--arco-text-tertiary)" }}>
-            Commands run in the Arco workspace (data/workspace). Try: ls scripts/
-          </div>
+          <div style={{ color: "var(--arco-text-tertiary)" }}><T k={I18nKey.APPS$TERMINAL_COMMANDS_RUN_IN_THE_ARCO_WORKSPACE_DATA_WORKSPACE_TRY_LS} /></div>
         )}
         {history.map((entry) => (
           <div key={entry.id} style={{ marginBottom: 10 }}>
             <div>
+              {/* eslint-disable-next-line i18next/no-literal-string -- shell prompt glyph */}
               <span style={{ color: "var(--arco-accent)" }}>❯</span> {entry.command}
             </div>
             {entry.exitCode === null && <div style={{ color: "var(--arco-text-tertiary)" }}>…</div>}
             {entry.stdout && <pre>{entry.stdout}</pre>}
             {entry.stderr && <pre style={{ color: "var(--arco-danger)" }}>{entry.stderr}</pre>}
             {entry.exitCode !== null && entry.exitCode !== 0 && (
-              <div style={{ color: "var(--arco-danger)" }}>exit {entry.exitCode}</div>
+              <div style={{ color: "var(--arco-danger)" }}><T k={I18nKey.APPS$TERMINAL_EXIT} />{entry.exitCode}</div>
             )}
           </div>
         ))}
       </div>
       <div className="arco-terminal__inputrow">
+        {/* eslint-disable-next-line i18next/no-literal-string -- shell prompt glyph */}
         <span style={{ color: "var(--arco-accent)" }}>❯</span>
         <input
           className="arco-terminal__input"
@@ -97,7 +100,7 @@ export function TerminalApp() {
           }}
           placeholder={busy ? "running…" : "command"}
           spellCheck={false}
-          aria-label="Terminal command"
+          aria-label={i18n.t(I18nKey.APPS$STUDIO_TERMINAL_COMMAND)}
         />
       </div>
     </div>

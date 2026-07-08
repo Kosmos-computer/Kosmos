@@ -1,8 +1,12 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { useEffect, useMemo, useState } from "react";
 import { Bot, ChevronDown, User, UserRound } from "lucide-react";
 import { useContactsStore } from "../contacts/contactsStore";
 import { Avatar, Chip, Input } from "../../components/ui";
 import type { PhoneContact } from "../contacts/types";
+import { useTranslation } from "react-i18next";
 import {
   TASK_ASSIGNEE_AGENT_NAME,
   type TaskAssignee,
@@ -98,6 +102,7 @@ export function AssignToPicker({ value, selfName, onChange }: AssignToPickerProp
   }
 
   function selectCustomName(name: string) {
+  const { t } = useTranslation();
     setPersonQuery(name);
     setPersonOpen(false);
     onChange({ kind: "custom", name });
@@ -105,23 +110,15 @@ export function AssignToPicker({ value, selfName, onChange }: AssignToPickerProp
 
   return (
     <div className="arco-task-assign">
-      <span className="arco-task-modal__label">Assign to</span>
-      <div className="arco-task-modal__chips" role="group" aria-label="Assign to">
-        <Chip active={mode === "none"} aria-pressed={mode === "none"} onClick={() => selectMode("none")}>
-          Unassigned
-        </Chip>
+      <span className="arco-task-modal__label"><T k={I18nKey.APPS$TASKS_ASSIGN_TO} /></span>
+      <div className="arco-task-modal__chips" role="group" aria-label={i18n.t(I18nKey.APPS$TASKS_ASSIGN_TO)}>
+        <Chip active={mode === "none"} aria-pressed={mode === "none"} onClick={() => selectMode("none")}><T k={I18nKey.APPS$TASKS_UNASSIGNED} /></Chip>
         <Chip active={mode === "self"} aria-pressed={mode === "self"} onClick={() => selectMode("self")}>
-          <UserRound size={13} aria-hidden />
-          Self
-        </Chip>
+          <UserRound size={13} aria-hidden /><T k={I18nKey.APPS$TASKS_SELF} /></Chip>
         <Chip active={mode === "agent"} aria-pressed={mode === "agent"} onClick={() => selectMode("agent")}>
-          <Bot size={13} aria-hidden />
-          Agent
-        </Chip>
+          <Bot size={13} aria-hidden /><T k={I18nKey.APPS$TASKS_AGENT} /></Chip>
         <Chip active={mode === "contact"} aria-pressed={mode === "contact"} onClick={() => selectMode("contact")}>
-          <User size={13} aria-hidden />
-          Person
-        </Chip>
+          <User size={13} aria-hidden /><T k={I18nKey.APPS$TASKS_PERSON} /></Chip>
       </div>
 
       {mode === "contact" ? (
@@ -136,8 +133,8 @@ export function AssignToPicker({ value, selfName, onChange }: AssignToPickerProp
                 if (!event.target.value.trim()) onChange(undefined);
               }}
               onFocus={() => setPersonOpen(true)}
-              placeholder="Search contacts or enter a name"
-              aria-label="Assign to person"
+              placeholder={i18n.t(I18nKey.APPS$TASKS_SEARCH_CONTACTS_OR_ENTER_A_NAME)}
+              aria-label={i18n.t(I18nKey.APPS$TASKS_ASSIGN_TO_PERSON)}
               aria-expanded={personOpen}
               aria-controls="task-assign-person-list"
             />
@@ -155,7 +152,7 @@ export function AssignToPicker({ value, selfName, onChange }: AssignToPickerProp
           {personOpen ? (
             <div id="task-assign-person-list" className="arco-task-assign__list" role="listbox">
               {filteredContacts.length === 0 && !showCustomOption ? (
-                <p className="arco-task-assign__empty">No matching contacts.</p>
+                <p className="arco-task-assign__empty"><T k={I18nKey.APPS$TASKS_NO_MATCHING_CONTACTS} /></p>
               ) : null}
               {filteredContacts.map((contact) => (
                 <button
@@ -186,15 +183,14 @@ export function AssignToPicker({ value, selfName, onChange }: AssignToPickerProp
                   onClick={() => selectCustomName(trimmedQuery)}
                 >
                   <User size={14} aria-hidden />
-                  <span>Use &ldquo;{trimmedQuery}&rdquo;</span>
+                  <span><T k={I18nKey.APPS$TASKS_USE_LDQUO} />{trimmedQuery}&rdquo;</span>
                 </button>
               ) : null}
             </div>
           ) : null}
 
           {value && (value.kind === "contact" || value.kind === "custom") ? (
-            <p className="arco-task-assign__summary">
-              Assigned to {value.kind === "contact" ? "contact" : "custom name"}:{" "}
+            <p className="arco-task-assign__summary"><T k={I18nKey.APPS$TASKS_ASSIGNED_TO} />{value.kind === "contact" ? "contact" : "custom name"}:{" "}
               <strong>{taskAssigneeLabel(value)}</strong>
             </p>
           ) : null}

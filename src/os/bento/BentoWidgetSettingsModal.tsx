@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { useEffect, useMemo, useState } from "react";
 import { Code2, Link2, Palette, Settings2, X } from "lucide-react";
 import { Badge, Button, Chip, Input } from "../../components/ui";
@@ -134,13 +137,13 @@ export function BentoWidgetSettingsModal({ itemId, onClose }: BentoWidgetSetting
             type="button"
             className="arco-btn arco-btn--ghost arco-btn--icon"
             onClick={onClose}
-            aria-label="Close"
+            aria-label={i18n.t(I18nKey.COMMON$CLOSE)}
           >
             <X size={16} />
           </button>
         </header>
 
-        <div className="arco-bento-settings__tabs" role="tablist" aria-label="Widget settings sections">
+        <div className="arco-bento-settings__tabs" role="tablist" aria-label={i18n.t(I18nKey.OS_BENTO_WIDGET_SETTINGS_SECTIONS)}>
           {TAB_OPTIONS.map((option) => (
             <Chip
               key={option.id}
@@ -159,9 +162,7 @@ export function BentoWidgetSettingsModal({ itemId, onClose }: BentoWidgetSetting
           {tab === "details" ? (
             <div className="arco-bento-settings__panel">
               <section className="arco-bento-settings__section">
-                <label className="arco-bento-settings__label" htmlFor="bento-settings-label">
-                  Widget label
-                </label>
+                <label className="arco-bento-settings__label" htmlFor="bento-settings-label"><T k={I18nKey.OS_BENTO_WIDGET_LABEL} /></label>
                 <Input
                   id="bento-settings-label"
                   value={draft.label}
@@ -170,29 +171,29 @@ export function BentoWidgetSettingsModal({ itemId, onClose }: BentoWidgetSetting
               </section>
 
               <section className="arco-bento-settings__section">
-                <span className="arco-bento-settings__label">Identity</span>
+                <span className="arco-bento-settings__label"><T k={I18nKey.OS_BENTO_IDENTITY} /></span>
                 <dl className="arco-bento-settings__meta-grid">
                   <div>
-                    <dt>Instance ID</dt>
+                    <dt><T k={I18nKey.OS_BENTO_INSTANCE_ID} /></dt>
                     <dd>{draft.id}</dd>
                   </div>
                   <div>
-                    <dt>Template</dt>
+                    <dt><T k={I18nKey.OS_BENTO_TEMPLATE} /></dt>
                     <dd>{draft.templateId}</dd>
                   </div>
                   <div>
-                    <dt>Kind</dt>
+                    <dt><T k={I18nKey.OS_BENTO_KIND} /></dt>
                     <dd>{draft.content.kind}</dd>
                   </div>
                   <div>
-                    <dt>Theme</dt>
+                    <dt><T k={I18nKey.OS_BENTO_THEME} /></dt>
                     <dd>{getBentoTheme(draft.theme).label}</dd>
                   </div>
                 </dl>
               </section>
 
               <section className="arco-bento-settings__section">
-                <span className="arco-bento-settings__label">Grid placement</span>
+                <span className="arco-bento-settings__label"><T k={I18nKey.OS_BENTO_GRID_PLACEMENT} /></span>
                 <div className="arco-bento-settings__grid-fields">
                   {(["col", "row", "colSpan", "rowSpan"] as const).map((field) => (
                     <label key={field} className="arco-bento-settings__grid-field">
@@ -210,9 +211,7 @@ export function BentoWidgetSettingsModal({ itemId, onClose }: BentoWidgetSetting
 
               {draft.content.kind === "insight" ? (
                 <section className="arco-bento-settings__section">
-                  <label className="arco-bento-settings__label" htmlFor="bento-settings-title-field">
-                    Title
-                  </label>
+                  <label className="arco-bento-settings__label" htmlFor="bento-settings-title-field"><T k={I18nKey.OS_BENTO_TITLE} /></label>
                   <Input
                     id="bento-settings-title-field"
                     value={draft.content.title ?? ""}
@@ -220,9 +219,7 @@ export function BentoWidgetSettingsModal({ itemId, onClose }: BentoWidgetSetting
                       patchDraft({ content: { ...draft.content, title: event.target.value } })
                     }
                   />
-                  <label className="arco-bento-settings__label" htmlFor="bento-settings-description">
-                    Description
-                  </label>
+                  <label className="arco-bento-settings__label" htmlFor="bento-settings-description"><T k={I18nKey.OS_BENTO_DESCRIPTION} /></label>
                   <textarea
                     id="bento-settings-description"
                     className="arco-input arco-bento-settings__textarea"
@@ -239,9 +236,7 @@ export function BentoWidgetSettingsModal({ itemId, onClose }: BentoWidgetSetting
 
           {tab === "connections" ? (
             <div className="arco-bento-settings__panel">
-              <p className="arco-bento-settings__hint">
-                Data sources feeding this widget. Toggle polling when APIs are wired.
-              </p>
+              <p className="arco-bento-settings__hint"><T k={I18nKey.OS_BENTO_DATA_SOURCES_FEEDING_THIS_WIDGET_TOGGLE_POLLING_WHEN_API} /></p>
               <ul className="arco-bento-settings__connections">
                 {connections.map((connection) => (
                   <li key={connection.id} className="arco-bento-settings__connection">
@@ -264,10 +259,7 @@ export function BentoWidgetSettingsModal({ itemId, onClose }: BentoWidgetSetting
 
           {tab === "theme" ? (
             <div className="arco-bento-settings__panel">
-              <p className="arco-bento-settings__hint">
-                Card shells ported from UI Experiments — DesignCard, GlassWidget, StatCard, Finance, Banking, and
-                Fitness primitives.
-              </p>
+              <p className="arco-bento-settings__hint"><T k={I18nKey.OS_BENTO_CARD_SHELLS_PORTED_FROM_UI_EXPERIMENTS_DESIGNCARD_GLASSW} /></p>
               {BENTO_THEME_GROUPS.map((group) => {
                 const themes = themesByGroup(group.id);
                 if (themes.length === 0) return null;
@@ -312,9 +304,7 @@ export function BentoWidgetSettingsModal({ itemId, onClose }: BentoWidgetSetting
 
           {tab === "code" ? (
             <div className="arco-bento-settings__panel">
-              <p className="arco-bento-settings__hint">
-                Edit the full widget JSON — layout, content, and theme. Instance ID is preserved on apply.
-              </p>
+              <p className="arco-bento-settings__hint"><T k={I18nKey.OS_BENTO_EDIT_THE_FULL_WIDGET_JSON_LAYOUT_CONTENT_AND_THEME_INSTA} /></p>
               <textarea
                 className="arco-input arco-bento-settings__code"
                 spellCheck={false}
@@ -332,24 +322,16 @@ export function BentoWidgetSettingsModal({ itemId, onClose }: BentoWidgetSetting
                     setCodeText(JSON.stringify(draft, null, 2));
                     setCodeError(null);
                   }}
-                >
-                  Reset
-                </Button>
-                <Button variant="primary" onClick={handleApplyCode}>
-                  Apply JSON
-                </Button>
+                ><T k={I18nKey.OS_BENTO_RESET} /></Button>
+                <Button variant="primary" onClick={handleApplyCode}><T k={I18nKey.OS_BENTO_APPLY_JSON} /></Button>
               </div>
             </div>
           ) : null}
         </div>
 
         <footer className="arco-bento-settings__footer">
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={handleSave}>
-            Save changes
-          </Button>
+          <Button variant="ghost" onClick={onClose}><T k={I18nKey.COMMON$CANCEL} /></Button>
+          <Button variant="primary" onClick={handleSave}><T k={I18nKey.OS_BENTO_SAVE_CHANGES} /></Button>
         </footer>
       </div>
     </div>

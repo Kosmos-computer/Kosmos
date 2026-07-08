@@ -1,3 +1,7 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
+import { useTranslation } from "react-i18next";
 import {
   Pause,
   Play,
@@ -50,8 +54,9 @@ export function MediaPlayerBar({
   showVolume = false,
   live = false,
 }: MediaPlayerBarProps) {
+  const { t } = useTranslation();
   return (
-    <footer className="arco-media-player__bar" aria-label="Playback controls">
+    <footer className="arco-media-player__bar" aria-label={i18n.t(I18nKey.COMPONENTS$PATTERNS_PLAYBACK_CONTROLS)}>
       <div className="arco-media-player__track">
         {artwork}
         <div className="arco-media-player__track-meta">
@@ -65,12 +70,12 @@ export function MediaPlayerBar({
       <div className="arco-media-player__controls">
         <div className="arco-media-player__control-row">
           {showShuffleRepeat && !live ? (
-            <button type="button" className="arco-media-player__control-btn" aria-label="Shuffle">
+            <button type="button" className="arco-media-player__control-btn" aria-label={i18n.t(I18nKey.COMPONENTS$PATTERNS_SHUFFLE)}>
               <Shuffle size={16} />
             </button>
           ) : null}
           {!live ? (
-            <button type="button" className="arco-media-player__control-btn" aria-label="Previous" onClick={onPrevious}>
+            <button type="button" className="arco-media-player__control-btn" aria-label={i18n.t(I18nKey.COMMON$PREVIOUS)} onClick={onPrevious}>
               <SkipBack size={18} />
             </button>
           ) : null}
@@ -83,7 +88,7 @@ export function MediaPlayerBar({
             {playing ? <Pause size={18} /> : <Play size={18} />}
           </button>
           {!live ? (
-            <button type="button" className="arco-media-player__control-btn" aria-label="Next" onClick={onNext}>
+            <button type="button" className="arco-media-player__control-btn" aria-label={i18n.t(I18nKey.COMMON$NEXT)} onClick={onNext}>
               <SkipForward size={18} />
             </button>
           ) : null}
@@ -91,7 +96,7 @@ export function MediaPlayerBar({
             <button
               type="button"
               className="arco-media-player__control-btn arco-media-player__control-btn--active"
-              aria-label="Repeat"
+              aria-label={i18n.t(I18nKey.COMPONENTS$PATTERNS_REPEAT)}
             >
               <Repeat size={16} />
             </button>
@@ -99,9 +104,7 @@ export function MediaPlayerBar({
         </div>
         {live ? (
           <div className="arco-media-player__live-status" aria-live="polite">
-            <span className="arco-media-player__live-dot" aria-hidden="true" />
-            Live broadcast
-          </div>
+            <span className="arco-media-player__live-dot" aria-hidden="true" /><T k={I18nKey.COMPONENTS$PATTERNS_LIVE_BROADCAST} /></div>
         ) : (
           <MediaProgressScrubber progress={progress} elapsed={elapsed} duration={duration} onSeek={onSeek} />
         )}

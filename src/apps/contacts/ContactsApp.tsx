@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { Grid3x3, Plus, Search, Star, Upload } from "lucide-react";
 import { useState } from "react";
 import { ListItem, SidebarPane } from "../../components/patterns";
@@ -46,16 +49,16 @@ export function ContactsApp() {
             />
 
             <div className="arco-contacts__list-title-row">
-              <h1>Contacts</h1>
+              <h1><T k={I18nKey.APPS$CONTACTS_CONTACTS_2} /></h1>
               <div className="arco-contacts__header-actions">
-                <Button variant="ghost" className="arco-btn--icon" title="Add contact" aria-label="Add contact" onClick={openAddForm}>
+                <Button variant="ghost" className="arco-btn--icon" title={i18n.t(I18nKey.APPS$CONTACTS_ADD_CONTACT)} aria-label={i18n.t(I18nKey.APPS$CONTACTS_ADD_CONTACT)} onClick={openAddForm}>
                   <Plus size={16} />
                 </Button>
                 <Button
                   variant="ghost"
                   className="arco-btn--icon"
-                  title="Import contacts"
-                  aria-label="Import contacts"
+                  title={i18n.t(I18nKey.APPS$CONTACTS_IMPORT_CONTACTS)}
+                  aria-label={i18n.t(I18nKey.APPS$CONTACTS_IMPORT_CONTACTS)}
                   onClick={() => setImportOpen(true)}
                 >
                   <Upload size={16} />
@@ -79,8 +82,8 @@ export function ContactsApp() {
               <Input
                 value={contacts.searchQuery}
                 onChange={(event) => contacts.setSearchQuery(event.target.value)}
-                placeholder="Search contacts"
-                aria-label="Search contacts"
+                placeholder={i18n.t(I18nKey.APPS$CONTACTS_SEARCH_CONTACTS)}
+                aria-label={i18n.t(I18nKey.APPS$CONTACTS_SEARCH_CONTACTS)}
                 width="auto"
               />
             </div>
@@ -88,16 +91,14 @@ export function ContactsApp() {
 
           <div className="arco-contacts__list arco-scroll">
             {contacts.contacts.length === 0 ? (
-              <EmptyState title="No contacts found">
+              <EmptyState title={i18n.t(I18nKey.APPS$CONTACTS_NO_CONTACTS_FOUND)}>
                 <p className="arco-contacts__empty-copy">
                   {contacts.searchQuery ? "Try a different search." : "Add or import contacts to get started."}
                 </p>
                 {!contacts.searchQuery ? (
                   <div className="arco-contacts__empty-actions">
-                    <Button variant="primary" onClick={openAddForm}>
-                      Add contact
-                    </Button>
-                    <Button onClick={() => setImportOpen(true)}>Import</Button>
+                    <Button variant="primary" onClick={openAddForm}><T k={I18nKey.APPS$CONTACTS_ADD_CONTACT} /></Button>
+                    <Button onClick={() => setImportOpen(true)}><T k={I18nKey.APPS$CONTACTS_IMPORT} /></Button>
                   </div>
                 ) : null}
               </EmptyState>
@@ -137,7 +138,7 @@ export function ContactsApp() {
           onWidthChange={contacts.setDialWidth}
           minWidth={240}
           maxWidth={320}
-          handleLabel="Resize dial pad"
+          handleLabel={i18n.t(I18nKey.APPS$CONTACTS_RESIZE_DIAL_PAD)}
         >
           <DialPad
             value={contacts.dialValue}

@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import { T } from "../../i18n/T";
 /**
  * Error bubble with a three-line preview and View more/less for long messages.
  */
@@ -40,14 +42,10 @@ export function ChatErrorBlock({ text }: ChatErrorBlockProps) {
         {text}
       </p>
       {truncated && !expanded ? (
-        <button type="button" className="arco-chat__error-toggle" onClick={() => setExpanded(true)}>
-          View more
-        </button>
+        <button type="button" className="arco-chat__error-toggle" onClick={() => setExpanded(true)}><T k={I18nKey.COMPONENTS$CHAT_VIEW_MORE} /></button>
       ) : null}
       {truncated && expanded ? (
-        <button type="button" className="arco-chat__error-toggle" onClick={() => setExpanded(false)}>
-          View less
-        </button>
+        <button type="button" className="arco-chat__error-toggle" onClick={() => setExpanded(false)}><T k={I18nKey.COMPONENTS$CHAT_VIEW_LESS} /></button>
       ) : null}
     </div>
   );

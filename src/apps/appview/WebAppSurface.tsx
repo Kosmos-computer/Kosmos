@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 /**
  * WebAppSurface — a dock-launched user project in a window. On mount it
  * probes /launch: if the app's dev server is down and a start command is
@@ -45,7 +48,7 @@ export function WebAppSurface({ webAppId }: { webAppId: string }) {
     void launch();
   }, [launch]);
 
-  if (!webApp) return <div className="arco-empty">This app was removed from the registry.</div>;
+  if (!webApp) return <div className="arco-empty"><T k={I18nKey.APPS$APPVIEW_THIS_APP_WAS_REMOVED_FROM_THE_REGISTRY} /></div>;
 
   return (
     <div className="arco-appsurface">
@@ -57,14 +60,14 @@ export function WebAppSurface({ webAppId }: { webAppId: string }) {
         <button
           className="arco-btn arco-btn--icon"
           onClick={() => (phase === "ready" ? setFrameTick((t) => t + 1) : void launch())}
-          aria-label="Reload app"
+          aria-label={i18n.t(I18nKey.APPS$APPVIEW_RELOAD_APP)}
         >
           <RotateCw size={12} />
         </button>
         <button
           className="arco-btn arco-btn--icon"
           onClick={() => window.open(webApp.url, "_blank", "noopener")}
-          aria-label="Open in browser tab"
+          aria-label={i18n.t(I18nKey.APPS$APPVIEW_OPEN_IN_BROWSER_TAB)}
         >
           <ExternalLink size={12} />
         </button>
@@ -83,12 +86,10 @@ export function WebAppSurface({ webAppId }: { webAppId: string }) {
           {phase === "failed" ? (
             <>
               <span>
-                {webApp.name} isn't responding at {webApp.url}
+                {webApp.name}<T k={I18nKey.APPS$APPVIEW_ISN_T_RESPONDING_AT} />{webApp.url}
                 {webApp.command ? " and its start command didn't come up in time." : " and no start command is registered."}
               </span>
-              <button className="arco-btn arco-btn--primary" onClick={() => void launch()}>
-                Try again
-              </button>
+              <button className="arco-btn arco-btn--primary" onClick={() => void launch()}><T k={I18nKey.APPS$APPVIEW_TRY_AGAIN} /></button>
             </>
           ) : (
             <span>{phase === "starting" ? `Starting ${webApp.name}…` : `Connecting to ${webApp.name}…`}</span>

@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 /**
  * Key Wallet — one place for every secret the OS uses: LLM keys, MCP env vars,
  * channel tokens, model registry refs, and ACP credentials. Values stay masked
@@ -78,7 +81,7 @@ function KeyDetailOverlay({
             </p>
           </div>
           <div className="arco-module-card__actions">
-            <Button size="icon" onClick={onClose} aria-label="Close">
+            <Button size="icon" onClick={onClose} aria-label={i18n.t(I18nKey.COMMON$CLOSE)}>
               <X size={14} />
             </Button>
           </div>
@@ -88,14 +91,11 @@ function KeyDetailOverlay({
 
         <div className="arco-module-card__pills">
           <span className="arco-module-card__pill">{keyScopeLabel(entry.scope)}</span>
-          <span className="arco-module-card__pill">
-            Updated {new Date(entry.updatedAt).toLocaleString()}
+          <span className="arco-module-card__pill"><T k={I18nKey.APPS$KEY_WALLET_UPDATED} />{new Date(entry.updatedAt).toLocaleString()}
           </span>
         </div>
 
-        <label className="arco-label" htmlFor="key-value">
-          Value
-        </label>
+        <label className="arco-label" htmlFor="key-value"><T k={I18nKey.APPS$KEY_WALLET_VALUE} /></label>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <Input
             id="key-value"
@@ -113,14 +113,11 @@ function KeyDetailOverlay({
           </Button>
         </div>
 
-        <p className="arco-module__subtitle">
-          Secret names must match the env var subprocesses expect — e.g.{" "}
-          <code>ANTHROPIC_API_KEY</code> for Claude Code ACP.
-        </p>
+        <p className="arco-module__subtitle"><T k={I18nKey.APPS$KEY_WALLET_SECRET_NAMES_MUST_MATCH_THE_ENV_VAR_SUBPROCESSES_EXPECT_} />{" "}
+          <code>ANTHROPIC_API_KEY</code><T k={I18nKey.APPS$KEY_WALLET_FOR_CLAUDE_CODE_ACP} /></p>
 
         <Button variant="danger" onClick={onRemove}>
-          <Trash2 size={13} /> Remove key
-        </Button>
+          <Trash2 size={13} /><T k={I18nKey.APPS$KEY_WALLET_REMOVE_KEY} /></Button>
       </div>
     </div>
   );
@@ -129,11 +126,8 @@ function KeyDetailOverlay({
 function AddKeyPanel({ onCancel }: { onCancel: () => void }) {
   return (
     <div className="arco-form">
-      <p className="arco-module__subtitle">
-        Saving keys from the wallet will land once the secrets vault API ships. For now, add MCP
-        env vars in Settings → MCP servers or set the model key under Settings → Model provider.
-      </p>
-      <Button onClick={onCancel}>Close</Button>
+      <p className="arco-module__subtitle"><T k={I18nKey.APPS$KEY_WALLET_SAVING_KEYS_FROM_THE_WALLET_WILL_LAND_ONCE_THE_SECRETS_V} /></p>
+      <Button onClick={onCancel}><T k={I18nKey.COMMON$CLOSE} /></Button>
     </div>
   );
 }
@@ -163,25 +157,22 @@ export function KeyWalletApp() {
     <ModulePage>
       <ModuleInner>
         <ModuleHeader
-          title="Key Wallet"
-          subtitle="Every credential Arco uses — LLM vendors, MCP servers, channels, model refs, and ACP agents. Names match env vars so saved keys reach the right subprocess."
+          title={i18n.t(I18nKey.OS$APP_KEY_WALLET)}
+          subtitle={i18n.t(I18nKey.APPS$KEY_WALLET_EVERY_CREDENTIAL_ARCO_USES_LLM_VENDORS_MCP_SERVERS_CHANN)}
           actions={
             <Button onClick={() => setShowAdd((value) => !value)}>
-              <Plus size={13} /> Add key
-            </Button>
+              <Plus size={13} /><T k={I18nKey.APPS$KEY_WALLET_ADD_KEY} /></Button>
           }
         />
 
         {showAdd ? <AddKeyPanel onCancel={() => setShowAdd(false)} /> : null}
 
         {keys.length === 0 ? (
-          <EmptyState title="No keys saved">
-            Add API keys in Settings or install an integration that needs credentials.
-          </EmptyState>
+          <EmptyState title={i18n.t(I18nKey.APPS$KEY_WALLET_NO_KEYS_SAVED)}><T k={I18nKey.APPS$KEY_WALLET_ADD_API_KEYS_IN_SETTINGS_OR_INSTALL_AN_INTEGRATION_THAT_} /></EmptyState>
         ) : (
           <>
-            <ModuleToolbar search={search} onSearchChange={setSearch} searchLabel="Search keys">
-              <div className="arco-chip-row" role="group" aria-label="Key scope filter">
+            <ModuleToolbar search={search} onSearchChange={setSearch} searchLabel={i18n.t(I18nKey.APPS$KEY_WALLET_SEARCH_KEYS)}>
+              <div className="arco-chip-row" role="group" aria-label={i18n.t(I18nKey.APPS$KEY_WALLET_KEY_SCOPE_FILTER)}>
                 {SCOPE_FILTERS.map((entry) => (
                   <Chip
                     key={entry.id}
@@ -196,7 +187,7 @@ export function KeyWalletApp() {
             </ModuleToolbar>
 
             {filtered.length === 0 ? (
-              <EmptyState title="No matching keys">Try a different search term or filter.</EmptyState>
+              <EmptyState title={i18n.t(I18nKey.APPS$KEY_WALLET_NO_MATCHING_KEYS)}><T k={I18nKey.APPS$KEY_WALLET_TRY_A_DIFFERENT_SEARCH_TERM_OR_FILTER} /></EmptyState>
             ) : scopeFilter === "all" ? (
               grouped.map((group) => (
                 <ModuleSection key={group.scope} title={keyScopeLabel(group.scope)} count={group.items.length}>

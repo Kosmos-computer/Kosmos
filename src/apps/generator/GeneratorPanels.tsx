@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { useMemo } from "react";
 import { Renderer } from "@openuidev/react-lang";
 import { ThemeProvider } from "@openuidev/react-ui";
@@ -35,23 +38,21 @@ export function GeneratorCatalog({
   return (
     <div className="arco-generator__catalog">
       <div className="arco-generator__catalog-header">
-        <Sparkles size={15} />
-        Catalog
-        <span className="arco-generator__catalog-count">{items.length}</span>
+        <Sparkles size={15} /><T k={I18nKey.APPS$GENERATOR_CATALOG} /><span className="arco-generator__catalog-count">{items.length}</span>
       </div>
       <div className="arco-generator__catalog-search">
         <Search size={14} className="arco-icon--tertiary" />
         <Input
           value={searchQuery}
           onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Search components"
-          aria-label="Search catalog"
+          placeholder={i18n.t(I18nKey.APPS$GENERATOR_SEARCH_COMPONENTS)}
+          aria-label={i18n.t(I18nKey.APPS$GENERATOR_SEARCH_CATALOG)}
           width="auto"
         />
       </div>
       <div className="arco-generator__catalog-list arco-scroll">
         {items.length === 0 ? (
-          <EmptyState title="No matches">Try a different search term.</EmptyState>
+          <EmptyState title={i18n.t(I18nKey.OS_COMMANDPALETTE_NO_MATCHES)}><T k={I18nKey.APPS$GENERATOR_TRY_A_DIFFERENT_SEARCH_TERM} /></EmptyState>
         ) : (
           Array.from(grouped.entries()).map(([tier, sectionItems]) => (
             <section key={tier} className="arco-generator__catalog-section">
@@ -128,7 +129,7 @@ export function GeneratorWorkspace({
   return (
     <div className="arco-generator__workspace">
       <div className="arco-generator__prompt">
-        <label htmlFor="generator-prompt">Describe the UI you want</label>
+        <label htmlFor="generator-prompt"><T k={I18nKey.APPS$GENERATOR_DESCRIBE_THE_UI_YOU_WANT} /></label>
         <textarea
           id="generator-prompt"
           className="arco-input arco-generator__prompt-input"
@@ -154,12 +155,8 @@ export function GeneratorWorkspace({
           </Button>
           {result ? (
             <>
-              <Button onClick={onSaveToCatalog} disabled={generating}>
-                Save to catalog
-              </Button>
-              <Button onClick={onRefineInStudio} disabled={generating}>
-                Refine in Studio
-              </Button>
+              <Button onClick={onSaveToCatalog} disabled={generating}><T k={I18nKey.APPS$GENERATOR_SAVE_TO_CATALOG} /></Button>
+              <Button onClick={onRefineInStudio} disabled={generating}><T k={I18nKey.APPS$GENERATOR_REFINE_IN_STUDIO} /></Button>
             </>
           ) : null}
         </div>
@@ -171,19 +168,13 @@ export function GeneratorWorkspace({
 
       <div className="arco-generator__preview">
         <div className="arco-generator__preview-tabs">
-          <Chip active={previewTab === "preview"} onClick={() => onTabChange("preview")}>
-            Preview
-          </Chip>
-          <Chip active={previewTab === "schema"} onClick={() => onTabChange("schema")}>
-            Schema
-          </Chip>
+          <Chip active={previewTab === "preview"} onClick={() => onTabChange("preview")}><T k={I18nKey.APPS$GENERATOR_PREVIEW} /></Chip>
+          <Chip active={previewTab === "schema"} onClick={() => onTabChange("schema")}><T k={I18nKey.APPS$GENERATOR_SCHEMA} /></Chip>
           {result ? <Badge tone={result.source === "saved" ? "success" : "default"}>{result.source}</Badge> : null}
         </div>
         <div className="arco-generator__preview-body arco-scroll">
           {!result ? (
-            <EmptyState title="Nothing generated yet">
-              Pick a catalog item or describe an interface to preview openui-lang here.
-            </EmptyState>
+            <EmptyState title={i18n.t(I18nKey.APPS$GENERATOR_NOTHING_GENERATED_YET)}><T k={I18nKey.APPS$GENERATOR_PICK_A_CATALOG_ITEM_OR_DESCRIBE_AN_INTERFACE_TO_PREVIEW_} /></EmptyState>
           ) : previewTab === "preview" ? (
             <OpenUiPreview code={result.code} />
           ) : (

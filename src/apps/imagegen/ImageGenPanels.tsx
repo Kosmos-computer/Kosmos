@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import type { ReactNode } from "react";
 import { Download, ImageIcon, Search, Trash2 } from "lucide-react";
 import type { ImageGenHistoryItem, ImageGenSize, ImageGenStatus, ImageGenStyle } from "@shared/types";
@@ -27,23 +30,21 @@ export function ImageGenGallery({
   return (
     <div className="arco-imagegen__gallery">
       <div className="arco-imagegen__gallery-header">
-        <ImageIcon size={15} />
-        Gallery
-        <span className="arco-imagegen__gallery-count">{items.length}</span>
+        <ImageIcon size={15} /><T k={I18nKey.APPS$IMAGEGEN_GALLERY} /><span className="arco-imagegen__gallery-count">{items.length}</span>
       </div>
       <div className="arco-imagegen__gallery-search">
         <Search size={14} className="arco-icon--tertiary" />
         <Input
           value={searchQuery}
           onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Search prompts"
-          aria-label="Search gallery"
+          placeholder={i18n.t(I18nKey.APPS$IMAGEGEN_SEARCH_PROMPTS)}
+          aria-label={i18n.t(I18nKey.APPS$IMAGEGEN_SEARCH_GALLERY)}
           width="auto"
         />
       </div>
       <div className="arco-imagegen__gallery-list arco-scroll">
         {items.length === 0 ? (
-          <EmptyState title="No images yet">Generate something to fill the gallery.</EmptyState>
+          <EmptyState title={i18n.t(I18nKey.APPS$IMAGEGEN_NO_IMAGES_YET)}><T k={I18nKey.APPS$IMAGEGEN_GENERATE_SOMETHING_TO_FILL_THE_GALLERY} /></EmptyState>
         ) : (
           items.map((item) => (
             <div
@@ -67,7 +68,7 @@ export function ImageGenGallery({
               <button
                 type="button"
                 className="arco-imagegen__gallery-delete"
-                aria-label="Delete image"
+                aria-label={i18n.t(I18nKey.APPS$IMAGEGEN_DELETE_IMAGE)}
                 onClick={() => onDelete(item.id)}
               >
                 <Trash2 size={14} />
@@ -121,7 +122,7 @@ export function ImageGenWorkspace({
     <div className="arco-imagegen__workspace">
       <div className="arco-imagegen__controls">
         <div className="arco-imagegen__controls-header">
-          <label htmlFor="imagegen-prompt">Describe the image</label>
+          <label htmlFor="imagegen-prompt"><T k={I18nKey.APPS$IMAGEGEN_DESCRIBE_THE_IMAGE} /></label>
           {status ? (
             <Badge tone={status.configured ? "success" : "default"}>
               {status.configured ? `${status.provider} · ${status.model}` : "Mock preview"}
@@ -141,7 +142,7 @@ export function ImageGenWorkspace({
           }}
         />
         <div className="arco-imagegen__option-row">
-          <span className="arco-imagegen__option-label">Size</span>
+          <span className="arco-imagegen__option-label"><T k={I18nKey.APPS$IMAGEGEN_SIZE} /></span>
           <div className="arco-chip-row">
             {sizes.map((option) => (
               <Chip key={option.id} active={size === option.id} onClick={() => onSizeChange(option.id)}>
@@ -151,7 +152,7 @@ export function ImageGenWorkspace({
           </div>
         </div>
         <div className="arco-imagegen__option-row">
-          <span className="arco-imagegen__option-label">Style</span>
+          <span className="arco-imagegen__option-label"><T k={I18nKey.APPS$IMAGEGEN_STYLE} /></span>
           <div className="arco-chip-row">
             {styles.map((option) => (
               <Chip key={option.id} active={style === option.id} onClick={() => onStyleChange(option.id)}>
@@ -173,9 +174,7 @@ export function ImageGenWorkspace({
           </Button>
           {activeItem ? (
             <a className="arco-btn" href={activeItem.imageUrl} download={downloadName}>
-              <Download size={14} aria-hidden="true" />
-              Download
-            </a>
+              <Download size={14} aria-hidden="true" /><T k={I18nKey.APPS$IMAGEGEN_DOWNLOAD} /></a>
           ) : null}
         </div>
         {status && !status.configured && status.hint ? (
@@ -184,21 +183,19 @@ export function ImageGenWorkspace({
         {error ? <p className="arco-imagegen__error">{error}</p> : null}
         {activeItem?.revisedPrompt ? (
           <p className="arco-imagegen__revised">
-            <strong>Revised prompt:</strong> {activeItem.revisedPrompt}
+            <strong><T k={I18nKey.APPS$IMAGEGEN_REVISED_PROMPT} /></strong> {activeItem.revisedPrompt}
           </p>
         ) : null}
       </div>
 
       <div className="arco-imagegen__preview">
         <div className="arco-imagegen__preview-header">
-          <span>Preview</span>
+          <span><T k={I18nKey.APPS$IMAGEGEN_PREVIEW} /></span>
           {activeItem ? <Badge>{activeItem.provider}</Badge> : null}
         </div>
         <div className="arco-imagegen__preview-body arco-scroll">
           {!activeItem ? (
-            <EmptyState title="Nothing generated yet">
-              Describe a scene and press Generate to see it here.
-            </EmptyState>
+            <EmptyState title={i18n.t(I18nKey.APPS$GENERATOR_NOTHING_GENERATED_YET)}><T k={I18nKey.APPS$IMAGEGEN_DESCRIBE_A_SCENE_AND_PRESS_GENERATE_TO_SEE_IT_HERE} /></EmptyState>
           ) : (
             <img
               className="arco-imagegen__preview-image"

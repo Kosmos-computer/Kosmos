@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 /**
  * Cursor connection fields — API key, model, runtime, and connection test.
  * Shown in Settings → Agent when the Cursor runtime is selected.
@@ -59,16 +62,11 @@ export function CursorConnectionFields({ settings, update }: CursorConnectionFie
   return (
     <SettingsStack>
       <SettingsFieldRow
-        label="API key"
+        label={i18n.t(I18nKey.APPS$STARTUP_API_KEY)}
         htmlFor="set-cursor-key"
         hint={
-          <>
-            Create a key at{" "}
-            <a href="https://cursor.com/dashboard/integrations" target="_blank" rel="noreferrer">
-              cursor.com/dashboard/integrations
-            </a>
-            . Stored server-side and masked on read.
-          </>
+          <><T k={I18nKey.APPS$SETTINGS_CREATE_A_KEY_AT} />{" "}
+            <a href="https://cursor.com/dashboard/integrations" target="_blank" rel="noreferrer"><T k={I18nKey.APPS$SETTINGS_CURSOR_COM_DASHBOARD_INTEGRATIONS} /></a><T k={I18nKey.APPS$SETTINGS_STORED_SERVER_SIDE_AND_MASKED_ON_READ} /></>
         }
       >
         <Input
@@ -76,7 +74,7 @@ export function CursorConnectionFields({ settings, update }: CursorConnectionFie
           width="auto"
           type="password"
           value={settings.cursorApiKey}
-          placeholder="cursor_…"
+          placeholder={i18n.t(I18nKey.APPS$SETTINGS_CURSOR)}
           onChange={(e) => update({ cursorApiKey: e.target.value })}
         />
         <Button variant="default" disabled={testing} onClick={() => void testConnection()}>
@@ -85,8 +83,7 @@ export function CursorConnectionFields({ settings, update }: CursorConnectionFie
       </SettingsFieldRow>
 
       {status?.connected ? (
-        <SettingsAlert tone="success">
-          Connected as {status.user?.apiKeyName}
+        <SettingsAlert tone="success"><T k={I18nKey.APPS$SETTINGS_CONNECTED_AS} />{status.user?.apiKeyName}
           {status.user?.userEmail ? ` (${status.user.userEmail})` : ""}
         </SettingsAlert>
       ) : null}
@@ -95,7 +92,7 @@ export function CursorConnectionFields({ settings, update }: CursorConnectionFie
       ) : null}
       {error ? <SettingsAlert tone="error">{error}</SettingsAlert> : null}
 
-      <SettingsFieldRow label="Runtime" hint="Local runs on this machine; Cloud runs on a Cursor-hosted VM.">
+      <SettingsFieldRow label={i18n.t(I18nKey.APPS$SETTINGS_RUNTIME)} hint="Local runs on this machine; Cloud runs on a Cursor-hosted VM.">
         <div className="arco-settings-chip-row">
           {(["local", "cloud"] as const).map((runtime) => (
             <Chip
@@ -111,7 +108,7 @@ export function CursorConnectionFields({ settings, update }: CursorConnectionFie
 
       {settings.cursorRuntime === "cloud" ? (
         <SettingsFieldRow
-          label="Repository"
+          label={i18n.t(I18nKey.APPS$SETTINGS_REPOSITORY)}
           htmlFor="set-cursor-repo"
           hint="GitHub repo URL the cloud agent clones — required for cloud runtime."
         >
@@ -126,7 +123,7 @@ export function CursorConnectionFields({ settings, update }: CursorConnectionFie
       ) : null}
 
       <SettingsFieldRow
-        label="Model"
+        label={i18n.t(I18nKey.APPS$SETTINGS_MODEL)}
         htmlFor="set-cursor-model"
         hint="Required for local agents. Test connection to load available models."
       >
@@ -136,7 +133,7 @@ export function CursorConnectionFields({ settings, update }: CursorConnectionFie
             className="arco-input arco-input--compact"
             value={settings.cursorModel || CURSOR_DEFAULT_MODEL}
             onChange={(e) => update({ cursorModel: e.target.value })}
-            aria-label="Cursor model"
+            aria-label={i18n.t(I18nKey.APPS$SETTINGS_CURSOR_MODEL)}
           >
             {models.map((model) => (
               <option key={model.id} value={model.id}>

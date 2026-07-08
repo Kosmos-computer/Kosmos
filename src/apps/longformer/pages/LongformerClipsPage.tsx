@@ -1,3 +1,6 @@
+import { I18nKey } from "../../../i18n/declaration";
+import i18n from "../../../i18n/index";
+import { T } from "../../../i18n/T";
 import { Play } from "lucide-react";
 import { ArtifactPageLayout } from "../ArtifactPageLayout";
 import { collectClipCards } from "../artifactContent";
@@ -28,7 +31,7 @@ export function LongformerClipsPage({ vm, detail }: LongformerClipsPageProps) {
 
   return (
     <ArtifactPageLayout
-      title="Clips"
+      title={i18n.t(I18nKey.APPS$LONGFORMER_CLIPS)}
       description="Short segments worth sharing — select text in Transcript to create new clips."
       artifactKind="clips"
       generating={vm.generatingArtifact === "clips"}
@@ -61,9 +64,7 @@ export function LongformerClipsPage({ vm, detail }: LongformerClipsPageProps) {
           ))}
         </div>
       ) : (
-        <p className="arco-longformer-asset-page__empty">
-          No clips yet. Regenerate suggestions or highlight text in Transcript and choose Create clip.
-        </p>
+        <p className="arco-longformer-asset-page__empty"><T k={I18nKey.APPS$LONGFORMER_NO_CLIPS_YET_REGENERATE_SUGGESTIONS_OR_HIGHLIGHT_TEXT_IN} /></p>
       )}
     </ArtifactPageLayout>
   );

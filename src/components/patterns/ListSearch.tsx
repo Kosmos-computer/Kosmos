@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
 import { Search, X } from "lucide-react";
 import { Input } from "../ui";
 
@@ -47,7 +49,7 @@ export function ListSearch({
         <button
           type="button"
           className="arco-btn arco-btn--icon arco-list-search__clear"
-          aria-label="Clear search"
+          aria-label={i18n.t(I18nKey.APPS$MAPS_CLEAR_SEARCH)}
           onClick={() => onChange("")}
         >
           <X size={compact ? 12 : 14} />

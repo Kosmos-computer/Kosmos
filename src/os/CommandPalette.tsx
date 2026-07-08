@@ -1,3 +1,6 @@
+import { I18nKey } from "../i18n/declaration";
+import i18n from "../i18n/index";
+import { T } from "../i18n/T";
 /**
  * Global command palette — ⌘K overlay to jump to apps, settings sections,
  * or switch desktop / app shell modes.
@@ -116,7 +119,7 @@ export function CommandPalette() {
         className="arco-command-palette"
         role="dialog"
         aria-modal="true"
-        aria-label="Command palette"
+        aria-label={i18n.t(I18nKey.OS_COMMANDPALETTE_COMMAND_PALETTE)}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="arco-command-palette__search">
@@ -147,7 +150,7 @@ export function CommandPalette() {
                 close();
               }
             }}
-            placeholder="Search apps, settings, or shell mode…"
+            placeholder={i18n.t(I18nKey.OS_COMMANDPALETTE_SEARCH_APPS_SETTINGS_OR_SHELL_MODE)}
             spellCheck={false}
             autoComplete="off"
             aria-controls="command-palette-results"
@@ -155,17 +158,17 @@ export function CommandPalette() {
               flatEntries[activeIndex] ? `command-palette-${flatEntries[activeIndex].id}` : undefined
             }
           />
-          <kbd className="arco-command-palette__hint">esc</kbd>
+          <kbd className="arco-command-palette__hint"><T k={I18nKey.OS_COMMANDPALETTE_ESC} /></kbd>
         </div>
 
         <div
           id="command-palette-results"
           className="arco-command-palette__results"
           role="listbox"
-          aria-label="Command palette results"
+          aria-label={i18n.t(I18nKey.OS_COMMANDPALETTE_COMMAND_PALETTE_RESULTS)}
         >
           {flatEntries.length === 0 ? (
-            <p className="arco-command-palette__empty">No matches</p>
+            <p className="arco-command-palette__empty"><T k={I18nKey.OS_COMMANDPALETTE_NO_MATCHES} /></p>
           ) : (
             groupedEntries.map((section) => (
               <section key={section.group} className="arco-command-palette__section">
@@ -203,9 +206,9 @@ export function CommandPalette() {
         </div>
 
         <footer className="arco-command-palette__footer">
-          <span>↑↓ navigate</span>
-          <span>↵ open</span>
-          <span>⌘K toggle</span>
+          <span><T k={I18nKey.OS_COMMANDPALETTE_NAVIGATE} /></span>
+          <span><T k={I18nKey.OS_COMMANDPALETTE_OPEN} /></span>
+          <span><T k={I18nKey.OS_COMMANDPALETTE_K_TOGGLE} /></span>
         </footer>
       </div>
     </div>

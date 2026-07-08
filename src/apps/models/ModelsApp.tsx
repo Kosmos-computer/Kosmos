@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 /**
  * Models — the hub for every model the OS uses (docs/model-hub-plan.md).
  *
@@ -115,17 +118,17 @@ function SlotRow({
       <div style={rowBody}>
         <div style={{ ...rowTitle, display: "flex", alignItems: "center", gap: "var(--arco-space-xs)" }}>
           {slot.label}
-          {slot.source === "user" ? <Badge>custom</Badge> : null}
+          {slot.source === "user" ? <Badge><T k={I18nKey.APPS$MODELS_CUSTOM} /></Badge> : null}
         </div>
         <div className="arco-listrow__sub">{slot.description}</div>
       </div>
-      {slot.assigned === null && slot.effective ? <Badge>via {slot.effective.name}</Badge> : null}
+      {slot.assigned === null && slot.effective ? <Badge><T k={I18nKey.APPS$MODELS_VIA} />{slot.effective.name}</Badge> : null}
       {slot.source === "user" && onRemove ? (
         <Button
           variant="ghost"
           size="icon"
           aria-label={`Remove ${slot.label}`}
-          title="Remove use case"
+          title={i18n.t(I18nKey.APPS$MODELS_REMOVE_USE_CASE)}
           onClick={() => onRemove(slot.id)}
         >
           <Trash2 size={14} />
@@ -171,8 +174,7 @@ function LocalModelControls({
   if (!state || state.state === "absent") {
     return (
       <Button onClick={() => onDownload(modelId)}>
-        <Download size={14} /> Download
-      </Button>
+        <Download size={14} /><T k={I18nKey.APPS$MODELS_DOWNLOAD} /></Button>
     );
   }
   if (state.state === "downloading") {
@@ -180,26 +182,24 @@ function LocalModelControls({
       state.totalBytes && state.totalBytes > 0
         ? Math.min(100, Math.round(((state.receivedBytes ?? 0) / state.totalBytes) * 100))
         : 0;
-    return <Badge>downloading {pct}%</Badge>;
+    return <Badge><T k={I18nKey.APPS$MODELS_DOWNLOADING} />{pct}%</Badge>;
   }
   if (state.state === "error") {
     return (
       <span style={inlineActions}>
-        <Badge tone="danger" title={state.error}>
-          failed
-        </Badge>
-        <Button onClick={() => onDownload(modelId)}>Retry</Button>
+        <Badge tone="danger" title={state.error}><T k={I18nKey.APPS$MODELS_FAILED} /></Badge>
+        <Button onClick={() => onDownload(modelId)}><T k={I18nKey.COMMON$RETRY} /></Button>
       </span>
     );
   }
   return (
     <span style={inlineActions}>
-      {state.routerState === "loaded" ? <Badge tone="success">serving</Badge> : <Badge>on disk</Badge>}
+      {state.routerState === "loaded" ? <Badge tone="success"><T k={I18nKey.APPS$MODELS_SERVING} /></Badge> : <Badge><T k={I18nKey.APPS$MODELS_ON_DISK} /></Badge>}
       <Button
         variant="ghost"
         size="icon"
-        aria-label="Delete downloaded model file"
-        title="Delete downloaded model file"
+        aria-label={i18n.t(I18nKey.APPS$MODELS_DELETE_DOWNLOADED_MODEL_FILE)}
+        title={i18n.t(I18nKey.APPS$MODELS_DELETE_DOWNLOADED_MODEL_FILE)}
         onClick={() => onRemoveDownload(modelId)}
       >
         <Trash2 size={14} />
@@ -234,7 +234,7 @@ function ModelRow({
       <div style={rowBody}>
         <div style={{ ...rowTitle, display: "flex", alignItems: "center", gap: "var(--arco-space-xs)" }}>
           {manifest.name}
-          {manifest.meta?.experimental ? <Badge tone="warning">experimental</Badge> : null}
+          {manifest.meta?.experimental ? <Badge tone="warning"><T k={I18nKey.APPS$MODELS_EXPERIMENTAL} /></Badge> : null}
         </div>
         <div className="arco-listrow__sub" title={manifest.description}>
           {manifest.description}
@@ -261,7 +261,7 @@ function ModelRow({
           variant="ghost"
           size="icon"
           aria-label={`Remove ${manifest.name}`}
-          title="Remove from registry"
+          title={i18n.t(I18nKey.APPS$MODELS_REMOVE_FROM_REGISTRY)}
           onClick={() => onRemove(manifest.id)}
         >
           <Trash2 size={14} />
@@ -326,16 +326,16 @@ function AddUseCaseForm({
   return (
     <div className="arco-form">
       <Input
-        placeholder="Name (e.g. Nightly reports)"
+        placeholder={i18n.t(I18nKey.APPS$MODELS_NAME_E_G_NIGHTLY_REPORTS)}
         value={label}
         onChange={(e) => setLabel(e.target.value)}
-        aria-label="Use case name"
+        aria-label={i18n.t(I18nKey.APPS$MODELS_USE_CASE_NAME)}
       />
       <Input
-        placeholder="Description (optional)"
+        placeholder={i18n.t(I18nKey.APPS$TASKS_DESCRIPTION_OPTIONAL)}
         value={description}
         onChange={(e) => setDescription(e.target.value)}
-        aria-label="Use case description"
+        aria-label={i18n.t(I18nKey.APPS$MODELS_USE_CASE_DESCRIPTION)}
       />
       <select
         className="arco-input"
@@ -344,7 +344,7 @@ function AddUseCaseForm({
           setRequires(e.target.value as ModelCapability);
           setFallback("");
         }}
-        aria-label="Required capability"
+        aria-label={i18n.t(I18nKey.APPS$MODELS_REQUIRED_CAPABILITY)}
       >
         {CAPABILITY_OPTIONS.map((cap) => (
           <option key={cap} value={cap}>
@@ -357,20 +357,18 @@ function AddUseCaseForm({
           className="arco-input"
           value={fallback}
           onChange={(e) => setFallback(e.target.value)}
-          aria-label="Inherit from"
+          aria-label={i18n.t(I18nKey.APPS$MODELS_INHERIT_FROM)}
         >
-          <option value="">No inheritance</option>
+          <option value=""><T k={I18nKey.APPS$MODELS_NO_INHERITANCE} /></option>
           {fallbackOptions.map((slot) => (
-            <option key={slot.id} value={slot.id}>
-              Inherit from {slot.label}
+            <option key={slot.id} value={slot.id}><T k={I18nKey.APPS$MODELS_INHERIT_FROM} />{slot.label}
             </option>
           ))}
         </select>
       ) : null}
       <div style={inlineActions}>
         <Button variant="primary" onClick={() => void addUseCase()} disabled={busy}>
-          <Plus size={14} /> Add use case
-        </Button>
+          <Plus size={14} /><T k={I18nKey.APPS$MODELS_ADD_USE_CASE} /></Button>
       </div>
     </div>
   );
@@ -434,45 +432,42 @@ function AddModelForm({ onDone }: { onDone: () => void }) {
   return (
     <div className="arco-form">
       <Input
-        placeholder="Display name (e.g. My vLLM box)"
+        placeholder={i18n.t(I18nKey.APPS$MODELS_DISPLAY_NAME_E_G_MY_VLLM_BOX)}
         value={name}
         onChange={(e) => setName(e.target.value)}
-        aria-label="Model display name"
+        aria-label={i18n.t(I18nKey.APPS$MODELS_MODEL_DISPLAY_NAME)}
       />
       <Input
-        placeholder="Base URL ending in /v1"
+        placeholder={i18n.t(I18nKey.APPS$MODELS_BASE_URL_ENDING_IN_V1)}
         value={baseUrl}
         onChange={(e) => setBaseUrl(e.target.value)}
-        aria-label="Base URL"
+        aria-label={i18n.t(I18nKey.APPS$MODELS_BASE_URL)}
       />
       <Input
-        placeholder="Model id (as the endpoint expects it)"
+        placeholder={i18n.t(I18nKey.APPS$MODELS_MODEL_ID_AS_THE_ENDPOINT_EXPECTS_IT)}
         value={modelName}
         onChange={(e) => setModelName(e.target.value)}
-        aria-label="Upstream model id"
+        aria-label={i18n.t(I18nKey.APPS$MODELS_UPSTREAM_MODEL_ID)}
       />
       <Input
         type="password"
-        placeholder="API key (optional — stored masked in Settings)"
+        placeholder={i18n.t(I18nKey.APPS$MODELS_API_KEY_OPTIONAL_STORED_MASKED_IN_SETTINGS)}
         value={apiKey}
         onChange={(e) => setApiKey(e.target.value)}
-        aria-label="API key"
+        aria-label={i18n.t(I18nKey.APPS$STARTUP_API_KEY)}
       />
       <div style={inlineActions}>
         <Button variant="primary" onClick={() => void addCustom()} disabled={busy}>
-          <Plus size={14} /> Add endpoint
-        </Button>
+          <Plus size={14} /><T k={I18nKey.APPS$MODELS_ADD_ENDPOINT} /></Button>
       </div>
       <div style={inlineActions}>
         <Input
-          placeholder="…or a model manifest URL (model.json)"
+          placeholder={i18n.t(I18nKey.APPS$MODELS_OR_A_MODEL_MANIFEST_URL_MODEL_JSON)}
           value={manifestUrl}
           onChange={(e) => setManifestUrl(e.target.value)}
-          aria-label="Manifest URL"
+          aria-label={i18n.t(I18nKey.APPS$MODELS_MANIFEST_URL)}
         />
-        <Button onClick={() => void addByUrl()} disabled={busy || !manifestUrl.trim()}>
-          Fetch & register
-        </Button>
+        <Button onClick={() => void addByUrl()} disabled={busy || !manifestUrl.trim()}><T k={I18nKey.APPS$MODELS_FETCH_REGISTER} /></Button>
       </div>
     </div>
   );
@@ -539,38 +534,34 @@ export function ModelsApp() {
 
   const engineBadge =
     engine?.phase === "running" ? (
-      <Badge tone="success">engine running{engine.external ? " (external)" : ""}</Badge>
+      <Badge tone="success"><T k={I18nKey.APPS$MODELS_ENGINE_RUNNING} />{engine.external ? " (external)" : ""}</Badge>
     ) : engine?.phase === "starting" ? (
-      <Badge tone="warning">engine starting…</Badge>
+      <Badge tone="warning"><T k={I18nKey.APPS$MODELS_ENGINE_STARTING} /></Badge>
     ) : engine?.phase === "error" ? (
-      <Badge tone="danger" title={engine.detail}>
-        engine error
-      </Badge>
+      <Badge tone="danger" title={engine.detail}><T k={I18nKey.APPS$MODELS_ENGINE_ERROR} /></Badge>
     ) : (
-      <Badge>engine stopped</Badge>
+      <Badge><T k={I18nKey.APPS$MODELS_ENGINE_STOPPED} /></Badge>
     );
 
   return (
     <ModulePage>
       <ModuleInner>
         <ModuleHeader
-          title="Models"
-          subtitle="Every model the OS uses — assign use-cases, download local models, connect providers."
+          title={i18n.t(I18nKey.OS$APP_MODELS)}
+          subtitle={i18n.t(I18nKey.APPS$MODELS_EVERY_MODEL_THE_OS_USES_ASSIGN_USE_CASES_DOWNLOAD_LOCAL_)}
           actions={
             <div style={inlineActions}>
               {engineBadge}
               {engine?.phase === "running" && !engine.external ? (
                 <Button onClick={() => void act(() => api.stopEngine(), "Could not stop engine")}>
-                  <Square size={14} /> Stop engine
-                </Button>
+                  <Square size={14} /><T k={I18nKey.APPS$MODELS_STOP_ENGINE} /></Button>
               ) : (
                 <Button
                   disabled={engine?.phase === "starting"}
                   onClick={() => void act(() => api.startEngine(), "Could not start engine")}
-                  title="Serve downloaded models locally via llama-server"
+                  title={i18n.t(I18nKey.APPS$MODELS_SERVE_DOWNLOADED_MODELS_LOCALLY_VIA_LLAMA_SERVER)}
                 >
-                  <Play size={14} /> Start engine
-                </Button>
+                  <Play size={14} /><T k={I18nKey.APPS$MODELS_START_ENGINE} /></Button>
               )}
             </div>
           }
@@ -580,7 +571,7 @@ export function ModelsApp() {
           <SettingsAlert tone="error">{engine.detail}</SettingsAlert>
         ) : null}
 
-        <ModuleSection title="Use cases" count={slots.length}>
+        <ModuleSection title={i18n.t(I18nKey.APPS$MODELS_USE_CASES)} count={slots.length}>
           <ModuleList>
             {slots.map((slot) => (
               <SlotRow key={slot.id} slot={slot} onAssign={onAssign} onRemove={onRemoveSlot} />
@@ -589,7 +580,7 @@ export function ModelsApp() {
           <AddUseCaseForm slots={slots} onDone={() => void refresh()} />
         </ModuleSection>
 
-        <ModuleSection title="Local models" count={localModels.length}>
+        <ModuleSection title={i18n.t(I18nKey.INSTALL$MODEL_PATH_LOCAL_LABEL)} count={localModels.length}>
           <ModuleList>
             {localModels.map((m) => (
               <ModelRow
@@ -605,7 +596,7 @@ export function ModelsApp() {
           </ModuleList>
         </ModuleSection>
 
-        <ModuleSection title="Cloud & remote models" count={cloudModels.length}>
+        <ModuleSection title={i18n.t(I18nKey.APPS$MODELS_CLOUD_REMOTE_MODELS)} count={cloudModels.length}>
           <ModuleList>
             {cloudModels.map((m) => (
               <ModelRow
@@ -621,7 +612,7 @@ export function ModelsApp() {
           </ModuleList>
         </ModuleSection>
 
-        <ModuleSection title="Add a model" count={1}>
+        <ModuleSection title={i18n.t(I18nKey.APPS$MODELS_ADD_A_MODEL)} count={1}>
           <AddModelForm onDone={() => void refresh()} />
         </ModuleSection>
       </ModuleInner>

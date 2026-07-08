@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { useMemo, useState } from "react";
 import {
   FileAudio,
@@ -124,15 +127,11 @@ export function LongformerLibraryView({ vm }: LongformerLibraryViewProps) {
   return (
     <div className="arco-longformer-library">
       <header className="arco-longformer-library__header">
-        <h1 className="arco-longformer-library__title">Library</h1>
+        <h1 className="arco-longformer-library__title"><T k={I18nKey.APPS$LONGFORMER_LIBRARY} /></h1>
         <div className="arco-longformer-library__actions">
-          <Button type="button" variant="default">
-            Export all
-          </Button>
+          <Button type="button" variant="default"><T k={I18nKey.APPS$LONGFORMER_EXPORT_ALL} /></Button>
           <Button type="button" variant="primary" onClick={uploadFile}>
-            <Upload size={14} strokeWidth={1.75} />
-            Upload
-          </Button>
+            <Upload size={14} strokeWidth={1.75} /><T k={I18nKey.APPS$LONGFORMER_UPLOAD} /></Button>
         </div>
       </header>
 
@@ -146,11 +145,11 @@ export function LongformerLibraryView({ vm }: LongformerLibraryViewProps) {
         <ListSearch
           value={vm.searchQuery}
           onChange={vm.setSearchQuery}
-          placeholder="Search transcripts"
+          placeholder={i18n.t(I18nKey.APPS$LONGFORMER_SEARCH_TRANSCRIPTS)}
           ariaLabel="Search transcripts"
           className="arco-longformer-library__search"
         />
-        <button type="button" className="arco-longformer-filter-btn">Last 30 Days</button>
+        <button type="button" className="arco-longformer-filter-btn"><T k={I18nKey.APPS$LONGFORMER_LAST_30_DAYS} /></button>
         <button
           type="button"
           className="arco-longformer-filter-btn"
@@ -159,8 +158,7 @@ export function LongformerLibraryView({ vm }: LongformerLibraryViewProps) {
               prev === "all" ? "meeting" : prev === "meeting" ? "call" : prev === "call" ? "podcast" : prev === "podcast" ? "upload" : prev === "upload" ? "memory" : "all",
             )
           }
-        >
-          Source{sourceFilter !== "all" ? `: ${sourceFilter}` : ""}
+        ><T k={I18nKey.APPS$LONGFORMER_SOURCE} />{sourceFilter !== "all" ? `: ${sourceFilter}` : ""}
         </button>
         <button
           type="button"
@@ -170,33 +168,27 @@ export function LongformerLibraryView({ vm }: LongformerLibraryViewProps) {
               prev === "all" ? "ready" : prev === "ready" ? "processing" : prev === "processing" ? "queued" : prev === "queued" ? "failed" : "all",
             )
           }
-        >
-          Status{statusFilter !== "all" ? `: ${statusFilter}` : ""}
+        ><T k={I18nKey.APPS$LONGFORMER_STATUS} />{statusFilter !== "all" ? `: ${statusFilter}` : ""}
         </button>
-        <button type="button" className="arco-longformer-filter-btn">Language</button>
+        <button type="button" className="arco-longformer-filter-btn"><T k={I18nKey.APPS$LONGFORMER_LANGUAGE} /></button>
       </div>
 
       {showProcessingBanner && data.processingCount > 0 ? (
         <div className="arco-longformer-banner" role="status">
           <p>
-            {data.processingCount} transcript{data.processingCount === 1 ? "" : "s"} currently processing
-          </p>
+            {data.processingCount}<T k={I18nKey.APPS$LONGFORMER_TRANSCRIPT} />{data.processingCount === 1 ? "" : "s"}<T k={I18nKey.APPS$LONGFORMER_CURRENTLY_PROCESSING} /></p>
           <div className="arco-longformer-banner__actions">
-            <Button type="button" variant="ghost" onClick={() => setShowProcessingBanner(false)}>
-              Dismiss
-            </Button>
-            <Button type="button" variant="default" onClick={() => vm.setView("in-progress")}>
-              View queue
-            </Button>
+            <Button type="button" variant="ghost" onClick={() => setShowProcessingBanner(false)}><T k={I18nKey.APPS$LONGFORMER_DISMISS} /></Button>
+            <Button type="button" variant="default" onClick={() => vm.setView("in-progress")}><T k={I18nKey.APPS$LONGFORMER_VIEW_QUEUE} /></Button>
           </div>
         </div>
       ) : null}
 
       <div className="arco-longformer-library__demo">
         <button type="button" className="arco-longformer-demo-card" onClick={openDemoProject}>
-          <span className="arco-longformer-demo-card__eyebrow">Featured demo</span>
-          <span className="arco-longformer-demo-card__title">Beachcube Demo Project / Podcast</span>
-          <span className="arco-longformer-demo-card__meta">2 speakers · chapters · clips · timeline editor</span>
+          <span className="arco-longformer-demo-card__eyebrow"><T k={I18nKey.APPS$LONGFORMER_FEATURED_DEMO} /></span>
+          <span className="arco-longformer-demo-card__title"><T k={I18nKey.APPS$LONGFORMER_BEACHCUBE_DEMO_PROJECT_PODCAST} /></span>
+          <span className="arco-longformer-demo-card__meta"><T k={I18nKey.APPS$LONGFORMER_2_SPEAKERS_CHAPTERS_CLIPS_TIMELINE_EDITOR} /></span>
         </button>
       </div>
 
@@ -206,23 +198,21 @@ export function LongformerLibraryView({ vm }: LongformerLibraryViewProps) {
             <thead>
               <tr>
                 <th scope="col" className="arco-longformer-table__check">
-                  <input type="checkbox" aria-label="Select all transcripts" />
+                  <input type="checkbox" aria-label={i18n.t(I18nKey.APPS$LONGFORMER_SELECT_ALL_TRANSCRIPTS)} />
                 </th>
-                <th scope="col">Title</th>
-                <th scope="col">Source</th>
-                <th scope="col">Status</th>
-                <th scope="col">Duration</th>
-                <th scope="col">Words</th>
-                <th scope="col">Created</th>
-                <th scope="col" className="arco-longformer-table__actions" aria-label="Actions" />
+                <th scope="col"><T k={I18nKey.APPS$LONGFORMER_TITLE} /></th>
+                <th scope="col"><T k={I18nKey.APPS$LONGFORMER_SOURCE} /></th>
+                <th scope="col"><T k={I18nKey.APPS$LONGFORMER_STATUS} /></th>
+                <th scope="col"><T k={I18nKey.APPS$LONGFORMER_DURATION} /></th>
+                <th scope="col"><T k={I18nKey.APPS$LONGFORMER_WORDS} /></th>
+                <th scope="col"><T k={I18nKey.APPS$LONGFORMER_CREATED} /></th>
+                <th scope="col" className="arco-longformer-table__actions" aria-label={i18n.t(I18nKey.APPS$LONGFORMER_ACTIONS)} />
               </tr>
             </thead>
             <tbody>
               {visibleTranscripts.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="arco-longformer-table__empty">
-                    No transcripts match the current filters.
-                  </td>
+                  <td colSpan={8} className="arco-longformer-table__empty"><T k={I18nKey.APPS$LONGFORMER_NO_TRANSCRIPTS_MATCH_THE_CURRENT_FILTERS} /></td>
                 </tr>
               ) : (
                 visibleTranscripts.map((transcript) => (

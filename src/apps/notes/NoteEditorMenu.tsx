@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
 import { useCallback } from "react";
 import { Copy, Download, MoreVertical, Trash2 } from "lucide-react";
 import { exportDocToMarkdown } from "@arco/editor-kit";
@@ -67,13 +69,13 @@ export function NoteEditorMenu({
     <Menu
       side="bottom"
       align="end"
-      aria-label="Note actions"
+      aria-label={i18n.t(I18nKey.APPS$NOTES_NOTE_ACTIONS)}
       items={menuItems}
       trigger={
         <button
           type="button"
           className="arco-btn arco-btn--icon arco-notes__menu-btn"
-          aria-label="Note actions"
+          aria-label={i18n.t(I18nKey.APPS$NOTES_NOTE_ACTIONS)}
         >
           <MoreVertical size={14} />
         </button>

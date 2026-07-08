@@ -3,9 +3,11 @@
  * Workspace project files remain in Studio → Files tab (/api/files).
  */
 import { useCallback } from "react";
+import { DriveMoveModal } from "./DriveMoveModal";
 import { FileEditorView } from "./FileEditorView";
 import { FilesWorkspace } from "./FilesWorkspace";
 import { PdfReaderView } from "./PdfReaderView";
+import { ShareLinkModal } from "./ShareLinkModal";
 import { useDrive } from "./useDrive";
 import type { DriveFileItem } from "./types";
 
@@ -41,31 +43,64 @@ export function FilesApp() {
   }
 
   return (
-    <FilesWorkspace
-      location={drive.location}
-      onLocationChange={drive.setLocation}
-      files={drive.files}
-      breadcrumb={drive.breadcrumb}
-      searchQuery={drive.searchQuery}
-      onSearchChange={drive.setSearchQuery}
-      viewMode={drive.viewMode}
-      onViewModeChange={drive.setViewMode}
-      selectedId={drive.selectedId}
-      onSelectFile={handleSelectFile}
-      previewText={drive.previewText}
-      loading={drive.loading}
-      error={drive.error}
-      sidebarWidth={drive.sidebarWidth}
-      onSidebarWidthChange={drive.setSidebarWidth}
-      previewWidth={drive.previewWidth}
-      onPreviewWidthChange={drive.setPreviewWidth}
-      onOpenFile={(file) => void drive.openFile(file)}
-      onOpenFileEditor={(file) => void drive.openFileEditor(file)}
-      onToggleStar={handleToggleStar}
-      onCreateNew={(type) => void drive.createNew(type)}
-      onTrashFile={(id) => void drive.trashFile(id)}
-      onRestoreFile={(id) => void drive.restoreFile(id)}
-      onDeleteForever={(id) => void drive.deleteForever(id)}
-    />
+    <>
+      <input
+        ref={drive.uploadInputRef}
+        type="file"
+        multiple
+        hidden
+        onChange={(event) => {
+          if (event.target.files) void drive.uploadFiles(event.target.files);
+          event.target.value = "";
+        }}
+      />
+      <FilesWorkspace
+        location={drive.location}
+        onLocationChange={drive.setLocation}
+        files={drive.files}
+        breadcrumb={drive.breadcrumb}
+        searchQuery={drive.searchQuery}
+        onSearchChange={drive.setSearchQuery}
+        viewMode={drive.viewMode}
+        onViewModeChange={drive.setViewMode}
+        selectedId={drive.selectedId}
+        onSelectFile={handleSelectFile}
+        previewText={drive.previewText}
+        loading={drive.loading}
+        error={drive.error}
+        sidebarWidth={drive.sidebarWidth}
+        onSidebarWidthChange={drive.setSidebarWidth}
+        previewWidth={drive.previewWidth}
+        onPreviewWidthChange={drive.setPreviewWidth}
+        onOpenFile={(file) => void drive.openFile(file)}
+        onOpenFileEditor={(file) => void drive.openFileEditor(file)}
+        onToggleStar={handleToggleStar}
+        onCreateNew={(type) => void drive.createNew(type)}
+        onTrashFile={(id) => void drive.trashFile(id)}
+        onRestoreFile={(id) => void drive.restoreFile(id)}
+        onDeleteForever={(id) => void drive.deleteForever(id)}
+        onRenameFile={(file) => void drive.renameFile(file.id, file.name)}
+        onMoveFile={(file) => drive.setMoveFile(file)}
+        onShareFile={(file) => drive.setShareFile(file)}
+        onDownloadFile={(file) => void drive.downloadFile(file)}
+        onUpload={drive.triggerUpload}
+      />
+      {drive.shareFile ? (
+        <ShareLinkModal
+          open
+          file={drive.shareFile}
+          onClose={() => drive.setShareFile(null)}
+        />
+      ) : null}
+      {drive.moveFile ? (
+        <DriveMoveModal
+          open
+          itemId={drive.moveFile.id}
+          itemName={drive.moveFile.name}
+          onClose={() => drive.setMoveFile(null)}
+          onMove={(parentId) => drive.moveFileTo(drive.moveFile!.id, parentId)}
+        />
+      ) : null}
+    </>
   );
 }

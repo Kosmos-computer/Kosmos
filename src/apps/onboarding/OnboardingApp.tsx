@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 /**
  * Onboarding playground — previews the embeddable widget in card, banner,
  * inline, and side-panel placements. Stub-only; no product analytics yet.
@@ -30,8 +33,8 @@ function CardPlacement({
 
   if (!visible) {
     return (
-      <EmptyState title="Card placement dismissed">
-        <p className="arco-onboard-demo__hint">Use “Reset placements” to show this widget again.</p>
+      <EmptyState title={i18n.t(I18nKey.APPS$ONBOARDING_CARD_PLACEMENT_DISMISSED)}>
+        <p className="arco-onboard-demo__hint"><T k={I18nKey.APPS$ONBOARDING_USE_RESET_PLACEMENTS_TO_SHOW_THIS_WIDGET_AGAIN} /></p>
       </EmptyState>
     );
   }
@@ -89,13 +92,11 @@ export function OnboardingApp() {
       <ModulePage>
         <ModuleInner>
           <ModuleHeader
-            title="Onboarding widget"
-            subtitle="Reusable step flows for empty states, banners, and side panels."
+            title={i18n.t(I18nKey.APPS$ONBOARDING_ONBOARDING_WIDGET)}
+            subtitle={i18n.t(I18nKey.APPS$ONBOARDING_REUSABLE_STEP_FLOWS_FOR_EMPTY_STATES_BANNERS_AND_SIDE_PA)}
             actions={
               <Button variant="ghost" onClick={resetAll}>
-                <RotateCcw size={16} />
-                Reset placements
-              </Button>
+                <RotateCcw size={16} /><T k={I18nKey.APPS$ONBOARDING_RESET_PLACEMENTS} /></Button>
             }
           />
 
@@ -118,7 +119,7 @@ export function OnboardingApp() {
           </div>
 
           <div className="arco-onboard-demo__placements">
-            <PlacementSection label="Card — empty state">
+            <PlacementSection label={i18n.t(I18nKey.APPS$ONBOARDING_CARD_EMPTY_STATE)}>
               <div className="arco-onboard-demo__surface arco-onboard-demo__surface--empty">
                 <CardPlacement
                   key={cardKey}
@@ -130,7 +131,7 @@ export function OnboardingApp() {
               </div>
             </PlacementSection>
 
-            <PlacementSection label="Compact — top banner">
+            <PlacementSection label={i18n.t(I18nKey.APPS$ONBOARDING_COMPACT_TOP_BANNER)}>
               <div className="arco-onboard-demo__surface arco-onboard-demo__surface--app">
                 {stub.isVisible("compact") ? (
                   <OnboardingWidget
@@ -146,23 +147,19 @@ export function OnboardingApp() {
                   />
                 ) : null}
                 <div className="arco-onboard-demo__app-bar">
-                  <span className="arco-onboard-demo__app-title">Example app chrome</span>
-                  <span className="arco-onboard-demo__hint">Banner sits above app content</span>
+                  <span className="arco-onboard-demo__app-title"><T k={I18nKey.APPS$ONBOARDING_EXAMPLE_APP_CHROME} /></span>
+                  <span className="arco-onboard-demo__hint"><T k={I18nKey.APPS$ONBOARDING_BANNER_SITS_ABOVE_APP_CONTENT} /></span>
                 </div>
                 <div className="arco-onboard-demo__app-body">
-                  <p className="arco-onboard-demo__hint">
-                    Drop <code>variant=&quot;compact&quot;</code> under a toolbar or tab row for lightweight tips.
-                  </p>
+                  <p className="arco-onboard-demo__hint"><T k={I18nKey.APPS$ONBOARDING_DROP} /><code><T k={I18nKey.APPS$ONBOARDING_VARIANT_QUOT_COMPACT_QUOT} /></code><T k={I18nKey.APPS$ONBOARDING_UNDER_A_TOOLBAR_OR_TAB_ROW_FOR_LIGHTWEIGHT_TIPS} /></p>
                 </div>
               </div>
             </PlacementSection>
 
-            <PlacementSection label="Inline — within content">
+            <PlacementSection label={i18n.t(I18nKey.APPS$ONBOARDING_INLINE_WITHIN_CONTENT)}>
               <div className="arco-onboard-demo__surface arco-onboard-demo__surface--app">
                 <div className="arco-onboard-demo__app-body">
-                  <p className="arco-onboard-demo__hint">
-                    Inline widgets nest inside forms, settings sections, or module pages.
-                  </p>
+                  <p className="arco-onboard-demo__hint"><T k={I18nKey.APPS$ONBOARDING_INLINE_WIDGETS_NEST_INSIDE_FORMS_SETTINGS_SECTIONS_OR_MO} /></p>
                   {stub.isVisible("inline") ? (
                     <OnboardingWidget
                       steps={stub.flow.steps}
@@ -174,20 +171,18 @@ export function OnboardingApp() {
                       onSkip={() => stub.dismiss("inline")}
                     />
                   ) : (
-                    <EmptyState title="Inline placement dismissed" />
+                    <EmptyState title={i18n.t(I18nKey.APPS$ONBOARDING_INLINE_PLACEMENT_DISMISSED)} />
                   )}
                 </div>
               </div>
             </PlacementSection>
 
-            <PlacementSection label="Side panel — contextual help">
+            <PlacementSection label={i18n.t(I18nKey.APPS$ONBOARDING_SIDE_PANEL_CONTEXTUAL_HELP)}>
               <div className="arco-onboard-demo__surface">
                 <div className="arco-onboard-demo__side-layout">
                   <div className="arco-onboard-demo__side-main">
-                    <h2 className="arco-onboard-demo__app-title">Main workspace</h2>
-                    <p className="arco-onboard-demo__hint">
-                      Keep the widget in a narrow column while the user works in the primary pane.
-                    </p>
+                    <h2 className="arco-onboard-demo__app-title"><T k={I18nKey.APPS$ONBOARDING_MAIN_WORKSPACE} /></h2>
+                    <p className="arco-onboard-demo__hint"><T k={I18nKey.APPS$ONBOARDING_KEEP_THE_WIDGET_IN_A_NARROW_COLUMN_WHILE_THE_USER_WORKS_} /></p>
                   </div>
                   <aside className="arco-onboard-demo__side-panel">
                     {stub.isVisible("side") ? (
@@ -204,7 +199,7 @@ export function OnboardingApp() {
                         onSkip={() => stub.dismiss("side")}
                       />
                     ) : (
-                      <EmptyState title="Side panel dismissed" />
+                      <EmptyState title={i18n.t(I18nKey.APPS$ONBOARDING_SIDE_PANEL_DISMISSED)} />
                     )}
                   </aside>
                 </div>

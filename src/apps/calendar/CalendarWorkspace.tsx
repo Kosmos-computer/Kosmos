@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { useMemo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "../../components/ui";
@@ -160,7 +163,7 @@ export function CalendarWorkspace({
         onWidthChange={onSidebarWidthChange}
         minWidth={200}
         maxWidth={320}
-        handleLabel="Resize calendar sidebar"
+        handleLabel={i18n.t(I18nKey.APPS$CALENDAR_RESIZE_CALENDAR_SIDEBAR)}
         className="arco-cal__sidebar-wrap"
       >
         <div className="arco-cal__sidebar arco-scroll">
@@ -188,48 +191,46 @@ export function CalendarWorkspace({
               <div className="arco-cal__nav">
                 {view === "day" ? (
                   <>
-                    <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onPrevDay} aria-label="Previous day">
+                    <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onPrevDay} aria-label={i18n.t(I18nKey.APPS$CALENDAR_PREVIOUS_DAY)}>
                       <ChevronLeft size={16} />
                     </button>
-                    <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onNextDay} aria-label="Next day">
+                    <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onNextDay} aria-label={i18n.t(I18nKey.APPS$CALENDAR_NEXT_DAY)}>
                       <ChevronRight size={16} />
                     </button>
                   </>
                 ) : view === "week" ? (
                   <>
-                    <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onPrevWeek} aria-label="Previous week">
+                    <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onPrevWeek} aria-label={i18n.t(I18nKey.APPS$CALENDAR_PREVIOUS_WEEK)}>
                       <ChevronLeft size={16} />
                     </button>
-                    <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onNextWeek} aria-label="Next week">
+                    <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onNextWeek} aria-label={i18n.t(I18nKey.APPS$CALENDAR_NEXT_WEEK)}>
                       <ChevronRight size={16} />
                     </button>
                   </>
                 ) : view === "year" ? (
                   <>
-                    <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onPrevYear} aria-label="Previous year">
+                    <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onPrevYear} aria-label={i18n.t(I18nKey.APPS$CALENDAR_PREVIOUS_YEAR)}>
                       <ChevronLeft size={16} />
                     </button>
-                    <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onNextYear} aria-label="Next year">
+                    <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onNextYear} aria-label={i18n.t(I18nKey.APPS$CALENDAR_NEXT_YEAR)}>
                       <ChevronRight size={16} />
                     </button>
                   </>
                 ) : (
                   <>
-                    <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onPrevMonth} aria-label="Previous month">
+                    <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onPrevMonth} aria-label={i18n.t(I18nKey.APPS$CALENDAR_PREVIOUS_MONTH)}>
                       <ChevronLeft size={16} />
                     </button>
-                    <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onNextMonth} aria-label="Next month">
+                    <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onNextMonth} aria-label={i18n.t(I18nKey.APPS$CALENDAR_NEXT_MONTH)}>
                       <ChevronRight size={16} />
                     </button>
                   </>
                 )}
               </div>
-              <Button variant="ghost" onClick={onToday}>
-                Today
-              </Button>
+              <Button variant="ghost" onClick={onToday}><T k={I18nKey.COMMON$TODAY} /></Button>
             </div>
 
-            <div className="arco-cal__tabs" role="tablist" aria-label="Calendar view">
+            <div className="arco-cal__tabs" role="tablist" aria-label={i18n.t(I18nKey.APPS$CALENDAR_CALENDAR_VIEW)}>
               {VIEW_TABS.map((tab) => (
                 <button
                   key={tab.id}
@@ -247,14 +248,12 @@ export function CalendarWorkspace({
             </div>
 
             <div className="arco-cal__header-actions">
-              <Button variant="primary" onClick={onNewEvent}>
-                New event
-              </Button>
+              <Button variant="primary" onClick={onNewEvent}><T k={I18nKey.APPS$CALENDAR_NEW_EVENT} /></Button>
             </div>
           </div>
 
           {error ? <div className="arco-cal__error">{error}</div> : null}
-          {loading ? <div className="arco-cal__loading">Loading events…</div> : null}
+          {loading ? <div className="arco-cal__loading"><T k={I18nKey.APPS$CALENDAR_LOADING_EVENTS} /></div> : null}
 
           <div className="arco-cal__grid">
             {view === "day" ? (

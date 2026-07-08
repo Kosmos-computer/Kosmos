@@ -1,7 +1,12 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Plus } from "lucide-react";
 import type { McpServerInfo } from "@shared/types";
 import { primeComposer } from "../chat/composerBus";
+import { systemAppTitle } from "../../os/systemAppTitles";
 import { useWindowStore } from "../../os/windowStore";
 import { ModuleSection } from "../../components/patterns/ModuleDashboard";
 import {
@@ -10,13 +15,18 @@ import {
   type RecommendedAutomation,
 } from "./catalog";
 
-function matchesQuery(automation: RecommendedAutomation, query: string, installed: McpServerInfo[]): boolean {
+function matchesQuery(
+  automation: RecommendedAutomation,
+  query: string,
+  installed: McpServerInfo[],
+  labels: { name: string; category: string; description: string },
+): boolean {
   const normalized = query.trim().toLowerCase();
   if (!normalized) return true;
   const haystack = [
-    automation.name,
-    automation.category,
-    automation.description,
+    labels.name,
+    labels.category,
+    labels.description,
     automation.prompt,
     ...automation.requiredMcpServerIds,
     ...installed.filter((s) => automation.requiredMcpServerIds.includes(s.config.id)).map((s) => s.config.name),
@@ -38,9 +48,17 @@ export function RecommendedAutomationsSection({
   query: string;
   mcpServers: McpServerInfo[];
 }) {
+  const { i18n } = useTranslation();
   const visible = useMemo(
-    () => AUTOMATION_CATALOG.filter((automation) => matchesQuery(automation, query, mcpServers)),
-    [query, mcpServers],
+    () =>
+      AUTOMATION_CATALOG.filter((automation) =>
+        matchesQuery(automation, query, mcpServers, {
+          name: i18n.t(automation.nameKey),
+          category: i18n.t(automation.categoryKey),
+          description: i18n.t(automation.descriptionKey),
+        }),
+      ),
+    [query, mcpServers, i18n.language],
   );
 
   if (visible.length === 0) return null;
@@ -54,14 +72,14 @@ export function RecommendedAutomationsSection({
       missing > 0
         ? `First help me enable these MCP servers: ${automation.requiredMcpServerIds.join(", ")}. Then `
         : "";
-    useWindowStore.getState().open({ type: "system", app: "chat" }, "Chat");
+    useWindowStore.getState().open({ type: "system", app: "chat" }, systemAppTitle("chat"));
     primeComposer({ text: `${prefix}${automation.prompt}`, submit: false });
   };
 
   return (
     <>
       {proven.length > 0 ? (
-        <ModuleSection title="Recommended" count={proven.length}>
+        <ModuleSection titleKey={I18nKey.APPS$AUTOMATIONS_RECOMMENDED} count={proven.length}>
           <div className="arco-module__grid">
             {proven.map((automation) => (
               <RecommendedCard
@@ -75,7 +93,7 @@ export function RecommendedAutomationsSection({
         </ModuleSection>
       ) : null}
       {beta.length > 0 ? (
-        <ModuleSection title="Beta" count={beta.length}>
+        <ModuleSection titleKey={I18nKey.APPS$AUTOMATIONS_BETA} count={beta.length}>
           <div className="arco-module__grid">
             {beta.map((automation) => (
               <RecommendedCard
@@ -101,6 +119,7 @@ function RecommendedCard({
   missing: number;
   onLaunch: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <button type="button" className="arco-module-card" onClick={onLaunch}>
       <div className="arco-module-card__head">
@@ -108,16 +127,16 @@ function RecommendedCard({
           <Plus size={16} />
         </span>
         <div className="arco-module-card__body">
-          <h3 className="arco-module-card__title">{automation.name}</h3>
-          <div className="arco-module-card__meta">{automation.category}</div>
+          <h3 className="arco-module-card__title">{t(automation.nameKey)}</h3>
+          <div className="arco-module-card__meta">{t(automation.categoryKey)}</div>
         </div>
       </div>
-      <p className="arco-module-card__desc">{automation.description}</p>
+      <p className="arco-module-card__desc">{t(automation.descriptionKey)}</p>
       <div className="arco-module-card__pills">
         {missing > 0 ? (
-          <span className="arco-module-card__pill">{missing} MCP server(s) to connect</span>
+          <span className="arco-module-card__pill">{missing}<T k={I18nKey.APPS$AUTOMATIONS_MCP_SERVER_S_TO_CONNECT} /></span>
         ) : (
-          <span className="arco-module-card__pill">Ready to launch</span>
+          <span className="arco-module-card__pill"><T k={I18nKey.APPS$AUTOMATIONS_READY_TO_LAUNCH} /></span>
         )}
       </div>
     </button>

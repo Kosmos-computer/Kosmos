@@ -1,9 +1,13 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 /**
  * Automations — primary dashboard (OpenHands agent-canvas parity): search,
  * grid/list, active/inactive groups, detail view, recommended presets,
  * chat-first creation, run history, and channel delivery.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   CalendarClock,
   Clock,
@@ -69,25 +73,29 @@ function triggerLabel(automation: Automation): string {
 
 function ViewToggle({ view, onChange }: { view: AutomationView; onChange: (view: AutomationView) => void }) {
   return (
-    <div className="arco-chip-row" role="group" aria-label="Automations view">
+    <div className="arco-chip-row" role="group" aria-label={i18n.t(I18nKey.APPS$AUTOMATIONS_AUTOMATIONS_VIEW)}>
       <button
         type="button"
         className={`arco-chip${view === "grid" ? " arco-chip--active" : ""}`}
         aria-pressed={view === "grid"}
         onClick={() => onChange("grid")}
       >
-        <LayoutGrid size={13} aria-hidden="true" /> Cards
-      </button>
+        <LayoutGrid size={13} aria-hidden="true" /><T k={I18nKey.APPS$AUTOMATIONS_CARDS} /></button>
       <button
         type="button"
         className={`arco-chip${view === "list" ? " arco-chip--active" : ""}`}
         aria-pressed={view === "list"}
         onClick={() => onChange("list")}
       >
-        <List size={13} aria-hidden="true" /> List
-      </button>
+        <List size={13} aria-hidden="true" /><T k={I18nKey.APPS$AUTOMATIONS_LIST} /></button>
     </div>
   );
+}
+
+function automationToggleLabel(enabled: boolean, name: string, t: (key: I18nKey, values?: Record<string, unknown>) => string): string {
+  return enabled
+    ? t(I18nKey.APPS$AUTOMATIONS_DISABLE_AUTOMATION, { name })
+    : t(I18nKey.APPS$AUTOMATIONS_ENABLE_AUTOMATION, { name });
 }
 
 function AutomationCard({
@@ -109,6 +117,7 @@ function AutomationCard({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const { t } = useTranslation();
   const deliverLabel = automation.deliver
     ? deliveryOptions(channels).find(
         (o) => o.value === `${automation.deliver?.channelId}:${automation.deliver?.chatId}`,
@@ -126,15 +135,17 @@ function AutomationCard({
           <div className="arco-module-card__meta">
             <code>{triggerLabel(automation)}</code>
             {automation.lastRun
-              ? ` · last run ${new Date(automation.lastRun).toLocaleString()}`
-              : " · never run"}
+              ? t(I18nKey.APPS$AUTOMATIONS_LAST_RUN, {
+                  date: new Date(automation.lastRun).toLocaleString(),
+                })
+              : t(I18nKey.APPS$AUTOMATIONS_NEVER_RUN)}
           </div>
         </div>
       </button>
       <div className="arco-module-card__actions" style={{ justifyContent: "flex-end" }}>
         <Switch
           checked={automation.enabled}
-          aria-label={`${automation.enabled ? "Disable" : "Enable"} ${automation.name}`}
+          aria-label={automationToggleLabel(automation.enabled, automation.name, t)}
           onChange={onToggle}
         />
       </div>
@@ -145,15 +156,15 @@ function AutomationCard({
             <Send size={10} style={{ verticalAlign: "-1px" }} /> {deliverLabel}
           </span>
         ) : (
-          <span className="arco-module-card__pill">In Arco only</span>
+          <span className="arco-module-card__pill"><T k={I18nKey.APPS$AUTOMATIONS_IN_ARCO_ONLY} /></span>
         )}
       </div>
       <div className="arco-module-card__actions">
         <Button disabled={runningId === automation.id} onClick={onRunNow}>
-          <Play size={13} /> {runningId === automation.id ? "Running…" : "Run now"}
+          <Play size={13} /> {runningId === automation.id ? t(I18nKey.APPS$AUTOMATIONS_RUNNING) : t(I18nKey.APPS$AUTOMATIONS_RUN_NOW)}
         </Button>
-        <Button onClick={onEdit}>Edit</Button>
-        <Button variant="danger" onClick={onDelete} aria-label={`Delete ${automation.name}`}>
+        <Button onClick={onEdit}><T k={I18nKey.COMMON$EDIT} /></Button>
+        <Button variant="danger" onClick={onDelete} aria-label={t(I18nKey.APPS$AUTOMATIONS_DELETE_AUTOMATION_NAME, { name: automation.name })}>
           <Trash2 size={13} />
         </Button>
       </div>
@@ -180,6 +191,7 @@ function AutomationListRow({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const { t } = useTranslation();
   const deliverLabel = automation.deliver
     ? deliveryOptions(channels).find(
         (o) => o.value === `${automation.deliver?.channelId}:${automation.deliver?.chatId}`,
@@ -190,7 +202,7 @@ function AutomationListRow({
     <div className="arco-listrow">
       <Switch
         checked={automation.enabled}
-        aria-label={`${automation.enabled ? "Disable" : "Enable"} ${automation.name}`}
+        aria-label={automationToggleLabel(automation.enabled, automation.name, t)}
         onChange={onToggle}
       />
       <button type="button" style={{ flex: 1, minWidth: 0, textAlign: "left", background: "transparent", border: 0, cursor: "pointer", color: "inherit" }} onClick={onOpen}>
@@ -198,8 +210,10 @@ function AutomationListRow({
         <div className="arco-listrow__sub">
           <code>{triggerLabel(automation)}</code>
           {automation.lastRun
-            ? ` · last run ${new Date(automation.lastRun).toLocaleString()}`
-            : " · never run"}
+            ? t(I18nKey.APPS$AUTOMATIONS_LAST_RUN, {
+                date: new Date(automation.lastRun).toLocaleString(),
+              })
+            : t(I18nKey.APPS$AUTOMATIONS_NEVER_RUN)}
           {deliverLabel ? (
             <span>
               {" · "}
@@ -212,10 +226,10 @@ function AutomationListRow({
         </div>
       </button>
       <Button disabled={runningId === automation.id} onClick={onRunNow}>
-        <Play size={13} /> {runningId === automation.id ? "Running…" : "Run now"}
+        <Play size={13} /> {runningId === automation.id ? t(I18nKey.APPS$AUTOMATIONS_RUNNING) : t(I18nKey.APPS$AUTOMATIONS_RUN_NOW)}
       </Button>
-      <Button onClick={onEdit}>Edit</Button>
-      <Button variant="danger" onClick={onDelete} aria-label={`Delete ${automation.name}`}>
+      <Button onClick={onEdit}><T k={I18nKey.COMMON$EDIT} /></Button>
+      <Button variant="danger" onClick={onDelete} aria-label={t(I18nKey.APPS$AUTOMATIONS_DELETE_AUTOMATION_NAME, { name: automation.name })}>
         <Trash2 size={13} />
       </Button>
     </div>
@@ -287,6 +301,7 @@ function AutomationGroup({
 }
 
 export function AutomationsApp() {
+  const { t } = useTranslation();
   const notify = useOsStore((s) => s.notify);
   const [automations, setAutomations] = useState<Automation[]>([]);
   const [total, setTotal] = useState(0);
@@ -361,15 +376,15 @@ export function AutomationsApp() {
       setRunningId(id);
       try {
         await api.runAutomation(id);
-        notify("Automation run started");
+        notify(t(I18nKey.APPS$AUTOMATIONS_RUN_STARTED));
       } catch (err) {
-        notify(err instanceof Error ? err.message : "Run failed");
+        notify(err instanceof Error ? err.message : t(I18nKey.APPS$AUTOMATIONS_RUN_FAILED));
       } finally {
         setRunningId(null);
         void refresh();
       }
     },
-    [notify, refresh],
+    [notify, refresh, t],
   );
 
   const handleViewChange = (next: AutomationView) => {
@@ -397,22 +412,21 @@ export function AutomationsApp() {
       <ModulePage>
         <ModuleInner>
           <ModuleHeader
-            title="Automations"
-            subtitle="Scheduled and event-triggered agent runs. Each automation gets only its prompt — no chat history — and can deliver results to a channel."
+            titleKey={I18nKey.OS$APP_AUTOMATIONS}
+            subtitleKey={I18nKey.APPS$AUTOMATIONS_SCHEDULED_AND_EVENT_TRIGGERED_AGENT_RUNS_EACH_AUTOMATION}
             actions={
               <>
-                <Button onClick={() => setAdvancedOpen((value) => !value)}>Advanced</Button>
+                <Button onClick={() => setAdvancedOpen((value) => !value)}><T k={I18nKey.APPS$AUTOMATIONS_ADVANCED} /></Button>
                 <Button variant="primary" onClick={() => setCreateOpen(true)}>
-                  <Plus size={13} /> New
-                </Button>
+                  <Plus size={13} /><T k={I18nKey.APPS$AUTOMATIONS_NEW} /></Button>
               </>
             }
           />
 
           {!healthOk ? (
-            <EmptyState title="Automations unavailable">
-              <span>The automation service is not reachable. Check that the server is running.</span>
-              <Button onClick={() => void refresh()}>Retry</Button>
+            <EmptyState titleKey={I18nKey.APPS$AUTOMATIONS_AUTOMATIONS_UNAVAILABLE}>
+              <span><T k={I18nKey.APPS$AUTOMATIONS_THE_AUTOMATION_SERVICE_IS_NOT_REACHABLE_CHECK_THAT_THE_S} /></span>
+              <Button onClick={() => void refresh()}><T k={I18nKey.COMMON$RETRY} /></Button>
             </EmptyState>
           ) : null}
 
@@ -420,29 +434,23 @@ export function AutomationsApp() {
 
           {advancedOpen ? (
             <div className="arco-form">
-              <label className="arco-label" htmlFor="auto-name">
-                Name
-              </label>
+              <label className="arco-label" htmlFor="auto-name"><T k={I18nKey.APPS$AUTOMATIONS_NAME} /></label>
               <input
                 id="auto-name"
                 className="arco-input"
                 value={form.name}
                 onChange={(e) => setForm((current) => ({ ...current, name: e.target.value }))}
-                placeholder="Morning briefing"
+                placeholder={i18n.t(I18nKey.APPS$AUTOMATIONS_MORNING_BRIEFING)}
               />
-              <label className="arco-label" htmlFor="auto-schedule">
-                Schedule (cron)
-              </label>
+              <label className="arco-label" htmlFor="auto-schedule"><T k={I18nKey.APPS$AUTOMATIONS_SCHEDULE_CRON} /></label>
               <input
                 id="auto-schedule"
                 className="arco-input"
                 value={form.schedule}
                 onChange={(e) => setForm((current) => ({ ...current, schedule: e.target.value }))}
-                placeholder="0 9 * * *"
+                placeholder={i18n.t(I18nKey.APPS$AUTOMATIONS_0_9)}
               />
-              <label className="arco-label" htmlFor="auto-prompt">
-                Prompt
-              </label>
+              <label className="arco-label" htmlFor="auto-prompt"><T k={I18nKey.APPS$AUTOMATIONS_PROMPT} /></label>
               <textarea
                 id="auto-prompt"
                 className="arco-input"
@@ -452,16 +460,14 @@ export function AutomationsApp() {
               />
               {deliveryOptions(channels).length > 0 ? (
                 <>
-                  <label className="arco-label" htmlFor="auto-deliver">
-                    Deliver result to
-                  </label>
+                  <label className="arco-label" htmlFor="auto-deliver"><T k={I18nKey.APPS$AUTOMATIONS_DELIVER_RESULT_TO} /></label>
                   <select
                     id="auto-deliver"
                     className="arco-input"
                     value={form.deliver}
                     onChange={(e) => setForm((current) => ({ ...current, deliver: e.target.value }))}
                   >
-                    <option value="">In Arco only</option>
+                    <option value=""><T k={I18nKey.APPS$AUTOMATIONS_IN_ARCO_ONLY} /></option>
                     {deliveryOptions(channels).map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
@@ -471,38 +477,34 @@ export function AutomationsApp() {
                 </>
               ) : null}
               <div style={{ display: "flex", gap: 8 }}>
-                <Button variant="primary" onClick={() => void createAdvanced()}>
-                  Create
-                </Button>
-                <Button onClick={() => setAdvancedOpen(false)}>Cancel</Button>
+                <Button variant="primary" onClick={() => void createAdvanced()}><T k={I18nKey.COMMON$CREATE} /></Button>
+                <Button onClick={() => setAdvancedOpen(false)}><T k={I18nKey.COMMON$CANCEL} /></Button>
               </div>
             </div>
           ) : null}
 
           {healthOk && automations.length > 0 ? (
-            <ModuleToolbar search={search} onSearchChange={setSearch} searchLabel="Search automations">
+            <ModuleToolbar search={search} onSearchChange={setSearch} searchLabel={i18n.t(I18nKey.APPS$AUTOMATIONS_SEARCH_AUTOMATIONS)}>
               <ViewToggle view={view} onChange={handleViewChange} />
             </ModuleToolbar>
           ) : null}
 
           {healthOk && automations.length === 0 && !advancedOpen ? (
-            <EmptyState title="No automations yet">
+            <EmptyState titleKey={I18nKey.APPS$AUTOMATIONS_NO_AUTOMATIONS_YET}>
               <CalendarClock size={22} />
-              <span>Create one with New, pick a recommended preset, or ask in chat.</span>
-              <Button variant="primary" onClick={() => setCreateOpen(true)}>
-                Create in chat
-              </Button>
+              <span><T k={I18nKey.APPS$AUTOMATIONS_CREATE_ONE_WITH_NEW_PICK_A_RECOMMENDED_PRESET_OR_ASK_IN_} /></span>
+              <Button variant="primary" onClick={() => setCreateOpen(true)}><T k={I18nKey.APPS$AUTOMATIONS_CREATE_IN_CHAT} /></Button>
             </EmptyState>
           ) : null}
 
           {healthOk && filtered.length === 0 && automations.length > 0 ? (
-            <EmptyState title="No matching automations">Try a different search term.</EmptyState>
+            <EmptyState titleKey={I18nKey.APPS$AUTOMATIONS_NO_MATCHING_AUTOMATIONS}><T k={I18nKey.APPS$AUTOMATIONS_TRY_A_DIFFERENT_SEARCH_TERM} /></EmptyState>
           ) : null}
 
           {healthOk ? (
             <>
               <AutomationGroup
-                title="Active"
+                title={t(I18nKey.APPS$AUTOMATIONS_ACTIVE)}
                 automations={active}
                 view={view}
                 channels={channels}
@@ -514,7 +516,7 @@ export function AutomationsApp() {
                 onDelete={(id, name) => setDeleteTarget({ id, name })}
               />
               <AutomationGroup
-                title="Inactive"
+                title={t(I18nKey.APPS$AUTOMATIONS_INACTIVE)}
                 automations={inactive}
                 view={view}
                 channels={channels}
@@ -526,7 +528,7 @@ export function AutomationsApp() {
                 onDelete={(id, name) => setDeleteTarget({ id, name })}
               />
               {total > automations.length ? (
-                <Button onClick={() => setLimit((value) => value + PAGE_SIZE)}>Load more</Button>
+                <Button onClick={() => setLimit((value) => value + PAGE_SIZE)}><T k={I18nKey.APPS$AUTOMATIONS_LOAD_MORE} /></Button>
               ) : null}
               <RecommendedAutomationsSection query={search} mcpServers={mcpServers} />
             </>

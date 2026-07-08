@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
 /**
  * Live voice-session strip above the chat composer: the face rig, the
  * session state, and the most recent exchange. Rendered only while a voice
@@ -108,7 +110,7 @@ function VoiceBarContent({
         <button
           type="button"
           className="arco-voicebar__control arco-voicebar__control--close"
-          aria-label="End voice session"
+          aria-label={i18n.t(I18nKey.APPS$CHAT_END_VOICE_SESSION)}
           onClick={onClose}
         >
           <X size={12} />

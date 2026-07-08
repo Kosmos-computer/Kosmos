@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
 import { useEffect, useState } from "react";
 import { EmptyState } from "../../components/ui";
 import { useConnectionStore } from "../../connections/useConnectionStore";
@@ -29,7 +31,7 @@ export function PodcastApp() {
   if (vm.error && vm.localEpisodes.length === 0) {
     return (
       <div className="arco-podcast">
-        <EmptyState title="Podcast library unavailable">{vm.error}</EmptyState>
+        <EmptyState title={i18n.t(I18nKey.APPS$PODCAST_PODCAST_LIBRARY_UNAVAILABLE)}>{vm.error}</EmptyState>
       </div>
     );
   }

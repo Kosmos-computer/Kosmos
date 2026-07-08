@@ -1,4 +1,7 @@
+import { I18nKey } from "../../../i18n/declaration";
+import i18n from "../../../i18n/index";
 import type { SearchTabDef, SearchTabId } from "./searchTypes";
+import { useTranslation } from "react-i18next";
 
 export interface SearchTabsProps {
   tabs: SearchTabDef[];
@@ -7,8 +10,9 @@ export interface SearchTabsProps {
 }
 
 export function SearchTabs({ tabs, activeTab, onTabChange }: SearchTabsProps) {
+  const { t } = useTranslation();
   return (
-    <nav className="arco-search-tabs" aria-label="Search categories">
+    <nav className="arco-search-tabs" aria-label={i18n.t(I18nKey.COMPONENTS$PATTERNS_SEARCH_CATEGORIES)}>
       {tabs.map((tab) => (
         <button
           key={tab.id}

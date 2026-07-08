@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import { T } from "../../i18n/T";
 import { useEffect, useState, type ReactNode } from "react";
 import { ChevronRight, List, Terminal } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -167,7 +169,11 @@ export interface AgentTodoCardProps {
 
 function TodoIndicator({ status }: { status: AgentTodoStatus }) {
   if (status === "completed") {
-    return <span className="arco-agent-todo__indicator arco-agent-todo__indicator--completed">✓</span>;
+    return (
+      <span className="arco-agent-todo__indicator arco-agent-todo__indicator--completed">
+        {"\u2713"}
+      </span>
+    );
   }
   if (status === "active") {
     return (
@@ -189,7 +195,7 @@ export function AgentTodoCard({ items, className = "" }: AgentTodoCardProps) {
     >
       <div className="arco-agent-todo__header">
         <List size={14} aria-hidden="true" />
-        <span>To-dos</span>
+        <span><T k={I18nKey.COMPONENTS$AGENT_BLOCKS_TO_DOS} /></span>
         <span className="arco-agent-todo__count">{items.length}</span>
       </div>
       <ul className="arco-agent-todo__list">

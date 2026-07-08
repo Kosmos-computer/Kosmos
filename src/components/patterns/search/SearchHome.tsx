@@ -1,3 +1,6 @@
+import { I18nKey } from "../../../i18n/declaration";
+import i18n from "../../../i18n/index";
+import { T } from "../../../i18n/T";
 import type { SearchSuggestion } from "./searchTypes";
 import { SearchAttribution } from "./SearchAttribution";
 import { SearchBar } from "./SearchBar";
@@ -28,7 +31,7 @@ export function SearchHome({
   return (
     <div className="arco-search-home">
       <div className="arco-search-home__center">
-        <h1 className="arco-search-home__logo">Search</h1>
+        <h1 className="arco-search-home__logo"><T k={I18nKey.COMMON$SEARCH} /></h1>
 
         <SearchBar
           variant="home"
@@ -45,8 +48,8 @@ export function SearchHome({
       </div>
 
       {trending.length > 0 ? (
-        <section className="arco-search-home__trending" aria-label="Trending searches">
-          <h2>Trending</h2>
+        <section className="arco-search-home__trending" aria-label={i18n.t(I18nKey.COMPONENTS$PATTERNS_TRENDING_SEARCHES)}>
+          <h2><T k={I18nKey.COMPONENTS$PATTERNS_TRENDING} /></h2>
           <ul>
             {trending.map((term) => (
               <li key={term}>

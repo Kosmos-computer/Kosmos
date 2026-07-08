@@ -16,7 +16,10 @@ import { DOCS_CONTRACT_ID, EMPTY_DOC_JSON } from "../../shared/capabilities/docs
 import { DOC_MIME, FILES_CONTRACT_ID, SHEET_MIME, type FileCreateInput } from "../../shared/capabilities/files.js";
 import { EMPTY_SHEET_JSON, SHEETS_CONTRACT_ID } from "../../shared/capabilities/sheets.js";
 import { exportDocToMarkdown } from "../../shared/docFormat.js";
+import { SHEETS_CONTRACT_ID } from "../../shared/capabilities/sheets.js";
 import { VOICE_CONTRACT_ID } from "../../shared/capabilities/voice.js";
+import { SHARES_CONTRACT_ID } from "../../shared/capabilities/shares.js";
+import type { ShareCreateInput } from "../../shared/capabilities/shares.js";
 import { TASKS_CONTRACT_ID } from "../../shared/capabilities/tasks.js";
 import type { TaskInput, TaskStatus } from "../../shared/capabilities/tasks.js";
 import { intentMeta } from "../../shared/capabilities/index.js";
@@ -24,6 +27,7 @@ import { calculatorService } from "../services/calculatorService.js";
 import { calendarService } from "../services/calendarService.js";
 import { tasksService } from "../services/tasksService.js";
 import { filesService } from "../services/filesService.js";
+import { shareService } from "../services/shareService.js";
 import { dataDirs } from "../env.js";
 
 const PROVIDERS_FILE = path.join(dataDirs.root, "capability-providers.json");
@@ -37,6 +41,7 @@ const DEFAULT_PROVIDERS: Record<string, string> = {
   [SHEETS_CONTRACT_ID]: "system",
   [VOICE_CONTRACT_ID]: "system",
   [TASKS_CONTRACT_ID]: "system",
+  [SHARES_CONTRACT_ID]: "system",
 };
 
 /** Where the Pipecat voice service listens (voice-server/bot.py). */
@@ -190,6 +195,20 @@ const systemHandlers: Record<string, IntentHandler> = {
       throw new Error("Spreadsheet content is not valid JSON");
     }
     return { ...file, workbook };
+  },
+
+  // os.shares@1 — scoped public links over os.files@1
+  "shares.create": (p) =>
+    shareService.create(p as unknown as ShareCreateInput, String(p.actorId ?? "system")),
+  "shares.list": (p) =>
+    shareService.list({
+      ...(typeof p.fileId === "string" ? { fileId: p.fileId } : {}),
+      ...(typeof p.actorId === "string" ? { createdBy: p.actorId } : {}),
+    }),
+  "shares.revoke": (p) => shareService.revoke(String(p.id ?? "")),
+  "shares.update": (p) => {
+    const { id, ...patch } = p;
+    return shareService.update(String(id ?? ""), patch);
   },
 
   // os.voice@1 — the session itself is desktop-owned (the browser holds the

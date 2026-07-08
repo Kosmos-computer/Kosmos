@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 /**
  * Settings → Default providers — which implementation answers each capability
  * contract (os.calendar@1, …). "System" is the built-in service; installed
@@ -47,7 +50,7 @@ export function ProvidersSection() {
 
   return (
     <SettingsPage>
-      <SettingsSection intro="Which implementation answers each system capability. Data stays in the system store, so switching providers never loses anything.">
+      <SettingsSection intro={i18n.t(I18nKey.APPS$SETTINGS_WHICH_IMPLEMENTATION_ANSWERS_EACH_SYSTEM_CAPABILITY_DATA)}>
         {error ? <SettingsAlert tone="error">{error}</SettingsAlert> : null}
         <SettingsStack>
           {providers.map((p) => (
@@ -71,7 +74,7 @@ export function ProvidersSection() {
             </SettingsRow>
           ))}
         </SettingsStack>
-        {providers.length === 0 && !error ? <SettingsEmpty>No capability providers configured.</SettingsEmpty> : null}
+        {providers.length === 0 && !error ? <SettingsEmpty><T k={I18nKey.APPS$SETTINGS_NO_CAPABILITY_PROVIDERS_CONFIGURED} /></SettingsEmpty> : null}
       </SettingsSection>
     </SettingsPage>
   );

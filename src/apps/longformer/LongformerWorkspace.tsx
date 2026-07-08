@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
 import { LongformerJobShell } from "./LongformerJobShell";
 import { LongformerJobSidebar } from "./LongformerJobSidebar";
 import { LongformerLibraryView } from "./LongformerLibraryView";
@@ -5,6 +7,7 @@ import { LongformerPlaceholderView } from "./LongformerPlaceholderView";
 import { LongformerSidebar } from "./LongformerSidebar";
 import { SidebarPane } from "../../components/patterns";
 import type { LongformerViewModel } from "./longformerStore";
+import { useTranslation } from "react-i18next";
 
 interface LongformerWorkspaceProps {
   vm: LongformerViewModel;
@@ -12,13 +15,14 @@ interface LongformerWorkspaceProps {
 
 /** Longformer — transcription library and editor workbench. */
 export function LongformerWorkspace({ vm }: LongformerWorkspaceProps) {
+  const { t } = useTranslation();
   const renderMain = () => {
     if (vm.isJobMode) {
       return vm.activeDetail ? (
         <LongformerJobShell vm={vm} detail={vm.activeDetail} />
       ) : (
         <LongformerPlaceholderView
-          title="Loading transcript"
+          title={i18n.t(I18nKey.APPS$LONGFORMER_LOADING_TRANSCRIPT)}
           description="Fetching job details…"
         />
       );
@@ -30,7 +34,7 @@ export function LongformerWorkspace({ vm }: LongformerWorkspaceProps) {
       case "in-progress":
         return (
           <LongformerPlaceholderView
-            title="In Progress"
+            title={i18n.t(I18nKey.APPS$LONGFORMER_IN_PROGRESS)}
             description={
               vm.data.processingCount > 0
                 ? `${vm.data.processingCount} job${vm.data.processingCount === 1 ? "" : "s"} transcribing. The library updates automatically.`
@@ -43,14 +47,14 @@ export function LongformerWorkspace({ vm }: LongformerWorkspaceProps) {
       case "sources":
         return (
           <LongformerPlaceholderView
-            title="Connected Sources"
+            title={i18n.t(I18nKey.APPS$LONGFORMER_CONNECTED_SOURCES)}
             description="Manage integrations for Zoom, Google Meet, podcast feeds, cloud storage, and in-app memory sync."
           />
         );
       case "uploads":
         return (
           <LongformerPlaceholderView
-            title="Uploads"
+            title={i18n.t(I18nKey.APPS$LONGFORMER_UPLOADS)}
             description={
               vm.uploading
                 ? "Uploading and queuing transcription…"
@@ -63,7 +67,7 @@ export function LongformerWorkspace({ vm }: LongformerWorkspaceProps) {
       case "settings":
         return (
           <LongformerPlaceholderView
-            title="Settings"
+            title={i18n.t(I18nKey.OS$APP_SETTINGS)}
             description="Configure language detection, speaker diarization, export formats, filler-word removal, and auto-transcribe rules."
           />
         );

@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 /**
  * Settings → Channels — external messaging gateways (Telegram first).
  */
@@ -91,23 +94,20 @@ export function ChannelsSection() {
 
   return (
     <SettingsPage>
-      <SettingsSection intro="Talk to the agent from Telegram on your phone. Unknown senders get a pairing code — approve them below before their messages are processed. Automations can deliver results to approved chats too.">
+      <SettingsSection intro={i18n.t(I18nKey.APPS$SETTINGS_TALK_TO_THE_AGENT_FROM_TELEGRAM_ON_YOUR_PHONE_UNKNOWN_SE)}>
         {!adding && channels.length === 0 ? (
           <SettingsPanel>
             <SettingsPanelBody>
-              <span className="arco-settings-group-label">Quick start (~2 min)</span>
+              <span className="arco-settings-group-label"><T k={I18nKey.APPS$SETTINGS_QUICK_START_2_MIN} /></span>
               <ol className="arco-settings-intro" style={{ margin: 0, paddingLeft: "1.25rem" }}>
-                <li>
-                  In Telegram, message <strong>@BotFather</strong> and send <code className="arco-code arco-code--xs">/newbot</code>
+                <li><T k={I18nKey.APPS$SETTINGS_IN_TELEGRAM_MESSAGE} /><strong><T k={I18nKey.APPS$SETTINGS_BOTFATHER} /></strong><T k={I18nKey.APPS$SETTINGS_AND_SEND} /><code className="arco-code arco-code--xs"><T k={I18nKey.APPS$SETTINGS_NEWBOT} /></code>
                 </li>
-                <li>Copy the bot token BotFather replies with</li>
-                <li>Click <strong>Add Telegram</strong> below and paste the token</li>
-                <li>Open your new bot in Telegram, send any message, then approve the pairing code here</li>
+                <li><T k={I18nKey.APPS$SETTINGS_COPY_THE_BOT_TOKEN_BOTFATHER_REPLIES_WITH} /></li>
+                <li><T k={I18nKey.APPS$SETTINGS_CLICK} /><strong><T k={I18nKey.APPS$SETTINGS_ADD_TELEGRAM} /></strong><T k={I18nKey.APPS$SETTINGS_BELOW_AND_PASTE_THE_TOKEN} /></li>
+                <li><T k={I18nKey.APPS$SETTINGS_OPEN_YOUR_NEW_BOT_IN_TELEGRAM_SEND_ANY_MESSAGE_THEN_APPR} /></li>
               </ol>
-              <p className="arco-settings-intro">
-                Tip: set <code className="arco-code arco-code--xs">TELEGRAM_BOT_TOKEN</code> in{" "}
-                <code className="arco-code arco-code--xs">.env</code> to auto-connect on server start.
-              </p>
+              <p className="arco-settings-intro"><T k={I18nKey.APPS$SETTINGS_TIP_SET} /><code className="arco-code arco-code--xs">TELEGRAM_BOT_TOKEN</code><T k={I18nKey.APPS$SETTINGS_IN} />{" "}
+                <code className="arco-code arco-code--xs"><T k={I18nKey.APPS$SETTINGS_ENV} /></code><T k={I18nKey.APPS$SETTINGS_TO_AUTO_CONNECT_ON_SERVER_START} /></p>
             </SettingsPanelBody>
           </SettingsPanel>
         ) : null}
@@ -116,8 +116,7 @@ export function ChannelsSection() {
           {canManage && (
             <SettingsRowActions>
               <Button onClick={() => setAdding((v) => !v)}>
-                <Plus size={13} /> Add Telegram
-              </Button>
+                <Plus size={13} /><T k={I18nKey.APPS$SETTINGS_ADD_TELEGRAM} /></Button>
             </SettingsRowActions>
           )}
         </SettingsRow>
@@ -126,38 +125,33 @@ export function ChannelsSection() {
 
         {adding && (
           <>
-            <SettingsSubhead>Connect Telegram</SettingsSubhead>
-            <p className="arco-settings-intro">
-              Need a token? Message <strong>@BotFather</strong> → <code className="arco-code arco-code--xs">/newbot</code> →
-              follow the prompts → paste the token below.
-            </p>
+            <SettingsSubhead><T k={I18nKey.APPS$SETTINGS_CONNECT_TELEGRAM} /></SettingsSubhead>
+            <p className="arco-settings-intro"><T k={I18nKey.APPS$SETTINGS_NEED_A_TOKEN_MESSAGE} /><strong><T k={I18nKey.APPS$SETTINGS_BOTFATHER} /></strong> → <code className="arco-code arco-code--xs"><T k={I18nKey.APPS$SETTINGS_NEWBOT} /></code><T k={I18nKey.APPS$SETTINGS_FOLLOW_THE_PROMPTS_PASTE_THE_TOKEN_BELOW} /></p>
             <SettingsStack>
-              <SettingsFieldRow label="Name" htmlFor="ch-name">
-                <Input id="ch-name" width="auto" value={name} placeholder="Telegram" onChange={(e) => setName(e.target.value)} />
+              <SettingsFieldRow label={i18n.t(I18nKey.APPS$SKILLS_NAME)} htmlFor="ch-name">
+                <Input id="ch-name" width="auto" value={name} placeholder={i18n.t(I18nKey.APPS$SETTINGS_TELEGRAM)} onChange={(e) => setName(e.target.value)} />
               </SettingsFieldRow>
-              <SettingsFieldRow label="Bot token" htmlFor="ch-token" hint="From @BotFather">
+              <SettingsFieldRow label={i18n.t(I18nKey.APPS$SETTINGS_BOT_TOKEN)} htmlFor="ch-token" hint="From @BotFather">
                 <Input
                   id="ch-token"
                   width="auto"
                   type="password"
                   value={token}
-                  placeholder="123456789:AA…"
+                  placeholder={i18n.t(I18nKey.APPS$SETTINGS_123456789_AA)}
                   onChange={(e) => setToken(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && void add()}
                 />
               </SettingsFieldRow>
               <SettingsFieldRow label=" ">
-                <Button variant="primary" disabled={!name.trim() || !token.trim()} onClick={() => void add()}>
-                  Connect
-                </Button>
-                <Button onClick={() => setAdding(false)}>Cancel</Button>
+                <Button variant="primary" disabled={!name.trim() || !token.trim()} onClick={() => void add()}><T k={I18nKey.COMMON$CONNECT} /></Button>
+                <Button onClick={() => setAdding(false)}><T k={I18nKey.COMMON$CANCEL} /></Button>
               </SettingsFieldRow>
             </SettingsStack>
           </>
         )}
 
         {channels.length === 0 && !adding ? (
-          <SettingsEmpty>No channels connected.</SettingsEmpty>
+          <SettingsEmpty><T k={I18nKey.APPS$SETTINGS_NO_CHANNELS_CONNECTED} /></SettingsEmpty>
         ) : (
           <SettingsStack>
             {channels.map((ch) => (
@@ -184,7 +178,7 @@ export function ChannelsSection() {
                         size="icon"
                         onClick={() => void api.restartChannel(ch.config.id).then(patchRow)}
                         aria-label={`Restart ${ch.config.name}`}
-                        title="Restart"
+                        title={i18n.t(I18nKey.APPS$SETTINGS_RESTART)}
                       >
                         <RotateCw size={13} />
                       </Button>
@@ -200,9 +194,7 @@ export function ChannelsSection() {
                 {ch.status === "running" && telegramUrl(ch.botName) ? (
                   <SettingsPanelBody>
                     <SettingsRow>
-                      <span className="arco-settings-tool-row__desc">
-                        Message {ch.botName} in Telegram to talk to the agent.
-                      </span>
+                      <span className="arco-settings-tool-row__desc"><T k={I18nKey.APPS$SETTINGS_MESSAGE} />{ch.botName}<T k={I18nKey.APPS$SETTINGS_IN_TELEGRAM_TO_TALK_TO_THE_AGENT} /></span>
                       <SettingsRowActions>
                         <a
                           className="arco-btn"
@@ -210,8 +202,7 @@ export function ChannelsSection() {
                           target="_blank"
                           rel="noreferrer"
                         >
-                          <ExternalLink size={13} /> Open in Telegram
-                        </a>
+                          <ExternalLink size={13} /><T k={I18nKey.APPS$SETTINGS_OPEN_IN_TELEGRAM} /></a>
                       </SettingsRowActions>
                     </SettingsRow>
                   </SettingsPanelBody>
@@ -219,7 +210,7 @@ export function ChannelsSection() {
 
                 {ch.pairings.length > 0 && (
                   <SettingsPanelBody>
-                    <span className="arco-settings-group-label">Pairing requests</span>
+                    <span className="arco-settings-group-label"><T k={I18nKey.APPS$SETTINGS_PAIRING_REQUESTS} /></span>
                     {ch.pairings.map((p) => (
                       <SettingsRow key={p.code}>
                         <span className="arco-settings-tool-row__desc">{p.label}</span>
@@ -227,11 +218,9 @@ export function ChannelsSection() {
                         {canManage && (
                           <SettingsRowActions>
                             <Button onClick={() => void api.resolvePairing(ch.config.id, p.code, true).then(patchRow)}>
-                              <Check size={13} /> Approve
-                            </Button>
+                              <Check size={13} /><T k={I18nKey.APPS$SETTINGS_APPROVE} /></Button>
                             <Button onClick={() => void api.resolvePairing(ch.config.id, p.code, false).then(patchRow)}>
-                              <X size={13} /> Deny
-                            </Button>
+                              <X size={13} /><T k={I18nKey.APPS$SETTINGS_DENY} /></Button>
                           </SettingsRowActions>
                         )}
                       </SettingsRow>
@@ -241,7 +230,7 @@ export function ChannelsSection() {
 
                 {ch.peers.length > 0 && (
                   <SettingsPanelBody>
-                    <span className="arco-settings-group-label">Approved chats</span>
+                    <span className="arco-settings-group-label"><T k={I18nKey.APPS$SETTINGS_APPROVED_CHATS} /></span>
                     {ch.peers.map((peer) => (
                       <SettingsRow key={peer.chatId}>
                         <span className="arco-settings-tool-row__desc">{peer.label}</span>

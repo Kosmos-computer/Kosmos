@@ -1,4 +1,6 @@
-import { Grid3X3, Image, LayoutList, MoreHorizontal, Search, SlidersHorizontal } from "lucide-react";
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { Grid3X3, Image, LayoutList, MoreHorizontal, Search, SlidersHorizontal, Upload } from "lucide-react";
 import { Input } from "../../components/ui";
 import { Button } from "../../components/ui";
 import type { FilesViewMode } from "./types";
@@ -15,6 +17,7 @@ export interface FilesToolbarProps {
   viewMode: FilesViewMode;
   onViewModeChange: (mode: FilesViewMode) => void;
   title?: string;
+  onUpload?: () => void;
 }
 
 export function FilesToolbar({
@@ -23,6 +26,7 @@ export function FilesToolbar({
   viewMode,
   onViewModeChange,
   title,
+  onUpload,
 }: FilesToolbarProps) {
   return (
     <div className="arco-drive-toolbar">
@@ -32,13 +36,19 @@ export function FilesToolbar({
         <Input
           value={searchQuery}
           onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Search in Drive"
-          aria-label="Search files"
+          placeholder={i18n.t(I18nKey.APPS$FILES_SEARCH_IN_DRIVE)}
+          aria-label={i18n.t(I18nKey.APPS$FILES_SEARCH_FILES)}
           className="arco-drive-toolbar__search-input"
         />
       </div>
       <div className="arco-drive-toolbar__actions">
-        <div className="arco-drive-toolbar__view-toggle" role="group" aria-label="View options">
+        {onUpload ? (
+          <Button variant="default" onClick={onUpload} aria-label="Upload files">
+            <Upload size={15} />
+            Upload
+          </Button>
+        ) : null}
+        <div className="arco-drive-toolbar__view-toggle" role="group" aria-label={i18n.t(I18nKey.APPS$FILES_VIEW_OPTIONS)}>
           {VIEW_MODES.map((mode) => {
             const Icon = mode.icon;
             return (
@@ -55,10 +65,10 @@ export function FilesToolbar({
             );
           })}
         </div>
-        <Button variant="ghost" size="icon" aria-label="More actions">
+        <Button variant="ghost" size="icon" aria-label={i18n.t(I18nKey.APPS$FILES_MORE_ACTIONS)}>
           <MoreHorizontal size={15} />
         </Button>
-        <Button variant="ghost" size="icon" aria-label="Sort and filter">
+        <Button variant="ghost" size="icon" aria-label={i18n.t(I18nKey.APPS$FILES_SORT_AND_FILTER)}>
           <SlidersHorizontal size={15} />
         </Button>
       </div>

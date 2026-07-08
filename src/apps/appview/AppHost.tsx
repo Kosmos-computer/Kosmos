@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 /**
  * AppHost — the window surface for installed platform apps.
  *
@@ -206,8 +209,8 @@ export function AppHost({ appId }: { appId: string }) {
     return () => window.removeEventListener("message", onMessage);
   }, [app, token, notify, postToApp, pushTheme]);
 
-  if (!app) return <div className="arco-empty">This app is no longer installed.</div>;
-  if (!app.enabled) return <div className="arco-empty">{app.manifest.name} is disabled in Settings.</div>;
+  if (!app) return <div className="arco-empty"><T k={I18nKey.APPS$APPVIEW_THIS_APP_IS_NO_LONGER_INSTALLED} /></div>;
+  if (!app.enabled) return <div className="arco-empty">{app.manifest.name}<T k={I18nKey.APPS$APPVIEW_IS_DISABLED_IN_SETTINGS} /></div>;
 
   // Declarative tier: the manifest points at an OpenUI app — render it with
   // the existing generative surface (same manifest system, no iframe).
@@ -220,7 +223,7 @@ export function AppHost({ appId }: { appId: string }) {
       <div className="arco-appsurface__toolbar">
         <ShieldAlert size={13} style={{ color: "var(--arco-text-tertiary)" }} />
         <span className="arco-studio__editorpath">
-          {app.manifest.name} · v{app.manifest.version} · {app.manifest.tier}
+          {app.manifest.name}<T k={I18nKey.APPS$APPVIEW_V} />{app.manifest.version} · {app.manifest.tier}
         </span>
         {toolbarSlots.map((slot) =>
           slot.kind === "search" ? (
@@ -244,7 +247,7 @@ export function AppHost({ appId }: { appId: string }) {
         <button
           className="arco-btn arco-btn--icon"
           onClick={() => setFrameTick((t) => t + 1)}
-          aria-label="Reload app"
+          aria-label={i18n.t(I18nKey.APPS$APPVIEW_RELOAD_APP)}
         >
           <RotateCw size={12} />
         </button>
@@ -252,9 +255,7 @@ export function AppHost({ appId }: { appId: string }) {
       {error ? (
         <div className="arco-empty">
           <span>{error}</span>
-          <button className="arco-btn arco-btn--primary" onClick={() => setFrameTick((t) => t + 1)}>
-            Try again
-          </button>
+          <button className="arco-btn arco-btn--primary" onClick={() => setFrameTick((t) => t + 1)}><T k={I18nKey.APPS$APPVIEW_TRY_AGAIN} /></button>
         </div>
       ) : token && src ? (
         <iframe
@@ -268,7 +269,7 @@ export function AppHost({ appId }: { appId: string }) {
           sandbox="allow-scripts allow-same-origin allow-forms allow-modals"
         />
       ) : (
-        <div className="arco-empty">Starting {app.manifest.name}…</div>
+        <div className="arco-empty"><T k={I18nKey.APPS$APPVIEW_STARTING} />{app.manifest.name}…</div>
       )}
     </div>
   );

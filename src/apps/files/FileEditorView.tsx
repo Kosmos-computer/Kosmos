@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import { T } from "../../i18n/T";
 import { useCallback, useMemo, useState } from "react";
 import { ArrowLeft, Eye, Pencil, Save } from "lucide-react";
 import { RichMarkdown } from "../../components/richmarkdown/RichMarkdown";
@@ -44,11 +46,10 @@ export function FileEditorView({ file, onBack, onSave }: FileEditorViewProps) {
       <div className="arco-drive-editor">
         <div className="arco-drive-editor__header">
           <Button variant="ghost" onClick={onBack}>
-            <ArrowLeft size={13} /> Back
-          </Button>
+            <ArrowLeft size={13} /><T k={I18nKey.COMMON$BACK} /></Button>
           <span className="arco-drive-editor__path">{file.name}</span>
         </div>
-        <div className="arco-empty">No editor for {file.mimeType} yet.</div>
+        <div className="arco-empty"><T k={I18nKey.APPS$FILES_NO_EDITOR_FOR} />{file.mimeType}<T k={I18nKey.APPS$FILES_YET} /></div>
       </div>
     );
   }
@@ -57,8 +58,7 @@ export function FileEditorView({ file, onBack, onSave }: FileEditorViewProps) {
     <div className="arco-drive-editor">
       <div className="arco-drive-editor__header">
         <Button variant="ghost" onClick={onBack}>
-          <ArrowLeft size={13} /> Back
-        </Button>
+          <ArrowLeft size={13} /><T k={I18nKey.COMMON$BACK} /></Button>
         <span className="arco-drive-editor__path">{file.name}</span>
         {markdownFile ? (
           <div className="arco-chip-row">
@@ -68,16 +68,14 @@ export function FileEditorView({ file, onBack, onSave }: FileEditorViewProps) {
               aria-pressed={viewMode === "edit"}
               onClick={() => setViewMode("edit")}
             >
-              <Pencil size={12} /> Edit
-            </button>
+              <Pencil size={12} /><T k={I18nKey.COMMON$EDIT} /></button>
             <button
               type="button"
               className={`arco-chip${viewMode === "preview" ? " arco-chip--active" : ""}`}
               aria-pressed={viewMode === "preview"}
               onClick={() => setViewMode("preview")}
             >
-              <Eye size={12} /> Preview
-            </button>
+              <Eye size={12} /><T k={I18nKey.APPS$FILES_PREVIEW} /></button>
           </div>
         ) : null}
         <Button variant="primary" disabled={!dirty || saving} onClick={() => void save()}>

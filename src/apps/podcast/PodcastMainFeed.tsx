@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BarChart2, MoreHorizontal, Play, Plus, Volume2 } from "lucide-react";
 import { Button, EmptyState } from "../../components/ui";
@@ -36,10 +39,10 @@ function FeedModuleSlide({
             {episode ? `${episode.showTitle} — ${episode.title}` : module.title}
           </p>
           <div className="arco-podcast-feed__topbar-actions">
-            <button type="button" className="arco-podcast-feed__topbar-btn" aria-label="Volume">
+            <button type="button" className="arco-podcast-feed__topbar-btn" aria-label={i18n.t(I18nKey.APPS$LONGFORMER_VOLUME)}>
               <Volume2 size={18} />
             </button>
-            <button type="button" className="arco-podcast-feed__topbar-btn" aria-label="Audio levels">
+            <button type="button" className="arco-podcast-feed__topbar-btn" aria-label={i18n.t(I18nKey.APPS$PODCAST_AUDIO_LEVELS)}>
               <BarChart2 size={18} />
             </button>
           </div>
@@ -83,29 +86,25 @@ function FeedModuleSlide({
         </div>
         <p className="arco-podcast-feed__module-description">{module.description}</p>
         <div className="arco-podcast-feed__module-actions">
-          <button type="button" className="arco-podcast-feed__module-icon" aria-label="Save to queue">
+          <button type="button" className="arco-podcast-feed__module-icon" aria-label={i18n.t(I18nKey.APPS$PODCAST_SAVE_TO_QUEUE)}>
             <Plus size={18} />
           </button>
-          <button type="button" className="arco-podcast-feed__module-icon" aria-label="More options">
+          <button type="button" className="arco-podcast-feed__module-icon" aria-label={i18n.t(I18nKey.APPS$FILES_MORE_OPTIONS)}>
             <MoreHorizontal size={18} />
           </button>
           {module.episodeCount ? (
             <span className="arco-podcast-feed__module-count">
-              {module.episodeCount} episode{module.episodeCount === 1 ? "" : "s"}
+              {module.episodeCount}<T k={I18nKey.APPS$PODCAST_EPISODE} />{module.episodeCount === 1 ? "" : "s"}
             </span>
           ) : null}
           {module.kind === "discover" ? (
-            <Button variant="primary" className="arco-podcast-feed__module-play" onClick={() => vm.setNavSection("browse")}>
-              Browse
-            </Button>
+            <Button variant="primary" className="arco-podcast-feed__module-play" onClick={() => vm.setNavSection("browse")}><T k={I18nKey.APPS$PODCAST_BROWSE} /></Button>
           ) : show && !playable ? (
             <Button
               variant="primary"
               className="arco-podcast-feed__module-play"
               onClick={() => vm.setSelectedShowId(show.id)}
-            >
-              Open show
-            </Button>
+            ><T k={I18nKey.APPS$PODCAST_OPEN_SHOW} /></Button>
           ) : playable && episode ? (
             <button
               type="button"
@@ -173,12 +172,12 @@ export function PodcastMainFeed({ vm }: PodcastMainFeedProps) {
   }, [activeIndex, scrollToIndex]);
 
   if (vm.loading) {
-    return <EmptyState title="Loading feed…">Sorting your latest episodes</EmptyState>;
+    return <EmptyState title={i18n.t(I18nKey.APPS$PODCAST_LOADING_FEED)}><T k={I18nKey.APPS$PODCAST_SORTING_YOUR_LATEST_EPISODES} /></EmptyState>;
   }
 
   return (
     <main className="arco-podcast__main arco-podcast__main--feed">
-      <div ref={scrollRef} className="arco-podcast-feed__stack" role="feed" aria-label="Podcast main feed">
+      <div ref={scrollRef} className="arco-podcast-feed__stack" role="feed" aria-label={i18n.t(I18nKey.APPS$PODCAST_PODCAST_MAIN_FEED)}>
         {modules.map((module, index) => (
           <div
             key={module.id}

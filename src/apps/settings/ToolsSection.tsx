@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 /**
  * Settings → Agent tools — the built-in agent's capabilities, each with an
  * on/off toggle and a policy chip. "Off" removes the tool from the model's
@@ -74,7 +77,7 @@ function PolicyChip({
     onChanged();
   };
   return (
-    <Chip active={Boolean(current)} onClick={() => void cycle()} title="Agent policy for this tool">
+    <Chip active={Boolean(current)} onClick={() => void cycle()} title={i18n.t(I18nKey.APPS$SETTINGS_AGENT_POLICY_FOR_THIS_TOOL)}>
       {current ?? "default"}
     </Chip>
   );
@@ -182,12 +185,12 @@ export function ToolsSection() {
           <ListSearch
             value={searchQuery}
             onChange={setSearchQuery}
-            placeholder="Search agent tools"
+            placeholder={i18n.t(I18nKey.APPS$SETTINGS_SEARCH_AGENT_TOOLS)}
             ariaLabel="Search agent tools"
           />
         ) : null}
         {filteredGroups.length === 0 && tools.length > 0 ? (
-          <SettingsEmpty>No tools match your search.</SettingsEmpty>
+          <SettingsEmpty><T k={I18nKey.APPS$SETTINGS_NO_TOOLS_MATCH_YOUR_SEARCH} /></SettingsEmpty>
         ) : null}
         {filteredGroups.map((group) => (
           <div key={group.label}>

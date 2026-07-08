@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
 /**
  * Desktop shell integration — floating Messenger popouts persist above the dock
  * even when the Messenger app window is closed.
@@ -62,7 +64,7 @@ export function MessengerShell() {
   if (sessions.length === 0) return null;
 
   return (
-    <div className="arco-messenger-shell" aria-label="Messenger chats">
+    <div className="arco-messenger-shell" aria-label={i18n.t(I18nKey.APPS$MESSENGER_MESSENGER_CHATS)}>
       <div className="arco-messenger-shell__popouts">
         {openSessions.map((session) => {
           const contact = MESSENGER_CONTACTS.find((c) => c.id === session.contactId);
@@ -95,8 +97,8 @@ export function MessengerShell() {
           type="button"
           className="arco-messenger-shell__launcher"
           onClick={restoreMessengerWindow}
-          aria-label="Open Messenger"
-          title="Messenger"
+          aria-label={i18n.t(I18nKey.APPS$MESSENGER_OPEN_MESSENGER)}
+          title={i18n.t(I18nKey.OS$APP_MESSENGER)}
         >
           <MessageCircle size={22} />
         </button>
@@ -108,8 +110,8 @@ export function MessengerShell() {
             const next = MESSENGER_CONTACTS.find((c) => !sessions.some((s) => s.contactId === c.id));
             if (next) openPopout(next.id);
           }}
-          aria-label="New chat"
-          title="New chat"
+          aria-label={i18n.t(I18nKey.APPS$STUDIO_NEW_CHAT)}
+          title={i18n.t(I18nKey.APPS$STUDIO_NEW_CHAT)}
         >
           <Plus size={18} />
         </button>

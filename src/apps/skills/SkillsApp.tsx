@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 /**
  * Skills dashboard — agent-canvas card grid with search, source filter, enable
  * toggles, and a detail overlay for instructions. Shared by SkillsApp and
@@ -75,8 +78,7 @@ function SkillModuleCard({
       {skill.gates.length > 0 ? (
         <div className="arco-module-card__pills">
           {skill.gates.map((gate) => (
-            <span key={gate} className="arco-module-card__pill" title="Blocked until read">
-              gates {gate}
+            <span key={gate} className="arco-module-card__pill" title={i18n.t(I18nKey.APPS$SKILLS_BLOCKED_UNTIL_READ)}><T k={I18nKey.APPS$SKILLS_GATES} />{gate}
             </span>
           ))}
         </div>
@@ -165,7 +167,7 @@ function SkillDetailOverlay({
                 <Trash2 size={14} />
               </Button>
             ) : null}
-            <Button size="icon" onClick={onClose} aria-label="Close">
+            <Button size="icon" onClick={onClose} aria-label={i18n.t(I18nKey.COMMON$CLOSE)}>
               <X size={14} />
             </Button>
           </div>
@@ -176,15 +178,14 @@ function SkillDetailOverlay({
         {skill.gates.length > 0 ? (
           <div className="arco-module-card__pills">
             {skill.gates.map((gate) => (
-              <span key={gate} className="arco-module-card__pill">
-                gates {gate}
+              <span key={gate} className="arco-module-card__pill"><T k={I18nKey.APPS$SKILLS_GATES} />{gate}
               </span>
             ))}
           </div>
         ) : null}
 
         {body === null ? (
-          <EmptyState title="Loading instructions…" />
+          <EmptyState title={i18n.t(I18nKey.APPS$SKILLS_LOADING_INSTRUCTIONS)} />
         ) : (
           <>
             <textarea
@@ -239,34 +240,28 @@ function AddSkillPanel({
   return (
     <div className="arco-form">
       {error ? <SettingsAlert tone="error">{error}</SettingsAlert> : null}
-      <label className="arco-label" htmlFor="skill-name">
-        Name
-      </label>
+      <label className="arco-label" htmlFor="skill-name"><T k={I18nKey.APPS$SKILLS_NAME} /></label>
       <Input
         id="skill-name"
         width="auto"
-        placeholder="Weekly report format"
+        placeholder={i18n.t(I18nKey.APPS$SKILLS_WEEKLY_REPORT_FORMAT)}
         value={name}
         onChange={(e) => setName(e.target.value)}
       />
-      <label className="arco-label" htmlFor="skill-description">
-        Description
-      </label>
+      <label className="arco-label" htmlFor="skill-description"><T k={I18nKey.APPS$SKILLS_DESCRIPTION} /></label>
       <Input
         id="skill-description"
         width="auto"
-        placeholder="When should the agent read this?"
+        placeholder={i18n.t(I18nKey.APPS$SKILLS_WHEN_SHOULD_THE_AGENT_READ_THIS)}
         value={description}
         onChange={(e) => setDescription(e.target.value)}
       />
-      <label className="arco-label" htmlFor="skill-body">
-        Instructions
-      </label>
+      <label className="arco-label" htmlFor="skill-body"><T k={I18nKey.APPS$SKILLS_INSTRUCTIONS} /></label>
       <textarea
         id="skill-body"
         className="arco-input arco-settings-log"
         rows={6}
-        placeholder="Markdown instructions"
+        placeholder={i18n.t(I18nKey.APPS$SKILLS_MARKDOWN_INSTRUCTIONS)}
         value={body}
         onChange={(e) => setBody(e.target.value)}
       />
@@ -278,7 +273,7 @@ function AddSkillPanel({
         >
           {creating ? "Creating…" : "Create skill"}
         </Button>
-        <Button onClick={onCancel}>Cancel</Button>
+        <Button onClick={onCancel}><T k={I18nKey.COMMON$CANCEL} /></Button>
       </div>
     </div>
   );
@@ -324,13 +319,12 @@ export function SkillsDashboard({ embedded = false }: { embedded?: boolean }) {
   const content = (
     <ModuleInner>
       <ModuleHeader
-        title="Skills"
-        subtitle="Instruction files the agent reads on demand. The prompt only carries the index; the agent pages in a skill's full instructions when a task calls for it."
+        title={i18n.t(I18nKey.APPS$STUDIO_SKILLS)}
+        subtitle={i18n.t(I18nKey.APPS$SKILLS_INSTRUCTION_FILES_THE_AGENT_READS_ON_DEMAND_THE_PROMPT_O)}
         actions={
           canManage ? (
             <Button onClick={() => setShowAdd((value) => !value)}>
-              <Plus size={13} /> New skill
-            </Button>
+              <Plus size={13} /><T k={I18nKey.APPS$SKILLS_NEW_SKILL} /></Button>
           ) : null
         }
       />
@@ -348,13 +342,11 @@ export function SkillsDashboard({ embedded = false }: { embedded?: boolean }) {
       ) : null}
 
       {skills.length === 0 ? (
-        <EmptyState title="No skills installed">
-          Create a skill or ask Arco to save reusable instructions from chat.
-        </EmptyState>
+        <EmptyState title={i18n.t(I18nKey.APPS$SKILLS_NO_SKILLS_INSTALLED)}><T k={I18nKey.APPS$SKILLS_CREATE_A_SKILL_OR_ASK_ARCO_TO_SAVE_REUSABLE_INSTRUCTIONS} /></EmptyState>
       ) : (
         <>
-          <ModuleToolbar search={search} onSearchChange={setSearch} searchLabel="Search skills">
-            <div className="arco-chip-row" role="group" aria-label="Skill source filter">
+          <ModuleToolbar search={search} onSearchChange={setSearch} searchLabel={i18n.t(I18nKey.APPS$SKILLS_SEARCH_SKILLS)}>
+            <div className="arco-chip-row" role="group" aria-label={i18n.t(I18nKey.APPS$SKILLS_SKILL_SOURCE_FILTER)}>
               {SOURCE_FILTERS.map((entry) => (
                 <Chip
                   key={entry.id}
@@ -369,10 +361,10 @@ export function SkillsDashboard({ embedded = false }: { embedded?: boolean }) {
           </ModuleToolbar>
 
           {filtered.length === 0 ? (
-            <EmptyState title="No matching skills">Try a different search term or filter.</EmptyState>
+            <EmptyState title={i18n.t(I18nKey.APPS$SKILLS_NO_MATCHING_SKILLS)}><T k={I18nKey.APPS$SKILLS_TRY_A_DIFFERENT_SEARCH_TERM_OR_FILTER} /></EmptyState>
           ) : (
             <>
-              <ModuleSection title="Enabled" count={enabled.length}>
+              <ModuleSection title={i18n.t(I18nKey.APPS$SKILLS_ENABLED)} count={enabled.length}>
                 <ModuleCardGrid>
                   {enabled.map((skill) => (
                     <SkillModuleCard
@@ -386,7 +378,7 @@ export function SkillsDashboard({ embedded = false }: { embedded?: boolean }) {
                 </ModuleCardGrid>
               </ModuleSection>
 
-              <ModuleSection title="Disabled" count={disabled.length}>
+              <ModuleSection title={i18n.t(I18nKey.APPS$SKILLS_DISABLED)} count={disabled.length}>
                 <ModuleCardGrid>
                   {disabled.map((skill) => (
                     <SkillModuleCard

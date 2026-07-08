@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
 import { useColumnResize } from "../../components/patterns/useColumnResize";
 import { useDismiss } from "../../components/useDismiss";
 import { useCallback, useRef } from "react";
@@ -30,14 +32,14 @@ export function BentoDrawer() {
       <button
         type="button"
         className="arco-bento-drawer__scrim"
-        aria-label="Close bento drawer"
+        aria-label={i18n.t(I18nKey.OS_BENTO_CLOSE_BENTO_DRAWER)}
         onClick={close}
       />
       <aside ref={drawerRef} className="arco-bento-drawer" style={{ width: `${width}px` }}>
         <div
           role="separator"
           aria-orientation="vertical"
-          aria-label="Resize bento drawer"
+          aria-label={i18n.t(I18nKey.OS_BENTO_RESIZE_BENTO_DRAWER)}
           tabIndex={0}
           className={["arco-resize-handle", isResizing ? "arco-resize-handle--active" : ""]
             .filter(Boolean)

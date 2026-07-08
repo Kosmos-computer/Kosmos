@@ -1,6 +1,10 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { Inbox, Mail, Search, Star } from "lucide-react";
 import { Badge, Button, Chip, EmptyState, Input } from "../../components/ui";
 import type { EmailThread } from "./types";
+import { useTranslation } from "react-i18next";
 
 export function EmailThreadList({
   threads,
@@ -35,13 +39,9 @@ export function EmailThreadList({
     <div className="arco-email__list-pane">
       <div className="arco-email__list-header">
         <div className="arco-email__list-title">
-          <Mail size={16} strokeWidth={1.75} />
-          Inbox
-          {unreadCount > 0 ? <Badge>{unreadCount}</Badge> : null}
+          <Mail size={16} strokeWidth={1.75} /><T k={I18nKey.APPS$EMAIL_INBOX} />{unreadCount > 0 ? <Badge>{unreadCount}</Badge> : null}
         </div>
-        <Button variant="primary" onClick={onCompose}>
-          Compose
-        </Button>
+        <Button variant="primary" onClick={onCompose}><T k={I18nKey.APPS$EMAIL_COMPOSE} /></Button>
       </div>
 
       <div className="arco-email__list-toolbar">
@@ -50,29 +50,25 @@ export function EmailThreadList({
           <Input
             value={searchQuery}
             onChange={(event) => onSearchChange(event.target.value)}
-            placeholder="Search mail"
-            aria-label="Search mail"
+            placeholder={i18n.t(I18nKey.APPS$EMAIL_SEARCH_MAIL)}
+            aria-label={i18n.t(I18nKey.APPS$EMAIL_SEARCH_MAIL)}
             width="auto"
           />
         </div>
-        <div className="arco-email__filters" role="tablist" aria-label="Inbox filters">
-          <Chip active={inboxFilter === "all"} onClick={() => onFilterChange("all")}>
-            All
+        <div className="arco-email__filters" role="tablist" aria-label={i18n.t(I18nKey.APPS$EMAIL_INBOX_FILTERS)}>
+          <Chip active={inboxFilter === "all"} onClick={() => onFilterChange("all")}><T k={I18nKey.COMMON$ALL} /></Chip>
+          <Chip active={inboxFilter === "unread"} onClick={() => onFilterChange("unread")}><T k={I18nKey.APPS$EMAIL_UNREAD} />{unreadCount > 0 ? ` (${unreadCount})` : ""}
           </Chip>
-          <Chip active={inboxFilter === "unread"} onClick={() => onFilterChange("unread")}>
-            Unread{unreadCount > 0 ? ` (${unreadCount})` : ""}
-          </Chip>
-          <Chip active={inboxFilter === "starred"} onClick={() => onFilterChange("starred")}>
-            Starred{starredCount > 0 ? ` (${starredCount})` : ""}
+          <Chip active={inboxFilter === "starred"} onClick={() => onFilterChange("starred")}><T k={I18nKey.APPS$EMAIL_STARRED} />{starredCount > 0 ? ` (${starredCount})` : ""}
           </Chip>
         </div>
       </div>
 
       <div className="arco-email__thread-list arco-scroll">
         {error ? (
-          <EmptyState title="Could not load mail">{error}</EmptyState>
+          <EmptyState title={i18n.t(I18nKey.APPS$EMAIL_COULD_NOT_LOAD_MAIL)}>{error}</EmptyState>
         ) : loading ? (
-          <EmptyState title="Loading mail…" />
+          <EmptyState title={i18n.t(I18nKey.APPS$EMAIL_LOADING_MAIL)} />
         ) : threads.length === 0 ? (
           <EmptyState title={searchQuery.trim() ? "No mail found" : "Inbox is empty"}>
             {searchQuery.trim()
@@ -130,10 +126,11 @@ export function EmailReadingPane({
   subject?: string;
   messages: { id: string; senderName: string; timestamp: string; body: string }[];
 }) {
+  const { t } = useTranslation();
   if (!subject || messages.length === 0) {
     return (
       <div className="arco-email__reading arco-email__reading--empty">
-        <EmptyState title="Select a message">
+        <EmptyState title={i18n.t(I18nKey.APPS$EMAIL_SELECT_A_MESSAGE)}>
           <Inbox size={22} className="arco-icon--tertiary" />
         </EmptyState>
       </div>
@@ -166,8 +163,8 @@ export function EmailReadingPane({
         </article>
       ))}
       <div className="arco-email__reply-bar">
-        <Input placeholder="Reply…" aria-label="Reply" width="auto" />
-        <Button variant="primary">Send</Button>
+        <Input placeholder={i18n.t(I18nKey.APPS$EMAIL_REPLY_2)} aria-label={i18n.t(I18nKey.APPS$EMAIL_REPLY)} width="auto" />
+        <Button variant="primary"><T k={I18nKey.APPS$EMAIL_SEND} /></Button>
       </div>
     </div>
   );

@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { Heart, MessageCircle, Plus, Repeat2, Send } from "lucide-react";
 import { useAuthStore } from "../../os/auth/authStore";
 import { ConnectServiceModal } from "../../components/patterns/ConnectServiceModal";
@@ -5,16 +8,23 @@ import { Avatar, Button, Chip, EmptyState, Input } from "../../components/ui";
 import { formatCount } from "./socialMock";
 import { useSocialStub } from "./useSocialStub";
 import type { SocialPost } from "./types";
+import { useTranslation } from "react-i18next";
 
 function PostCard({ post }: { post: SocialPost }) {
+  const { t } = useTranslation();
   return (
     <article className="arco-social__post">
       <Avatar name={post.authorName} size="md" />
       <div className="arco-social__post-body">
         <header className="arco-social__post-header">
           <strong>{post.authorName}</strong>
-          {post.verified ? <span className="arco-social__verified" aria-label="Verified">✓</span> : null}
+          {post.verified ? (
+            <span className="arco-social__verified" aria-label={i18n.t(I18nKey.APPS$SOCIAL_VERIFIED)}>
+              {"\u2713"}
+            </span>
+          ) : null}
           <span className="arco-social__handle">{post.authorHandle}</span>
+          {/* eslint-disable-next-line i18next/no-literal-string -- separator */}
           <span className="arco-social__dot">·</span>
           <time>{post.timestamp}</time>
         </header>
@@ -30,13 +40,14 @@ function PostCard({ post }: { post: SocialPost }) {
 }
 
 export function SocialApp() {
+  const { t } = useTranslation();
   const vm = useSocialStub();
   const user = useAuthStore((s) => s.user);
   const userName = user?.displayName ?? user?.username ?? "You";
 
   return (
     <div className="arco-social">
-      <aside className="arco-social__rail" aria-label="Social networks">
+      <aside className="arco-social__rail" aria-label={i18n.t(I18nKey.APPS$SOCIAL_SOCIAL_NETWORKS)}>
         {vm.networks.map((network) => {
           const connected = vm.connectedNetworkIds.has(network.id);
           return (
@@ -55,7 +66,7 @@ export function SocialApp() {
         <button
           type="button"
           className="arco-social__rail-tile arco-social__rail-tile--add"
-          aria-label="Connect another network"
+          aria-label={i18n.t(I18nKey.APPS$SOCIAL_CONNECT_ANOTHER_NETWORK)}
           onClick={() => vm.openConnect()}
         >
           <Plus size={16} />
@@ -66,22 +77,16 @@ export function SocialApp() {
         <header className="arco-social__feed-header">
           <h1>{vm.networks.find((n) => n.id === vm.activeNetworkId)?.label ?? "Social"}</h1>
           <div className="arco-social__tabs">
-            <Chip className={vm.feedTab === "for-you" ? "arco-social__tab--active" : ""} onClick={() => vm.setFeedTab("for-you")}>
-              For you
-            </Chip>
-            <Chip className={vm.feedTab === "following" ? "arco-social__tab--active" : ""} onClick={() => vm.setFeedTab("following")}>
-              Following
-            </Chip>
+            <Chip className={vm.feedTab === "for-you" ? "arco-social__tab--active" : ""} onClick={() => vm.setFeedTab("for-you")}><T k={I18nKey.APPS$SOCIAL_FOR_YOU} /></Chip>
+            <Chip className={vm.feedTab === "following" ? "arco-social__tab--active" : ""} onClick={() => vm.setFeedTab("following")}><T k={I18nKey.APPS$SOCIAL_FOLLOWING} /></Chip>
           </div>
         </header>
 
         {!vm.activeConnection ? (
           <div className="arco-social__connect-banner">
             <EmptyState title={`Connect ${vm.networks.find((n) => n.id === vm.activeNetworkId)?.label}`}>
-              <p>Link an account to load your timeline and post from Kosmos.</p>
-              <Button variant="primary" onClick={() => vm.openConnect(vm.activeNetworkId)}>
-                Connect account
-              </Button>
+              <p><T k={I18nKey.APPS$SOCIAL_LINK_AN_ACCOUNT_TO_LOAD_YOUR_TIMELINE_AND_POST_FROM_KOSM} /></p>
+              <Button variant="primary" onClick={() => vm.openConnect(vm.activeNetworkId)}><T k={I18nKey.APPS$SOCIAL_CONNECT_ACCOUNT} /></Button>
             </EmptyState>
           </div>
         ) : (
@@ -91,10 +96,10 @@ export function SocialApp() {
               <Input
                 value={vm.composerValue}
                 onChange={(event) => vm.setComposerValue(event.target.value)}
-                placeholder="What's happening?"
-                aria-label="Compose post"
+                placeholder={i18n.t(I18nKey.APPS$SOCIAL_WHAT_S_HAPPENING)}
+                aria-label={i18n.t(I18nKey.APPS$SOCIAL_COMPOSE_POST)}
               />
-              <Button variant="primary" size="icon" aria-label="Post" onClick={vm.handleSubmit} disabled={!vm.composerValue.trim()}>
+              <Button variant="primary" size="icon" aria-label={i18n.t(I18nKey.APPS$SOCIAL_POST)} onClick={vm.handleSubmit} disabled={!vm.composerValue.trim()}>
                 <Send size={16} />
               </Button>
             </div>
@@ -109,7 +114,7 @@ export function SocialApp() {
 
       <aside className="arco-social__sidebar">
         <section className="arco-social__panel">
-          <h2>Trends for you</h2>
+          <h2><T k={I18nKey.APPS$SOCIAL_TRENDS_FOR_YOU} /></h2>
           <ul>
             {vm.trends.map((trend) => (
               <li key={trend.id}>
@@ -121,7 +126,7 @@ export function SocialApp() {
           </ul>
         </section>
         <section className="arco-social__panel">
-          <h2>Who to follow</h2>
+          <h2><T k={I18nKey.APPS$SOCIAL_WHO_TO_FOLLOW} /></h2>
           <ul className="arco-social__suggestions">
             {vm.suggestions.map((suggestion) => (
               <li key={suggestion.id}>
@@ -130,7 +135,7 @@ export function SocialApp() {
                   <strong>{suggestion.name}</strong>
                   <span>{suggestion.handle}</span>
                 </div>
-                <Button variant="ghost">Follow</Button>
+                <Button variant="ghost"><T k={I18nKey.APPS$SOCIAL_FOLLOW} /></Button>
               </li>
             ))}
           </ul>

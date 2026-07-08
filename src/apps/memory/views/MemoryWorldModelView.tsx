@@ -1,3 +1,5 @@
+import { I18nKey } from "../../../i18n/declaration";
+import { T } from "../../../i18n/T";
 /**
  * World Model explorer — AQAL quadrant grid, ethics principles with lineage,
  * and the integral ethical reasoning protocol. Prototype v0; see docs/world-model-plan.md.
@@ -58,17 +60,13 @@ export function MemoryWorldModelView(props: MemoryWorldModelViewProps) {
   return (
     <div className="arco-memory-view arco-memory-view--world-model">
       <header className="arco-memory-view__header">
-        <h1 className="arco-memory-view__title">World Model</h1>
-        <p className="arco-memory-view__subtitle">
-          Integral map of worldview, ethics, and reasoning protocol · prototype v0
-        </p>
+        <h1 className="arco-memory-view__title"><T k={I18nKey.APPS$MEMORY_WORLD_MODEL} /></h1>
+        <p className="arco-memory-view__subtitle"><T k={I18nKey.APPS$MEMORY_INTEGRAL_MAP_OF_WORLDVIEW_ETHICS_AND_REASONING_PROTOCOL_} /></p>
       </header>
 
       <section className="arco-memory-section">
-        <h2 className="arco-memory-section__title">AQAL quadrants</h2>
-        <p className="arco-memory-section__hint">
-          Select a quadrant to filter sections and principles. Click again to clear.
-        </p>
+        <h2 className="arco-memory-section__title"><T k={I18nKey.APPS$MEMORY_AQAL_QUADRANTS} /></h2>
+        <p className="arco-memory-section__hint"><T k={I18nKey.APPS$MEMORY_SELECT_A_QUADRANT_TO_FILTER_SECTIONS_AND_PRINCIPLES_CLIC} /></p>
         <div className="arco-world-model__quadrants">
           {QUADRANTS.map((q) => (
             <button
@@ -87,15 +85,14 @@ export function MemoryWorldModelView(props: MemoryWorldModelViewProps) {
 
       {protocol ? (
         <section className="arco-memory-section">
-          <h2 className="arco-memory-section__title">Ethical reasoning protocol</h2>
+          <h2 className="arco-memory-section__title"><T k={I18nKey.APPS$MEMORY_ETHICAL_REASONING_PROTOCOL} /></h2>
           <pre className="arco-world-model__protocol">{protocol.content}</pre>
         </section>
       ) : null}
 
       {activeQuadrant && filteredSections.length > 0 ? (
         <section className="arco-memory-section">
-          <h2 className="arco-memory-section__title">
-            Sections in {QUADRANT_LABELS[activeQuadrant].full}
+          <h2 className="arco-memory-section__title"><T k={I18nKey.APPS$MEMORY_SECTIONS_IN} />{QUADRANT_LABELS[activeQuadrant].full}
           </h2>
           <ul className="arco-memory-list">
             {filteredSections.map((section) => (
@@ -112,8 +109,7 @@ export function MemoryWorldModelView(props: MemoryWorldModelViewProps) {
       ) : null}
 
       <section className="arco-memory-section">
-        <h2 className="arco-memory-section__title">
-          Ethics principles{activeQuadrant ? ` (${QUADRANT_LABELS[activeQuadrant].short})` : ""}
+        <h2 className="arco-memory-section__title"><T k={I18nKey.APPS$MEMORY_ETHICS_PRINCIPLES} />{activeQuadrant ? ` (${QUADRANT_LABELS[activeQuadrant].short})` : ""}
         </h2>
         <ul className="arco-world-model__principles">
           {filteredPrinciples.map((principle) => (
@@ -124,7 +120,7 @@ export function MemoryWorldModelView(props: MemoryWorldModelViewProps) {
               </div>
               {principle.derivedFrom.length > 0 ? (
                 <div className="arco-world-model__lineage">
-                  <span className="arco-world-model__lineage-label">Derived from</span>
+                  <span className="arco-world-model__lineage-label"><T k={I18nKey.APPS$MEMORY_DERIVED_FROM} /></span>
                   {principle.derivedFrom.map((id) => (
                     <span key={id} className="arco-world-model__lineage-chip">
                       {lineageLabel(id)}
@@ -147,7 +143,7 @@ export function MemoryWorldModelView(props: MemoryWorldModelViewProps) {
       </section>
 
       <section className="arco-memory-section">
-        <h2 className="arco-memory-section__title">Lineage graph</h2>
+        <h2 className="arco-memory-section__title"><T k={I18nKey.APPS$MEMORY_LINEAGE_GRAPH} /></h2>
         <ul className="arco-memory-list">
           {props.edges.map((edge) => {
             const from = props.nodes.find((n) => n.id === edge.fromId);

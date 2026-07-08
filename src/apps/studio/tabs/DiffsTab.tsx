@@ -1,3 +1,5 @@
+import { I18nKey } from "../../../i18n/declaration";
+import { T } from "../../../i18n/T";
 /**
  * DiffsTab — what the agent changed this session, newest first. Each entry
  * expands into an inline Monaco diff (baseline = content before the agent's
@@ -23,7 +25,7 @@ export function DiffsTab() {
     return (
       <div className="arco-empty">
         <FileDiff size={18} />
-        <span>No file changes yet — agent edits will appear here.</span>
+        <span><T k={I18nKey.APPS$STUDIO_NO_FILE_CHANGES_YET_AGENT_EDITS_WILL_APPEAR_HERE} /></span>
       </div>
     );
   }
@@ -65,12 +67,11 @@ export function DiffsTab() {
                   }
                 }}
               >
-                <SquarePen size={11} style={{ verticalAlign: "-1px" }} /> Edit
-              </span>
+                <SquarePen size={11} style={{ verticalAlign: "-1px" }} /><T k={I18nKey.COMMON$EDIT} /></span>
             </button>
             {open && (
               <div className="arco-studio__diffhost">
-                <Suspense fallback={<div className="arco-empty">Loading diff…</div>}>
+                <Suspense fallback={<div className="arco-empty"><T k={I18nKey.APPS$STUDIO_LOADING_DIFF} /></div>}>
                   <DiffViewer
                     path={change.path}
                     before={change.before}

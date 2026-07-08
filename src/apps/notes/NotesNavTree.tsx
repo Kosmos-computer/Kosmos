@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
 import { useCallback, useRef, useState, type ReactNode } from "react";
 import {
   ChevronRight,
@@ -64,7 +66,7 @@ export function NotesNavTree({
                 type="button"
                 className="arco-btn arco-btn--icon arco-notes-nav__section-btn"
                 aria-label={`New folder in ${section.title}`}
-                title="New folder"
+                title={i18n.t(I18nKey.APPS$NOTES_NEW_FOLDER)}
                 onClick={() => onCreateFolder(section.id, null)}
               >
                 <FolderPlus size={13} />
@@ -73,7 +75,7 @@ export function NotesNavTree({
                 type="button"
                 className="arco-btn arco-btn--icon arco-notes-nav__section-btn"
                 aria-label={`New page in ${section.title}`}
-                title="New page"
+                title={i18n.t(I18nKey.APPS$NOTES_NEW_PAGE)}
                 onClick={() => onCreatePage(section.id, null)}
               >
                 <Plus size={13} />
@@ -211,7 +213,7 @@ function NavTreeNode({
               type="button"
               className="arco-btn arco-btn--icon arco-notes-nav__folder-btn"
               aria-label={`New subfolder in ${node.label}`}
-              title="New subfolder"
+              title={i18n.t(I18nKey.APPS$NOTES_NEW_SUBFOLDER)}
               onClick={(event) => {
                 event.stopPropagation();
                 onCreateFolder(sectionId, node.id);
@@ -223,7 +225,7 @@ function NavTreeNode({
               type="button"
               className="arco-btn arco-btn--icon arco-notes-nav__folder-btn"
               aria-label={`New page in ${node.label}`}
-              title="New page"
+              title={i18n.t(I18nKey.APPS$NOTES_NEW_PAGE)}
               onClick={(event) => {
                 event.stopPropagation();
                 onCreatePage(sectionId, node.id);

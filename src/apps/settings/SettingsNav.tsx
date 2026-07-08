@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
 import { useMemo } from "react";
 import { Search } from "lucide-react";
 import { NavSidebar } from "../../components/patterns";
@@ -32,10 +34,10 @@ export function SettingsNav({
             <Search size={14} strokeWidth={1.75} className="arco-settings-nav-search__icon" aria-hidden="true" />
             <Input
               type="search"
-              placeholder="Search settings"
+              placeholder={i18n.t(I18nKey.APPS$SETTINGS_SEARCH_SETTINGS)}
               value={searchQuery ?? ""}
               onChange={(event) => onSearchChange(event.target.value)}
-              aria-label="Search settings"
+              aria-label={i18n.t(I18nKey.APPS$SETTINGS_SEARCH_SETTINGS)}
               className="arco-settings-nav-search__input"
             />
           </div>

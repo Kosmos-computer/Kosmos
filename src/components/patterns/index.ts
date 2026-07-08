@@ -54,6 +54,7 @@ export {
   ModuleSection,
   ModuleToolbar,
 } from "./ModuleDashboard";
+export { OnScreenKeyboard, type OnScreenKeyboardProps } from "./OnScreenKeyboard";
 export { OnboardingWidget } from "./OnboardingWidget";
 export {
   type OnboardingStep,

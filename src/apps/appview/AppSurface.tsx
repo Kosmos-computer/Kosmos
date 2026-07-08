@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 /**
  * AppSurface — renders a generated app inside a window.
  *
@@ -100,7 +103,7 @@ export function AppSurface({ appId }: Props) {
     return <div className="arco-empty">{error}</div>;
   }
   if (!record) {
-    return <div className="arco-empty">Loading app…</div>;
+    return <div className="arco-empty"><T k={I18nKey.APPS$APPVIEW_LOADING_APP} /></div>;
   }
 
   return (
@@ -109,10 +112,9 @@ export function AppSurface({ appId }: Props) {
         <button
           className="arco-btn"
           onClick={() => setRefreshTick((t) => t + 1)}
-          aria-label="Refresh app"
+          aria-label={i18n.t(I18nKey.APPS$APPVIEW_REFRESH_APP)}
         >
-          <RotateCw size={13} /> Refresh
-        </button>
+          <RotateCw size={13} /><T k={I18nKey.COMMON$REFRESH} /></button>
         <button
           className="arco-btn"
           onClick={() => setShowCode((v) => !v)}
@@ -122,8 +124,7 @@ export function AppSurface({ appId }: Props) {
         </button>
         <span style={{ flex: 1 }} />
         <button className="arco-btn arco-btn--primary" onClick={refine}>
-          <Sparkles size={13} /> Refine
-        </button>
+          <Sparkles size={13} /><T k={I18nKey.APPS$APPVIEW_REFINE} /></button>
       </div>
 
       {showCode ? (

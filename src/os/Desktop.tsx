@@ -1,3 +1,5 @@
+import { I18nKey } from "../i18n/declaration";
+import i18n from "../i18n/index";
 /**
  * The desktop shell: wallpaper, menu bar, window layer, dock, notifications.
  * A deliberate contrast to matrix-os's 2k-line Desktop.tsx — every concern
@@ -6,7 +8,7 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { Bell } from "lucide-react";
 import { useOsStore } from "./osStore";
-import { useWindowStore, type SystemAppId } from "./windowStore";
+import { useWindowStore } from "./windowStore";
 import { MenuBar } from "./MenuBar";
 import { NavRail } from "./NavRail";
 import { Dock } from "./Dock";
@@ -15,17 +17,16 @@ import { HoverMenuBar } from "./HoverMenuBar";
 import { WindowFrame } from "./WindowFrame";
 import { BentoDrawer } from "./bento/BentoDrawer";
 import { connectShellEvents } from "./shellEvents";
-import { parseLaunchAppParam } from "@shared/launchApp";
-import { systemApp } from "./systemApps";
-import { systemAppTitle } from "./systemAppTitles";
 import { WindowContentById } from "./windowContent";
 import { AgentCursor } from "./cursor/AgentCursor";
+import { FloatingKeyboard } from "./FloatingKeyboard";
 import { MusicShell } from "../apps/music/MusicShell";
 import { MessengerShell } from "../apps/messenger/MessengerShell";
 import { VideoShell } from "../apps/video/VideoShell";
 import { PodcastShell } from "../apps/podcast/PodcastShell";
 import { ConfirmCard } from "../apps/chat/ConfirmCard";
 import { WallpaperBackdrop } from "./wallpaper/WallpaperBackdrop";
+import { useTranslation } from "react-i18next";
 import {
   initNativeAppWindowBridge,
   migrateAppWindowHost,
@@ -42,7 +43,7 @@ function Notifications() {
         <div key={n.id} className="arco-notification">
           <Bell size={15} style={{ flexShrink: 0, marginTop: 2 }} />
           <span style={{ flex: 1 }}>{n.message}</span>
-          <button onClick={() => dismiss(n.id)} aria-label="Dismiss notification">
+          <button onClick={() => dismiss(n.id)} aria-label={i18n.t(I18nKey.COMPONENTS$COMPOSER_DISMISS_NOTIFICATION)}>
             ×
           </button>
         </div>
@@ -54,12 +55,13 @@ function Notifications() {
 /** Approval cards for agent turns without a chat stream (voice) — same
  *  ConfirmCard as the chat thread, floated above the desktop. */
 function ShellConfirms() {
+  const { t } = useTranslation();
   const confirms = useOsStore((s) => s.shellConfirms);
   if (confirms.length === 0) return null;
   return (
     <div
       role="alertdialog"
-      aria-label="Agent approval requests"
+      aria-label={i18n.t(I18nKey.OS_DESKTOP_AGENT_APPROVAL_REQUESTS)}
       style={{
         position: "fixed",
         top: 48,
@@ -89,26 +91,12 @@ export function Desktop() {
   const appWindowHost = useOsStore((s) => s.appWindowHost);
   const refreshApps = useOsStore((s) => s.refreshApps);
   const windows = useWindowStore((s) => s.windows);
-  const open = useWindowStore((s) => s.open);
   const [menuBarOpen, setMenuBarOpen] = useState(false);
   const nativeHost = shouldUseNativeAppWindows();
   const embeddedWindows = nativeHost ? [] : windows;
 
   useEffect(() => {
     void refreshApps();
-    if (useWindowStore.getState().windows.length === 0) {
-      const launchId = parseLaunchAppParam(window.location.search);
-      if (launchId) {
-        try {
-          const def = systemApp(launchId as SystemAppId);
-          open({ type: "system", app: def.id }, systemAppTitle(def.id));
-        } catch {
-          open({ type: "system", app: "chat" }, systemAppTitle("chat"));
-        }
-      } else {
-        open({ type: "system", app: "chat" }, systemAppTitle("chat"));
-      }
-    }
     const disconnectNative = initNativeAppWindowBridge();
     // Agent turns that run outside a chat stream (voice) drive the desktop
     // through the shell-events channel.
@@ -122,7 +110,7 @@ export function Desktop() {
       disconnect();
       disconnectNative();
     };
-  }, [refreshApps, open]);
+  }, [refreshApps]);
 
   useEffect(() => {
     migrateAppWindowHost(appWindowHost, shellView);
@@ -172,6 +160,7 @@ export function Desktop() {
       <VideoShell />
       <PodcastShell />
       <AgentCursor />
+      <FloatingKeyboard />
     </div>
   );
 }

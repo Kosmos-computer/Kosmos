@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { Grid3X3, Layers, Plus, Save, Share2, Star } from "lucide-react";
 import { Avatar, Button } from "../../components/ui";
 import { SidebarPane } from "../../components/patterns";
@@ -6,8 +9,10 @@ import { SheetsSidebar } from "./SheetsSidebar";
 import { FormulaBar, SheetsToolbar } from "./SheetsToolbar";
 import { formatCellDisplay, SHEETS_MENU_ITEMS } from "./types";
 import { useSheets } from "./useSheets";
+import { useTranslation } from "react-i18next";
 
 export function SheetsApp() {
+  const { t } = useTranslation();
   const sheets = useSheets();
 
   return (
@@ -17,7 +22,7 @@ export function SheetsApp() {
         onWidthChange={sheets.setSidebarWidth}
         minWidth={220}
         maxWidth={300}
-        handleLabel="Resize sheets sidebar"
+        handleLabel={i18n.t(I18nKey.APPS$SHEETS_RESIZE_SHEETS_SIDEBAR)}
       >
         <SheetsSidebar
           workbooks={sheets.workbooks}
@@ -47,7 +52,7 @@ export function SheetsApp() {
                   <Star size={16} fill={sheets.starred ? "currentColor" : "none"} />
                 </button>
               </div>
-              <nav className="arco-sheets__menu-bar" aria-label="Spreadsheet menu">
+              <nav className="arco-sheets__menu-bar" aria-label={i18n.t(I18nKey.APPS$SHEETS_SPREADSHEET_MENU)}>
                 {SHEETS_MENU_ITEMS.map((item) => (
                   <button key={item} type="button" className="arco-sheets__menu-item">
                     {item}
@@ -71,14 +76,12 @@ export function SheetsApp() {
               {sheets.saving ? "Saving…" : sheets.dirty ? "Save" : "Saved"}
             </Button>
             <Button variant="default">
-              <Share2 size={14} />
-              Share
-            </Button>
+              <Share2 size={14} /><T k={I18nKey.APPS$SHEETS_SHARE} /></Button>
           </div>
         </header>
 
         {sheets.error ? <div className="arco-sheets__error">{sheets.error}</div> : null}
-        {sheets.loading ? <div className="arco-sheets__status">Loading spreadsheet…</div> : null}
+        {sheets.loading ? <div className="arco-sheets__status"><T k={I18nKey.APPS$SHEETS_LOADING_SPREADSHEET} /></div> : null}
 
         <SheetsToolbar
           canUndo={sheets.canUndo}
@@ -108,14 +111,14 @@ export function SheetsApp() {
 
         <footer className="arco-sheets__sheet-tabs">
           <div className="arco-sheets__tab-controls">
-            <Button variant="ghost" size="icon" aria-label="Add sheet">
+            <Button variant="ghost" size="icon" aria-label={i18n.t(I18nKey.APPS$SHEETS_ADD_SHEET)}>
               <Plus size={15} />
             </Button>
-            <button type="button" className="arco-sheets__all-sheets-btn" aria-label="All sheets">
+            <button type="button" className="arco-sheets__all-sheets-btn" aria-label={i18n.t(I18nKey.APPS$SHEETS_ALL_SHEETS)}>
               <Layers size={15} />
             </button>
           </div>
-          <div className="arco-sheets__tab-list" role="tablist" aria-label="Sheet tabs">
+          <div className="arco-sheets__tab-list" role="tablist" aria-label={i18n.t(I18nKey.APPS$SHEETS_SHEET_TABS)}>
             {(sheets.activeWorkbook?.sheets ?? []).map((sheet) => {
               const active = sheet.id === sheets.activeSheetId;
               return (

@@ -1,3 +1,6 @@
+import { I18nKey } from "../i18n/declaration";
+import i18n from "../i18n/index";
+import { T } from "../i18n/T";
 /**
  * Left nav rail — a far-left column for switching between apps. Collapsed it
  * is a 56px icon strip with hover tooltips; expanded it shows icon + label
@@ -15,6 +18,7 @@ import { ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react";
 import { Menu } from "../components/Menu";
 import { useOsStore } from "./osStore";
 import { useWindowStore } from "./windowStore";
+import { activateShellWindow } from "./shellNavigation";
 import { useShellApps, type ShellAppEntry } from "./shellApps";
 import { addPinned, normalizePinned, removePinned, reorderPinned, splitByPinned } from "./pinnedApps";
 import { useAppPinDrag } from "./useAppPinDrag";
@@ -113,8 +117,6 @@ export function NavRail() {
   const setNavPinnedIds = useOsStore((s) => s.setNavPinnedIds);
   const entries = useShellApps();
   const windows = useWindowStore((s) => s.windows);
-  const open = useWindowStore((s) => s.open);
-  const focus = useWindowStore((s) => s.focus);
   const railRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -139,7 +141,7 @@ export function NavRail() {
     <nav
       ref={railRef}
       className={`arco-navrail ${expanded ? "arco-navrail--expanded" : ""}`}
-      aria-label="Apps"
+      aria-label={i18n.t(I18nKey.APPS$LIBRARY_APPS)}
     >
       <div className="arco-navrail__brand-row">
         <NavBrandMark />
@@ -165,7 +167,7 @@ export function NavRail() {
             isUndocking={isUndocking}
             dropBefore={draggingId !== null && draggingId !== entry.id && overIndex === index}
             dragHandlers={dragHandlers(entry.id, index)}
-            onSelect={() => (isOpen(entry.id) ? focus(entry.id) : open(entry.kind, entry.title))}
+            onSelect={() => activateShellWindow(entry.kind, entry.title, isOpen(entry.id))}
             onRemove={() => setNavPinnedIds((prev) => removePinned(prev, entry.id))}
           />
         ))}
@@ -176,19 +178,19 @@ export function NavRail() {
           className="arco-navrail__more-apps"
           side="right"
           trigger={
-            <button className="arco-navrail__item arco-navrail__item--add" aria-label="More apps">
+            <button className="arco-navrail__item arco-navrail__item--add" aria-label={i18n.t(I18nKey.OS_NAVRAIL_MORE_APPS)}>
               <span className="arco-navrail__item-icon">
                 <Plus size={18} strokeWidth={1.8} />
               </span>
               {expanded ? (
-                <span className="arco-navrail__item-label">More apps</span>
+                <span className="arco-navrail__item-label"><T k={I18nKey.OS_NAVRAIL_MORE_APPS} /></span>
               ) : (
-                <span className="arco-navrail__tooltip">More apps</span>
+                <span className="arco-navrail__tooltip"><T k={I18nKey.OS_NAVRAIL_MORE_APPS} /></span>
               )}
             </button>
           }
-          aria-label="More apps"
-          searchPlaceholder="Search apps"
+          aria-label={i18n.t(I18nKey.OS_NAVRAIL_MORE_APPS)}
+          searchPlaceholder={i18n.t(I18nKey.APPS$LIBRARY_SEARCH_APPS)}
           items={entries.map((entry) => ({
             id: entry.id,
             label: entry.title,

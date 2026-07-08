@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 /**
  * ConnectServiceModal — pick a provider and save a connected account.
  * Shared by Groups, Social, and Settings → Connected accounts.
@@ -86,9 +89,9 @@ export function ConnectServiceModal({
         <header className="arco-connect-modal__header">
           <div className="arco-connect-modal__title-row">
             <Plug size={18} aria-hidden />
-            <h2 id="connect-service-title">Connect an account</h2>
+            <h2 id="connect-service-title"><T k={I18nKey.COMPONENTS$PATTERNS_CONNECT_AN_ACCOUNT} /></h2>
           </div>
-          <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onClose} aria-label="Close">
+          <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onClose} aria-label={i18n.t(I18nKey.COMMON$CLOSE)}>
             <X size={16} />
           </button>
         </header>
@@ -99,7 +102,7 @@ export function ConnectServiceModal({
               <ListSearch
                 value={listSearch}
                 onChange={setListSearch}
-                placeholder="Search providers and accounts"
+                placeholder={i18n.t(I18nKey.COMPONENTS$PATTERNS_SEARCH_PROVIDERS_AND_ACCOUNTS)}
                 ariaLabel="Search providers and accounts"
                 compact
               />
@@ -108,10 +111,10 @@ export function ConnectServiceModal({
 
           {domainConnections.length > 0 ? (
             <section className="arco-connect-modal__section">
-              <h3 className="arco-connect-modal__label">Saved connections</h3>
+              <h3 className="arco-connect-modal__label"><T k={I18nKey.COMPONENTS$PATTERNS_SAVED_CONNECTIONS} /></h3>
               <ul className="arco-connect-modal__saved-list">
                 {filteredConnections.length === 0 ? (
-                  <li className="arco-connect-modal__empty">No saved connections match your search</li>
+                  <li className="arco-connect-modal__empty"><T k={I18nKey.COMPONENTS$PATTERNS_NO_SAVED_CONNECTIONS_MATCH_YOUR_SEARCH} /></li>
                 ) : null}
                 {filteredConnections.map((connection) => (
                   <li key={connection.id}>
@@ -133,10 +136,10 @@ export function ConnectServiceModal({
           ) : null}
 
           <section className="arco-connect-modal__section">
-            <h3 className="arco-connect-modal__label">Provider</h3>
-            <div className="arco-connect-modal__chips" role="listbox" aria-label="Service providers">
+            <h3 className="arco-connect-modal__label"><T k={I18nKey.COMPONENTS$PATTERNS_PROVIDER} /></h3>
+            <div className="arco-connect-modal__chips" role="listbox" aria-label={i18n.t(I18nKey.COMPONENTS$PATTERNS_SERVICE_PROVIDERS)}>
               {filteredPresets.length === 0 ? (
-                <p className="arco-connect-modal__empty">No providers match your search</p>
+                <p className="arco-connect-modal__empty"><T k={I18nKey.COMPONENTS$PATTERNS_NO_PROVIDERS_MATCH_YOUR_SEARCH} /></p>
               ) : null}
               {filteredPresets.map((option) => (
                 <Chip
@@ -155,9 +158,7 @@ export function ConnectServiceModal({
 
           {preset.requiresInstance ? (
             <section className="arco-connect-modal__section">
-              <label className="arco-connect-modal__label" htmlFor="connect-instance-url">
-                Server / instance URL
-              </label>
+              <label className="arco-connect-modal__label" htmlFor="connect-instance-url"><T k={I18nKey.COMPONENTS$PATTERNS_SERVER_INSTANCE_URL} /></label>
               <Input
                 id="connect-instance-url"
                 value={instanceUrl}
@@ -169,46 +170,36 @@ export function ConnectServiceModal({
           ) : null}
 
           <section className="arco-connect-modal__section">
-            <label className="arco-connect-modal__label" htmlFor="connect-account-hint">
-              Account label (optional)
-            </label>
+            <label className="arco-connect-modal__label" htmlFor="connect-account-hint"><T k={I18nKey.COMPONENTS$PATTERNS_ACCOUNT_LABEL_OPTIONAL} /></label>
             <Input
               id="connect-account-hint"
               value={accountHint}
               onChange={(event) => setAccountHint(event.target.value)}
-              placeholder="@you or work@company.com"
+              placeholder={i18n.t(I18nKey.COMPONENTS$PATTERNS_YOU_OR_WORK_COMPANY_COM)}
               spellCheck={false}
             />
           </section>
 
           {preset.requiresToken ? (
             <section className="arco-connect-modal__section">
-              <label className="arco-connect-modal__label" htmlFor="connect-token">
-                Access token
-              </label>
+              <label className="arco-connect-modal__label" htmlFor="connect-token"><T k={I18nKey.COMPONENTS$PATTERNS_ACCESS_TOKEN} /></label>
               <Input
                 id="connect-token"
                 type="password"
                 value={token}
                 onChange={(event) => setToken(event.target.value)}
-                placeholder="Paste token — OAuth replaces this later"
+                placeholder={i18n.t(I18nKey.COMPONENTS$PATTERNS_PASTE_TOKEN_OAUTH_REPLACES_THIS_LATER)}
                 autoComplete="off"
                 spellCheck={false}
               />
-              <p className="arco-connect-modal__hint">
-                Stored locally for this prototype. Production wiring uses the server vault and OAuth redirect.
-              </p>
+              <p className="arco-connect-modal__hint"><T k={I18nKey.COMPONENTS$PATTERNS_STORED_LOCALLY_FOR_THIS_PROTOTYPE_PRODUCTION_WIRING_USES} /></p>
             </section>
           ) : null}
         </div>
 
         <footer className="arco-connect-modal__footer">
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={handleSave} disabled={!canSave}>
-            Connect
-          </Button>
+          <Button variant="ghost" onClick={onClose}><T k={I18nKey.COMMON$CANCEL} /></Button>
+          <Button variant="primary" onClick={handleSave} disabled={!canSave}><T k={I18nKey.COMMON$CONNECT} /></Button>
         </footer>
       </div>
     </div>

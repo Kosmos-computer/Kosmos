@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 /**
  * Settings → Agent permissions — the agent-side twin of the Apps section.
  * Policy rules decide whether the agent may call a tool automatically, must
@@ -102,17 +105,13 @@ export function AgentSection() {
     <SettingsPage>
       <SettingsSection
         intro={
-          <>
-            Rules decide whether the agent runs a tool automatically, asks first, or is blocked. Keys are a tool
-            source (<code>system</code>, <code>mcp:&lt;server&gt;</code>, <code>app:&lt;id&gt;</code>) optionally
-            narrowed with <code>#&lt;tool&gt;</code>. Without a rule, reads run automatically and writes ask.
-          </>
+          <><T k={I18nKey.APPS$SETTINGS_RULES_DECIDE_WHETHER_THE_AGENT_RUNS_A_TOOL_AUTOMATICALLY} /><code><T k={I18nKey.APPS$SETTINGS_SYSTEM} /></code>, <code><T k={I18nKey.APPS$SETTINGS_MCP_LT_SERVER_GT} /></code>, <code><T k={I18nKey.APPS$SETTINGS_APP_LT_ID_GT} /></code><T k={I18nKey.APPS$SETTINGS_OPTIONALLY_NARROWED_WITH} /><code><T k={I18nKey.APPS$SETTINGS_LT_TOOL_GT} /></code><T k={I18nKey.APPS$SETTINGS_WITHOUT_A_RULE_READS_RUN_AUTOMATICALLY_AND_WRITES_ASK} /></>
         }
       >
         {error ? <SettingsAlert tone="error">{error}</SettingsAlert> : null}
 
         {ruleEntries.length === 0 ? (
-          <SettingsEmpty>No rules yet — defaults apply.</SettingsEmpty>
+          <SettingsEmpty><T k={I18nKey.APPS$SETTINGS_NO_RULES_YET_DEFAULTS_APPLY} /></SettingsEmpty>
         ) : (
           <SettingsStack>
             {ruleEntries.map(([key, decision]) => {
@@ -122,7 +121,7 @@ export function AgentSection() {
                   <Icon size={14} style={{ color: DECISION_COLOR[decision], flexShrink: 0 }} />
                   <code className="arco-code arco-settings-tool-row__desc">{key}</code>
                   <SettingsRowActions>
-                    <Chip active onClick={() => void cycle(key, decision)} title="Click to cycle auto → confirm → deny">
+                    <Chip active onClick={() => void cycle(key, decision)} title={i18n.t(I18nKey.APPS$SETTINGS_CLICK_TO_CYCLE_AUTO_CONFIRM_DENY)}>
                       {decision}
                     </Chip>
                     <Button size="icon" onClick={() => void remove(key)} aria-label={`Remove rule ${key}`}>
@@ -135,12 +134,12 @@ export function AgentSection() {
           </SettingsStack>
         )}
 
-        <SettingsSubhead>Add rule</SettingsSubhead>
-        <SettingsFieldRow label="Key" htmlFor="agent-rule-key">
+        <SettingsSubhead><T k={I18nKey.APPS$SETTINGS_ADD_RULE} /></SettingsSubhead>
+        <SettingsFieldRow label={i18n.t(I18nKey.APPS$SETTINGS_KEY)} htmlFor="agent-rule-key">
           <Input
             id="agent-rule-key"
             width="auto"
-            placeholder="mcp:linear#create_issue"
+            placeholder={i18n.t(I18nKey.APPS$SETTINGS_MCP_LINEAR_CREATE_ISSUE)}
             value={newKey}
             onChange={(e) => setNewKey(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && void addRule()}
@@ -149,7 +148,7 @@ export function AgentSection() {
             className="arco-input arco-input--compact"
             value={newDecision}
             onChange={(e) => setNewDecision(e.target.value as AgentPolicyDecision)}
-            aria-label="Rule decision"
+            aria-label={i18n.t(I18nKey.APPS$SETTINGS_RULE_DECISION)}
           >
             {DECISIONS.map((d) => (
               <option key={d} value={d}>
@@ -157,24 +156,22 @@ export function AgentSection() {
               </option>
             ))}
           </select>
-          <Button variant="primary" disabled={!newKey.trim()} onClick={() => void addRule()}>
-            Add
-          </Button>
+          <Button variant="primary" disabled={!newKey.trim()} onClick={() => void addRule()}><T k={I18nKey.COMMON$ADD} /></Button>
         </SettingsFieldRow>
 
         <SettingsDivider />
 
         <SettingsRow>
-          <SettingsSubhead>Recent activity</SettingsSubhead>
+          <SettingsSubhead><T k={I18nKey.APPS$SETTINGS_RECENT_ACTIVITY} /></SettingsSubhead>
           <SettingsRowActions>
-            <Button size="icon" onClick={() => void refresh()} aria-label="Refresh activity">
+            <Button size="icon" onClick={() => void refresh()} aria-label={i18n.t(I18nKey.APPS$SETTINGS_REFRESH_ACTIVITY)}>
               <RefreshCw size={13} />
             </Button>
           </SettingsRowActions>
         </SettingsRow>
 
         {audit.length === 0 ? (
-          <SettingsEmpty>No privileged calls recorded yet.</SettingsEmpty>
+          <SettingsEmpty><T k={I18nKey.APPS$SETTINGS_NO_PRIVILEGED_CALLS_RECORDED_YET} /></SettingsEmpty>
         ) : (
           <SettingsStack>
             {audit.map((entry, i) => (

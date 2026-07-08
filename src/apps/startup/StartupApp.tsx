@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import { T } from "../../i18n/T";
 /**
  * Setup workspace — preview the first-run flow (boot → account) without
  * mutating install state. Stub UI for design review and copy iteration.
@@ -32,8 +34,8 @@ export function StartupApp() {
             <div className="arco-startup__nav-header">
               <Sparkles size={16} strokeWidth={1.8} aria-hidden />
               <div>
-                <div className="arco-startup__nav-title">First-run flow</div>
-                <div className="arco-startup__nav-subtitle">Preview only — no install changes</div>
+                <div className="arco-startup__nav-title"><T k={I18nKey.APPS$STARTUP_FIRST_RUN_FLOW} /></div>
+                <div className="arco-startup__nav-subtitle"><T k={I18nKey.APPS$STARTUP_PREVIEW_ONLY_NO_INSTALL_CHANGES} /></div>
               </div>
             </div>
             <ol className="arco-startup__steps">
@@ -76,20 +78,15 @@ export function StartupApp() {
           <div className="arco-startup__stage">
             <header className="arco-startup__stage-header">
               <div>
-                <div className="arco-startup__stage-eyebrow">
-                  Step {stepIndex + 1} of {STARTUP_STEPS.length}
+                <div className="arco-startup__stage-eyebrow"><T k={I18nKey.APPS$STARTUP_STEP} />{stepIndex + 1}<T k={I18nKey.APPS$STARTUP_OF} />{STARTUP_STEPS.length}
                 </div>
                 <h1 className="arco-startup__stage-title">{step.label}</h1>
                 <p className="arco-startup__stage-summary">{step.summary}</p>
               </div>
               <div className="arco-startup__stage-actions">
                 <Button variant="ghost" disabled={atStart} onClick={() => goTo(stepIndex - 1)}>
-                  <ChevronLeft size={16} />
-                  Previous
-                </Button>
-                <Button variant="ghost" disabled={atEnd} onClick={() => goTo(stepIndex + 1)}>
-                  Next
-                  <ChevronRight size={16} />
+                  <ChevronLeft size={16} /><T k={I18nKey.COMMON$PREVIOUS} /></Button>
+                <Button variant="ghost" disabled={atEnd} onClick={() => goTo(stepIndex + 1)}><T k={I18nKey.COMMON$NEXT} /><ChevronRight size={16} />
                 </Button>
               </div>
             </header>
@@ -99,17 +96,12 @@ export function StartupApp() {
             </div>
 
             <footer className="arco-startup__footer">
-              <span className="arco-startup__footer-note">
-                These screens will drive real install state once onboarding is wired.
-              </span>
+              <span className="arco-startup__footer-note"><T k={I18nKey.APPS$STARTUP_THESE_SCREENS_WILL_DRIVE_REAL_INSTALL_STATE_ONCE_ONBOARD} /></span>
               {!atEnd ? (
-                <Button variant="primary" onClick={() => goTo(stepIndex + 1)}>
-                  Continue to {STARTUP_STEPS[stepIndex + 1].label}
+                <Button variant="primary" onClick={() => goTo(stepIndex + 1)}><T k={I18nKey.APPS$STARTUP_CONTINUE_TO} />{STARTUP_STEPS[stepIndex + 1].label}
                 </Button>
               ) : (
-                <Button variant="primary" onClick={() => goToStep("boot")}>
-                  Restart preview
-                </Button>
+                <Button variant="primary" onClick={() => goToStep("boot")}><T k={I18nKey.APPS$STARTUP_RESTART_PREVIEW} /></Button>
               )}
             </footer>
           </div>

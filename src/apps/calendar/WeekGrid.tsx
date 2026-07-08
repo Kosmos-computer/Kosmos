@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import { T } from "../../i18n/T";
 import { useMemo, type CSSProperties } from "react";
 import { CalendarEventBlock } from "./CalendarEventBlock";
 import { EventChip } from "./EventChip";
@@ -102,7 +104,7 @@ export function CalendarWeekGrid({
 
         {hasAllDay ? (
           <div className="arco-cal-week__allday">
-            <div className="arco-cal-week__allday-label">all-day</div>
+            <div className="arco-cal-week__allday-label"><T k={I18nKey.APPS$CALENDAR_ALL_DAY} /></div>
             {days.map((day) => (
               <div key={day.iso} className="arco-cal-week__allday-col">
                 {(allDayByDate.get(day.iso) ?? []).map((event) => (

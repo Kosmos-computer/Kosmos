@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import { T } from "../../i18n/T";
 /**
  * Per-tool-type visualizers — the agent-canvas lesson: typed cards per tool
  * beat one generic JSON dump. Each card gets a headline that reads like a
@@ -157,9 +159,7 @@ export function ToolCard({ item }: { item: ToolItem }) {
                 openWindow({ type: "generated", appId: createdAppId }, app?.title ?? "App");
               }
             }}
-          >
-            Open
-          </span>
+          ><T k={I18nKey.COMMON$OPEN} /></span>
         )}
         <ChevronRight
           size={12}
@@ -169,9 +169,9 @@ export function ToolCard({ item }: { item: ToolItem }) {
       </button>
       {open && (
         <div className="arco-toolcard__body">
-          <div className="arco-label">Input</div>
+          <div className="arco-label"><T k={I18nKey.APPS$CHAT_INPUT} /></div>
           <pre className="arco-toolcard__pre">{JSON.stringify(item.args, null, 2)}</pre>
-          <div className="arco-label">Output</div>
+          <div className="arco-label"><T k={I18nKey.APPS$CHAT_OUTPUT} /></div>
           <pre className="arco-toolcard__pre">
             {item.result ? prettify(item.result) : "Running…"}
           </pre>

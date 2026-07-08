@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { formatDuration } from "./types";
 import { useLongformerPlayback } from "./LongformerPlaybackContext";
 
@@ -13,7 +16,7 @@ export function LongformerAudioPreview({ durationMs, currentMs }: LongformerAudi
   if (!mediaUrl) {
     return (
       <div className="arco-longformer-audio-preview arco-longformer-audio-preview--empty">
-        <p>No audio source for this transcript.</p>
+        <p><T k={I18nKey.APPS$LONGFORMER_NO_AUDIO_SOURCE_FOR_THIS_TRANSCRIPT} /></p>
       </div>
     );
   }
@@ -38,7 +41,7 @@ export function LongformerAudioPreview({ durationMs, currentMs }: LongformerAudi
         max={durationMs}
         value={currentMs}
         onChange={(e) => seekTo(Number(e.target.value))}
-        aria-label="Playback position"
+        aria-label={i18n.t(I18nKey.APPS$LONGFORMER_PLAYBACK_POSITION)}
       />
       <div className="arco-longformer-audio-preview__times">
         <span>{formatDuration(currentMs)}</span>

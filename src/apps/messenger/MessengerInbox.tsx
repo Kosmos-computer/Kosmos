@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { Phone, Plus, Search, Users, Video } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { ConnectServiceModal } from "../../components/patterns/ConnectServiceModal";
@@ -40,7 +43,7 @@ function ContactRow({
           {contact.timestamp ? <time>{contact.timestamp}</time> : null}
         </span>
         <span className="arco-messenger__contact-preview">
-          {contact.typing ? <em>typing…</em> : contact.lastMessage}
+          {contact.typing ? <em><T k={I18nKey.APPS$MESSENGER_TYPING} /></em> : contact.lastMessage}
         </span>
       </span>
       {unread ? <span className="arco-messenger__contact-badge">{contact.unreadCount}</span> : null}
@@ -60,12 +63,10 @@ function InboxMessage({ message, contactName }: { message: MessengerMessage; con
       <div className="arco-messenger__call-card arco-messenger__call-card--inbox">
         <Video size={18} />
         <div>
-          <strong>Video call</strong>
+          <strong><T k={I18nKey.APPS$MESSENGER_VIDEO_CALL} /></strong>
           <span>{message.call.duration}</span>
         </div>
-        <Button variant="ghost" size="default">
-          Call again
-        </Button>
+        <Button variant="ghost" size="default"><T k={I18nKey.APPS$MESSENGER_CALL_AGAIN} /></Button>
       </div>
     );
   }
@@ -126,30 +127,26 @@ export function MessengerInbox({ vm }: { vm: MessengerViewModel }) {
         <div className="arco-messenger__sidebar">
           <header className="arco-messenger__sidebar-header">
             <h1>
-              <Users size={16} aria-hidden />
-              Messages
-            </h1>
+              <Users size={16} aria-hidden /><T k={I18nKey.APPS$MESSENGER_MESSAGES} /></h1>
             <Button variant="primary" size="default" onClick={() => vm.setConnectOpen(true)}>
-              <Plus size={14} />
-              New
-            </Button>
+              <Plus size={14} /><T k={I18nKey.APPS$MESSENGER_NEW} /></Button>
           </header>
           <div className="arco-messenger__sidebar-search">
             <Search size={14} aria-hidden />
             <Input
               value={vm.searchQuery}
               onChange={(event) => vm.setSearchQuery(event.target.value)}
-              placeholder="Search conversations"
-              aria-label="Search conversations"
+              placeholder={i18n.t(I18nKey.APPS$MESSENGER_SEARCH_CONVERSATIONS)}
+              aria-label={i18n.t(I18nKey.APPS$MESSENGER_SEARCH_CONVERSATIONS)}
             />
           </div>
           <div className="arco-messenger__sidebar-list">
             {vm.filteredContacts.length === 0 ? (
-              <EmptyState title="No conversations found" />
+              <EmptyState title={i18n.t(I18nKey.APPS$MESSENGER_NO_CONVERSATIONS_FOUND)} />
             ) : (
               <>
                 <ContactSection
-                  label="Unread"
+                  label={i18n.t(I18nKey.APPS$EMAIL_UNREAD)}
                   contacts={vm.unreadContacts}
                   activeContactId={vm.activeContactId}
                   onSelect={(id) => {
@@ -174,7 +171,7 @@ export function MessengerInbox({ vm }: { vm: MessengerViewModel }) {
 
       <main className="arco-messenger__thread">
         {!vm.activeContact ? (
-          <EmptyState title="No conversation selected" />
+          <EmptyState title={i18n.t(I18nKey.APPS$MESSENGER_NO_CONVERSATION_SELECTED)} />
         ) : (
           <>
             <header className="arco-messenger__thread-header">
@@ -190,15 +187,13 @@ export function MessengerInbox({ vm }: { vm: MessengerViewModel }) {
                 </div>
               </div>
               <div className="arco-messenger__thread-actions">
-                <Button variant="ghost" size="icon" aria-label="Call">
+                <Button variant="ghost" size="icon" aria-label={i18n.t(I18nKey.APPS$CONTACTS_CALL)}>
                   <Phone size={16} />
                 </Button>
-                <Button variant="ghost" size="icon" aria-label="Video call">
+                <Button variant="ghost" size="icon" aria-label={i18n.t(I18nKey.APPS$MESSENGER_VIDEO_CALL)}>
                   <Video size={16} />
                 </Button>
-                <Button variant="ghost" size="default" onClick={() => vm.expandPopout(vm.activeContactId)}>
-                  Open on desktop
-                </Button>
+                <Button variant="ghost" size="default" onClick={() => vm.expandPopout(vm.activeContactId)}><T k={I18nKey.APPS$MESSENGER_OPEN_ON_DESKTOP_2} /></Button>
               </div>
             </header>
             <div ref={scrollRef} className="arco-messenger__thread-scroll">
@@ -211,7 +206,7 @@ export function MessengerInbox({ vm }: { vm: MessengerViewModel }) {
                 value={vm.composerValue}
                 onChange={(event) => vm.setComposerValue(event.target.value)}
                 placeholder={`Message ${vm.activeContact.name}…`}
-                aria-label="Message"
+                aria-label={i18n.t(I18nKey.APPS$SETTINGS_MESSAGE)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" && !event.shiftKey) {
                     event.preventDefault();
@@ -219,9 +214,7 @@ export function MessengerInbox({ vm }: { vm: MessengerViewModel }) {
                   }
                 }}
               />
-              <Button variant="primary" size="default" onClick={() => vm.submitActive()} disabled={!vm.composerValue.trim()}>
-                Send
-              </Button>
+              <Button variant="primary" size="default" onClick={() => vm.submitActive()} disabled={!vm.composerValue.trim()}><T k={I18nKey.APPS$MESSENGER_SEND} /></Button>
             </footer>
           </>
         )}
@@ -238,23 +231,19 @@ export function MessengerHub({ vm }: { vm: MessengerViewModel }) {
     <div className="arco-messenger__hub">
       <header className="arco-messenger__hub-header">
         <div>
-          <h1>Desktop chats</h1>
-          <p>Conversations stay open on your desktop — close the Messenger window and keep chatting.</p>
+          <h1><T k={I18nKey.APPS$MESSENGER_DESKTOP_CHATS} /></h1>
+          <p><T k={I18nKey.APPS$MESSENGER_CONVERSATIONS_STAY_OPEN_ON_YOUR_DESKTOP_CLOSE_THE_MESSEN} /></p>
         </div>
         <Button variant="primary" size="default" onClick={() => vm.setView("inbox")}>
-          <Plus size={14} />
-          New message
-        </Button>
+          <Plus size={14} /><T k={I18nKey.APPS$MESSENGER_NEW_MESSAGE} /></Button>
       </header>
 
       <section className="arco-messenger__hub-section">
-        <h2>Open on desktop ({openSessions.length})</h2>
+        <h2><T k={I18nKey.APPS$MESSENGER_OPEN_ON_DESKTOP} />{openSessions.length})</h2>
         {openSessions.length === 0 ? (
-          <EmptyState title="No open chats">
-            <p>Pick someone from the inbox to pop out a conversation.</p>
-            <Button variant="primary" onClick={() => vm.setView("inbox")}>
-              Browse inbox
-            </Button>
+          <EmptyState title={i18n.t(I18nKey.APPS$MESSENGER_NO_OPEN_CHATS)}>
+            <p><T k={I18nKey.APPS$MESSENGER_PICK_SOMEONE_FROM_THE_INBOX_TO_POP_OUT_A_CONVERSATION} /></p>
+            <Button variant="primary" onClick={() => vm.setView("inbox")}><T k={I18nKey.APPS$MESSENGER_BROWSE_INBOX} /></Button>
           </EmptyState>
         ) : (
           <ul className="arco-messenger__hub-list">
@@ -273,12 +262,8 @@ export function MessengerHub({ vm }: { vm: MessengerViewModel }) {
                     <span>{contact.lastMessage}</span>
                   </div>
                   <div className="arco-messenger__hub-item-actions">
-                    <Button variant="ghost" size="default" onClick={() => vm.minimizePopout(session.contactId)}>
-                      Minimize
-                    </Button>
-                    <Button variant="ghost" size="default" onClick={() => vm.closePopout(session.contactId)}>
-                      Close
-                    </Button>
+                    <Button variant="ghost" size="default" onClick={() => vm.minimizePopout(session.contactId)}><T k={I18nKey.APPS$MESSENGER_MINIMIZE} /></Button>
+                    <Button variant="ghost" size="default" onClick={() => vm.closePopout(session.contactId)}><T k={I18nKey.COMMON$CLOSE} /></Button>
                   </div>
                 </li>
               );
@@ -289,7 +274,7 @@ export function MessengerHub({ vm }: { vm: MessengerViewModel }) {
 
       {minimizedSessions.length > 0 ? (
         <section className="arco-messenger__hub-section">
-          <h2>Minimized ({minimizedSessions.length})</h2>
+          <h2><T k={I18nKey.APPS$MESSENGER_MINIMIZED} />{minimizedSessions.length})</h2>
           <ul className="arco-messenger__hub-list arco-messenger__hub-list--bubbles">
             {minimizedSessions.map((session) => {
               const contact = vm.contacts.find((c) => c.id === session.contactId);
@@ -317,7 +302,7 @@ export function MessengerHub({ vm }: { vm: MessengerViewModel }) {
       ) : null}
 
       <section className="arco-messenger__hub-section">
-        <h2>Start a chat</h2>
+        <h2><T k={I18nKey.APPS$MESSENGER_START_A_CHAT} /></h2>
         <ul className="arco-messenger__hub-list">
           {vm.contacts
             .filter((c) => !vm.sessions.some((s) => s.contactId === c.id))
@@ -329,9 +314,7 @@ export function MessengerHub({ vm }: { vm: MessengerViewModel }) {
                   <strong>{contact.name}</strong>
                   <span>{contact.lastMessage}</span>
                 </div>
-                <Button variant="primary" size="default" onClick={() => vm.openPopout(contact.id)}>
-                  Open chat
-                </Button>
+                <Button variant="primary" size="default" onClick={() => vm.openPopout(contact.id)}><T k={I18nKey.APPS$MESSENGER_OPEN_CHAT} /></Button>
               </li>
             ))}
         </ul>

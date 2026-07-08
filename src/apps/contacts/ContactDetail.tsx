@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import { T } from "../../i18n/T";
 import { Mail, MessageSquare, Pencil, Phone, Star, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Avatar, Button } from "../../components/ui";
@@ -26,7 +28,7 @@ export function ContactDetail({
     return (
       <div className="arco-contacts__detail arco-contacts__detail--empty">
         <div className="arco-empty">
-          <strong className="arco-empty__title">Select a contact</strong>
+          <strong className="arco-empty__title"><T k={I18nKey.APPS$CONTACTS_SELECT_A_CONTACT} /></strong>
         </div>
       </div>
     );
@@ -36,28 +38,20 @@ export function ContactDetail({
     <div className="arco-contacts__detail arco-scroll">
       <div className="arco-contacts__detail-toolbar">
         <Button variant="ghost" onClick={() => onEdit(contact)}>
-          <Pencil size={15} />
-          Edit
-        </Button>
+          <Pencil size={15} /><T k={I18nKey.COMMON$EDIT} /></Button>
         <Button variant="ghost" onClick={() => onToggleFavorite(contact.id)}>
           <Star size={15} fill={contact.favorite ? "currentColor" : "none"} />
           {contact.favorite ? "Unfavorite" : "Favorite"}
         </Button>
         {confirmDelete ? (
           <>
-            <Button variant="ghost" onClick={() => setConfirmDelete(false)}>
-              Cancel
-            </Button>
+            <Button variant="ghost" onClick={() => setConfirmDelete(false)}><T k={I18nKey.COMMON$CANCEL} /></Button>
             <Button variant="ghost" className="arco-contacts__delete-confirm" onClick={() => onDelete(contact.id)}>
-              <Trash2 size={15} />
-              Confirm delete
-            </Button>
+              <Trash2 size={15} /><T k={I18nKey.APPS$CONTACTS_CONFIRM_DELETE} /></Button>
           </>
         ) : (
           <Button variant="ghost" className="arco-contacts__delete" onClick={() => setConfirmDelete(true)}>
-            <Trash2 size={15} />
-            Delete
-          </Button>
+            <Trash2 size={15} /><T k={I18nKey.COMMON$DELETE} /></Button>
         )}
       </div>
 
@@ -74,18 +68,12 @@ export function ContactDetail({
 
       <div className="arco-contacts__detail-actions">
         <Button variant="primary" onClick={() => onCall(contact.phone)}>
-          <Phone size={15} />
-          Call
-        </Button>
+          <Phone size={15} /><T k={I18nKey.APPS$CONTACTS_CALL} /></Button>
         <Button>
-          <MessageSquare size={15} />
-          Message
-        </Button>
+          <MessageSquare size={15} /><T k={I18nKey.APPS$CONTACTS_MESSAGE} /></Button>
         {contact.email ? (
           <Button>
-            <Mail size={15} />
-            Email
-          </Button>
+            <Mail size={15} /><T k={I18nKey.APPS$CONTACTS_EMAIL} /></Button>
         ) : null}
       </div>
 
@@ -96,19 +84,19 @@ export function ContactDetail({
         </div>
         {contact.email ? (
           <div>
-            <dt>Email</dt>
+            <dt><T k={I18nKey.APPS$CONTACTS_EMAIL} /></dt>
             <dd>{contact.email}</dd>
           </div>
         ) : null}
         {contact.company ? (
           <div>
-            <dt>Company</dt>
+            <dt><T k={I18nKey.APPS$CONTACTS_COMPANY} /></dt>
             <dd>{contact.company}</dd>
           </div>
         ) : null}
         {contact.title ? (
           <div>
-            <dt>Title</dt>
+            <dt><T k={I18nKey.APPS$CONTACTS_TITLE} /></dt>
             <dd>{contact.title}</dd>
           </div>
         ) : null}

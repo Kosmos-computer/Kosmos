@@ -1,8 +1,13 @@
+import { I18nKey } from "../i18n/declaration";
+import { T } from "../i18n/T";
 /**
  * Full-viewport app host for Kosmos embed mode (?embed=1&app=…).
  */
 import { isEmbedLaunch, parseLaunchAppParam } from "@shared/launchApp";
 import { resolveSystemAppId } from "@shared/systemApps";
+import { MusicShell } from "../apps/music/MusicShell";
+import { PodcastShell } from "../apps/podcast/PodcastShell";
+import { VideoShell } from "../apps/video/VideoShell";
 import { systemApp } from "./systemApps";
 import { WindowContent } from "./windowContent";
 import type { SystemAppId, WindowKind } from "./windowStore";
@@ -36,7 +41,7 @@ export function EmbedAppShell() {
   if (!launch) {
     return (
       <div className="arco-embed-app arco-embed-app--error">
-        <p>Missing or unknown embed app. Use ?embed=1&amp;app=chat</p>
+        <p><T k={I18nKey.OS_EMBEDAPPSHELL_MISSING_OR_UNKNOWN_EMBED_APP_USE_EMBED_1_AMP_APP_CHAT} /></p>
       </div>
     );
   }
@@ -44,6 +49,10 @@ export function EmbedAppShell() {
   return (
     <div className="arco-embed-app">
       <WindowContent kind={launch.kind} />
+      {/* Shell-level media engines — same as Desktop/MobileShell so embed playback works. */}
+      <MusicShell />
+      <VideoShell />
+      <PodcastShell />
     </div>
   );
 }

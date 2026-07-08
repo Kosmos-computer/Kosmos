@@ -1,4 +1,8 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   BookOpen,
   Captions,
@@ -51,29 +55,30 @@ export interface PodcastSidebarProps {
 }
 
 export function PodcastSidebar({ vm, connectOpen, onOpenConnect, onCloseConnect }: PodcastSidebarProps) {
+  const { t } = useTranslation();
   const connections = useConnectionStore((s) => s.connections);
   const addConnection = useConnectionStore((s) => s.addConnection);
   const podcastConnections = connections.filter((c) => c.domain === "podcast");
 
   return (
     <>
-      <aside className="arco-podcast__library" aria-label="Podcasts and audiobooks">
+      <aside className="arco-podcast__library" aria-label={i18n.t(I18nKey.APPS$PODCAST_PODCASTS_AND_AUDIOBOOKS)}>
         <NavSidebar
           className="arco-podcast-library-nav"
           header={
             <>
               <div className="arco-podcast-library-nav__header">
                 <Headphones size={20} aria-hidden="true" />
-                <h2 className="arco-podcast-library-nav__title">Listen</h2>
+                <h2 className="arco-podcast-library-nav__title"><T k={I18nKey.APPS$PODCAST_LISTEN} /></h2>
               </div>
               <label className="arco-podcast-library-nav__search">
                 <Search size={16} aria-hidden="true" />
                 <input
                   type="search"
-                  placeholder="Search shows and episodes"
+                  placeholder={i18n.t(I18nKey.APPS$PODCAST_SEARCH_SHOWS_AND_EPISODES)}
                   value={vm.searchQuery}
                   onChange={(event) => vm.setSearchQuery(event.target.value)}
-                  aria-label="Search podcasts"
+                  aria-label={i18n.t(I18nKey.APPS$PODCAST_SEARCH_PODCASTS)}
                 />
               </label>
             </>
@@ -82,7 +87,7 @@ export function PodcastSidebar({ vm, connectOpen, onOpenConnect, onCloseConnect 
           scrollContent={
             <div className="arco-nav-sidebar__sections">
               <div>
-                <NavSidebarSectionHeader title="Browse" />
+                <NavSidebarSectionHeader title={i18n.t(I18nKey.APPS$PODCAST_BROWSE)} />
                 <div className="arco-nav-sidebar__section-items">
                   {NAV_ITEMS.map((item) => {
                     const Icon = item.icon;
@@ -110,11 +115,11 @@ export function PodcastSidebar({ vm, connectOpen, onOpenConnect, onCloseConnect 
               </div>
 
               <div>
-                <NavSidebarSectionHeader title="Sources" />
+                <NavSidebarSectionHeader title={i18n.t(I18nKey.APPS$PODCAST_SOURCES)} />
                 <div className="arco-nav-sidebar__section-items">
                   <ListItem
                     className="arco-nav-sidebar__nav-item"
-                    label="Local library"
+                    label={i18n.t(I18nKey.APPS$PODCAST_LOCAL_LIBRARY)}
                     active={vm.sourceFilter === "local"}
                     onClick={() => {
                       if (vm.navSection === "settings") vm.setNavSection("browse");
@@ -123,7 +128,7 @@ export function PodcastSidebar({ vm, connectOpen, onOpenConnect, onCloseConnect 
                   />
                   <ListItem
                     className="arco-nav-sidebar__nav-item"
-                    label="RSS feeds"
+                    label={i18n.t(I18nKey.APPS$PODCAST_RSS_FEEDS)}
                     active={vm.sourceFilter === "rss"}
                     onClick={() => {
                       if (vm.navSection === "settings") vm.setNavSection("browse");
@@ -158,19 +163,19 @@ export function PodcastSidebar({ vm, connectOpen, onOpenConnect, onCloseConnect 
                   <ListItem
                     className="arco-nav-sidebar__nav-item"
                     leading={<Plus size={16} />}
-                    label="Connect account"
+                    label={i18n.t(I18nKey.APPS$SOCIAL_CONNECT_ACCOUNT)}
                     onClick={onOpenConnect}
                   />
                 </div>
               </div>
 
               <div>
-                <NavSidebarSectionHeader title="Manage" />
+                <NavSidebarSectionHeader title={i18n.t(I18nKey.APPS$PODCAST_MANAGE)} />
                 <div className="arco-nav-sidebar__section-items">
                   <ListItem
                     className="arco-nav-sidebar__nav-item"
                     leading={<Settings size={18} />}
-                    label="Settings"
+                    label={i18n.t(I18nKey.OS$APP_SETTINGS)}
                     active={vm.navSection === "settings"}
                     onClick={() => vm.setNavSection("settings")}
                   />
@@ -247,7 +252,7 @@ function EpisodeRow({
         </div>
         <span className="arco-podcast__episode-duration">{episode.durationLabel}</span>
         {episode.kind === "audiobook" ? (
-          <span className="arco-podcast__episode-tag">Audiobook</span>
+          <span className="arco-podcast__episode-tag"><T k={I18nKey.APPS$PODCAST_AUDIOBOOK} /></span>
         ) : null}
       </button>
       <div className="arco-podcast__episode-actions">
@@ -332,11 +337,9 @@ function PodcastEpisodeDetail({ vm }: PodcastHomeContentProps) {
           type="button"
           className="arco-podcast__back-btn"
           onClick={() => vm.closeEpisodeDetail()}
-          aria-label="Back"
+          aria-label={i18n.t(I18nKey.COMMON$BACK)}
         >
-          <ChevronLeft size={18} strokeWidth={1.75} />
-          Back
-        </button>
+          <ChevronLeft size={18} strokeWidth={1.75} /><T k={I18nKey.COMMON$BACK} /></button>
 
         <section className="arco-podcast__show-hero">
           <PodcastCover
@@ -358,13 +361,12 @@ function PodcastEpisodeDetail({ vm }: PodcastHomeContentProps) {
             </p>
             {episode && isPlayableEpisode(episode) ? (
               <button type="button" className="arco-podcast__play-btn" onClick={() => vm.playEpisode(episode.id, true)}>
-                <Play size={18} /> Play
-              </button>
+                <Play size={18} /><T k={I18nKey.APPS$PODCAST_PLAY} /></button>
             ) : null}
           </div>
         </section>
 
-        <div className="arco-podcast__detail-tabs" role="tablist" aria-label="Episode views">
+        <div className="arco-podcast__detail-tabs" role="tablist" aria-label={i18n.t(I18nKey.APPS$PODCAST_EPISODE_VIEWS)}>
           {(
             [
               { id: "episode" as PodcastEpisodeDetailTab, label: "Episode" },
@@ -387,11 +389,11 @@ function PodcastEpisodeDetail({ vm }: PodcastHomeContentProps) {
 
         {tab === "episode" ? (
           <section className="arco-podcast__section arco-podcast__episode-detail-panel">
-            <h2 className="arco-podcast__section-title">About this episode</h2>
+            <h2 className="arco-podcast__section-title"><T k={I18nKey.APPS$PODCAST_ABOUT_THIS_EPISODE} /></h2>
             {summary?.textPreview ? (
               <p className="arco-podcast__episode-detail-preview">{summary.textPreview}</p>
             ) : (
-              <p className="arco-podcast__downloads-hint">No transcript generated yet.</p>
+              <p className="arco-podcast__downloads-hint"><T k={I18nKey.APPS$PODCAST_NO_TRANSCRIPT_GENERATED_YET} /></p>
             )}
             <div className="arco-podcast__episode-detail-actions">
               {canTranscribe ? (
@@ -405,16 +407,13 @@ function PodcastEpisodeDetail({ vm }: PodcastHomeContentProps) {
                 >
                   {transcribing ? (
                     <>
-                      <Loader2 size={16} className="arco-podcast__spin" /> Transcribing…
-                    </>
+                      <Loader2 size={16} className="arco-podcast__spin" /><T k={I18nKey.APPS$PODCAST_TRANSCRIBING} /></>
                   ) : hasTranscript ? (
                     <>
-                      <Captions size={16} /> View transcript
-                    </>
+                      <Captions size={16} /><T k={I18nKey.APPS$PODCAST_VIEW_TRANSCRIPT} /></>
                   ) : (
                     <>
-                      <Captions size={16} /> Transcribe
-                    </>
+                      <Captions size={16} /><T k={I18nKey.APPS$PODCAST_TRANSCRIBE} /></>
                   )}
                 </Button>
               ) : null}
@@ -433,24 +432,21 @@ function PodcastEpisodeDetail({ vm }: PodcastHomeContentProps) {
         ) : (
           <section className="arco-podcast__section arco-podcast__episode-detail-panel">
             {transcribing ? (
-              <EmptyState title="Transcribing…">This may take a minute for longer episodes.</EmptyState>
+              <EmptyState title={i18n.t(I18nKey.APPS$PODCAST_TRANSCRIBING)}><T k={I18nKey.APPS$PODCAST_THIS_MAY_TAKE_A_MINUTE_FOR_LONGER_EPISODES} /></EmptyState>
             ) : transcript ? (
               <>
                 <p className="arco-podcast__episode-detail-meta">
-                  {transcript.wordCount.toLocaleString()} words · {transcriptEngineLabel(transcript.engine)} ·{" "}
+                  {transcript.wordCount.toLocaleString()}<T k={I18nKey.APPS$PODCAST_WORDS} />{transcriptEngineLabel(transcript.engine)} ·{" "}
                   {formatTranscriptDate(transcript.createdAt)}
                 </p>
                 <div className="arco-podcast__detail-transcript">{transcript.text}</div>
-                <p className="arco-podcast__episode-detail-footnote">
-                  Saved to data/podcast-transcripts/{transcript.episodeId}.txt
-                </p>
+                <p className="arco-podcast__episode-detail-footnote"><T k={I18nKey.APPS$PODCAST_SAVED_TO_DATA_PODCAST_TRANSCRIPTS} />{transcript.episodeId}<T k={I18nKey.APPS$PODCAST_TXT} /></p>
               </>
             ) : (
-              <EmptyState title="Transcript unavailable">
+              <EmptyState title={i18n.t(I18nKey.APPS$PODCAST_TRANSCRIPT_UNAVAILABLE)}>
                 {canTranscribe ? (
                   <Button variant="primary" onClick={() => void vm.transcribeEpisode(episodeId)}>
-                    <Captions size={16} /> Transcribe episode
-                  </Button>
+                    <Captions size={16} /><T k={I18nKey.APPS$PODCAST_TRANSCRIBE_EPISODE} /></Button>
                 ) : (
                   "This episode cannot be transcribed."
                 )}
@@ -489,7 +485,7 @@ function PodcastTranscriptsContent({ vm }: PodcastHomeContentProps) {
 
         <header className="arco-podcast__directory-header">
           <div>
-            <h1 className="arco-podcast__directory-title">Transcripts</h1>
+            <h1 className="arco-podcast__directory-title"><T k={I18nKey.APPS$PODCAST_TRANSCRIPTS} /></h1>
             <p className="arco-podcast__directory-subtitle">{subtitle}</p>
           </div>
         </header>
@@ -497,14 +493,10 @@ function PodcastTranscriptsContent({ vm }: PodcastHomeContentProps) {
         {vm.transcriptEntries.length === 0 ? (
           <EmptyState title={savedCount === 0 && processingCount === 0 ? "No transcripts yet" : "No matching transcripts"}>
             {savedCount === 0 && processingCount === 0 ? (
-              <>
-                Transcribe any playable episode from Library, then return here to browse the full text.
-                <Button variant="primary" onClick={() => vm.setNavSection("library")}>
-                  Go to Library
-                </Button>
+              <><T k={I18nKey.APPS$PODCAST_TRANSCRIBE_ANY_PLAYABLE_EPISODE_FROM_LIBRARY_THEN_RETURN} /><Button variant="primary" onClick={() => vm.setNavSection("library")}><T k={I18nKey.APPS$PODCAST_GO_TO_LIBRARY} /></Button>
               </>
             ) : (
-              <>Try a different search term.</>
+              <><T k={I18nKey.APPS$PODCAST_TRY_A_DIFFERENT_SEARCH_TERM} /></>
             )}
           </EmptyState>
         ) : (
@@ -536,12 +528,10 @@ function PodcastTranscriptsContent({ vm }: PodcastHomeContentProps) {
                       <span className="arco-podcast__transcript-row-copy">
                         <strong>{entry.title}</strong>
                         <span>{entry.showTitle}</span>
-                        <span className="arco-podcast__transcript-row-preview">Transcription in progress…</span>
+                        <span className="arco-podcast__transcript-row-preview"><T k={I18nKey.APPS$PODCAST_TRANSCRIPTION_IN_PROGRESS} /></span>
                       </span>
                       <span className="arco-podcast__transcript-row-status">
-                        <Loader2 size={16} className="arco-podcast__spin" />
-                        Processing
-                      </span>
+                        <Loader2 size={16} className="arco-podcast__spin" /><T k={I18nKey.APPS$PODCAST_PROCESSING} /></span>
                     </button>
                   );
                 }
@@ -571,7 +561,7 @@ function PodcastTranscriptsContent({ vm }: PodcastHomeContentProps) {
                     <span className="arco-podcast__transcript-row-copy">
                       <strong>{entry.title}</strong>
                       <span>
-                        {entry.showTitle} · {entry.wordCount.toLocaleString()} words · {engineLabel}
+                        {entry.showTitle} · {entry.wordCount.toLocaleString()}<T k={I18nKey.APPS$PODCAST_WORDS} />{engineLabel}
                       </span>
                       <span className="arco-podcast__transcript-row-preview">{entry.textPreview}</span>
                     </span>
@@ -610,7 +600,7 @@ function FeedManager({ vm }: { vm: PodcastViewModel }) {
   return (
     <section className="arco-podcast__section arco-podcast__feed-manager">
       <div className="arco-podcast__feed-manager-header">
-        <h2 className="arco-podcast__section-title">Subscribed feeds</h2>
+        <h2 className="arco-podcast__section-title"><T k={I18nKey.APPS$PODCAST_SUBSCRIBED_FEEDS} /></h2>
         <Button
           variant="ghost"
           className="arco-podcast__sync-btn"
@@ -631,14 +621,13 @@ function FeedManager({ vm }: { vm: PodcastViewModel }) {
       >
         <Input
           type="url"
-          placeholder="Paste podcast RSS feed URL"
+          placeholder={i18n.t(I18nKey.APPS$PODCAST_PASTE_PODCAST_RSS_FEED_URL)}
           value={feedUrl}
           onChange={(event) => setFeedUrl(event.target.value)}
-          aria-label="Podcast RSS feed URL"
+          aria-label={i18n.t(I18nKey.APPS$PODCAST_PODCAST_RSS_FEED_URL)}
         />
         <Button variant="primary" type="submit" disabled={vm.feedsLoading || !feedUrl.trim()}>
-          <Plus size={16} /> Add feed
-        </Button>
+          <Plus size={16} /><T k={I18nKey.APPS$PODCAST_ADD_FEED} /></Button>
       </form>
       {addError ? <p className="arco-podcast__feed-error">{addError}</p> : null}
       <div className="arco-podcast__feed-list">
@@ -647,8 +636,7 @@ function FeedManager({ vm }: { vm: PodcastViewModel }) {
             <div className="arco-podcast__feed-meta">
               <strong>{feed.label}</strong>
               <span>
-                {feed.publisher} · auto-download on
-              </span>
+                {feed.publisher}<T k={I18nKey.APPS$PODCAST_AUTO_DOWNLOAD_ON} /></span>
             </div>
             <button
               type="button"
@@ -687,11 +675,9 @@ function PodcastShowDetail({ vm, show }: { vm: PodcastViewModel; show: PodcastSh
           type="button"
           className="arco-podcast__back-btn"
           onClick={() => vm.setSelectedShowId(null)}
-          aria-label="Back to podcasts"
+          aria-label={i18n.t(I18nKey.APPS$PODCAST_BACK_TO_PODCASTS)}
         >
-          <ChevronLeft size={18} strokeWidth={1.75} />
-          Back
-        </button>
+          <ChevronLeft size={18} strokeWidth={1.75} /><T k={I18nKey.COMMON$BACK} /></button>
 
         <section className="arco-podcast__show-hero">
           <PodcastCover
@@ -707,7 +693,7 @@ function PodcastShowDetail({ vm, show }: { vm: PodcastViewModel; show: PodcastSh
             </span>
             <h1>{show.title}</h1>
             <p>
-              {show.host} · {show.episodeCount} episode{show.episodeCount === 1 ? "" : "s"}
+              {show.host} · {show.episodeCount}<T k={I18nKey.APPS$PODCAST_EPISODE} />{show.episodeCount === 1 ? "" : "s"}
             </p>
             {latestPlayable ? (
               <button
@@ -715,16 +701,15 @@ function PodcastShowDetail({ vm, show }: { vm: PodcastViewModel; show: PodcastSh
                 className="arco-podcast__play-btn"
                 onClick={() => vm.playEpisode(latestPlayable.id, true)}
               >
-                <Play size={18} /> Play latest
-              </button>
+                <Play size={18} /><T k={I18nKey.APPS$PODCAST_PLAY_LATEST} /></button>
             ) : null}
           </div>
         </section>
 
         <section className="arco-podcast__section">
-          <h2 className="arco-podcast__section-title">All episodes</h2>
+          <h2 className="arco-podcast__section-title"><T k={I18nKey.APPS$PODCAST_ALL_EPISODES} /></h2>
           {vm.showEpisodes.length === 0 ? (
-            <p className="arco-podcast__downloads-hint">No episodes match your current filters.</p>
+            <p className="arco-podcast__downloads-hint"><T k={I18nKey.APPS$PODCAST_NO_EPISODES_MATCH_YOUR_CURRENT_FILTERS} /></p>
           ) : (
             <div className="arco-podcast__episode-list">
               {vm.showEpisodes.map((episode) => (
@@ -739,8 +724,9 @@ function PodcastShowDetail({ vm, show }: { vm: PodcastViewModel; show: PodcastSh
 }
 
 export function PodcastHomeContent({ vm }: PodcastHomeContentProps) {
+  const { t } = useTranslation();
   if (vm.loading) {
-    return <EmptyState title="Loading library…">Importing local episodes and RSS feeds</EmptyState>;
+    return <EmptyState title={i18n.t(I18nKey.OS_BENTO_LOADING_LIBRARY)}><T k={I18nKey.APPS$PODCAST_IMPORTING_LOCAL_EPISODES_AND_RSS_FEEDS} /></EmptyState>;
   }
 
   if (vm.navSection === "settings") {
@@ -779,15 +765,12 @@ export function PodcastHomeContent({ vm }: PodcastHomeContentProps) {
 }
 
 function PodcastHomeFeed({ vm }: PodcastHomeContentProps) {
+  const { t } = useTranslation();
   if (vm.followedShowCount === 0) {
     return (
       <main className="arco-podcast__main">
         <div className="arco-podcast__main-scroll arco-podcast__scrollable">
-          <EmptyState title="Your feed is empty">
-            Follow podcasts from Browse to see new episodes from your shows here.
-            <Button variant="primary" onClick={() => vm.setNavSection("browse")}>
-              Browse podcasts
-            </Button>
+          <EmptyState title={i18n.t(I18nKey.APPS$PODCAST_YOUR_FEED_IS_EMPTY)}><T k={I18nKey.APPS$PODCAST_FOLLOW_PODCASTS_FROM_BROWSE_TO_SEE_NEW_EPISODES_FROM_YOU} /><Button variant="primary" onClick={() => vm.setNavSection("browse")}><T k={I18nKey.APPS$PODCAST_BROWSE_PODCASTS} /></Button>
           </EmptyState>
         </div>
       </main>
@@ -804,14 +787,11 @@ function PodcastHomeFeed({ vm }: PodcastHomeContentProps) {
 
         <header className="arco-podcast__directory-header">
           <div>
-            <h1 className="arco-podcast__directory-title">Home</h1>
-            <p className="arco-podcast__directory-subtitle">
-              Latest from {vm.followedShowCount} followed show{vm.followedShowCount === 1 ? "" : "s"}
+            <h1 className="arco-podcast__directory-title"><T k={I18nKey.APPS$PODCAST_HOME} /></h1>
+            <p className="arco-podcast__directory-subtitle"><T k={I18nKey.APPS$PODCAST_LATEST_FROM} />{vm.followedShowCount}<T k={I18nKey.APPS$PODCAST_FOLLOWED_SHOW} />{vm.followedShowCount === 1 ? "" : "s"}
             </p>
           </div>
-          <Button variant="ghost" onClick={() => vm.setNavSection("browse")}>
-            Discover more
-          </Button>
+          <Button variant="ghost" onClick={() => vm.setNavSection("browse")}><T k={I18nKey.APPS$PODCAST_DISCOVER_MORE} /></Button>
         </header>
 
         {vm.continueListening ? (
@@ -824,7 +804,7 @@ function PodcastHomeFeed({ vm }: PodcastHomeContentProps) {
               alt={vm.continueListening.title}
             />
             <div className="arco-podcast__featured-copy">
-              <span className="arco-podcast__featured-label">Continue listening</span>
+              <span className="arco-podcast__featured-label"><T k={I18nKey.APPS$PODCAST_CONTINUE_LISTENING} /></span>
               <h1>{vm.continueListening.title}</h1>
               <p>
                 {vm.continueListening.showTitle} · {vm.continueListening.host}
@@ -834,15 +814,14 @@ function PodcastHomeFeed({ vm }: PodcastHomeContentProps) {
                 className="arco-podcast__play-btn"
                 onClick={() => vm.playEpisode(vm.continueListening!.id, true)}
               >
-                <Play size={18} /> Play
-              </button>
+                <Play size={18} /><T k={I18nKey.APPS$PODCAST_PLAY} /></button>
             </div>
           </section>
         ) : null}
 
         {vm.homeShows.length > 0 ? (
           <section className="arco-podcast__section">
-            <h2 className="arco-podcast__section-title">Following</h2>
+            <h2 className="arco-podcast__section-title"><T k={I18nKey.APPS$PODCAST_FOLLOWING} /></h2>
             <div className="arco-podcast__show-grid">
               {vm.homeShows.map((show) => {
                 const showEpisode = vm.homeEpisodes.find((episode) => episodeBelongsToShow(episode, show));
@@ -862,8 +841,7 @@ function PodcastHomeFeed({ vm }: PodcastHomeContentProps) {
                     />
                     <h3>{show.title}</h3>
                     <p>
-                      {show.host} · {show.episodeCount} episodes
-                    </p>
+                      {show.host} · {show.episodeCount}<T k={I18nKey.APPS$PODCAST_EPISODES_2} /></p>
                   </button>
                 );
               })}
@@ -872,11 +850,9 @@ function PodcastHomeFeed({ vm }: PodcastHomeContentProps) {
         ) : null}
 
         <section className="arco-podcast__section">
-          <h2 className="arco-podcast__section-title">New in your feed</h2>
+          <h2 className="arco-podcast__section-title"><T k={I18nKey.APPS$PODCAST_NEW_IN_YOUR_FEED} /></h2>
           {vm.homeEpisodes.length === 0 ? (
-            <p className="arco-podcast__downloads-hint">
-              Episodes from followed shows will appear here after feeds sync.
-            </p>
+            <p className="arco-podcast__downloads-hint"><T k={I18nKey.APPS$PODCAST_EPISODES_FROM_FOLLOWED_SHOWS_WILL_APPEAR_HERE_AFTER_FEED} /></p>
           ) : (
             <div className="arco-podcast__episode-list">
               {vm.homeEpisodes.map((episode) => (
@@ -897,9 +873,7 @@ function PodcastLibraryContent({ vm }: PodcastHomeContentProps) {
 
   if (vm.sourceFilter === "remote" && !connection) {
     return (
-      <EmptyState title={`Connect ${vm.providerLabel}`}>
-        Link your account to sync subscribed shows and continue listening across devices.
-      </EmptyState>
+      <EmptyState title={`Connect ${vm.providerLabel}`}><T k={I18nKey.APPS$PODCAST_LINK_YOUR_ACCOUNT_TO_SYNC_SUBSCRIBED_SHOWS_AND_CONTINUE_} /></EmptyState>
     );
   }
 
@@ -942,9 +916,7 @@ function PodcastLibraryContent({ vm }: PodcastHomeContentProps) {
               <Chip
                 className={vm.sourceFilter === "local" ? "arco-podcast__tab--active" : ""}
                 onClick={() => vm.setSourceFilter("local")}
-              >
-                Local
-              </Chip>
+              ><T k={I18nKey.APPS$PODCAST_LOCAL} /></Chip>
               <Chip
                 className={vm.sourceFilter === "rss" ? "arco-podcast__tab--active" : ""}
                 onClick={() => vm.setSourceFilter("rss")}
@@ -963,11 +935,9 @@ function PodcastLibraryContent({ vm }: PodcastHomeContentProps) {
 
         {isDownloadsView ? (
           <section className="arco-podcast__section">
-            <h2 className="arco-podcast__section-title">Downloaded episodes</h2>
+            <h2 className="arco-podcast__section-title"><T k={I18nKey.APPS$PODCAST_DOWNLOADED_EPISODES} /></h2>
             {vm.visibleEpisodes.length === 0 ? (
-              <p className="arco-podcast__downloads-hint">
-                Episodes from subscribed feeds appear here after sync. Use Settings to add feeds.
-              </p>
+              <p className="arco-podcast__downloads-hint"><T k={I18nKey.APPS$PODCAST_EPISODES_FROM_SUBSCRIBED_FEEDS_APPEAR_HERE_AFTER_SYNC_US} /></p>
             ) : (
               <div className="arco-podcast__episode-list">
                 {vm.visibleEpisodes.map((episode) => (
@@ -988,7 +958,7 @@ function PodcastLibraryContent({ vm }: PodcastHomeContentProps) {
               alt={vm.continueListening.title}
             />
             <div className="arco-podcast__featured-copy">
-              <span className="arco-podcast__featured-label">Continue listening</span>
+              <span className="arco-podcast__featured-label"><T k={I18nKey.APPS$PODCAST_CONTINUE_LISTENING} /></span>
               <h1>{vm.continueListening.title}</h1>
               <p>
                 {vm.continueListening.showTitle} · {vm.continueListening.host}
@@ -998,8 +968,7 @@ function PodcastLibraryContent({ vm }: PodcastHomeContentProps) {
                 className="arco-podcast__play-btn"
                 onClick={() => vm.playEpisode(vm.continueListening!.id, true)}
               >
-                <Play size={18} /> Play
-              </button>
+                <Play size={18} /><T k={I18nKey.APPS$PODCAST_PLAY} /></button>
             </div>
           </section>
         ) : null}
@@ -1007,7 +976,7 @@ function PodcastLibraryContent({ vm }: PodcastHomeContentProps) {
         {!isDownloadsView ? (
           <>
         <section className="arco-podcast__section">
-          <h2 className="arco-podcast__section-title">Your shows</h2>
+          <h2 className="arco-podcast__section-title"><T k={I18nKey.APPS$PODCAST_YOUR_SHOWS} /></h2>
           <div className="arco-podcast__show-grid">
             {vm.shows.map((show) => {
               const showEpisode = vm.visibleEpisodes.find((episode) => episodeBelongsToShow(episode, show));
@@ -1027,8 +996,7 @@ function PodcastLibraryContent({ vm }: PodcastHomeContentProps) {
                   />
                   <h3>{show.title}</h3>
                   <p>
-                    {show.host} · {show.episodeCount} episodes
-                  </p>
+                    {show.host} · {show.episodeCount}<T k={I18nKey.APPS$PODCAST_EPISODES_2} /></p>
                 </button>
               );
             })}
@@ -1036,7 +1004,7 @@ function PodcastLibraryContent({ vm }: PodcastHomeContentProps) {
         </section>
 
         <section className="arco-podcast__section">
-          <h2 className="arco-podcast__section-title">Episodes</h2>
+          <h2 className="arco-podcast__section-title"><T k={I18nKey.APPS$PODCAST_EPISODES} /></h2>
           <div className="arco-podcast__episode-list">
             {vm.visibleEpisodes.map((episode) => (
               <EpisodeRow key={episode.id} {...episodeRowProps(vm, episode)} />
@@ -1051,7 +1019,7 @@ function PodcastLibraryContent({ vm }: PodcastHomeContentProps) {
               className="arco-podcast__remote-link"
               onClick={() => window.open(vm.nowPlaying.episode.listenUrl, "_blank", "noopener,noreferrer")}
             >
-              <ExternalLink size={14} /> Open in {vm.providerLabel}
+              <ExternalLink size={14} /><T k={I18nKey.APPS$PODCAST_OPEN_IN} />{vm.providerLabel}
             </button>
           </section>
         ) : null}

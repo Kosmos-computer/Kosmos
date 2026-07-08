@@ -1,4 +1,8 @@
+import { I18nKey } from "../../../i18n/declaration";
+import i18n from "../../../i18n/index";
+import { T } from "../../../i18n/T";
 import type { SearchKnowledgePanel as SearchKnowledgePanelType } from "./searchTypes";
+import { useTranslation } from "react-i18next";
 
 export interface SearchKnowledgePanelProps {
   panel: SearchKnowledgePanelType;
@@ -6,8 +10,9 @@ export interface SearchKnowledgePanelProps {
 }
 
 export function SearchKnowledgePanel({ panel, onRelatedClick }: SearchKnowledgePanelProps) {
+  const { t } = useTranslation();
   return (
-    <aside className="arco-search-knowledge" aria-label="Knowledge panel">
+    <aside className="arco-search-knowledge" aria-label={i18n.t(I18nKey.COMPONENTS$PATTERNS_KNOWLEDGE_PANEL)}>
       {panel.imageUrl ? (
         <div className="arco-search-knowledge__hero">
           <img src={panel.imageUrl} alt="" />
@@ -29,7 +34,7 @@ export function SearchKnowledgePanel({ panel, onRelatedClick }: SearchKnowledgeP
         ) : null}
         {panel.related && panel.related.length > 0 ? (
           <div className="arco-search-knowledge__related">
-            <h3>People also search for</h3>
+            <h3><T k={I18nKey.COMPONENTS$PATTERNS_PEOPLE_ALSO_SEARCH_FOR} /></h3>
             <ul>
               {panel.related.map((term) => (
                 <li key={term}>

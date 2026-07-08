@@ -1,4 +1,7 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
 import { ChevronRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export interface BreadcrumbItem {
   label: string;
@@ -13,9 +16,10 @@ export interface BreadcrumbProps {
 
 /** Document top bar with breadcrumb trail and optional actions. */
 export function Breadcrumb({ items, actions, collaborators }: BreadcrumbProps) {
+  const { t } = useTranslation();
   return (
     <div className="arco-breadcrumb-bar">
-      <nav className="arco-breadcrumb" aria-label="Breadcrumb">
+      <nav className="arco-breadcrumb" aria-label={i18n.t(I18nKey.COMPONENTS$PATTERNS_BREADCRUMB)}>
         {items.map((item, index) => (
           <span key={`${item.label}-${index}`} className="arco-breadcrumb__segment">
             {index > 0 ? (

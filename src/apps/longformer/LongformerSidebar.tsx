@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import {
   BookOpen,
   Clock,
@@ -49,7 +52,7 @@ export function LongformerSidebar({ vm }: LongformerSidebarProps) {
             </span>
             <div className="arco-longformer-sidebar__brand-body">
               <span className="arco-longformer-sidebar__brand-name">{data.productName}</span>
-              <span className="arco-longformer-sidebar__brand-role">Transcription</span>
+              <span className="arco-longformer-sidebar__brand-role"><T k={I18nKey.APPS$LONGFORMER_TRANSCRIPTION} /></span>
             </div>
           </div>
           <ListSearch
@@ -58,7 +61,7 @@ export function LongformerSidebar({ vm }: LongformerSidebarProps) {
               vm.setSearchQuery(query);
               if (view !== "library") handleViewChange("library");
             }}
-            placeholder="Search transcripts"
+            placeholder={i18n.t(I18nKey.APPS$LONGFORMER_SEARCH_TRANSCRIPTS)}
             ariaLabel="Search transcripts"
             compact
             className="arco-longformer-sidebar__search-field"
@@ -127,17 +130,11 @@ export function LongformerSidebar({ vm }: LongformerSidebarProps) {
           <SidebarUserFooter name={vm.userName} meta={vm.userEmail} />
           <div className="arco-longformer-sidebar__footer-actions">
             <Button type="button" variant="ghost" onClick={uploadFile}>
-              <Upload size={14} strokeWidth={1.75} />
-              Upload
-            </Button>
+              <Upload size={14} strokeWidth={1.75} /><T k={I18nKey.APPS$LONGFORMER_UPLOAD} /></Button>
             <Button type="button" variant="ghost" onClick={openFromMemory}>
-              <Clock size={14} strokeWidth={1.75} />
-              From memory
-            </Button>
+              <Clock size={14} strokeWidth={1.75} /><T k={I18nKey.APPS$LONGFORMER_FROM_MEMORY} /></Button>
             <Button type="button" variant="ghost" onClick={openDemoProject}>
-              <Mic size={14} strokeWidth={1.75} />
-              Demo project
-            </Button>
+              <Mic size={14} strokeWidth={1.75} /><T k={I18nKey.APPS$LONGFORMER_DEMO_PROJECT} /></Button>
           </div>
         </div>
       }

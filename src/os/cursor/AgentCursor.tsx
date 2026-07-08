@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import { T } from "../../i18n/T";
 /**
  * AgentCursor — the visible body of the AI's virtual mouse: a Figma-style
  * labeled pointer rendered above all windows. Pure presentation: position and
@@ -24,7 +26,7 @@ export function AgentCursor() {
       {/* Keyed on clickCount so every click remounts the ripple and replays its animation. */}
       {clickCount > 0 && <span key={clickCount} className="arco-agent-cursor__ripple" />}
       <MousePointer2 className="arco-agent-cursor__pointer" size={20} />
-      <span className="arco-agent-cursor__tag">Arco</span>
+      <span className="arco-agent-cursor__tag"><T k={I18nKey.OS_CURSOR_ARCO} /></span>
     </div>
   );
 }

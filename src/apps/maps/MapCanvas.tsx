@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
 import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -141,5 +143,5 @@ export function MapCanvas({ places, selectedId, onSelectPlace, onViewportChange,
     map.fitBounds(routeLayerRef.current.getBounds(), { padding: [48, 48] });
   }, [route]);
 
-  return <div ref={containerRef} className="arco-maps__canvas" role="application" aria-label="OpenStreetMap" />;
+  return <div ref={containerRef} className="arco-maps__canvas" role="application" aria-label={i18n.t(I18nKey.APPS$MAPS_OPENSTREETMAP)} />;
 }

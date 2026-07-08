@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import { T } from "../../i18n/T";
 import type { ReactNode } from "react";
 
 /** Max-width content column for a settings detail pane. */
@@ -127,7 +129,7 @@ export function SettingsSaveBar({ children, saved }: { children: ReactNode; save
   return (
     <div className="arco-settings-save-bar">
       {children}
-      {saved ? <span className="arco-settings-save-bar__saved">Saved</span> : null}
+      {saved ? <span className="arco-settings-save-bar__saved"><T k={I18nKey.COMPONENTS$PATTERNS_SAVED} /></span> : null}
     </div>
   );
 }

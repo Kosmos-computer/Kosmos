@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { useState } from "react";
 import { ChevronDown, Cloud, HardDrive, Plus, Trash2 } from "lucide-react";
 import { Menu } from "../../components/Menu";
@@ -84,9 +87,9 @@ export function ContactsAccountSwitcher({
   return (
     <>
       <Menu
-        aria-label="Contact accounts"
+        aria-label={i18n.t(I18nKey.APPS$CONTACTS_CONTACT_ACCOUNTS)}
         align="start"
-        searchPlaceholder="Search accounts"
+        searchPlaceholder={i18n.t(I18nKey.APPS$CONTACTS_SEARCH_ACCOUNTS)}
         items={menuItems}
         trigger={
           <button type="button" className="arco-contacts__account-switcher">
@@ -114,25 +117,21 @@ export function ContactsAccountSwitcher({
             <header className="arco-contact-modal__header">
               <div className="arco-contact-modal__title-row">
                 <Plus size={18} aria-hidden />
-                <h2 id="add-account-title">Add on-device account</h2>
+                <h2 id="add-account-title"><T k={I18nKey.APPS$CONTACTS_ADD_ON_DEVICE_ACCOUNT} /></h2>
               </div>
             </header>
             <div className="arco-contact-modal__body">
-              <label className="arco-contact-modal__label" htmlFor="local-account-label">
-                Account name
-              </label>
+              <label className="arco-contact-modal__label" htmlFor="local-account-label"><T k={I18nKey.APPS$CONTACTS_ACCOUNT_NAME} /></label>
               <Input
                 id="local-account-label"
                 value={localLabel}
                 onChange={(event) => setLocalLabel(event.target.value)}
-                placeholder="Family, Side project, …"
+                placeholder={i18n.t(I18nKey.APPS$CONTACTS_FAMILY_SIDE_PROJECT)}
                 autoFocus
               />
             </div>
             <footer className="arco-contact-modal__footer">
-              <Button variant="ghost" onClick={() => setAddOpen(false)}>
-                Cancel
-              </Button>
+              <Button variant="ghost" onClick={() => setAddOpen(false)}><T k={I18nKey.COMMON$CANCEL} /></Button>
               <Button
                 variant="primary"
                 disabled={!localLabel.trim()}
@@ -141,9 +140,7 @@ export function ContactsAccountSwitcher({
                   setLocalLabel("");
                   setAddOpen(false);
                 }}
-              >
-                Add account
-              </Button>
+              ><T k={I18nKey.APPS$CONTACTS_ADD_ACCOUNT} /></Button>
             </footer>
           </div>
         </div>
@@ -161,16 +158,14 @@ export function ContactsAccountSwitcher({
             <header className="arco-contact-modal__header">
               <div className="arco-contact-modal__title-row">
                 <Cloud size={18} aria-hidden />
-                <h2 id="connect-account-title">Connect account</h2>
+                <h2 id="connect-account-title"><T k={I18nKey.APPS$CONTACTS_CONNECT_ACCOUNT} /></h2>
               </div>
             </header>
             <div className="arco-contact-modal__body">
-              <p className="arco-contact-modal__hint">
-                OAuth sync lands later — for now this creates a synced account you can import into.
-              </p>
+              <p className="arco-contact-modal__hint"><T k={I18nKey.APPS$CONTACTS_OAUTH_SYNC_LANDS_LATER_FOR_NOW_THIS_CREATES_A_SYNCED_ACC} /></p>
               <section className="arco-contact-modal__section">
-                <span className="arco-contact-modal__label">Provider</span>
-                <div className="arco-contact-modal__chips" role="listbox" aria-label="Contact providers">
+                <span className="arco-contact-modal__label"><T k={I18nKey.APPS$CONTACTS_PROVIDER} /></span>
+                <div className="arco-contact-modal__chips" role="listbox" aria-label={i18n.t(I18nKey.APPS$CONTACTS_CONTACT_PROVIDERS)}>
                   {SYNC_KINDS.map((kind) => (
                     <button
                       key={kind}
@@ -186,22 +181,18 @@ export function ContactsAccountSwitcher({
                 </div>
               </section>
               <section className="arco-contact-modal__section">
-                <label className="arco-contact-modal__label" htmlFor="connect-account-email">
-                  Account email (optional)
-                </label>
+                <label className="arco-contact-modal__label" htmlFor="connect-account-email"><T k={I18nKey.APPS$CONTACTS_ACCOUNT_EMAIL_OPTIONAL} /></label>
                 <Input
                   id="connect-account-email"
                   type="email"
                   value={connectEmail}
                   onChange={(event) => setConnectEmail(event.target.value)}
-                  placeholder="you@example.com"
+                  placeholder={i18n.t(I18nKey.APPS$CONTACTS_YOU_EXAMPLE_COM)}
                 />
               </section>
             </div>
             <footer className="arco-contact-modal__footer">
-              <Button variant="ghost" onClick={() => setConnectOpen(false)}>
-                Cancel
-              </Button>
+              <Button variant="ghost" onClick={() => setConnectOpen(false)}><T k={I18nKey.COMMON$CANCEL} /></Button>
               <Button
                 variant="primary"
                 onClick={() => {
@@ -210,9 +201,7 @@ export function ContactsAccountSwitcher({
                   setConnectEmail("");
                   setConnectOpen(false);
                 }}
-              >
-                Connect
-              </Button>
+              ><T k={I18nKey.COMMON$CONNECT} /></Button>
             </footer>
           </div>
         </div>

@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import { T } from "../../i18n/T";
 import type { ReactNode } from "react";
 import { Loader2, Sparkles } from "lucide-react";
 import { Button } from "../../components/ui";
@@ -32,15 +34,11 @@ export function ArtifactPageLayout({
         </div>
         <div className="arco-longformer-asset-page__actions">
           {onCopy ? (
-            <Button type="button" variant="default" onClick={onCopy}>
-              Copy all
-            </Button>
+            <Button type="button" variant="default" onClick={onCopy}><T k={I18nKey.APPS$LONGFORMER_COPY_ALL} /></Button>
           ) : null}
           {artifactKind && onGenerate ? (
             <Button type="button" variant="primary" disabled={generating} onClick={onGenerate}>
-              {generating ? <Loader2 size={14} className="arco-longformer-asset-page__spin" /> : <Sparkles size={14} />}
-              Regenerate
-            </Button>
+              {generating ? <Loader2 size={14} className="arco-longformer-asset-page__spin" /> : <Sparkles size={14} />}<T k={I18nKey.APPS$LONGFORMER_REGENERATE} /></Button>
           ) : null}
         </div>
       </header>

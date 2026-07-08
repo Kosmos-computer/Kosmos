@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { useMemo, useState } from "react";
 import {
   RichEditor,
@@ -113,9 +116,7 @@ export function NoteRichEditor({
             onStop={aiAssist.stop}
             onClose={aiAssist.closeComposer}
           />
-          <p className="arco-notes__editor-hint">
-            Type <kbd>/</kbd> for blocks · <kbd>Mic</kbd> to dictate · select text for formatting, AI, or read aloud
-          </p>
+          <p className="arco-notes__editor-hint"><T k={I18nKey.APPS$NOTES_TYPE} /><kbd>/</kbd><T k={I18nKey.APPS$NOTES_FOR_BLOCKS} /><kbd><T k={I18nKey.APPS$NOTES_MIC} /></kbd><T k={I18nKey.APPS$NOTES_TO_DICTATE_SELECT_TEXT_FOR_FORMATTING_AI_OR_READ_ALOUD} /></p>
         </div>
       ) : null}
       <div className="arco-notes__editor-surface">
@@ -127,7 +128,7 @@ export function NoteRichEditor({
           slashCommands={viewMode === "edit"}
           bubbleMenu={viewMode === "edit"}
           bubbleMenuActions={viewMode === "edit" ? bubbleMenuActions : undefined}
-          placeholder="Start writing, or type / for blocks…"
+          placeholder={i18n.t(I18nKey.APPS$NOTES_START_WRITING_OR_TYPE_FOR_BLOCKS)}
           className="arco-notes__editor-content"
           contentClassName="arco-notes__editor-content"
           prosemirrorClassName={prosemirrorClass}

@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { useEffect, useMemo, useState } from "react";
 import { Plug, X } from "lucide-react";
 import type { PaymentProviderId } from "@shared/payments";
@@ -81,26 +84,26 @@ export function ConnectPaymentModal({ open, onClose, initialProvider, onConnect 
         <header className="arco-connect-modal__header">
           <div className="arco-connect-modal__title-row">
             <Plug size={18} aria-hidden />
-            <h2 id="connect-payment-title">Connect payment method</h2>
+            <h2 id="connect-payment-title"><T k={I18nKey.APPS$PAY_CONNECT_PAYMENT_METHOD} /></h2>
           </div>
-          <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onClose} aria-label="Close">
+          <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onClose} aria-label={i18n.t(I18nKey.COMMON$CLOSE)}>
             <X size={16} />
           </button>
         </header>
 
         <div className="arco-connect-modal__body">
           <section className="arco-connect-modal__section">
-            <h3 className="arco-connect-modal__label">Provider</h3>
+            <h3 className="arco-connect-modal__label"><T k={I18nKey.APPS$PAY_PROVIDER} /></h3>
             <ListSearch
               value={providerSearch}
               onChange={setProviderSearch}
-              placeholder="Search payment providers"
+              placeholder={i18n.t(I18nKey.APPS$PAY_SEARCH_PAYMENT_PROVIDERS)}
               ariaLabel="Search payment providers"
               compact
             />
-            <div className="arco-connect-modal__chips" role="listbox" aria-label="Payment providers">
+            <div className="arco-connect-modal__chips" role="listbox" aria-label={i18n.t(I18nKey.APPS$PAY_PAYMENT_PROVIDERS)}>
               {filteredProviders.length === 0 ? (
-                <p className="arco-connect-modal__empty">No providers match your search</p>
+                <p className="arco-connect-modal__empty"><T k={I18nKey.APPS$PAY_NO_PROVIDERS_MATCH_YOUR_SEARCH} /></p>
               ) : null}
               {filteredProviders.map((option) => (
                 <Chip
@@ -118,8 +121,7 @@ export function ConnectPaymentModal({ open, onClose, initialProvider, onConnect 
               ))}
             </div>
             <p className="arco-connect-modal__hint">{preset.hint}</p>
-            <p className="arco-pay-connect__mode">
-              Connect mode: <strong>{preset.connectMode.replace("_", " ")}</strong>
+            <p className="arco-pay-connect__mode"><T k={I18nKey.APPS$PAY_CONNECT_MODE} /><strong>{preset.connectMode.replace("_", " ")}</strong>
             </p>
           </section>
 
@@ -140,15 +142,11 @@ export function ConnectPaymentModal({ open, onClose, initialProvider, onConnect 
             </section>
           ))}
 
-          <p className="arco-connect-modal__hint">
-            Stub only — production wiring uses OAuth redirects, Stripe Connect, Plaid Link, and a server-side vault.
-          </p>
+          <p className="arco-connect-modal__hint"><T k={I18nKey.APPS$PAY_STUB_ONLY_PRODUCTION_WIRING_USES_OAUTH_REDIRECTS_STRIPE_} /></p>
         </div>
 
         <footer className="arco-connect-modal__footer">
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
+          <Button variant="ghost" onClick={onClose}><T k={I18nKey.COMMON$CANCEL} /></Button>
           <Button variant="primary" onClick={handleSave} disabled={!canSave || saving}>
             {saving ? "Connecting…" : "Connect"}
           </Button>

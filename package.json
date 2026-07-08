@@ -38,6 +38,7 @@
     "lint": "eslint src",
     "make-i18n": "node scripts/make-i18n-translations.cjs",
     "check-translation-completeness": "node scripts/check-translation-completeness.cjs",
+    "i18n:migrate": "node scripts/i18n-bulk-migrate.cjs --write && node scripts/i18n-migrate-props.cjs && node scripts/i18n-fix-imports.cjs && node scripts/i18n-normalize.cjs && node scripts/i18n-clean-stale-hooks.cjs && npm run make-i18n",
     "test": "tsx --test server/automations/*.test.ts server/stores/automationStore.test.ts"
   },
   "dependencies": {
@@ -67,6 +68,7 @@
     "react-i18next": "^17.0.8",
     "react-markdown": "^10.1.0",
     "react-pdf": "^10.4.1",
+    "react-router-dom": "^7.18.1",
     "remark-gfm": "^4.0.1",
     "zod": "^4.0.0",
     "zustand": "^4.5.5"

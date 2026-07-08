@@ -1,3 +1,5 @@
+import { I18nKey } from "../i18n/declaration";
+import { T } from "../i18n/T";
 /**
  * Menu — the shell's generic dropdown primitive. Arco previously hand-rolled
  * every dropdown (ProjectPicker); this standardizes the pattern: a trigger
@@ -150,7 +152,7 @@ export function Menu({
           ) : null}
           <div className="arco-menu__items">
             {visibleItems.length === 0 ? (
-              <div className="arco-menu__empty">No matches</div>
+              <div className="arco-menu__empty"><T k={I18nKey.COMPONENTS$MENU_NO_MATCHES} /></div>
             ) : (
               visibleItems.map((item) => <MenuRow key={item.id} item={item} onClose={close} />)
             )}

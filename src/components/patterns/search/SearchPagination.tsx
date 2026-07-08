@@ -1,3 +1,7 @@
+import { I18nKey } from "../../../i18n/declaration";
+import i18n from "../../../i18n/index";
+import { T } from "../../../i18n/T";
+import { useTranslation } from "react-i18next";
 export interface SearchPaginationProps {
   page: number;
   totalPages: number;
@@ -5,15 +9,14 @@ export interface SearchPaginationProps {
 }
 
 export function SearchPagination({ page, totalPages, onPageChange }: SearchPaginationProps) {
+  const { t } = useTranslation();
   if (totalPages <= 1) return null;
 
   const pages = Array.from({ length: Math.min(totalPages, 10) }, (_, i) => i + 1);
 
   return (
-    <nav className="arco-search-pagination" aria-label="Search results pages">
-      <button type="button" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
-        Previous
-      </button>
+    <nav className="arco-search-pagination" aria-label={i18n.t(I18nKey.COMPONENTS$PATTERNS_SEARCH_RESULTS_PAGES)}>
+      <button type="button" disabled={page <= 1} onClick={() => onPageChange(page - 1)}><T k={I18nKey.COMMON$PREVIOUS} /></button>
       <ol>
         {pages.map((n) => (
           <li key={n}>
@@ -28,9 +31,7 @@ export function SearchPagination({ page, totalPages, onPageChange }: SearchPagin
           </li>
         ))}
       </ol>
-      <button type="button" disabled={page >= totalPages} onClick={() => onPageChange(page + 1)}>
-        Next
-      </button>
+      <button type="button" disabled={page >= totalPages} onClick={() => onPageChange(page + 1)}><T k={I18nKey.COMMON$NEXT} /></button>
     </nav>
   );
 }

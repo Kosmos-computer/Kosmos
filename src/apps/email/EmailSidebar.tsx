@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import { T } from "../../i18n/T";
 import { Archive, Inbox, LogOut, Plug, Send, Trash2 } from "lucide-react";
 import { Button } from "../../components/ui";
 import { NavSidebar, SidebarUserFooter } from "../../components/patterns";
@@ -56,14 +58,10 @@ export function EmailSidebar({
         <div className="arco-email__sidebar-footer">
           {isConnected ? (
             <Button variant="ghost" onClick={onDisconnect} className="arco-email__disconnect">
-              <LogOut size={14} />
-              Disconnect
-            </Button>
+              <LogOut size={14} /><T k={I18nKey.COMMON$DISCONNECT} /></Button>
           ) : (
             <Button variant="primary" onClick={onConnect} disabled={!oauthConfigured} className="arco-email__connect-btn">
-              <Plug size={14} />
-              Connect Gmail
-            </Button>
+              <Plug size={14} /><T k={I18nKey.APPS$EMAIL_CONNECT_GMAIL} /></Button>
           )}
           <SidebarUserFooter name={userName} meta={userEmail} />
         </div>

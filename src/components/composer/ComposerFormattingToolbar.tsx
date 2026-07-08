@@ -1,8 +1,11 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
 /**
  * ComposerFormattingToolbar — Slack-style text formatting row docked to the
  * top edge of the composer card. Unlike the design reference (visual-only),
  * every button applies real Markdown to the textarea selection.
  */
+import { useTranslation } from "react-i18next";
 import {
   Bold,
   Code,
@@ -33,8 +36,9 @@ export interface ComposerFormattingToolbarProps {
 }
 
 export function ComposerFormattingToolbar({ onFormat }: ComposerFormattingToolbarProps) {
+  const { t } = useTranslation();
   return (
-    <div className="arco-composer__toolbar" role="toolbar" aria-label="Text formatting">
+    <div className="arco-composer__toolbar" role="toolbar" aria-label={i18n.t(I18nKey.COMPONENTS$COMPOSER_TEXT_FORMATTING)}>
       {FORMAT_BUTTONS.map(({ format, label, icon: Icon }) => (
         <button
           key={format}

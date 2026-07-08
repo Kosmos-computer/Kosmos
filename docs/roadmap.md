@@ -23,6 +23,7 @@
 | **App platform Phase 1** — manifest, grants, bridge, AppHost, app-sdk | Done | `server/platform/`, `packages/app-sdk/` |
 | **App platform Phase 2 (pilot)** — `os.calendar@1` contract, calendar service, `core.calendar` Tier-3 app | Done (partially — see gaps) | `shared/capabilities/calendar.ts`, `apps/calendar/` |
 | **Agent extensibility Phases A–E** — tool registry, policy store, audit API, MCP client (stdio/http/sse + supervisor), skills (+gating), app tool contributions, outward MCP server, ACP client | **All done** | commits `312cdd1`…`96d578e`; `server/agent/toolRegistry.ts`, `server/mcp/`, `server/skills/`, `server/acp/` |
+| **UI i18n (infrastructure)** — react-i18next, typed keys, Settings locale, ESLint, bulk JSX migration | Done (content in progress) | `src/i18n/`, `docs/i18n.md`; Automations fully translated; ~1.3k placeholder keys remain |
 
 ### Built but uncommitted (working tree, 2026-07-05)
 
@@ -63,6 +64,7 @@ resolves each.
 | S2 | **`os.voice@1`** — types exist in `shared/capabilities/voice.ts` but the contract is not in the `CONTRACTS` registry; voice bypasses the bridge | `server/capabilities/registry.ts` | Phase 0 (register it, even as metadata-only) |
 | S3 | **Capability registry can't host app providers** — `setProvider()` throws for anything non-`system`, so "swappable providers" is UI-only | `server/capabilities/registry.ts` | Phase 6 (app-platform Phase 2 completion) |
 | S4 | **Context meter** — client-side ~4 chars/token estimate, no server truth | `src/apps/studio/` | Backlog |
+| S5 | **i18n translation content** — keys exist for most UI strings but ~1.3k still copy English into every locale; catalog/stub data patterns vary by app | `src/i18n/translation.json`, `docs/i18n.md` | App-by-app patches (Automations done); tighten `check-translation-completeness` when complete |
 
 ### Intentional parallels (do NOT unify)
 

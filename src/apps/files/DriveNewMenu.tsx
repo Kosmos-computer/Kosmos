@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import {
   CalendarDays,
   CheckSquare,
@@ -32,14 +35,12 @@ export function DriveNewMenu({ onCreate }: { onCreate: (type: DriveNewItemType) 
   return (
     <Menu
       className="arco-drive-new-menu"
-      aria-label="Create new"
+      aria-label={i18n.t(I18nKey.APPS$FILES_CREATE_NEW)}
       align="start"
       items={items}
       trigger={
         <button type="button" className="arco-btn arco-nav-sidebar__primary arco-drive-new-menu__trigger">
-          <Plus size={15} strokeWidth={1.75} />
-          New
-          <ChevronDown size={14} className="arco-drive-new-menu__chevron" aria-hidden="true" />
+          <Plus size={15} strokeWidth={1.75} /><T k={I18nKey.APPS$FILES_NEW} /><ChevronDown size={14} className="arco-drive-new-menu__chevron" aria-hidden="true" />
         </button>
       }
     />

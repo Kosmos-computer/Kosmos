@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 /**
  * The Chat app — the OS's front door. Calm-Console shaped: prose first,
  * tool activity as compact metadata cards, inline generative UI rendered
@@ -53,7 +56,7 @@ export function ChatApp() {
 
   const sessionList = (
     <>
-      {chat.sessions.length === 0 && <EmptyState>No sessions yet</EmptyState>}
+      {chat.sessions.length === 0 && <EmptyState><T k={I18nKey.APPS$CHAT_NO_SESSIONS_YET} /></EmptyState>}
       {chat.sessions.map((s) => (
         <div
           key={s.id}
@@ -94,11 +97,9 @@ export function ChatApp() {
           onClick={() => setShowSessions((v) => !v)}
           aria-pressed={showSessions}
         >
-          <History size={13} /> History
-        </button>
+          <History size={13} /><T k={I18nKey.APPS$CHAT_HISTORY} /></button>
         <button className="arco-btn" onClick={chat.newChat}>
-          <Plus size={13} /> New
-        </button>
+          <Plus size={13} /><T k={I18nKey.APPS$CHAT_NEW} /></button>
       </div>
 
       <MasterDetail
@@ -115,9 +116,7 @@ export function ChatApp() {
           >
             {voice.active && <VoiceBar voice={voice} placement="thread" />}
             {chat.items.length === 0 && (
-              <EmptyState title="Ask Arco to build something">
-                “Build me a system monitor” · “Track my reading list” · “Dashboard of this repo”
-              </EmptyState>
+              <EmptyState title={i18n.t(I18nKey.APPS$CHAT_ASK_ARCO_TO_BUILD_SOMETHING)}><T k={I18nKey.APPS$CHAT_BUILD_ME_A_SYSTEM_MONITOR_TRACK_MY_READING_LIST_DASHBOAR} /></EmptyState>
             )}
             <ChatThread
               items={chat.items}
@@ -138,7 +137,7 @@ export function ChatApp() {
           onSubmit={() => submit()}
           streaming={chat.streaming}
           onStop={chat.stop}
-          placeholder="Ask Arco to build, automate, or explain…"
+          placeholder={i18n.t(I18nKey.APPS$CHAT_ASK_ARCO_TO_BUILD_AUTOMATE_OR_EXPLAIN)}
           model={modelLabel}
           modelItems={modelItems}
           voiceActive={voice.active}

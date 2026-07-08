@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import { T } from "../../i18n/T";
 import {
   Clock,
   Folder,
@@ -59,15 +61,12 @@ export function FilesSidebar({
       footer={
         <div className="arco-drive-sidebar__storage">
           <div className="arco-drive-sidebar__storage-label">
-            <Globe size={14} strokeWidth={1.75} />
-            Storage
-          </div>
+            <Globe size={14} strokeWidth={1.75} /><T k={I18nKey.APPS$FILES_STORAGE} /></div>
           <div className="arco-drive-sidebar__storage-meter" aria-hidden="true">
             <span className="arco-drive-sidebar__storage-fill" style={{ width: `${usedPercent}%` }} />
           </div>
           <div className="arco-drive-sidebar__storage-meta">
-            {storageUsedLabel} of {storageTotalLabel} used
-          </div>
+            {storageUsedLabel}<T k={I18nKey.APPS$FILES_OF} />{storageTotalLabel}<T k={I18nKey.APPS$FILES_USED} /></div>
         </div>
       }
     />

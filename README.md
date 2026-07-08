@@ -22,6 +22,7 @@ A generative AI operating system prototype. A desktop shell in the browser where
 - **Studio** — coding workspace with file browser, git diffs, integrated terminal, live browser preview, and model selection wired to the hub.
 - **Agent extensibility** — dynamic tool registry with per-tool policy (auto / confirm / deny), MCP client (connect external servers) and outward MCP server (expose Arco intents to other agents), installable skills, and ACP/Cursor agent backends.
 - **Desktop app** — Electron wrapper bundles the server + UI into a native macOS/Windows app. Dev: `npm run desktop:dev:all`. Production build: `npm run dist:desktop`.
+- **Localization** — UI copy in five languages (en, es, de, ja, zh-CN), selectable in Settings. See [`docs/i18n.md`](docs/i18n.md) for patterns, scripts, and translation status.
 
 ## Quick start
 
@@ -161,4 +162,6 @@ for engine swapping.
 | `npm run menubar-tasks` | Build and open the menu bar tasks app (macOS 13+) |
 | `npm run models` | Launch the Arco Models manager (Tauri) |
 | `npm run typecheck` | Typecheck client and server configs |
+| `npm run make-i18n` | Regenerate locale bundles and `I18nKey` enum from `translation.json` |
+| `npm run check-translation-completeness` | Verify all keys exist in every language; warn on untranslated placeholders |
 | `npm run generate` | Regenerate prompts/schema after upgrading OpenUI packages |

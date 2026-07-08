@@ -1,4 +1,7 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { Search, X } from "lucide-react";
 import { Input } from "../ui/Input";
 
@@ -17,17 +20,25 @@ export function ModuleInner({ children }: { children: ReactNode }) {
 export function ModuleHeader({
   title,
   subtitle,
+  titleKey,
+  subtitleKey,
   actions,
 }: {
-  title: string;
+  title?: string;
   subtitle?: string;
+  titleKey?: I18nKey;
+  subtitleKey?: I18nKey;
   actions?: ReactNode;
 }) {
+  const { t } = useTranslation();
+  const resolvedTitle = titleKey ? t(titleKey) : title;
+  const resolvedSubtitle = subtitleKey ? t(subtitleKey) : subtitle;
+
   return (
     <header className="arco-module__header">
       <div className="arco-module__headcopy">
-        <h1 className="arco-module__title">{title}</h1>
-        {subtitle ? <p className="arco-module__subtitle">{subtitle}</p> : null}
+        <h1 className="arco-module__title">{resolvedTitle}</h1>
+        {resolvedSubtitle ? <p className="arco-module__subtitle">{resolvedSubtitle}</p> : null}
       </div>
       {actions}
     </header>
@@ -60,7 +71,7 @@ export function ModuleToolbar({
           <button
             type="button"
             className="arco-btn arco-btn--icon"
-            aria-label="Clear search"
+            aria-label={i18n.t(I18nKey.APPS$MAPS_CLEAR_SEARCH)}
             onClick={() => onSearchChange("")}
           >
             <X size={14} />
@@ -74,18 +85,22 @@ export function ModuleToolbar({
 
 export function ModuleSection({
   title,
+  titleKey,
   count,
   children,
 }: {
-  title: string;
+  title?: string;
+  titleKey?: I18nKey;
   count: number;
   children: ReactNode;
 }) {
+  const { t } = useTranslation();
   if (count === 0) return null;
+  const resolvedTitle = titleKey ? t(titleKey) : title;
   return (
     <section className="arco-module__section">
       <div className="arco-module__sectionhead">
-        <h2 className="arco-module__sectiontitle">{title}</h2>
+        <h2 className="arco-module__sectiontitle">{resolvedTitle}</h2>
         <span className="arco-module__count">{count}</span>
       </div>
       {children}

@@ -11,20 +11,20 @@ import { useWindowStore } from "./windowStore";
 import { SYSTEM_APPS } from "./systemApps";
 import { executeCursorCommand } from "./cursor/uiDriver";
 import { publishAppEvent } from "./appEventBus";
+import { openShellWindow } from "./shellNavigation";
 import { useStudioStore } from "../apps/studio/studioStore";
 import { systemAppTitle } from "./systemAppTitles";
 
 /** Open any resolved app id — system, generated, or installed. */
 function openAppById(appId: string): void {
   const os = useOsStore.getState();
-  const wm = useWindowStore.getState();
   const wanted = appId.trim();
   const lower = wanted.toLowerCase();
 
   const systemId = resolveSystemAppId(wanted);
   const sys = systemId ? SYSTEM_APPS.find((a) => a.id === systemId) : undefined;
   if (sys) {
-    wm.open({ type: "system", app: sys.id }, systemAppTitle(sys.id));
+    openShellWindow({ type: "system", app: sys.id }, systemAppTitle(sys.id));
     return;
   }
 
@@ -35,7 +35,7 @@ function openAppById(appId: string): void {
       state.apps.find((a) => a.title.toLowerCase() === lower) ??
       state.apps.find((a) => a.title.toLowerCase().includes(lower));
     if (generated) {
-      wm.open({ type: "generated", appId: generated.id }, generated.title);
+      openShellWindow({ type: "generated", appId: generated.id }, generated.title);
       return;
     }
     const installed =
@@ -43,7 +43,7 @@ function openAppById(appId: string): void {
       state.installedApps.find((a) => a.manifest.name.toLowerCase() === lower) ??
       state.installedApps.find((a) => a.manifest.name.toLowerCase().includes(lower));
     if (installed?.enabled) {
-      wm.open({ type: "installed", appId: installed.manifest.id }, installed.manifest.name);
+      openShellWindow({ type: "installed", appId: installed.manifest.id }, installed.manifest.name);
     }
   });
 }
@@ -96,7 +96,7 @@ export function handleShellEvent(event: AgentEvent): void {
         // circular-import TDZ crash (systemApps → app components → osActions).
         const def = SYSTEM_APPS.find((a) => a.id === action.app);
         if (def) {
-          wm.open({ type: "system", app: def.id }, systemAppTitle(def.id));
+          openShellWindow({ type: "system", app: def.id }, systemAppTitle(def.id));
         } else {
           // Older callers may still send open_system for installed apps like
           // "docs" — treat the id as an open_app target instead of no-op'ing.
@@ -121,7 +121,7 @@ export function handleShellEvent(event: AgentEvent): void {
       } else if (action.action === "open_workspace_tab") {
         // Tab/path state was already set by the studio store's ingest above;
         // here we just make sure the Studio window is visible.
-        wm.open({ type: "system", app: "studio" }, systemAppTitle("studio"));
+        openShellWindow({ type: "system", app: "studio" }, systemAppTitle("studio"));
       }
       break;
     }

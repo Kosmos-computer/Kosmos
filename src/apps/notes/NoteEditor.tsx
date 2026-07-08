@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { useEffect, useState } from "react";
 import { ChevronLeft, Code2, Eye, PanelRight, Pencil } from "lucide-react";
 import { Avatar, Chip, Input } from "../../components/ui";
@@ -83,7 +86,7 @@ export function NoteEditor({
             <Input
               className="arco-notes__title-input"
               value={note.title}
-              aria-label="Note title"
+              aria-label={i18n.t(I18nKey.APPS$NOTES_NOTE_TITLE)}
               readOnly={viewMode !== "edit"}
               onChange={(event) => onTitleChange(event.target.value)}
             />
@@ -96,16 +99,13 @@ export function NoteEditor({
                 ))}
               </div>
             ) : null}
-            <div className="arco-notes__view-toggle arco-chip-row" role="group" aria-label="Note view mode">
+            <div className="arco-notes__view-toggle arco-chip-row" role="group" aria-label={i18n.t(I18nKey.APPS$NOTES_NOTE_VIEW_MODE)}>
               <Chip active={viewMode === "edit"} onClick={() => setViewMode("edit")}>
-                <Pencil size={12} aria-hidden="true" /> Edit
-              </Chip>
+                <Pencil size={12} aria-hidden="true" /><T k={I18nKey.COMMON$EDIT} /></Chip>
               <Chip active={viewMode === "preview"} onClick={() => setViewMode("preview")}>
-                <Eye size={12} aria-hidden="true" /> Preview
-              </Chip>
+                <Eye size={12} aria-hidden="true" /><T k={I18nKey.APPS$NOTES_PREVIEW} /></Chip>
               <Chip active={viewMode === "code"} onClick={() => setViewMode("code")}>
-                <Code2 size={12} aria-hidden="true" /> Code
-              </Chip>
+                <Code2 size={12} aria-hidden="true" /><T k={I18nKey.APPS$NOTES_CODE} /></Chip>
             </div>
             <NoteRichEditor
               noteId={note.id}
@@ -117,18 +117,18 @@ export function NoteEditor({
               <footer className="arco-notes__meta">
                 {backlinkCount > 0 ? (
                   <span>
-                    {backlinkCount} backlink{backlinkCount === 1 ? "" : "s"}
+                    {backlinkCount}<T k={I18nKey.APPS$NOTES_BACKLINK} />{backlinkCount === 1 ? "" : "s"}
                   </span>
                 ) : null}
                 {backlinkCount > 0 && wordCount > 0 ? <span aria-hidden="true"> · </span> : null}
-                {wordCount > 0 ? <span>{wordCount} words</span> : null}
+                {wordCount > 0 ? <span>{wordCount}<T k={I18nKey.APPS$NOTES_WORDS} /></span> : null}
               </footer>
             )}
           </article>
         </div>
 
         {canvasOpen ? (
-          <aside className="arco-notes__canvas-pane" aria-label="Note context canvas">
+          <aside className="arco-notes__canvas-pane" aria-label={i18n.t(I18nKey.APPS$NOTES_NOTE_CONTEXT_CANVAS)}>
             <NotesCanvasStub noteTitle={note.title} onCollapse={onToggleCanvas} />
           </aside>
         ) : (
@@ -136,11 +136,11 @@ export function NoteEditor({
             type="button"
             className="arco-notes__canvas-reveal"
             aria-expanded={false}
-            title="Show context canvas"
+            title={i18n.t(I18nKey.APPS$NOTES_SHOW_CONTEXT_CANVAS)}
             onClick={onToggleCanvas}
           >
             <ChevronLeft size={14} strokeWidth={1.75} aria-hidden="true" />
-            <span>Canvas</span>
+            <span><T k={I18nKey.APPS$NOTES_CANVAS} /></span>
           </button>
         )}
       </div>

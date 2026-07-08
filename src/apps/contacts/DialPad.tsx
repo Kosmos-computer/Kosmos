@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { Delete, Phone } from "lucide-react";
 import { Button } from "../../components/ui";
 import { DIAL_PAD_KEYS, DIAL_PAD_LETTERS, type DialPadKey } from "./types";
@@ -31,13 +34,11 @@ export function DialPad({
         )}
       </div>
       <div className="arco-dial-pad__actions">
-        <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onBackspace} aria-label="Backspace">
+        <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onBackspace} aria-label={i18n.t(I18nKey.APPS$CONTACTS_BACKSPACE)}>
           <Delete size={16} />
         </button>
         <Button variant="primary" onClick={onCall}>
-          <Phone size={15} />
-          Call
-        </Button>
+          <Phone size={15} /><T k={I18nKey.APPS$CONTACTS_CALL} /></Button>
       </div>
     </div>
   );

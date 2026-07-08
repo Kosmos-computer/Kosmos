@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { useEffect, useState } from "react";
 import { Search, X } from "lucide-react";
 import { formatMoney, parseAmountToCents } from "@shared/payments";
@@ -63,9 +66,9 @@ export function SendMoneyModal({ open, onClose, provider, recipients, busy, onSe
       >
         <header className="arco-connect-modal__header">
           <div className="arco-connect-modal__title-row">
-            <h2 id="send-money-title">Send money</h2>
+            <h2 id="send-money-title"><T k={I18nKey.APPS$PAY_SEND_MONEY} /></h2>
           </div>
-          <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onClose} aria-label="Close">
+          <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onClose} aria-label={i18n.t(I18nKey.COMMON$CLOSE)}>
             <X size={16} />
           </button>
         </header>
@@ -76,38 +79,35 @@ export function SendMoneyModal({ open, onClose, provider, recipients, busy, onSe
             <Input
               value={amount}
               onChange={(event) => setAmount(event.target.value)}
-              placeholder="0.00"
-              aria-label="Amount"
+              placeholder={i18n.t(I18nKey.APPS$PAY_0_00)}
+              aria-label={i18n.t(I18nKey.APPS$PAY_AMOUNT)}
               inputMode="decimal"
             />
           </div>
           {amountCents !== null ? (
-            <p className="arco-pay-action-modal__preview">
-              You will send {formatMoney({ cents: amountCents, currency: "usd" })} via {provider}
+            <p className="arco-pay-action-modal__preview"><T k={I18nKey.APPS$PAY_YOU_WILL_SEND} />{formatMoney({ cents: amountCents, currency: "usd" })}<T k={I18nKey.APPS$PAY_VIA} />{provider}
             </p>
           ) : null}
 
           <section className="arco-connect-modal__section">
-            <label className="arco-connect-modal__label" htmlFor="send-note">
-              What&apos;s it for?
-            </label>
+            <label className="arco-connect-modal__label" htmlFor="send-note"><T k={I18nKey.APPS$PAY_WHAT_APOS_S_IT_FOR} /></label>
             <Input
               id="send-note"
               value={note}
               onChange={(event) => setNote(event.target.value)}
-              placeholder="Dinner, rent, thanks!"
+              placeholder={i18n.t(I18nKey.APPS$PAY_DINNER_RENT_THANKS)}
             />
           </section>
 
           <section className="arco-connect-modal__section">
-            <label className="arco-connect-modal__label">To</label>
+            <label className="arco-connect-modal__label"><T k={I18nKey.APPS$PAY_TO} /></label>
             <div className="arco-pay-action-modal__search">
               <Search size={14} className="arco-icon--tertiary" />
               <Input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search name, @handle, email"
-                aria-label="Search recipients"
+                placeholder={i18n.t(I18nKey.APPS$PAY_SEARCH_NAME_HANDLE_EMAIL)}
+                aria-label={i18n.t(I18nKey.APPS$PAY_SEARCH_RECIPIENTS)}
                 width="auto"
               />
             </div>
@@ -132,9 +132,7 @@ export function SendMoneyModal({ open, onClose, provider, recipients, busy, onSe
         </div>
 
         <footer className="arco-connect-modal__footer">
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
+          <Button variant="ghost" onClick={onClose}><T k={I18nKey.COMMON$CANCEL} /></Button>
           <Button variant="primary" onClick={handleSend} disabled={!canSend || busy}>
             {busy ? "Sending…" : "Send"}
           </Button>

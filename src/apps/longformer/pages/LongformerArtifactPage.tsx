@@ -1,3 +1,5 @@
+import { I18nKey } from "../../../i18n/declaration";
+import { T } from "../../../i18n/T";
 import { ArtifactPageLayout } from "../ArtifactPageLayout";
 import type { LongformerViewModel } from "../longformerStore";
 import type { ArtifactKind, TranscriptDetail } from "../types";
@@ -71,9 +73,7 @@ export function LongformerArtifactPage({ vm, detail, view }: LongformerArtifactP
           <pre className="arco-longformer-asset-page__content">{artifact.content}</pre>
         </article>
       ) : (
-        <p className="arco-longformer-asset-page__empty">
-          No {meta.title.toLowerCase()} generated yet. Click Regenerate to create from your transcript.
-        </p>
+        <p className="arco-longformer-asset-page__empty"><T k={I18nKey.COMMON$NO} />{meta.title.toLowerCase()}<T k={I18nKey.APPS$LONGFORMER_GENERATED_YET_CLICK_REGENERATE_TO_CREATE_FROM_YOUR_TRANS} /></p>
       )}
     </ArtifactPageLayout>
   );

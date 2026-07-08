@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 /**
  * Settings → External access — Arco as an MCP server.
  */
@@ -73,14 +76,12 @@ export function ExternalAccessSection() {
     <SettingsPage>
       <SettingsSection
         intro={
-          <>
-            Let external agents (e.g. Claude Desktop) call this system&apos;s capabilities as MCP tools. Endpoint:{" "}
-            <code>POST {window.location.origin}/mcp</code> with a bearer token from below.
-          </>
+          <><T k={I18nKey.APPS$SETTINGS_LET_EXTERNAL_AGENTS_E_G_CLAUDE_DESKTOP_CALL_THIS_SYSTEM_} />{" "}
+            <code>POST {window.location.origin}<T k={I18nKey.APPS$SETTINGS_MCP} /></code><T k={I18nKey.APPS$SETTINGS_WITH_A_BEARER_TOKEN_FROM_BELOW} /></>
         }
       >
         <SettingsStack>
-          <SettingsFieldRow label="Server">
+          <SettingsFieldRow label={i18n.t(I18nKey.APPS$SETTINGS_SERVER)}>
             <Globe size={14} className="arco-icon arco-icon--secondary" />
             <Chip active={info.enabled} onClick={() => void toggleMaster(!info.enabled)} aria-pressed={info.enabled}>
               {info.enabled ? "enabled" : "disabled"}
@@ -91,7 +92,7 @@ export function ExternalAccessSection() {
         {error ? <SettingsAlert tone="error">{error}</SettingsAlert> : null}
 
         {info.clients.length === 0 ? (
-          <SettingsEmpty>No external clients.</SettingsEmpty>
+          <SettingsEmpty><T k={I18nKey.APPS$SETTINGS_NO_EXTERNAL_CLIENTS} /></SettingsEmpty>
         ) : (
           <SettingsStack>
             {info.clients.map((client) => (
@@ -108,7 +109,7 @@ export function ExternalAccessSection() {
                         })
                         .then(setInfo)
                     }
-                    title="Read-only tokens never see write tools"
+                    title={i18n.t(I18nKey.APPS$SETTINGS_READ_ONLY_TOKENS_NEVER_SEE_WRITE_TOOLS)}
                   >
                     {client.scope}
                   </Chip>
@@ -132,26 +133,24 @@ export function ExternalAccessSection() {
 
         {minted && (
           <div className="arco-settings-callout arco-settings-callout--warning">
-            <p className="arco-settings-panel__desc">
-              Token for <strong>{minted.name}</strong> — copy it now, it won&apos;t be shown again:
-            </p>
+            <p className="arco-settings-panel__desc"><T k={I18nKey.APPS$SETTINGS_TOKEN_FOR} /><strong>{minted.name}</strong><T k={I18nKey.APPS$SETTINGS_COPY_IT_NOW_IT_WON_APOS_T_BE_SHOWN_AGAIN} /></p>
             <SettingsRow>
               <code className="arco-settings-callout__token">{minted.token}</code>
-              <Button size="icon" onClick={() => void copyToken()} aria-label="Copy token">
+              <Button size="icon" onClick={() => void copyToken()} aria-label={i18n.t(I18nKey.APPS$SETTINGS_COPY_TOKEN)}>
                 <Copy size={13} />
               </Button>
             </SettingsRow>
-            {copied ? <span className="arco-settings-save-bar__saved">Copied</span> : null}
-            <Button onClick={() => setMinted(null)}>Done</Button>
+            {copied ? <span className="arco-settings-save-bar__saved"><T k={I18nKey.APPS$SETTINGS_COPIED} /></span> : null}
+            <Button onClick={() => setMinted(null)}><T k={I18nKey.COMMON$DONE} /></Button>
           </div>
         )}
 
-        <SettingsSubhead>Mint token</SettingsSubhead>
-        <SettingsFieldRow label="Client" htmlFor="ext-client-name">
+        <SettingsSubhead><T k={I18nKey.APPS$SETTINGS_MINT_TOKEN} /></SettingsSubhead>
+        <SettingsFieldRow label={i18n.t(I18nKey.APPS$DOWNLOADS_CLIENT)} htmlFor="ext-client-name">
           <Input
             id="ext-client-name"
             width="auto"
-            placeholder="Claude Desktop"
+            placeholder={i18n.t(I18nKey.APPS$SETTINGS_CLAUDE_DESKTOP)}
             value={name}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && void mint()}
@@ -160,14 +159,12 @@ export function ExternalAccessSection() {
             className="arco-input arco-input--compact"
             value={scope}
             onChange={(e) => setScope(e.target.value as ExternalClientScope)}
-            aria-label="Token scope"
+            aria-label={i18n.t(I18nKey.APPS$SETTINGS_TOKEN_SCOPE)}
           >
-            <option value="read">read</option>
-            <option value="readwrite">readwrite</option>
+            <option value="read"><T k={I18nKey.APPS$SETTINGS_READ} /></option>
+            <option value="readwrite"><T k={I18nKey.APPS$SETTINGS_READWRITE} /></option>
           </select>
-          <Button variant="primary" disabled={!name.trim()} onClick={() => void mint()}>
-            Mint token
-          </Button>
+          <Button variant="primary" disabled={!name.trim()} onClick={() => void mint()}><T k={I18nKey.APPS$SETTINGS_MINT_TOKEN} /></Button>
         </SettingsFieldRow>
       </SettingsSection>
     </SettingsPage>

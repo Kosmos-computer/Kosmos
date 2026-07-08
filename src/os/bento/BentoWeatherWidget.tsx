@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "../../components/ui/Button";
 import { Chip } from "../../components/ui/Chip";
@@ -127,48 +130,42 @@ export function BentoWeatherWidget() {
   return (
     <div className="arco-bento-card arco-bento-card--weather" data-bento-no-drag>
       <div className="arco-bento-weather__header">
-        <span className="arco-bento-card__label">Live weather</span>
+        <span className="arco-bento-card__label"><T k={I18nKey.OS_BENTO_LIVE_WEATHER} /></span>
         <div className="arco-bento-weather__actions">
           <Button
             variant="ghost"
             size="icon"
-            aria-label="Refresh weather"
-            title="Refresh"
+            aria-label={i18n.t(I18nKey.OS_BENTO_REFRESH_WEATHER)}
+            title={i18n.t(I18nKey.COMMON$REFRESH)}
             disabled={loading}
             onClick={() => setRefreshToken((token) => token + 1)}
           >
-            ↻
+            {"\u21BB"}
           </Button>
         </div>
       </div>
 
       <div className="arco-bento-weather__controls">
-        <div className="arco-bento-weather__chips" role="group" aria-label="City">
+        <div className="arco-bento-weather__chips" role="group" aria-label={i18n.t(I18nKey.OS_BENTO_CITY)}>
           {CITIES.map((entry) => (
             <Chip key={entry.id} active={entry.id === cityId} onClick={() => setCityId(entry.id)}>
               {entry.label}
             </Chip>
           ))}
         </div>
-        <div className="arco-bento-weather__chips" role="group" aria-label="Temperature unit">
-          <Chip active={unit === "c"} onClick={() => setUnit("c")}>
-            °C
-          </Chip>
-          <Chip active={unit === "f"} onClick={() => setUnit("f")}>
-            °F
-          </Chip>
+        <div className="arco-bento-weather__chips" role="group" aria-label={i18n.t(I18nKey.OS_BENTO_TEMPERATURE_UNIT)}>
+          <Chip active={unit === "c"} onClick={() => setUnit("c")}><T k={I18nKey.OS_BENTO_C} /></Chip>
+          <Chip active={unit === "f"} onClick={() => setUnit("f")}><T k={I18nKey.OS_BENTO_F} /></Chip>
         </div>
       </div>
 
       <div className="arco-bento-weather__body">
         {loading && !weather ? (
-          <p className="arco-bento-weather__status">Loading {city.label}…</p>
+          <p className="arco-bento-weather__status"><T k={I18nKey.COMMON$LOADING} />{city.label}…</p>
         ) : error && !weather ? (
           <div className="arco-bento-weather__status arco-bento-weather__status--error">
             <p>{error}</p>
-            <Button variant="primary" onClick={() => setRefreshToken((token) => token + 1)}>
-              Retry
-            </Button>
+            <Button variant="primary" onClick={() => setRefreshToken((token) => token + 1)}><T k={I18nKey.COMMON$RETRY} /></Button>
           </div>
         ) : (
           <>
@@ -178,20 +175,20 @@ export function BentoWeatherWidget() {
             </div>
             <dl className="arco-bento-weather__stats">
               <div>
-                <dt>Humidity</dt>
+                <dt><T k={I18nKey.OS_BENTO_HUMIDITY} /></dt>
                 <dd>{weather ? `${Math.round(weather.humidity)}%` : "—"}</dd>
               </div>
               <div>
-                <dt>Wind</dt>
+                <dt><T k={I18nKey.OS_BENTO_WIND} /></dt>
                 <dd>{weather ? `${Math.round(weather.windKmh)} km/h` : "—"}</dd>
               </div>
               <div>
-                <dt>Updated</dt>
+                <dt><T k={I18nKey.OS_BENTO_UPDATED} /></dt>
                 <dd>{weather ? formatObservedAt(weather.observedAt) : "—"}</dd>
               </div>
             </dl>
             {error ? <p className="arco-bento-weather__hint arco-bento-weather__hint--error">{error}</p> : null}
-            <p className="arco-bento-weather__hint">Open-Meteo · auto-refresh every 5 min</p>
+            <p className="arco-bento-weather__hint"><T k={I18nKey.OS_BENTO_OPEN_METEO_AUTO_REFRESH_EVERY_5_MIN} /></p>
           </>
         )}
       </div>

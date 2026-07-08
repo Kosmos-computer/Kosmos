@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
 /**
  * Memory workspace sidebar — Psyche nav ported to Arco NavSidebar.
  */
@@ -54,8 +56,8 @@ export function MemorySidebar({ data, view, onViewChange }: MemorySidebarProps) 
         <Input
           value={searchQuery}
           onChange={(event) => setSearchQuery(event.target.value)}
-          placeholder="Search views…"
-          aria-label="Search memory views"
+          placeholder={i18n.t(I18nKey.APPS$MEMORY_SEARCH_VIEWS)}
+          aria-label={i18n.t(I18nKey.APPS$MEMORY_SEARCH_MEMORY_VIEWS)}
           startSlot={<Search size={14} aria-hidden="true" />}
         />
       }

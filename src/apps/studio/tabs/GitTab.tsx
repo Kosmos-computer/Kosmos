@@ -1,3 +1,6 @@
+import { I18nKey } from "../../../i18n/declaration";
+import i18n from "../../../i18n/index";
+import { T } from "../../../i18n/T";
 /**
  * GitTab — source control for the open folder: branch + ahead/behind, the
  * working-tree change list with expandable Monaco diffs (HEAD vs working
@@ -77,13 +80,12 @@ function ChangeRow({ change, theme }: { change: GitFileChange; theme: "light" | 
               }
             }}
           >
-            <SquarePen size={11} style={{ verticalAlign: "-1px" }} /> Edit
-          </span>
+            <SquarePen size={11} style={{ verticalAlign: "-1px" }} /><T k={I18nKey.COMMON$EDIT} /></span>
         )}
       </button>
       {open && diff && (
         <div className="arco-studio__diffhost">
-          <Suspense fallback={<div className="arco-empty">Loading diff…</div>}>
+          <Suspense fallback={<div className="arco-empty"><T k={I18nKey.APPS$STUDIO_LOADING_DIFF} /></div>}>
             <DiffViewer path={change.path} before={diff.before} after={diff.after ?? ""} theme={theme} />
           </Suspense>
         </div>
@@ -134,7 +136,7 @@ export function GitTab() {
     [refresh],
   );
 
-  if (!info) return <div className="arco-empty">Checking git status…</div>;
+  if (!info) return <div className="arco-empty"><T k={I18nKey.APPS$STUDIO_CHECKING_GIT_STATUS} /></div>;
 
   // Sandbox / non-repo folder: session snapshots are the best we can show.
   if (!info.isRepo) return <DiffsTab />;
@@ -172,7 +174,7 @@ export function GitTab() {
         >
           {busy === "push" ? "Pushing…" : "Push"}
         </button>
-        <button className="arco-btn arco-btn--icon" onClick={() => void refresh()} aria-label="Refresh git status">
+        <button className="arco-btn arco-btn--icon" onClick={() => void refresh()} aria-label={i18n.t(I18nKey.APPS$STUDIO_REFRESH_GIT_STATUS)}>
           <RotateCw size={12} />
         </button>
       </div>
@@ -182,7 +184,7 @@ export function GitTab() {
         {info.changes.length === 0 && (
           <div className="arco-empty">
             <Check size={16} style={{ color: "var(--arco-success)" }} />
-            <span>Working tree clean</span>
+            <span><T k={I18nKey.APPS$STUDIO_WORKING_TREE_CLEAN} /></span>
           </div>
         )}
         {info.changes.map((change) => (
@@ -200,7 +202,7 @@ export function GitTab() {
         <div className="arco-studio__commitrow">
           <input
             className="arco-studio__commitmsg"
-            placeholder="Commit message"
+            placeholder={i18n.t(I18nKey.APPS$STUDIO_COMMIT_MESSAGE)}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={(e) => {

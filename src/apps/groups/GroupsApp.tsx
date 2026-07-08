@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { Hash, Home, Bell, Folder, Bookmark, MessageSquare, Plus, Send, Users } from "lucide-react";
 import { useAuthStore } from "../../os/auth/authStore";
 import { ConnectServiceModal } from "../../components/patterns/ConnectServiceModal";
@@ -5,6 +8,7 @@ import { SidebarPane } from "../../components/patterns";
 import { Avatar, Button, EmptyState, Input } from "../../components/ui";
 import { useGroupsStub } from "./useGroupsStub";
 import type { TeamChannel, TeamDirectMessage, TeamMessage } from "./types";
+import { useTranslation } from "react-i18next";
 
 const NAV_ICONS = {
   home: Home,
@@ -72,6 +76,7 @@ function DmRow({ dm, active, onSelect }: { dm: TeamDirectMessage; active: boolea
 }
 
 export function GroupsApp() {
+  const { t } = useTranslation();
   const vm = useGroupsStub();
   const user = useAuthStore((s) => s.user);
   const userName = user?.displayName ?? user?.username ?? "You";
@@ -79,11 +84,9 @@ export function GroupsApp() {
   if (!vm.hasConnection) {
     return (
       <div className="arco-groups arco-groups--empty">
-        <EmptyState title="Connect a team chat account">
-          <p>Link Mattermost, Slack, or Matrix to read channels and DMs in Kosmos.</p>
-          <Button variant="primary" onClick={() => vm.setConnectOpen(true)}>
-            Connect account
-          </Button>
+        <EmptyState title={i18n.t(I18nKey.APPS$GROUPS_CONNECT_A_TEAM_CHAT_ACCOUNT)}>
+          <p><T k={I18nKey.APPS$GROUPS_LINK_MATTERMOST_SLACK_OR_MATRIX_TO_READ_CHANNELS_AND_DMS} /></p>
+          <Button variant="primary" onClick={() => vm.setConnectOpen(true)}><T k={I18nKey.APPS$GROUPS_CONNECT_ACCOUNT} /></Button>
         </EmptyState>
         <ConnectServiceModal
           open={vm.connectOpen}
@@ -100,7 +103,7 @@ export function GroupsApp() {
 
   return (
     <div className="arco-groups">
-      <aside className="arco-groups__rail" aria-label="Team workspaces">
+      <aside className="arco-groups__rail" aria-label={i18n.t(I18nKey.APPS$GROUPS_TEAM_WORKSPACES)}>
         {vm.workspaces.map((workspace) => (
           <button
             key={workspace.id}
@@ -117,8 +120,8 @@ export function GroupsApp() {
         <button
           type="button"
           className="arco-groups__rail-tile arco-groups__rail-tile--add"
-          title="Connect another workspace"
-          aria-label="Connect another workspace"
+          title={i18n.t(I18nKey.APPS$GROUPS_CONNECT_ANOTHER_WORKSPACE)}
+          aria-label={i18n.t(I18nKey.APPS$GROUPS_CONNECT_ANOTHER_WORKSPACE)}
           onClick={() => vm.setConnectOpen(true)}
         >
           <Plus size={16} />
@@ -130,7 +133,7 @@ export function GroupsApp() {
           <header className="arco-groups__sidebar-header">
             <h1>{vm.workspaces.find((w) => w.id === vm.activeConnectionId)?.label ?? "Workspace"}</h1>
           </header>
-          <nav className="arco-groups__nav" aria-label="Workspace sections">
+          <nav className="arco-groups__nav" aria-label={i18n.t(I18nKey.APPS$GROUPS_WORKSPACE_SECTIONS)}>
             {vm.navItems.map((item) => {
               const Icon = NAV_ICONS[item.icon];
               return (
@@ -143,7 +146,7 @@ export function GroupsApp() {
             })}
           </nav>
           <section className="arco-groups__channel-section">
-            <h2>Channels</h2>
+            <h2><T k={I18nKey.APPS$GROUPS_CHANNELS} /></h2>
             {vm.channels.map((channel) => (
               <ChannelRow
                 key={channel.id}
@@ -154,7 +157,7 @@ export function GroupsApp() {
             ))}
           </section>
           <section className="arco-groups__channel-section">
-            <h2>Direct messages</h2>
+            <h2><T k={I18nKey.APPS$GROUPS_DIRECT_MESSAGES} /></h2>
             {vm.directMessages.map((dm) => (
               <DmRow
                 key={dm.id}
@@ -181,7 +184,7 @@ export function GroupsApp() {
             {vm.conversationTopic ? <p>{vm.conversationTopic}</p> : null}
           </div>
           <div className="arco-groups__thread-actions">
-            <Button variant="ghost" size="icon" aria-label="Members">
+            <Button variant="ghost" size="icon" aria-label={i18n.t(I18nKey.APPS$GROUPS_MEMBERS)}>
               <Users size={16} />
             </Button>
           </div>
@@ -198,7 +201,7 @@ export function GroupsApp() {
             value={vm.composerValue}
             onChange={(event) => vm.setComposerValue(event.target.value)}
             placeholder={`Message ${vm.conversationTitle}`}
-            aria-label="Message"
+            aria-label={i18n.t(I18nKey.APPS$SETTINGS_MESSAGE)}
             onKeyDown={(event) => {
               if (event.key === "Enter" && !event.shiftKey) {
                 event.preventDefault();
@@ -206,7 +209,7 @@ export function GroupsApp() {
               }
             }}
           />
-          <Button variant="primary" size="icon" aria-label="Send" onClick={vm.handleSubmit} disabled={!vm.composerValue.trim()}>
+          <Button variant="primary" size="icon" aria-label={i18n.t(I18nKey.APPS$PAY_SEND)} onClick={vm.handleSubmit} disabled={!vm.composerValue.trim()}>
             <Send size={16} />
           </Button>
         </footer>

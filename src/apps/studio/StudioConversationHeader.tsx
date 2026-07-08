@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
 /**
  * Conversation top bar — title plus overflow menu (agent-canvas ConversationName).
  * Rename is inline (menu item or double-click); other actions use the shared Menu.
@@ -124,7 +126,7 @@ export function StudioConversationHeader({
           type="text"
           className="arco-studio__convtitle-input"
           defaultValue={displayTitle}
-          aria-label="Conversation name"
+          aria-label={i18n.t(I18nKey.APPS$STUDIO_CONVERSATION_NAME)}
           onBlur={() => void commitRename()}
           onKeyDown={(event) => {
             if (event.nativeEvent.isComposing) return;
@@ -151,13 +153,13 @@ export function StudioConversationHeader({
         <Menu
           side="bottom"
           align="start"
-          aria-label="Conversation actions"
+          aria-label={i18n.t(I18nKey.APPS$STUDIO_CONVERSATION_ACTIONS)}
           items={menuItems}
           trigger={
             <button
               type="button"
               className="arco-btn arco-btn--icon arco-studio__convmenu"
-              aria-label="Conversation actions"
+              aria-label={i18n.t(I18nKey.APPS$STUDIO_CONVERSATION_ACTIONS)}
             >
               <MoreVertical size={14} />
             </button>

@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 /**
  * APIs — saved integrations and a marketplace catalog. Mirrors the
  * Longformer Plugins view and Arco's Skills dashboard: search, tab filter
@@ -49,7 +52,7 @@ function ApiCard({ api, onOpen }: { api: ApiIntegration; onOpen: () => void }) {
           </span>
         ) : null}
         {api.installed ? (
-          <span className="arco-module-card__pill">Installed</span>
+          <span className="arco-module-card__pill"><T k={I18nKey.APPS$APIS_INSTALLED} /></span>
         ) : null}
       </div>
     </button>
@@ -86,7 +89,7 @@ function ApiDetailOverlay({
             </p>
           </div>
           <div className="arco-module-card__actions">
-            <Button size="icon" onClick={onClose} aria-label="Close">
+            <Button size="icon" onClick={onClose} aria-label={i18n.t(I18nKey.COMMON$CLOSE)}>
               <X size={14} />
             </Button>
           </div>
@@ -99,8 +102,7 @@ function ApiDetailOverlay({
           <div className="arco-module-card__body">
             {typeof api.rating === "number" ? (
               <div className="arco-module-card__meta">
-                <Star size={12} style={{ verticalAlign: "-2px" }} /> {api.rating.toFixed(1)} rating
-              </div>
+                <Star size={12} style={{ verticalAlign: "-2px" }} /> {api.rating.toFixed(1)}<T k={I18nKey.APPS$APIS_RATING} /></div>
             ) : null}
           </div>
         </div>
@@ -110,31 +112,23 @@ function ApiDetailOverlay({
         <div className="arco-module-card__actions">
           {api.installed ? (
             <>
-              <Button disabled>
-                Installed
-              </Button>
+              <Button disabled><T k={I18nKey.APPS$APIS_INSTALLED} /></Button>
               <Button variant="danger" onClick={onUninstall}>
-                <Trash2 size={13} /> Remove
-              </Button>
+                <Trash2 size={13} /><T k={I18nKey.COMMON$REMOVE} /></Button>
             </>
           ) : (
             <Button variant="primary" onClick={onInstall}>
-              <Plus size={13} /> Install
-            </Button>
+              <Plus size={13} /><T k={I18nKey.COMMON$INSTALL} /></Button>
           )}
           {api.docsUrl ? (
             <Button
               onClick={() => window.open(api.docsUrl, "_blank", "noopener,noreferrer")}
             >
-              <ExternalLink size={13} /> Docs
-            </Button>
+              <ExternalLink size={13} /><T k={I18nKey.APPS$APIS_DOCS} /></Button>
           ) : null}
         </div>
 
-        <p className="arco-module__subtitle">
-          Installing from the marketplace will pre-fill MCP server settings and request any keys
-          from Key Wallet.
-        </p>
+        <p className="arco-module__subtitle"><T k={I18nKey.APPS$APIS_INSTALLING_FROM_THE_MARKETPLACE_WILL_PRE_FILL_MCP_SERVER} /></p>
       </div>
     </div>
   );
@@ -158,21 +152,20 @@ export function ApisApp() {
     <ModulePage>
       <ModuleInner>
         <ModuleHeader
-          title="APIs"
-          subtitle="Saved integrations and a curated marketplace of MCP servers, REST connectors, and third-party tools. Installed APIs expose tools to the agent and may require keys from Key Wallet."
+          title={i18n.t(I18nKey.OS$APP_APIS)}
+          subtitle={i18n.t(I18nKey.APPS$APIS_SAVED_INTEGRATIONS_AND_A_CURATED_MARKETPLACE_OF_MCP_SERV)}
           actions={
             tab === "marketplace" ? (
-              <Button onClick={() => setTab("installed")}>View installed ({installedCount})</Button>
+              <Button onClick={() => setTab("installed")}><T k={I18nKey.APPS$APIS_VIEW_INSTALLED} />{installedCount})</Button>
             ) : (
               <Button onClick={() => setTab("marketplace")}>
-                <Plus size={13} /> Browse marketplace
-              </Button>
+                <Plus size={13} /><T k={I18nKey.APPS$APIS_BROWSE_MARKETPLACE} /></Button>
             )
           }
         />
 
-        <ModuleToolbar search={search} onSearchChange={setSearch} searchLabel="Search APIs">
-          <div className="arco-chip-row" role="group" aria-label="API catalog tab">
+        <ModuleToolbar search={search} onSearchChange={setSearch} searchLabel={i18n.t(I18nKey.APPS$APIS_SEARCH_APIS)}>
+          <div className="arco-chip-row" role="group" aria-label={i18n.t(I18nKey.APPS$APIS_API_CATALOG_TAB)}>
             {TAB_FILTERS.map((entry) => (
               <Chip
                 key={entry.id}

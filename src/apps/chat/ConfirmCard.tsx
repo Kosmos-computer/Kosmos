@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import { T } from "../../i18n/T";
 /**
  * ConfirmCard — inline approval prompt for a paused server-side action.
  * Two flavors share this card:
@@ -56,12 +58,8 @@ export function ConfirmCard({ item }: { item: ConfirmCardData }) {
             className="arco-btn arco-btn--primary"
             disabled={answering}
             onClick={() => void answer(true)}
-          >
-            Allow
-          </button>
-          <button className="arco-btn" disabled={answering} onClick={() => void answer(false)}>
-            Deny
-          </button>
+          ><T k={I18nKey.APPS$CHAT_ALLOW} /></button>
+          <button className="arco-btn" disabled={answering} onClick={() => void answer(false)}><T k={I18nKey.APPS$CHAT_DENY} /></button>
         </div>
       )}
       {pending && extended && (
@@ -70,26 +68,18 @@ export function ConfirmCard({ item }: { item: ConfirmCardData }) {
             className="arco-btn arco-btn--primary"
             disabled={answering}
             onClick={() => void answer(true)}
-          >
-            Allow once
-          </button>
+          ><T k={I18nKey.APPS$CHAT_ALLOW_ONCE} /></button>
           <button
             className="arco-btn"
             disabled={answering}
             onClick={() => void answer(true, "session")}
-          >
-            Allow this session
-          </button>
+          ><T k={I18nKey.APPS$CHAT_ALLOW_THIS_SESSION} /></button>
           <button
             className="arco-btn"
             disabled={answering}
             onClick={() => void answer(true, "always")}
-          >
-            Always allow
-          </button>
-          <button className="arco-btn" disabled={answering} onClick={() => void answer(false)}>
-            Deny
-          </button>
+          ><T k={I18nKey.APPS$CHAT_ALWAYS_ALLOW} /></button>
+          <button className="arco-btn" disabled={answering} onClick={() => void answer(false)}><T k={I18nKey.APPS$CHAT_DENY} /></button>
         </div>
       )}
     </div>

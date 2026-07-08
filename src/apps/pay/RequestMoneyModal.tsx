@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { useEffect, useState } from "react";
 import { Search, X } from "lucide-react";
 import { formatMoney, parseAmountToCents } from "@shared/payments";
@@ -71,9 +74,9 @@ export function RequestMoneyModal({
       >
         <header className="arco-connect-modal__header">
           <div className="arco-connect-modal__title-row">
-            <h2 id="request-money-title">Request money</h2>
+            <h2 id="request-money-title"><T k={I18nKey.APPS$PAY_REQUEST_MONEY} /></h2>
           </div>
-          <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onClose} aria-label="Close">
+          <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onClose} aria-label={i18n.t(I18nKey.COMMON$CLOSE)}>
             <X size={16} />
           </button>
         </header>
@@ -84,27 +87,27 @@ export function RequestMoneyModal({
             <Input
               value={amount}
               onChange={(event) => setAmount(event.target.value)}
-              placeholder="0.00"
-              aria-label="Amount"
+              placeholder={i18n.t(I18nKey.APPS$PAY_0_00)}
+              aria-label={i18n.t(I18nKey.APPS$PAY_AMOUNT)}
               inputMode="decimal"
             />
           </div>
 
           <section className="arco-connect-modal__section">
-            <label className="arco-connect-modal__label">From</label>
+            <label className="arco-connect-modal__label"><T k={I18nKey.APPS$PAY_FROM_2} /></label>
             <div className="arco-pay-action-modal__search">
               <Search size={14} className="arco-icon--tertiary" />
               <Input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search name, @handle, email"
-                aria-label="Search recipients"
+                placeholder={i18n.t(I18nKey.APPS$PAY_SEARCH_NAME_HANDLE_EMAIL)}
+                aria-label={i18n.t(I18nKey.APPS$PAY_SEARCH_RECIPIENTS)}
                 width="auto"
               />
             </div>
             <ul className="arco-pay-recipient-list arco-pay-recipient-list--compact">
               {filtered.length === 0 ? (
-                <li className="arco-pay-recipient-list__empty">No recipients match your search</li>
+                <li className="arco-pay-recipient-list__empty"><T k={I18nKey.APPS$PAY_NO_RECIPIENTS_MATCH_YOUR_SEARCH} /></li>
               ) : null}
               {filtered.map((recipient) => (
                 <li key={recipient.id}>
@@ -125,28 +128,23 @@ export function RequestMoneyModal({
           </section>
 
           <section className="arco-connect-modal__section">
-            <label className="arco-connect-modal__label" htmlFor="request-note">
-              Reason
-            </label>
+            <label className="arco-connect-modal__label" htmlFor="request-note"><T k={I18nKey.APPS$PAY_REASON} /></label>
             <Input
               id="request-note"
               value={note}
               onChange={(event) => setNote(event.target.value)}
-              placeholder="Concert tickets, shared bill…"
+              placeholder={i18n.t(I18nKey.APPS$PAY_CONCERT_TICKETS_SHARED_BILL)}
             />
           </section>
 
           {amountCents !== null && selected ? (
-            <p className="arco-pay-action-modal__preview">
-              Request {formatMoney({ cents: amountCents, currency: "usd" })} from {selected.name} via {provider}
+            <p className="arco-pay-action-modal__preview"><T k={I18nKey.APPS$PAY_REQUEST} />{formatMoney({ cents: amountCents, currency: "usd" })}<T k={I18nKey.APPS$PAY_FROM} />{selected.name}<T k={I18nKey.APPS$PAY_VIA} />{provider}
             </p>
           ) : null}
         </div>
 
         <footer className="arco-connect-modal__footer">
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
+          <Button variant="ghost" onClick={onClose}><T k={I18nKey.COMMON$CANCEL} /></Button>
           <Button variant="primary" onClick={handleRequest} disabled={!canRequest || busy}>
             {busy ? "Requesting…" : "Request"}
           </Button>

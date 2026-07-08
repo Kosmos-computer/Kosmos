@@ -1,7 +1,7 @@
 /**
  * Warp-speed starfield — ported from SpaceRadio's HeroWarp canvas effect.
- * Particles fly toward the viewer with subtle mouse parallax; tuned down for
- * an always-on OS desktop (no click-to-boost, fewer particles).
+ * Square streak caps (not round); particles fly toward the viewer with subtle
+ * mouse parallax. Tuned down for an always-on OS desktop (no click-to-boost).
  */
 import { useEffect, useRef } from "react";
 import type { Theme } from "../osStore";
@@ -110,7 +110,6 @@ export function StarfieldWallpaper({ theme }: { theme: Theme }) {
         return;
       }
 
-      const halfPi = Math.PI * 0.5;
       const starColor = theme === "light" ? "rgb(40, 55, 90)" : "rgb(255, 255, 255)";
       context.fillStyle = starColor;
       context.beginPath();
@@ -139,16 +138,24 @@ export function StarfieldWallpaper({ theme }: { theme: Theme }) {
         const pf = FL / p.pastZ;
         const px = cx + rx * pf;
         const py = cy + ry * pf;
-        const pr = PARTICLE_BASE_RADIUS * pf;
 
-        const a = Math.atan2(py - y, px - x);
-        const a1 = a + halfPi;
-        const a2 = a - halfPi;
+        const dx = x - px;
+        const dy = y - py;
+        const len = Math.hypot(dx, dy);
 
-        context.moveTo(px + pr * Math.cos(a1), py + pr * Math.sin(a1));
-        context.arc(px, py, pr, a1, a2, true);
-        context.lineTo(x + r * Math.cos(a2), y + r * Math.sin(a2));
-        context.arc(x, y, r, a2, a1, true);
+        if (len < 0.001) {
+          context.rect(x - r, y - r, r * 2, r * 2);
+          continue;
+        }
+
+        const halfW = Math.max(r, 0.5);
+        const nx = (-dy / len) * halfW;
+        const ny = (dx / len) * halfW;
+
+        context.moveTo(px + nx, py + ny);
+        context.lineTo(x + nx, y + ny);
+        context.lineTo(x - nx, y - ny);
+        context.lineTo(px - nx, py - ny);
         context.closePath();
       }
 

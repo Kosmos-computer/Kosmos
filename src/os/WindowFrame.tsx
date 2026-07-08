@@ -3,10 +3,13 @@
  * edge and corner resize handles, maximize toggle. Geometry writes back to the
  * window store (debounce-persisted, closed geometry retained — matrix-os pattern).
  */
-import { useCallback, useRef, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { useCallback, useMemo, useRef, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { useOsStore } from "./osStore";
 import { useWindowStore, type OsWindow } from "./windowStore";
+import { focusShellWindow } from "./shellNavigation";
 import { WindowControls } from "./WindowControls";
+import { resolveWindowTitle } from "./resolveWindowTitle";
 
 const MENUBAR_HEIGHT = 34;
 const MIN_W = 320;
@@ -21,11 +24,13 @@ interface Props {
 }
 
 export function WindowFrame({ win, focused, children }: Props) {
+  const { i18n } = useTranslation();
+  const title = useMemo(() => resolveWindowTitle(win), [win, i18n.language]);
   const shellView = useOsStore((s) => s.shellView);
   const windowControlAlign = useOsStore((s) => s.windowControlAlign);
   const windowControlStyle = useOsStore((s) => s.windowControlStyle);
   const appView = shellView === "app";
-  const { close, focus, toggleMinimize, toggleMaximize, setRect } = useWindowStore();
+  const { close, toggleMinimize, toggleMaximize, setRect } = useWindowStore();
   const dragState = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
   const resizeState = useRef<{
     edge: ResizeEdge;
@@ -125,8 +130,8 @@ export function WindowFrame({ win, focused, children }: Props) {
         .join(" ")}
       style={style}
       role="dialog"
-      aria-label={win.title}
-      onPointerDown={() => focus(win.id)}
+      aria-label={title}
+      onPointerDown={() => focusShellWindow(win.id)}
     >
       {!appView && (
         <header
@@ -142,7 +147,7 @@ export function WindowFrame({ win, focused, children }: Props) {
             onMinimize={() => toggleMinimize(win.id)}
             onMaximize={() => toggleMaximize(win.id)}
           />
-          <span className="arco-window__title">{win.title}</span>
+          <span className="arco-window__title">{title}</span>
         </header>
       )}
       <div className="arco-window__content">{children}</div>

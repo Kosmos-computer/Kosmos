@@ -1,3 +1,7 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
+import { useTranslation } from "react-i18next";
 import {
   Eye,
   Grid2x2,
@@ -58,7 +62,7 @@ function ParticipantTile({ participant }: { participant: MeetParticipant }) {
       )}
       <span className="arco-meet__tile-name">{participant.name}</span>
       {!participant.cameraOn ? (
-        <span className="arco-meet__tile-camera-off" aria-label="Camera off">
+        <span className="arco-meet__tile-camera-off" aria-label={i18n.t(I18nKey.APPS$MEET_CAMERA_OFF)}>
           <VideoOff size={14} />
         </span>
       ) : null}
@@ -71,7 +75,7 @@ export function MeetHeader({ vm }: { vm: MeetViewModel }) {
   return (
     <header className="arco-meet__header">
       <div className="arco-meet__header-left">
-        <span className="arco-meet__brand">Meet</span>
+        <span className="arco-meet__brand"><T k={I18nKey.APPS$MEET_MEET} /></span>
         <span className="arco-meet__room">
           <Lock size={12} aria-hidden="true" />
           {session.slug}
@@ -84,15 +88,13 @@ export function MeetHeader({ vm }: { vm: MeetViewModel }) {
         </span>
         {session.isLive ? (
           <span className="arco-meet__live">
-            <span className="arco-meet__live-dot" aria-hidden="true" />
-            Live
-            <Eye size={12} aria-hidden="true" />
+            <span className="arco-meet__live-dot" aria-hidden="true" /><T k={I18nKey.APPS$MEET_LIVE} /><Eye size={12} aria-hidden="true" />
             {session.viewerCount}
           </span>
         ) : null}
       </div>
       <div className="arco-meet__header-right">
-        <span className="arco-meet__host-avatar" aria-label="Host profile">
+        <span className="arco-meet__host-avatar" aria-label={i18n.t(I18nKey.APPS$MEET_HOST_PROFILE)}>
           {session.hostInitial}
         </span>
       </div>
@@ -101,8 +103,9 @@ export function MeetHeader({ vm }: { vm: MeetViewModel }) {
 }
 
 export function MeetVideoGrid({ vm }: { vm: MeetViewModel }) {
+  const { t } = useTranslation();
   return (
-    <section className={`arco-meet__grid arco-meet__grid--${vm.layout}`} aria-label="Video feeds">
+    <section className={`arco-meet__grid arco-meet__grid--${vm.layout}`} aria-label={i18n.t(I18nKey.APPS$MEET_VIDEO_FEEDS)}>
       {vm.participants.map((participant) => (
         <ParticipantTile key={participant.id} participant={participant} />
       ))}
@@ -111,9 +114,10 @@ export function MeetVideoGrid({ vm }: { vm: MeetViewModel }) {
 }
 
 export function MeetControlBar({ vm }: { vm: MeetViewModel }) {
+  const { t } = useTranslation();
   return (
-    <footer className="arco-meet__controls" aria-label="Call controls">
-      <button type="button" className="arco-meet__control" aria-label="Settings">
+    <footer className="arco-meet__controls" aria-label={i18n.t(I18nKey.APPS$MEET_CALL_CONTROLS)}>
+      <button type="button" className="arco-meet__control" aria-label={i18n.t(I18nKey.OS$APP_SETTINGS)}>
         <Settings size={18} />
       </button>
 
@@ -121,7 +125,7 @@ export function MeetControlBar({ vm }: { vm: MeetViewModel }) {
         <button
           type="button"
           className={`arco-meet__control${vm.screenShareOn ? " arco-meet__control--active" : ""}`}
-          aria-label="Share screen"
+          aria-label={i18n.t(I18nKey.APPS$MEET_SHARE_SCREEN)}
           aria-pressed={vm.screenShareOn}
           onClick={() => vm.setScreenShareOn((on) => !on)}
         >
@@ -165,7 +169,7 @@ export function MeetControlBar({ vm }: { vm: MeetViewModel }) {
         </button>
       </div>
 
-      <button type="button" className="arco-meet__control arco-meet__control--end" aria-label="End call">
+      <button type="button" className="arco-meet__control arco-meet__control--end" aria-label={i18n.t(I18nKey.APPS$MEET_END_CALL)}>
         <PhoneOff size={18} />
       </button>
     </footer>
@@ -173,9 +177,10 @@ export function MeetControlBar({ vm }: { vm: MeetViewModel }) {
 }
 
 export function MeetSidebar({ vm }: { vm: MeetViewModel }) {
+  const { t } = useTranslation();
   return (
-    <aside className="arco-meet__sidebar" aria-label="Studio panel">
-      <div className="arco-meet__tabs" role="tablist" aria-label="Sidebar sections">
+    <aside className="arco-meet__sidebar" aria-label={i18n.t(I18nKey.APPS$MEET_STUDIO_PANEL)}>
+      <div className="arco-meet__tabs" role="tablist" aria-label={i18n.t(I18nKey.APPS$MEET_SIDEBAR_SECTIONS)}>
         <button
           type="button"
           role="tab"
@@ -183,9 +188,7 @@ export function MeetSidebar({ vm }: { vm: MeetViewModel }) {
           aria-selected={vm.sidebarTab === "chat"}
           onClick={vm.openChat}
         >
-          <MessageSquare size={14} aria-hidden="true" />
-          Chat
-          {vm.chatUnread > 0 ? <span className="arco-meet__tab-badge">{vm.chatUnread}</span> : null}
+          <MessageSquare size={14} aria-hidden="true" /><T k={I18nKey.APPS$MEET_CHAT} />{vm.chatUnread > 0 ? <span className="arco-meet__tab-badge">{vm.chatUnread}</span> : null}
         </button>
         <button
           type="button"
@@ -193,9 +196,7 @@ export function MeetSidebar({ vm }: { vm: MeetViewModel }) {
           className={vm.sidebarTab === "participants" ? "arco-meet__tab--active" : ""}
           aria-selected={vm.sidebarTab === "participants"}
           onClick={() => vm.setSidebarTab("participants")}
-        >
-          Participants
-        </button>
+        ><T k={I18nKey.APPS$MEET_PARTICIPANTS} /></button>
       </div>
 
       {vm.sidebarTab === "participants" ? (
@@ -207,13 +208,12 @@ export function MeetSidebar({ vm }: { vm: MeetViewModel }) {
                   <div className="arco-meet__participant-head">
                     <span className="arco-meet__participant-name">
                       {p.name}
-                      {p.role === "host" ? <span className="arco-meet__host-tag">Host</span> : null}
+                      {p.role === "host" ? <span className="arco-meet__host-tag"><T k={I18nKey.APPS$MEET_HOST} /></span> : null}
                     </span>
                     <AudioMeter level={p.audioLevel} />
                   </div>
                   <p className="arco-meet__participant-meta">
-                    {p.resolution} / {p.audioDevice} / {p.bitrateMbps} mbps
-                  </p>
+                    {p.resolution} / {p.audioDevice} / {p.bitrateMbps}<T k={I18nKey.APPS$MEET_MBPS} /></p>
                 </li>
               ))}
             </ul>
@@ -221,7 +221,7 @@ export function MeetSidebar({ vm }: { vm: MeetViewModel }) {
 
           {vm.waiting.length > 0 ? (
             <section className="arco-meet__section">
-              <h3 className="arco-meet__section-title">Waiting Room</h3>
+              <h3 className="arco-meet__section-title"><T k={I18nKey.APPS$MEET_WAITING_ROOM} /></h3>
               <ul className="arco-meet__waiting-list">
                 {vm.waiting.map((guest) => (
                   <li key={guest.id} className="arco-meet__waiting-item">
@@ -231,16 +231,12 @@ export function MeetSidebar({ vm }: { vm: MeetViewModel }) {
                         type="button"
                         className="arco-meet__text-btn"
                         onClick={() => vm.removeGuest(guest.id)}
-                      >
-                        Remove
-                      </button>
+                      ><T k={I18nKey.COMMON$REMOVE} /></button>
                       <Button
                         variant="primary"
                         className="arco-meet__admit-btn"
                         onClick={() => vm.admitGuest(guest.id)}
-                      >
-                        Admit
-                      </Button>
+                      ><T k={I18nKey.APPS$MEET_ADMIT} /></Button>
                     </div>
                   </li>
                 ))}
@@ -274,7 +270,7 @@ export function MeetSidebar({ vm }: { vm: MeetViewModel }) {
           </section>
 
           <section className="arco-meet__section">
-            <h3 className="arco-meet__section-title">Director</h3>
+            <h3 className="arco-meet__section-title"><T k={I18nKey.APPS$MEET_DIRECTOR} /></h3>
             <div className="arco-meet__layout-grid">
               {LAYOUT_OPTIONS.map((option) => {
                 const Icon = option.icon;
@@ -300,7 +296,7 @@ export function MeetSidebar({ vm }: { vm: MeetViewModel }) {
         </div>
       ) : (
         <div className="arco-meet__chat-stub">
-          <p>Chat is stubbed — connect a room backend to stream messages.</p>
+          <p><T k={I18nKey.APPS$MEET_CHAT_IS_STUBBED_CONNECT_A_ROOM_BACKEND_TO_STREAM_MESSAGE} /></p>
         </div>
       )}
     </aside>

@@ -1,11 +1,18 @@
+import { I18nKey } from "../i18n/declaration";
+import i18n from "../i18n/index";
 /** Top chrome: settings menu, focused window title, shell view toggle, bento drawer, clock, theme toggle, lock. */
 import { useEffect, useMemo, useState } from "react";
-import { AppWindow, LayoutGrid, Lock, Monitor, Moon, Settings, Sun } from "lucide-react";
+import { AppWindow, LayoutGrid, Lock, Monitor, Moon, Search, Settings, Sun } from "lucide-react";
 import { Menu, type MenuItem } from "../components/Menu";
 import { openSettingsApp } from "../apps/settings/settingsStore";
 import { visibleSettingsNavGroups } from "../apps/settings/settingsSections";
 import { useCan, useAuthStore } from "./auth/authStore";
 import { useBentoStore } from "./bento/bentoStore";
+import { useCommandPaletteStore } from "./commandPaletteStore";
+import { MenuBarBackendStatus } from "./MenuBarBackendStatus";
+import { MenuBarKeyboardControl } from "./MenuBarKeyboardControl";
+import { MenuBarLanguageSwitcher } from "./MenuBarLanguageSwitcher";
+import { MenuBarVolumeControl } from "./MenuBarVolumeControl";
 import { useOsStore } from "./osStore";
 import { useWindowStore } from "./windowStore";
 
@@ -33,6 +40,7 @@ export function MenuBar() {
   const canManageUsers = useCan("users:manage");
   const canWriteSettings = useCan("settings:write");
   const windows = useWindowStore((s) => s.windows);
+  const openPalette = useCommandPaletteStore((s) => s.openPalette);
   const clock = useClock();
 
   const settingsMenuItems = useMemo<MenuItem[]>(() => {
@@ -55,21 +63,32 @@ export function MenuBar() {
 
   return (
     <header className="arco-menubar">
-      <Menu
-        trigger={
-          <button
-            type="button"
-            className="arco-menubar__icon-btn"
-            aria-label="Settings"
-            title="Settings"
-          >
-            <Settings size={14} />
-          </button>
-        }
-        items={settingsMenuItems}
-        aria-label="Settings"
-        searchPlaceholder="Search settings"
-      />
+      <div className="arco-menubar__left">
+        <Menu
+          trigger={
+            <button
+              type="button"
+              className="arco-menubar__icon-btn"
+              aria-label={i18n.t(I18nKey.OS$APP_SETTINGS)}
+              title={i18n.t(I18nKey.OS$APP_SETTINGS)}
+            >
+              <Settings size={14} />
+            </button>
+          }
+          items={settingsMenuItems}
+          aria-label={i18n.t(I18nKey.OS$APP_SETTINGS)}
+          searchPlaceholder={i18n.t(I18nKey.APPS$SETTINGS_SEARCH_SETTINGS)}
+        />
+        <button
+          type="button"
+          className="arco-menubar__icon-btn"
+          aria-label={i18n.t(I18nKey.COMMON$SEARCH)}
+          title={i18n.t(I18nKey.OS_MENUBAR_SEARCH_K)}
+          onClick={openPalette}
+        >
+          <Search size={14} />
+        </button>
+      </div>
       <span className="arco-menubar__title">{focused?.title ?? ""}</span>
       <div className="arco-menubar__right">
         <button
@@ -78,22 +97,22 @@ export function MenuBar() {
           onClick={toggleBento}
           aria-label={bentoOpen ? "Close bento drawer" : "Open bento drawer"}
           aria-pressed={bentoOpen}
-          title="Bento widgets"
+          title={i18n.t(I18nKey.OS_MENUBAR_BENTO_WIDGETS)}
         >
           <LayoutGrid size={14} />
         </button>
         <div
           className="arco-menubar__view-toggle"
           role="group"
-          aria-label="Shell view"
+          aria-label={i18n.t(I18nKey.OS_MENUBAR_SHELL_VIEW)}
         >
           <button
             type="button"
             className={`arco-menubar__view-toggle-btn${shellView === "desktop" ? " arco-menubar__view-toggle-btn--active" : ""}`}
             onClick={() => setShellView("desktop")}
-            aria-label="Desktop view"
+            aria-label={i18n.t(I18nKey.OS_MENUBAR_DESKTOP_VIEW)}
             aria-pressed={shellView === "desktop"}
-            title="Desktop view"
+            title={i18n.t(I18nKey.OS_MENUBAR_DESKTOP_VIEW)}
           >
             <Monitor size={14} />
           </button>
@@ -101,9 +120,9 @@ export function MenuBar() {
             type="button"
             className={`arco-menubar__view-toggle-btn${shellView === "app" ? " arco-menubar__view-toggle-btn--active" : ""}`}
             onClick={() => setShellView("app")}
-            aria-label="App view"
+            aria-label={i18n.t(I18nKey.OS_MENUBAR_APP_VIEW)}
             aria-pressed={shellView === "app"}
-            title="App view"
+            title={i18n.t(I18nKey.OS_MENUBAR_APP_VIEW)}
           >
             <AppWindow size={14} />
           </button>
@@ -112,8 +131,8 @@ export function MenuBar() {
         <button
           className="arco-menubar__icon-btn"
           onClick={() => void lock()}
-          aria-label="Lock Arco"
-          title="Lock"
+          aria-label={i18n.t(I18nKey.OS_MENUBAR_LOCK_ARCO)}
+          title={i18n.t(I18nKey.OS_MENUBAR_LOCK)}
         >
           <Lock size={14} />
         </button>
@@ -124,6 +143,10 @@ export function MenuBar() {
         >
           {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
         </button>
+        <MenuBarLanguageSwitcher />
+        <MenuBarKeyboardControl />
+        <MenuBarVolumeControl />
+        <MenuBarBackendStatus />
         <span>{clock}</span>
       </div>
     </header>

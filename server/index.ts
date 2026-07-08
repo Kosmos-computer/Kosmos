@@ -134,6 +134,7 @@ import {
   transcribePodcastEpisode,
 } from "./services/podcastTranscriptService.js";
 import { transcriptionRoutes } from "./routes/transcription.js";
+import { shareRoutes } from "./routes/shareRoutes.js";
 import { startTranscriptionSupervisor } from "./transcription/supervisor.js";
 import { listRemoteVideos, listRemotePodcastEpisodes } from "./services/mediaRemoteService.js";
 import type { FileCreateInput } from "../shared/capabilities/files.js";
@@ -198,6 +199,8 @@ app.route("/api/auth", authRoutes);
 app.get("/api/system/install-status", async (c) => c.json(await getInstallStatus()));
 
 app.use("/api/*", requireAuth);
+
+app.route("/", shareRoutes);
 
 // ── OpenAI-compatible agent endpoint ─────────────────────────────────────────
 //

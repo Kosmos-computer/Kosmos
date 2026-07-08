@@ -31,11 +31,19 @@
   user-select: none;
 }
 
+.arco-menubar__left {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-xs);
+  flex-shrink: 0;
+}
+
 .arco-menubar__title {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   flex: 1;
+  min-width: 0;
 }
 
 .arco-menubar__right {
@@ -87,6 +95,186 @@
   background: var(--arco-bg-surface);
   color: var(--arco-text-primary);
   box-shadow: 0 0 0 1px var(--arco-border);
+}
+
+.arco-menubar__lang-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: var(--arco-radius-s);
+  font-size: var(--arco-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--arco-text-secondary);
+}
+
+.arco-menubar__lang-btn:hover {
+  background: var(--arco-bg-hover);
+  color: var(--arco-text-primary);
+}
+
+.arco-menubar__server-btn {
+  position: relative;
+}
+
+.arco-menubar__status-dot {
+  position: absolute;
+  right: 1px;
+  bottom: 1px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--arco-text-tertiary);
+  border: 1px solid var(--arco-bg-chrome);
+}
+
+.arco-menubar__status-dot--online {
+  background: var(--arco-success);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--arco-success) 55%, transparent);
+}
+
+.arco-menubar__status-dot--offline {
+  background: var(--arco-danger);
+}
+
+.arco-menubar__volume-panel {
+  min-width: 196px;
+  padding: var(--arco-space-m);
+}
+
+.arco-menubar__volume-label {
+  display: block;
+  margin-bottom: var(--arco-space-s);
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+}
+
+.arco-menubar__volume-row {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+}
+
+.arco-menubar__volume-slider {
+  flex: 1;
+  accent-color: var(--arco-accent);
+}
+
+.arco-menubar__volume-value {
+  min-width: 2.5rem;
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+  text-align: right;
+}
+
+/* ── On-screen keyboard ───────────────────────────────────────────────────── */
+
+.arco-floating-keyboard {
+  position: fixed;
+  left: 50%;
+  bottom: var(--arco-space-l);
+  transform: translateX(-50%);
+  z-index: var(--arco-z-overlay);
+  width: min(720px, calc(100vw - var(--arco-space-xl) * 2));
+  pointer-events: auto;
+}
+
+.arco-keyboard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-m);
+  border-radius: var(--arco-radius-m);
+  background: var(--arco-bg-chrome);
+  backdrop-filter: var(--arco-backdrop-blur);
+  -webkit-backdrop-filter: var(--arco-backdrop-blur);
+  border: 1px solid var(--arco-border);
+  box-shadow: var(--arco-shadow-lg);
+}
+
+.arco-keyboard__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--arco-space-m);
+  padding: 0 var(--arco-space-xs);
+}
+
+.arco-keyboard__title {
+  font-size: var(--arco-text-xs);
+  font-weight: 600;
+  color: var(--arco-text-primary);
+}
+
+.arco-keyboard__layout {
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+  white-space: nowrap;
+}
+
+.arco-keyboard__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.arco-keyboard__row {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+}
+
+.arco-keyboard__key {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 36px;
+  padding: 0 4px;
+  border-radius: var(--arco-radius-s);
+  background: var(--arco-bg-surface);
+  border: 1px solid var(--arco-border);
+  color: var(--arco-text-primary);
+  font-size: var(--arco-text-sm);
+  line-height: 1;
+  transition:
+    background var(--arco-dur-fast),
+    border-color var(--arco-dur-fast),
+    color var(--arco-dur-fast);
+}
+
+.arco-keyboard__key:hover {
+  background: var(--arco-bg-hover);
+  border-color: color-mix(in srgb, var(--arco-accent) 25%, var(--arco-border));
+}
+
+.arco-keyboard__key:active {
+  background: color-mix(in srgb, var(--arco-accent) 12%, var(--arco-bg-surface));
+}
+
+.arco-keyboard__key--action {
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-secondary);
+}
+
+.arco-keyboard__key--active {
+  background: color-mix(in srgb, var(--arco-accent) 18%, var(--arco-bg-surface));
+  border-color: color-mix(in srgb, var(--arco-accent) 40%, var(--arco-border));
+  color: var(--arco-accent);
+}
+
+.arco-keyboard__key--wide {
+  flex-grow: 1.4;
+}
+
+.arco-keyboard__key--extra-wide {
+  flex-grow: 4;
+}
+
+.arco-keyboard__key--space {
+  font-size: var(--arco-text-xs);
+  letter-spacing: 0.02em;
 }
 
 /* ── Hover menu bar (App View top-edge reveal) ───────────────────────────── */
@@ -549,7 +737,6 @@
   padding-left: var(--arco-space-xs);
   margin-left: var(--arco-space-2xs);
   border-left: 1px solid var(--arco-border);
-  background: var(--arco-bg-chrome);
   overflow: visible;
 }
 

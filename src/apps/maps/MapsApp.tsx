@@ -1,3 +1,7 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
+import { useTranslation } from "react-i18next";
 import {
   ArrowLeftRight,
   ExternalLink,
@@ -14,12 +18,13 @@ import { MapsHistoryNav } from "./MapsHistoryNav";
 import { useMaps } from "./useMaps";
 
 export function MapsApp() {
+  const { t } = useTranslation();
   const maps = useMaps();
   const selected = maps.results.find((p) => p.id === maps.selectedId) ?? null;
 
   return (
     <div className="arco-maps">
-      <aside className="arco-maps__history-nav" aria-label="Maps session history">
+      <aside className="arco-maps__history-nav" aria-label={i18n.t(I18nKey.APPS$MAPS_MAPS_SESSION_HISTORY)}>
         <MapsHistoryNav
           mode={maps.mode}
           onModeChange={maps.setMode}
@@ -39,14 +44,14 @@ export function MapsApp() {
                 <Input
                   value={maps.query}
                   onChange={(e) => maps.setQuery(e.target.value)}
-                  placeholder="Search places or addresses"
-                  aria-label="Search places"
+                  placeholder={i18n.t(I18nKey.APPS$MAPS_SEARCH_PLACES_OR_ADDRESSES)}
+                  aria-label={i18n.t(I18nKey.APPS$MAPS_SEARCH_PLACES)}
                 />
                 {maps.query ? (
                   <Button
                     variant="ghost"
                     className="arco-btn--icon arco-maps__clear"
-                    aria-label="Clear search"
+                    aria-label={i18n.t(I18nKey.APPS$MAPS_CLEAR_SEARCH)}
                     onClick={() => maps.setQuery("")}
                   >
                     <X size={16} />
@@ -54,13 +59,13 @@ export function MapsApp() {
                 ) : null}
               </div>
 
-              <div className="arco-maps__results" role="listbox" aria-label="Search results">
+              <div className="arco-maps__results" role="listbox" aria-label={i18n.t(I18nKey.APPS$MAPS_SEARCH_RESULTS)}>
                 {maps.loading ? (
-                  <EmptyState title="Searching…">Querying OpenStreetMap</EmptyState>
+                  <EmptyState title={i18n.t(I18nKey.COMPONENTS$PATTERNS_SEARCHING)}><T k={I18nKey.APPS$MAPS_QUERYING_OPENSTREETMAP} /></EmptyState>
                 ) : maps.error ? (
-                  <EmptyState title="Search failed">{maps.error}</EmptyState>
+                  <EmptyState title={i18n.t(I18nKey.APPS$MAPS_SEARCH_FAILED)}>{maps.error}</EmptyState>
                 ) : maps.query && maps.results.length === 0 ? (
-                  <EmptyState title="No results">Try a different search term or zoom the map.</EmptyState>
+                  <EmptyState title={i18n.t(I18nKey.APPS$MAPS_NO_RESULTS)}><T k={I18nKey.APPS$MAPS_TRY_A_DIFFERENT_SEARCH_TERM_OR_ZOOM_THE_MAP} /></EmptyState>
                 ) : (
                   maps.results.map((place) => (
                     <ListItem
@@ -87,9 +92,7 @@ export function MapsApp() {
                   type="checkbox"
                   checked={maps.searchInView}
                   onChange={(e) => maps.setSearchInView(e.target.checked)}
-                />
-                Update results when map moves
-              </label>
+                /><T k={I18nKey.APPS$MAPS_UPDATE_RESULTS_WHEN_MAP_MOVES} /></label>
             </>
           ) : (
             <>
@@ -98,12 +101,12 @@ export function MapsApp() {
                   <span className="arco-maps__endpoint-dot arco-maps__endpoint-dot--start" aria-hidden />
                   {maps.useCurrentLocation ? (
                     <div className="arco-maps__endpoint-current">
-                      <span>Current location</span>
+                      <span><T k={I18nKey.APPS$MAPS_CURRENT_LOCATION} /></span>
                       <Button
                         variant="ghost"
                         className="arco-btn--icon"
-                        aria-label="Enter a start address instead"
-                        title="Enter a start address instead"
+                        aria-label={i18n.t(I18nKey.APPS$MAPS_ENTER_A_START_ADDRESS_INSTEAD)}
+                        title={i18n.t(I18nKey.APPS$MAPS_ENTER_A_START_ADDRESS_INSTEAD)}
                         onClick={() => maps.setUseCurrentLocation(false)}
                       >
                         <X size={14} />
@@ -113,8 +116,8 @@ export function MapsApp() {
                     <Input
                       value={maps.fromQuery}
                       onChange={(e) => maps.setFromQuery(e.target.value)}
-                      placeholder="Choose starting point"
-                      aria-label="Starting point"
+                      placeholder={i18n.t(I18nKey.APPS$MAPS_CHOOSE_STARTING_POINT)}
+                      aria-label={i18n.t(I18nKey.APPS$MAPS_STARTING_POINT)}
                     />
                   )}
                 </div>
@@ -124,13 +127,13 @@ export function MapsApp() {
                   <Input
                     value={maps.toQuery}
                     onChange={(e) => maps.setToQuery(e.target.value)}
-                    placeholder="Choose destination"
-                    aria-label="Destination"
+                    placeholder={i18n.t(I18nKey.APPS$MAPS_CHOOSE_DESTINATION)}
+                    aria-label={i18n.t(I18nKey.APPS$MAPS_DESTINATION)}
                   />
                 </div>
 
                 <div className="arco-maps__directions-actions">
-                  <Button variant="ghost" className="arco-btn--icon" aria-label="Swap start and destination" onClick={maps.swapEndpoints}>
+                  <Button variant="ghost" className="arco-btn--icon" aria-label={i18n.t(I18nKey.APPS$MAPS_SWAP_START_AND_DESTINATION)} onClick={maps.swapEndpoints}>
                     <ArrowLeftRight size={16} />
                   </Button>
                   {!maps.useCurrentLocation ? (
@@ -142,9 +145,7 @@ export function MapsApp() {
                         maps.setFromQuery("");
                       }}
                     >
-                      <LocateFixed size={14} aria-hidden />
-                      Use my location
-                    </Button>
+                      <LocateFixed size={14} aria-hidden /><T k={I18nKey.APPS$MAPS_USE_MY_LOCATION} /></Button>
                   ) : null}
                   <Button variant="primary" className="arco-maps__route-btn" onClick={() => void maps.getDirections()} disabled={maps.routeLoading}>
                     <Navigation size={14} aria-hidden />
@@ -154,7 +155,7 @@ export function MapsApp() {
               </div>
 
               <div className="arco-maps__results">
-                {maps.routeError ? <EmptyState title="Directions failed">{maps.routeError}</EmptyState> : null}
+                {maps.routeError ? <EmptyState title={i18n.t(I18nKey.APPS$MAPS_DIRECTIONS_FAILED)}>{maps.routeError}</EmptyState> : null}
                 {maps.route ? (
                   <>
                     <div className="arco-maps__route-summary">
@@ -165,11 +166,11 @@ export function MapsApp() {
                     </div>
                     <div className="arco-maps__route-endpoints">
                       <div>
-                        <span className="arco-maps__result-category">From</span>
+                        <span className="arco-maps__result-category"><T k={I18nKey.APPS$MAPS_FROM} /></span>
                         <span>{maps.route.from.name}</span>
                       </div>
                       <div>
-                        <span className="arco-maps__result-category">To</span>
+                        <span className="arco-maps__result-category"><T k={I18nKey.APPS$MAPS_TO} /></span>
                         <span>{maps.route.to.name}</span>
                       </div>
                     </div>
@@ -186,7 +187,7 @@ export function MapsApp() {
                     </ol>
                   </>
                 ) : !maps.routeError && !maps.routeLoading ? (
-                  <EmptyState title="Plan a route">Enter a destination and choose Get directions.</EmptyState>
+                  <EmptyState title={i18n.t(I18nKey.APPS$MAPS_PLAN_A_ROUTE)}><T k={I18nKey.APPS$MAPS_ENTER_A_DESTINATION_AND_CHOOSE_GET_DIRECTIONS} /></EmptyState>
                 ) : null}
               </div>
             </>
@@ -212,28 +213,20 @@ export function MapsApp() {
             <p className="arco-maps__detail-address">{selected.address}</p>
             <div className="arco-maps__detail-actions">
               <Button variant="primary" onClick={() => void maps.directionsToPlace(selected)}>
-                <Navigation size={14} aria-hidden />
-                Directions
-              </Button>
+                <Navigation size={14} aria-hidden /><T k={I18nKey.APPS$MAPS_DIRECTIONS} /></Button>
               <a
                 className="arco-maps__detail-link"
                 href={`https://www.openstreetmap.org/?mlat=${selected.lat}&mlon=${selected.lon}#map=16/${selected.lat}/${selected.lon}`}
                 target="_blank"
                 rel="noopener noreferrer"
-              >
-                Open in OpenStreetMap
-                <ExternalLink size={14} aria-hidden />
+              ><T k={I18nKey.APPS$MAPS_OPEN_IN_OPENSTREETMAP} /><ExternalLink size={14} aria-hidden />
               </a>
             </div>
           </div>
         ) : null}
 
-        <div className="arco-maps__attribution">
-          Map data &copy;{" "}
-          <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">
-            OpenStreetMap
-          </a>{" "}
-          contributors · Routing by{" "}
+        <div className="arco-maps__attribution"><T k={I18nKey.APPS$MAPS_MAP_DATA_COPY} />{" "}
+          <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer"><T k={I18nKey.APPS$MAPS_OPENSTREETMAP} /></a>{" "}<T k={I18nKey.APPS$MAPS_CONTRIBUTORS_ROUTING_BY} />{" "}
           <a href="https://project-osrm.org/" target="_blank" rel="noopener noreferrer">
             OSRM
           </a>

@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 /**
  * ProjectPicker — the Studio's "Open Folder" control (Cursor's folder-open,
  * server-side). A dropdown lists opened projects plus the built-in sandbox;
@@ -150,13 +153,9 @@ export function ProjectPicker({ compact }: ProjectPickerProps) {
               ))}
               <div className="arco-projectpicker__divider" />
               <button className="arco-projectpicker__item" onClick={() => void nativePick()}>
-                <FolderSearch size={13} />
-                Choose in Finder…
-              </button>
+                <FolderSearch size={13} /><T k={I18nKey.APPS$STUDIO_CHOOSE_IN_FINDER} /></button>
               <button className="arco-projectpicker__item" onClick={() => void browse()}>
-                <FolderOpen size={13} />
-                Browse…
-              </button>
+                <FolderOpen size={13} /><T k={I18nKey.APPS$STUDIO_BROWSE} /></button>
             </>
           ) : (
             <div className="arco-projectpicker__browser">
@@ -165,7 +164,7 @@ export function ProjectPicker({ compact }: ProjectPickerProps) {
                   className="arco-btn arco-btn--icon"
                   disabled={!browsing.parent}
                   onClick={() => browsing.parent && void browse(browsing.parent)}
-                  aria-label="Parent directory"
+                  aria-label={i18n.t(I18nKey.APPS$STUDIO_PARENT_DIRECTORY)}
                 >
                   <CornerLeftUp size={12} />
                 </button>
@@ -175,12 +174,10 @@ export function ProjectPicker({ compact }: ProjectPickerProps) {
                 <button
                   className="arco-btn arco-btn--primary"
                   onClick={() => void choose(browsing.path)}
-                >
-                  Open this
-                </button>
+                ><T k={I18nKey.APPS$STUDIO_OPEN_THIS} /></button>
               </div>
               <div className="arco-projectpicker__dirs arco-scroll">
-                {browsing.dirs.length === 0 && <div className="arco-empty">No subfolders</div>}
+                {browsing.dirs.length === 0 && <div className="arco-empty"><T k={I18nKey.APPS$STUDIO_NO_SUBFOLDERS} /></div>}
                 {browsing.dirs.map((d) => (
                   <button
                     key={d.path}
@@ -190,7 +187,7 @@ export function ProjectPicker({ compact }: ProjectPickerProps) {
                   >
                     {d.isRepo ? <FolderGit2 size={13} style={{ color: "var(--arco-accent)" }} /> : <Folder size={13} />}
                     <span style={{ flex: 1 }}>{d.name}</span>
-                    {d.isRepo && <span className="arco-projectpicker__repotag">git</span>}
+                    {d.isRepo && <span className="arco-projectpicker__repotag"><T k={I18nKey.APPS$STUDIO_GIT} /></span>}
                   </button>
                 ))}
               </div>
@@ -204,8 +201,7 @@ export function ProjectPicker({ compact }: ProjectPickerProps) {
                   className="arco-btn arco-btn--primary"
                   onClick={() => void api.openPrivacySettings()}
                 >
-                  <ShieldCheck size={13} /> Grant access in System Settings
-                </button>
+                  <ShieldCheck size={13} /><T k={I18nKey.APPS$STUDIO_GRANT_ACCESS_IN_SYSTEM_SETTINGS} /></button>
               )}
             </div>
           )}

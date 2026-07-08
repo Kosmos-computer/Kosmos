@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import { T } from "../../i18n/T";
 import type { ReactNode } from "react";
 
 export interface SectionProps {
@@ -29,7 +31,7 @@ export function FormActions({ children, saved }: FormActionsProps) {
   return (
     <div className="arco-section__actions">
       {children}
-      {saved ? <span className="arco-section__saved">Saved</span> : null}
+      {saved ? <span className="arco-section__saved"><T k={I18nKey.COMPONENTS$PATTERNS_SAVED} /></span> : null}
     </div>
   );
 }

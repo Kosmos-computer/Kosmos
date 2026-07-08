@@ -1,3 +1,5 @@
+import { I18nKey } from "../../../i18n/declaration";
+import { T } from "../../../i18n/T";
 /**
  * BrowserShell — reusable browser chrome + iframe preview extracted from Studio's
  * Browser tab. Apps like Search use this to browse result URLs in-shell.
@@ -121,7 +123,7 @@ export function BrowserShell({
       ) : (
         <div className="arco-empty arco-browser__empty">
           <Globe size={18} />
-          <span>Enter a URL above to preview a page.</span>
+          <span><T k={I18nKey.COMPONENTS$PATTERNS_ENTER_A_URL_ABOVE_TO_PREVIEW_A_PAGE} /></span>
         </div>
       )}
     </div>

@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import {
   Image,
   Mic,
@@ -28,12 +31,10 @@ function MessageContent({ message, contactName }: { message: MessengerMessage; c
           <Video size={18} />
         </div>
         <div className="arco-messenger__call-body">
-          <strong>Video call</strong>
+          <strong><T k={I18nKey.APPS$MESSENGER_VIDEO_CALL} /></strong>
           <span>{message.call.duration}</span>
         </div>
-        <Button variant="ghost" size="default" className="arco-messenger__call-again">
-          Call again
-        </Button>
+        <Button variant="ghost" size="default" className="arco-messenger__call-again"><T k={I18nKey.APPS$MESSENGER_CALL_AGAIN} /></Button>
       </div>
     );
   }
@@ -78,16 +79,16 @@ function PopoutComposer({
   return (
     <footer className="arco-messenger__composer">
       <div className="arco-messenger__composer-tools">
-        <Button variant="ghost" size="icon" aria-label="Voice message">
+        <Button variant="ghost" size="icon" aria-label={i18n.t(I18nKey.APPS$MESSENGER_VOICE_MESSAGE)}>
           <Mic size={18} />
         </Button>
-        <Button variant="ghost" size="icon" aria-label="Attach photo">
+        <Button variant="ghost" size="icon" aria-label={i18n.t(I18nKey.APPS$MESSENGER_ATTACH_PHOTO)}>
           <Image size={18} />
         </Button>
-        <Button variant="ghost" size="icon" aria-label="Stickers">
+        <Button variant="ghost" size="icon" aria-label={i18n.t(I18nKey.APPS$MESSENGER_STICKERS)}>
           <Sticker size={18} />
         </Button>
-        <Button variant="ghost" size="icon" aria-label="GIF">
+        <Button variant="ghost" size="icon" aria-label={i18n.t(I18nKey.APPS$MESSENGER_GIF)}>
           <span className="arco-messenger__gif-label">GIF</span>
         </Button>
       </div>
@@ -95,7 +96,7 @@ function PopoutComposer({
         <Input
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          placeholder="Aa"
+          placeholder={i18n.t(I18nKey.APPS$SETTINGS_AA)}
           aria-label={`Message ${contactName}`}
           onKeyDown={(event) => {
             if (event.key === "Enter" && !event.shiftKey) {
@@ -104,14 +105,14 @@ function PopoutComposer({
             }
           }}
         />
-        <Button variant="ghost" size="icon" aria-label="Emoji">
+        <Button variant="ghost" size="icon" aria-label={i18n.t(I18nKey.APPS$MESSENGER_EMOJI)}>
           <Smile size={18} />
         </Button>
       </div>
       <Button
         variant="ghost"
         size="icon"
-        aria-label="Send like"
+        aria-label={i18n.t(I18nKey.APPS$MESSENGER_SEND_LIKE)}
         className="arco-messenger__like-btn"
         onClick={() => {
           if (!value.trim()) onChange("👍");
@@ -176,16 +177,16 @@ export function MessengerPopout({
           </div>
         </div>
         <div className="arco-messenger__popout-actions">
-          <Button variant="ghost" size="icon" aria-label="Call">
+          <Button variant="ghost" size="icon" aria-label={i18n.t(I18nKey.APPS$CONTACTS_CALL)}>
             <Phone size={16} />
           </Button>
-          <Button variant="ghost" size="icon" aria-label="Video call">
+          <Button variant="ghost" size="icon" aria-label={i18n.t(I18nKey.APPS$MESSENGER_VIDEO_CALL)}>
             <Video size={16} />
           </Button>
-          <Button variant="ghost" size="icon" aria-label="Minimize" onClick={onMinimize}>
+          <Button variant="ghost" size="icon" aria-label={i18n.t(I18nKey.APPS$MESSENGER_MINIMIZE)} onClick={onMinimize}>
             <Minus size={16} />
           </Button>
-          <Button variant="ghost" size="icon" aria-label="Close" onClick={onClose}>
+          <Button variant="ghost" size="icon" aria-label={i18n.t(I18nKey.COMMON$CLOSE)} onClick={onClose}>
             <X size={16} />
           </Button>
         </div>

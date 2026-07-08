@@ -102,4 +102,7 @@ const i18n = new Proxy({} as I18nInstance, {
   },
 }) as I18nInstance;
 
+export { T } from "./T";
+export type { TProps } from "./T";
+
 export default i18n;

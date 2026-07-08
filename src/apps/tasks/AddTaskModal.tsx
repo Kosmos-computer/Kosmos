@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { useEffect, useState } from "react";
 import { CheckSquare, X } from "lucide-react";
 import { useAuthStore } from "../../os/auth/authStore";
@@ -88,42 +91,38 @@ export function AddTaskModal({
             <CheckSquare size={18} aria-hidden />
             <h2 id="task-modal-title">{isEditing ? "Edit task" : "Add task"}</h2>
           </div>
-          <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onClose} aria-label="Close">
+          <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onClose} aria-label={i18n.t(I18nKey.COMMON$CLOSE)}>
             <X size={16} />
           </button>
         </header>
 
         <div className="arco-task-modal__body">
           <section className="arco-task-modal__section">
-            <label className="arco-task-modal__label" htmlFor="add-task-title-input">
-              Title
-            </label>
+            <label className="arco-task-modal__label" htmlFor="add-task-title-input"><T k={I18nKey.APPS$TASKS_TITLE} /></label>
             <Input
               id="add-task-title-input"
               value={title}
               onChange={(event) => setTitle(event.target.value)}
-              placeholder="What needs to get done?"
+              placeholder={i18n.t(I18nKey.APPS$TASKS_WHAT_NEEDS_TO_GET_DONE)}
               autoFocus
             />
           </section>
 
           <section className="arco-task-modal__section">
-            <label className="arco-task-modal__label" htmlFor="add-task-description">
-              Description (optional)
-            </label>
+            <label className="arco-task-modal__label" htmlFor="add-task-description"><T k={I18nKey.APPS$TASKS_DESCRIPTION_OPTIONAL} /></label>
             <textarea
               id="add-task-description"
               className="arco-input arco-task-modal__textarea"
               value={description}
               onChange={(event) => setDescription(event.target.value)}
-              placeholder="Add notes or context"
+              placeholder={i18n.t(I18nKey.APPS$TASKS_ADD_NOTES_OR_CONTEXT)}
               rows={3}
             />
           </section>
 
           <section className="arco-task-modal__section">
-            <span className="arco-task-modal__label">Priority</span>
-            <div className="arco-task-modal__chips" role="group" aria-label="Task priority">
+            <span className="arco-task-modal__label"><T k={I18nKey.APPS$TASKS_PRIORITY} /></span>
+            <div className="arco-task-modal__chips" role="group" aria-label={i18n.t(I18nKey.APPS$TASKS_TASK_PRIORITY)}>
               {PRIORITY_OPTIONS.map((option) => (
                 <Chip
                   key={option.id}
@@ -142,9 +141,7 @@ export function AddTaskModal({
           </section>
 
           <section className="arco-task-modal__section">
-            <label className="arco-task-modal__label" htmlFor="add-task-due-date">
-              Due date (optional)
-            </label>
+            <label className="arco-task-modal__label" htmlFor="add-task-due-date"><T k={I18nKey.APPS$TASKS_DUE_DATE_OPTIONAL} /></label>
             <Input
               id="add-task-due-date"
               type="date"
@@ -155,9 +152,7 @@ export function AddTaskModal({
         </div>
 
         <footer className="arco-task-modal__footer">
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
+          <Button variant="ghost" onClick={onClose}><T k={I18nKey.COMMON$CANCEL} /></Button>
           <Button variant="primary" onClick={handleSave} disabled={!canSave}>
             {isEditing ? "Save changes" : "Add task"}
           </Button>

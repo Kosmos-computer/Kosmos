@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 /**
  * UsagePopover — the context-usage indicator under the composer: a colored
  * dot + label trigger ("42% context" → "Context over limit") opening a
@@ -64,10 +67,10 @@ export function UsagePopover({ stats, onPlanUsageClick }: UsagePopoverProps) {
       </button>
 
       {open && (
-        <div role="dialog" aria-label="Usage" className="arco-usage__panel">
+        <div role="dialog" aria-label={i18n.t(I18nKey.COMPONENTS$COMPOSER_USAGE)} className="arco-usage__panel">
           <div className="arco-usage__section">
             <div className="arco-usage__row">
-              <span className="arco-usage__rowlabel">Context window</span>
+              <span className="arco-usage__rowlabel"><T k={I18nKey.COMPONENTS$COMPOSER_CONTEXT_WINDOW} /></span>
               <span className="arco-usage__rowvalue">
                 {formatTokensK(stats.contextUsedK)} / {formatTokensK(stats.contextLimitK)} ({percent}
                 %)
@@ -86,15 +89,15 @@ export function UsagePopover({ stats, onPlanUsageClick }: UsagePopoverProps) {
 
           <div className="arco-usage__section">
             <button type="button" className="arco-usage__planbutton" onClick={onPlanUsageClick}>
-              <span className="arco-usage__rowlabel">Plan usage</span>
+              <span className="arco-usage__rowlabel"><T k={I18nKey.COMPONENTS$COMPOSER_PLAN_USAGE} /></span>
               <ArrowUpRight size={14} className="arco-usage__planicon" />
             </button>
             <div className="arco-usage__row">
-              <span className="arco-usage__rowlabel">5-hour limit</span>
+              <span className="arco-usage__rowlabel"><T k={I18nKey.COMPONENTS$COMPOSER_5_HOUR_LIMIT} /></span>
               <span className="arco-usage__rowmuted">{stats.fiveHourPercent}%</span>
             </div>
             <div className="arco-usage__row">
-              <span className="arco-usage__rowlabel">Weekly · all models</span>
+              <span className="arco-usage__rowlabel"><T k={I18nKey.COMPONENTS$COMPOSER_WEEKLY_ALL_MODELS} /></span>
               <span className="arco-usage__rowmuted">{stats.weeklyPercent}%</span>
             </div>
           </div>

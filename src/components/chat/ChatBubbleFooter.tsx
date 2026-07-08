@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
 /**
  * Timestamp + action rail shown under a chat bubble (user or assistant) —
  * ported from the longformer UI Experiments MessageBubble pattern. Copy and
@@ -121,24 +123,24 @@ export function ChatBubbleFooter({
       <button
         type="button"
         className="arco-chat__bubble-action"
-        aria-label="Copy message"
+        aria-label={i18n.t(I18nKey.COMPONENTS$CHAT_COPY_MESSAGE)}
         onClick={() => void copy()}
       >
         {copied ? <Check size={13} /> : <Copy size={13} />}
       </button>
       {variant === "user" ? (
         <>
-          <GhostAction label="Edit message" icon={Pencil} />
-          <GhostAction label="Restore checkpoint" icon={Undo2} />
+          <GhostAction label={i18n.t(I18nKey.COMPONENTS$CHAT_EDIT_MESSAGE)} icon={Pencil} />
+          <GhostAction label={i18n.t(I18nKey.COMPONENTS$CHAT_RESTORE_CHECKPOINT)} icon={Undo2} />
         </>
       ) : (
         <>
           <ReadAloudAction text={text} />
-          <GhostAction label="Regenerate response" icon={RefreshCw} />
-          <GhostAction label="Good response" icon={ThumbsUp} />
-          <GhostAction label="Bad response" icon={ThumbsDown} />
-          <GhostAction label="Share response" icon={Share2} />
-          <GhostAction label="Fork conversation" icon={GitFork} />
+          <GhostAction label={i18n.t(I18nKey.COMPONENTS$CHAT_REGENERATE_RESPONSE)} icon={RefreshCw} />
+          <GhostAction label={i18n.t(I18nKey.COMPONENTS$CHAT_GOOD_RESPONSE)} icon={ThumbsUp} />
+          <GhostAction label={i18n.t(I18nKey.COMPONENTS$CHAT_BAD_RESPONSE)} icon={ThumbsDown} />
+          <GhostAction label={i18n.t(I18nKey.COMPONENTS$CHAT_SHARE_RESPONSE)} icon={Share2} />
+          <GhostAction label={i18n.t(I18nKey.COMPONENTS$CHAT_FORK_CONVERSATION)} icon={GitFork} />
         </>
       )}
     </div>

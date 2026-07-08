@@ -1,5 +1,9 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { EmptyState } from "../../components/ui";
 import type { TorrentDetailTab, TorrentItem } from "./types";
+import { useTranslation } from "react-i18next";
 
 const TABS: { id: TorrentDetailTab; label: string }[] = [
   { id: "general", label: "General" },
@@ -18,29 +22,29 @@ export interface TorrentDetailPaneProps {
 function GeneralTab({ torrent }: { torrent: TorrentItem }) {
   return (
     <dl className="arco-downloads-detail__grid">
-      <dt>Location</dt>
-      <dd>~/Downloads/Complete</dd>
-      <dt>Hash</dt>
-      <dd className="arco-downloads-detail__mono">a3f2…9c01 (stub)</dd>
-      <dt>Tracker</dt>
+      <dt><T k={I18nKey.APPS$DOWNLOADS_LOCATION} /></dt>
+      <dd><T k={I18nKey.APPS$DOWNLOADS_DOWNLOADS_COMPLETE} /></dd>
+      <dt><T k={I18nKey.APPS$DOWNLOADS_HASH} /></dt>
+      <dd className="arco-downloads-detail__mono"><T k={I18nKey.APPS$DOWNLOADS_A3F2_9C01_STUB} /></dd>
+      <dt><T k={I18nKey.APPS$DOWNLOADS_TRACKER} /></dt>
       <dd>{torrent.tracker}</dd>
-      <dt>Last active</dt>
+      <dt><T k={I18nKey.APPS$DOWNLOADS_LAST_ACTIVE} /></dt>
       <dd>{torrent.lastActive}</dd>
-      <dt>Added</dt>
+      <dt><T k={I18nKey.APPS$DOWNLOADS_ADDED} /></dt>
       <dd>{new Date(torrent.addedAt).toLocaleString()}</dd>
-      <dt>Download speed</dt>
+      <dt><T k={I18nKey.APPS$DOWNLOADS_DOWNLOAD_SPEED} /></dt>
       <dd>{torrent.downSpeed}</dd>
-      <dt>Upload speed</dt>
+      <dt><T k={I18nKey.APPS$DOWNLOADS_UPLOAD_SPEED} /></dt>
       <dd>{torrent.upSpeed}</dd>
-      <dt>Downloaded</dt>
+      <dt><T k={I18nKey.APPS$DOWNLOADS_DOWNLOADED} /></dt>
       <dd>{torrent.downloaded}</dd>
-      <dt>Uploaded</dt>
+      <dt><T k={I18nKey.APPS$DOWNLOADS_UPLOADED} /></dt>
       <dd>{torrent.uploaded}</dd>
-      <dt>Remaining</dt>
+      <dt><T k={I18nKey.APPS$DOWNLOADS_REMAINING} /></dt>
       <dd>{torrent.remaining}</dd>
       {torrent.error ? (
         <>
-          <dt>Error</dt>
+          <dt><T k={I18nKey.APPS$DOWNLOADS_ERROR} /></dt>
           <dd className="arco-downloads-detail__error">{torrent.error}</dd>
         </>
       ) : null}
@@ -53,11 +57,11 @@ function TrackersTab({ torrent }: { torrent: TorrentItem }) {
     <table className="arco-downloads-detail__table">
       <thead>
         <tr>
-          <th scope="col">Tracker</th>
-          <th scope="col">Status</th>
-          <th scope="col">Last announce</th>
-          <th scope="col">Seeds</th>
-          <th scope="col">Leechers</th>
+          <th scope="col"><T k={I18nKey.APPS$DOWNLOADS_TRACKER} /></th>
+          <th scope="col"><T k={I18nKey.APPS$DOWNLOADS_STATUS} /></th>
+          <th scope="col"><T k={I18nKey.APPS$DOWNLOADS_LAST_ANNOUNCE} /></th>
+          <th scope="col"><T k={I18nKey.APPS$DOWNLOADS_SEEDS} /></th>
+          <th scope="col"><T k={I18nKey.APPS$DOWNLOADS_LEECHERS} /></th>
         </tr>
       </thead>
       <tbody>
@@ -76,19 +80,20 @@ function TrackersTab({ torrent }: { torrent: TorrentItem }) {
 }
 
 function PeersTab({ torrent }: { torrent: TorrentItem }) {
+  const { t } = useTranslation();
   if (torrent.peersList.length === 0) {
-    return <EmptyState title="No peers">Connected peers will appear here.</EmptyState>;
+    return <EmptyState title={i18n.t(I18nKey.APPS$DOWNLOADS_NO_PEERS)}><T k={I18nKey.APPS$DOWNLOADS_CONNECTED_PEERS_WILL_APPEAR_HERE} /></EmptyState>;
   }
   return (
     <table className="arco-downloads-detail__table">
       <thead>
         <tr>
-          <th scope="col">Address</th>
-          <th scope="col">Client</th>
-          <th scope="col">Progress</th>
-          <th scope="col">Down</th>
-          <th scope="col">Up</th>
-          <th scope="col">Flags</th>
+          <th scope="col"><T k={I18nKey.APPS$DOWNLOADS_ADDRESS} /></th>
+          <th scope="col"><T k={I18nKey.APPS$DOWNLOADS_CLIENT} /></th>
+          <th scope="col"><T k={I18nKey.APPS$DOWNLOADS_PROGRESS} /></th>
+          <th scope="col"><T k={I18nKey.APPS$DOWNLOADS_DOWN_2} /></th>
+          <th scope="col"><T k={I18nKey.APPS$DOWNLOADS_UP_2} /></th>
+          <th scope="col"><T k={I18nKey.APPS$DOWNLOADS_FLAGS} /></th>
         </tr>
       </thead>
       <tbody>
@@ -112,11 +117,11 @@ function FilesTab({ torrent }: { torrent: TorrentItem }) {
     <table className="arco-downloads-detail__table">
       <thead>
         <tr>
-          <th scope="col">Name</th>
-          <th scope="col">Size</th>
-          <th scope="col">Progress</th>
-          <th scope="col">Priority</th>
-          <th scope="col">Wanted</th>
+          <th scope="col"><T k={I18nKey.APPS$DOWNLOADS_NAME} /></th>
+          <th scope="col"><T k={I18nKey.APPS$DOWNLOADS_SIZE} /></th>
+          <th scope="col"><T k={I18nKey.APPS$DOWNLOADS_PROGRESS} /></th>
+          <th scope="col"><T k={I18nKey.APPS$DOWNLOADS_PRIORITY} /></th>
+          <th scope="col"><T k={I18nKey.APPS$DOWNLOADS_WANTED} /></th>
         </tr>
       </thead>
       <tbody>
@@ -137,26 +142,27 @@ function FilesTab({ torrent }: { torrent: TorrentItem }) {
 function StatisticsTab({ torrent }: { torrent: TorrentItem }) {
   return (
     <dl className="arco-downloads-detail__grid">
-      <dt>Ratio</dt>
+      <dt><T k={I18nKey.APPS$DOWNLOADS_RATIO} /></dt>
       <dd>{torrent.ratio.toFixed(2)}</dd>
-      <dt>Wasted</dt>
+      <dt><T k={I18nKey.APPS$DOWNLOADS_WASTED} /></dt>
       <dd>{torrent.wasted}</dd>
-      <dt>Max peers</dt>
+      <dt><T k={I18nKey.APPS$DOWNLOADS_MAX_PEERS} /></dt>
       <dd>{torrent.maxPeers}</dd>
-      <dt>Download limit</dt>
+      <dt><T k={I18nKey.APPS$DOWNLOADS_DOWNLOAD_LIMIT} /></dt>
       <dd>{torrent.downLimit}</dd>
-      <dt>Upload limit</dt>
+      <dt><T k={I18nKey.APPS$DOWNLOADS_UPLOAD_LIMIT} /></dt>
       <dd>{torrent.upLimit}</dd>
-      <dt>Tracker update</dt>
+      <dt><T k={I18nKey.APPS$DOWNLOADS_TRACKER_UPDATE} /></dt>
       <dd>{torrent.trackerUpdate}</dd>
     </dl>
   );
 }
 
 export function TorrentDetailPane({ torrent, tab, onTabChange }: TorrentDetailPaneProps) {
+  const { t } = useTranslation();
   return (
-    <section className="arco-downloads-detail" aria-label="Torrent inspector">
-      <div className="arco-downloads-detail__tabs" role="tablist" aria-label="Torrent detail">
+    <section className="arco-downloads-detail" aria-label={i18n.t(I18nKey.APPS$DOWNLOADS_TORRENT_INSPECTOR)}>
+      <div className="arco-downloads-detail__tabs" role="tablist" aria-label={i18n.t(I18nKey.APPS$DOWNLOADS_TORRENT_DETAIL)}>
         {TABS.map((entry) => (
           <button
             key={entry.id}
@@ -177,7 +183,7 @@ export function TorrentDetailPane({ torrent, tab, onTabChange }: TorrentDetailPa
       </div>
       <div className="arco-downloads-detail__body arco-scroll" role="tabpanel">
         {!torrent ? (
-          <EmptyState title="No selection">Select a torrent to inspect details.</EmptyState>
+          <EmptyState title={i18n.t(I18nKey.APPS$DOWNLOADS_NO_SELECTION)}><T k={I18nKey.APPS$DOWNLOADS_SELECT_A_TORRENT_TO_INSPECT_DETAILS} /></EmptyState>
         ) : tab === "general" ? (
           <GeneralTab torrent={torrent} />
         ) : tab === "trackers" ? (

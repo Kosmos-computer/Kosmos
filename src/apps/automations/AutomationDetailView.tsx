@@ -1,8 +1,12 @@
+import { I18nKey } from "../../i18n/declaration";
+import { T } from "../../i18n/T";
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft, Clock, Globe, Play, Send, Trash2 } from "lucide-react";
 import type { Automation, AutomationRun, ChannelInfo } from "@shared/types";
 import { api } from "../../lib/api";
 import { useWindowStore } from "../../os/windowStore";
+import { systemAppTitle } from "../../os/systemAppTitles";
 import { useOsStore } from "../../os/osStore";
 import { primeComposer } from "../chat/composerBus";
 import { Button, Switch } from "../../components/ui";
@@ -31,7 +35,7 @@ function RunRow({ run }: { run: AutomationRun }) {
       type="button"
       className={`arco-run arco-run--${run.status === "ok" ? "ok" : run.status === "running" ? "running" : "error"}`}
       onClick={() => {
-        openWindow({ type: "system", app: "chat" }, "Chat");
+        openWindow({ type: "system", app: "chat" }, systemAppTitle("chat"));
         primeComposer({
           text: `Show me what happened in automation run session ${run.sessionId}`,
           submit: false,
@@ -55,6 +59,7 @@ export function AutomationDetailView({
   onBack: () => void;
   onChanged: () => void;
 }) {
+  const { t } = useTranslation();
   const notify = useOsStore((s) => s.notify);
   const [automation, setAutomation] = useState<Automation | null>(null);
   const [runs, setRuns] = useState<AutomationRun[]>([]);
@@ -86,9 +91,8 @@ export function AutomationDetailView({
     return (
       <div className="arco-module__inner">
         <Button onClick={onBack}>
-          <ArrowLeft size={13} /> Back
-        </Button>
-        <p>Automation not found.</p>
+          <ArrowLeft size={13} /><T k={I18nKey.COMMON$BACK} /></Button>
+        <p><T k={I18nKey.APPS$AUTOMATIONS_AUTOMATION_NOT_FOUND} /></p>
       </div>
     );
   }
@@ -103,8 +107,7 @@ export function AutomationDetailView({
     <div className="arco-module__inner">
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
         <Button onClick={onBack}>
-          <ArrowLeft size={13} /> Back
-        </Button>
+          <ArrowLeft size={13} /><T k={I18nKey.COMMON$BACK} /></Button>
         <div style={{ flex: 1, minWidth: 0 }}>
           <h2 className="arco-module__title" style={{ margin: 0 }}>
             {automation.name}
@@ -113,7 +116,11 @@ export function AutomationDetailView({
         </div>
         <Switch
           checked={automation.enabled}
-          aria-label={`${automation.enabled ? "Disable" : "Enable"} ${automation.name}`}
+          aria-label={
+            automation.enabled
+              ? t(I18nKey.APPS$AUTOMATIONS_DISABLE_AUTOMATION, { name: automation.name })
+              : t(I18nKey.APPS$AUTOMATIONS_ENABLE_AUTOMATION, { name: automation.name })
+          }
           onChange={() =>
             void api.updateAutomation(automation.id, { enabled: !automation.enabled }).then(() => {
               onChanged();
@@ -129,10 +136,13 @@ export function AutomationDetailView({
             {automation.trigger.type === "event" ? <Globe size={16} /> : <Clock size={16} />}
           </span>
           <div className="arco-module-card__body">
-            <h3 className="arco-module-card__title">Configuration</h3>
-            <div className="arco-module-card__meta">
-              Created {new Date(automation.createdAt).toLocaleString()}
-              {automation.lastRun ? ` · Last run ${new Date(automation.lastRun).toLocaleString()}` : " · Never run"}
+            <h3 className="arco-module-card__title"><T k={I18nKey.APPS$AUTOMATIONS_CONFIGURATION} /></h3>
+            <div className="arco-module-card__meta"><T k={I18nKey.APPS$AUTOMATIONS_CREATED} />{new Date(automation.createdAt).toLocaleString()}
+              {automation.lastRun
+                ? t(I18nKey.APPS$AUTOMATIONS_LAST_RUN, {
+                    date: new Date(automation.lastRun).toLocaleString(),
+                  })
+                : t(I18nKey.APPS$AUTOMATIONS_NEVER_RUN)}
             </div>
           </div>
         </div>
@@ -143,16 +153,14 @@ export function AutomationDetailView({
               <Send size={10} style={{ verticalAlign: "-1px" }} /> {deliver}
             </span>
           ) : (
-            <span className="arco-module-card__pill">In Arco only</span>
+            <span className="arco-module-card__pill"><T k={I18nKey.APPS$AUTOMATIONS_IN_ARCO_ONLY} /></span>
           )}
         </div>
         {automation.trigger.type === "event" ? (
-          <p className="arco-module-card__desc">
-            Webhook: <code>/api/webhooks/automations/{automation.id}</code>
+          <p className="arco-module-card__desc"><T k={I18nKey.APPS$AUTOMATIONS_WEBHOOK} /><code><T k={I18nKey.APPS$AUTOMATIONS_API_WEBHOOKS_AUTOMATIONS} />{automation.id}</code>
             {automation.webhookSecret ? (
               <>
-                {" "}
-                · Header <code>X-Arco-Webhook-Signature: {automation.webhookSecret}</code>
+                {" "}<T k={I18nKey.APPS$AUTOMATIONS_HEADER} /><code><T k={I18nKey.APPS$AUTOMATIONS_X_ARCO_WEBHOOK_SIGNATURE} />{automation.webhookSecret}</code>
               </>
             ) : null}
           </p>
@@ -166,17 +174,17 @@ export function AutomationDetailView({
               void api
                 .runAutomation(automation.id)
                 .then(() => {
-                  notify(`Automation "${automation.name}" started`);
+                  notify(t(I18nKey.APPS$AUTOMATIONS_AUTOMATION_STARTED, { name: automation.name }));
                   onChanged();
                   void refresh();
                 })
-                .catch((err) => notify(err instanceof Error ? err.message : "Run failed"))
+                .catch((err) => notify(err instanceof Error ? err.message : t(I18nKey.APPS$AUTOMATIONS_RUN_FAILED)))
                 .finally(() => setRunning(false));
             }}
           >
-            <Play size={13} /> {running ? "Running…" : "Run now"}
+            <Play size={13} /> {running ? t(I18nKey.APPS$AUTOMATIONS_RUNNING) : t(I18nKey.APPS$AUTOMATIONS_RUN_NOW)}
           </Button>
-          <Button onClick={() => setEditOpen(true)}>Edit</Button>
+          <Button onClick={() => setEditOpen(true)}><T k={I18nKey.COMMON$EDIT} /></Button>
           <Button variant="danger" onClick={() => setDeleteOpen(true)}>
             <Trash2 size={13} />
           </Button>
@@ -184,9 +192,9 @@ export function AutomationDetailView({
       </section>
 
       <section>
-        <h3 className="arco-module__sectiontitle">Activity log</h3>
+        <h3 className="arco-module__sectiontitle"><T k={I18nKey.APPS$AUTOMATIONS_ACTIVITY_LOG} /></h3>
         {runs.length === 0 ? (
-          <p className="arco-listrow__sub">No runs yet.</p>
+          <p className="arco-listrow__sub"><T k={I18nKey.APPS$AUTOMATIONS_NO_RUNS_YET} /></p>
         ) : (
           <div className="arco-runs">
             {runs.map((run) => (
@@ -195,9 +203,7 @@ export function AutomationDetailView({
           </div>
         )}
         {runTotal > runs.length ? (
-          <Button style={{ marginTop: 8 }} onClick={() => setRunLimit((value) => value + 20)}>
-            Load more runs
-          </Button>
+          <Button style={{ marginTop: 8 }} onClick={() => setRunLimit((value) => value + 20)}><T k={I18nKey.APPS$AUTOMATIONS_LOAD_MORE_RUNS} /></Button>
         ) : null}
       </section>
 

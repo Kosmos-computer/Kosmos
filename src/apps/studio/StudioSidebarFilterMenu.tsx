@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
 /**
  * Filter menu for the conversations sidebar — organize mode and sort field,
  * matching agent-canvas ConversationPanelFilterMenu (subset of options).
@@ -55,10 +57,10 @@ export function StudioSidebarFilterMenu({
     <Menu
       side="bottom"
       align="end"
-      aria-label="Conversation list filters"
+      aria-label={i18n.t(I18nKey.APPS$STUDIO_CONVERSATION_LIST_FILTERS)}
       items={items}
       trigger={
-        <button type="button" className="arco-sidenav__filtericon" aria-label="Conversation list filters">
+        <button type="button" className="arco-sidenav__filtericon" aria-label={i18n.t(I18nKey.APPS$STUDIO_CONVERSATION_LIST_FILTERS)}>
           <ListFilter size={13} />
         </button>
       }

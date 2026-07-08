@@ -28,6 +28,8 @@ import {
   Code,
   Gift,
 } from "lucide-react";
+import i18n from "../../i18n";
+import { I18nKey } from "../../i18n/declaration";
 import { SETTINGS_STUB_NAV_GROUPS } from "./settingsStubMock";
 import type { StubSettingsSectionId } from "./settingsStubTypes";
 
@@ -117,48 +119,53 @@ export function isStubSettingsSection(sectionId: SettingsSectionId): sectionId i
   return STUB_SETTINGS_SECTION_IDS.has(sectionId);
 }
 
-export const SETTINGS_NAV_GROUPS: SettingsNavGroup[] = [
-  ...SETTINGS_STUB_NAV,
-  {
-    id: "general",
-    title: "General",
-    items: [
-      { id: "agent", label: "Agent", icon: Bot },
-      { id: "model", label: "Model provider", icon: Sparkles },
-      { id: "appearance", label: "Appearance", icon: Palette },
-    ],
-  },
-  {
-    id: "platform",
-    title: "Platform",
-    items: [
-      { id: "apps", label: "Apps", icon: AppWindow },
-      { id: "tools", label: "Tools", icon: Wrench },
-      { id: "mcp", label: "MCP servers", icon: Server },
-      { id: "skills", label: "Skills", icon: Layers },
-      { id: "memory", label: "Memory", icon: Brain, requiresWrite: true },
-    ],
-  },
-  {
-    id: "integrations",
-    title: "Integrations",
-    items: [
-      { id: "channels", label: "Channels", icon: Plug },
-      { id: "accounts", label: "Connected accounts", icon: Link2 },
-      { id: "external", label: "External access", icon: Globe },
-      { id: "providers", label: "Default providers", icon: Shield },
-    ],
-  },
-  {
-    id: "account",
-    title: "Account",
-    items: [
-      { id: "permissions", label: "Agent permissions", icon: Shield, requiresWrite: true },
-      { id: "password", label: "Password", icon: Lock },
-      { id: "users", label: "Users", icon: Users, requiresUsersManage: true },
-    ],
-  },
-];
+export function buildSettingsNavGroups(): SettingsNavGroup[] {
+  return [
+    ...SETTINGS_STUB_NAV,
+    {
+      id: "general",
+      title: i18n.t(I18nKey.SETTINGS$SECTION_GENERAL),
+      items: [
+        { id: "agent", label: i18n.t(I18nKey.SETTINGS$SECTION_AGENT), icon: Bot },
+        { id: "model", label: i18n.t(I18nKey.SETTINGS$SECTION_MODEL), icon: Sparkles },
+        { id: "appearance", label: i18n.t(I18nKey.SETTINGS$SECTION_APPEARANCE), icon: Palette },
+      ],
+    },
+    {
+      id: "platform",
+      title: i18n.t(I18nKey.SETTINGS$SECTION_PLATFORM),
+      items: [
+        { id: "apps", label: i18n.t(I18nKey.SETTINGS$SECTION_APPS), icon: AppWindow },
+        { id: "tools", label: i18n.t(I18nKey.SETTINGS$SECTION_TOOLS), icon: Wrench },
+        { id: "mcp", label: i18n.t(I18nKey.SETTINGS$SECTION_MCP), icon: Server },
+        { id: "skills", label: i18n.t(I18nKey.SETTINGS$SECTION_SKILLS), icon: Layers },
+        { id: "memory", label: i18n.t(I18nKey.SETTINGS$SECTION_MEMORY), icon: Brain, requiresWrite: true },
+      ],
+    },
+    {
+      id: "integrations",
+      title: i18n.t(I18nKey.SETTINGS$SECTION_INTEGRATIONS),
+      items: [
+        { id: "channels", label: i18n.t(I18nKey.SETTINGS$SECTION_CHANNELS), icon: Plug },
+        { id: "accounts", label: i18n.t(I18nKey.SETTINGS$SECTION_ACCOUNTS), icon: Link2 },
+        { id: "external", label: i18n.t(I18nKey.SETTINGS$SECTION_EXTERNAL), icon: Globe },
+        { id: "providers", label: i18n.t(I18nKey.SETTINGS$SECTION_PROVIDERS), icon: Shield },
+      ],
+    },
+    {
+      id: "account",
+      title: i18n.t(I18nKey.SETTINGS$SECTION_ACCOUNT),
+      items: [
+        { id: "permissions", label: i18n.t(I18nKey.SETTINGS$SECTION_PERMISSIONS), icon: Shield, requiresWrite: true },
+        { id: "password", label: i18n.t(I18nKey.SETTINGS$SECTION_PASSWORD), icon: Lock },
+        { id: "users", label: i18n.t(I18nKey.SETTINGS$SECTION_USERS), icon: Users, requiresUsersManage: true },
+      ],
+    },
+  ];
+}
+
+/** @deprecated Use buildSettingsNavGroups() for locale-aware labels. */
+export const SETTINGS_NAV_GROUPS: SettingsNavGroup[] = buildSettingsNavGroups();
 
 export function filterSettingsNavGroups(groups: SettingsNavGroup[], query: string): SettingsNavGroup[] {
   const normalized = query.trim().toLowerCase();
@@ -186,7 +193,8 @@ export function visibleSettingsNavGroups(options: {
   canWriteSettings: boolean;
   canManageUsers: boolean;
 }): SettingsNavGroup[] {
-  return SETTINGS_NAV_GROUPS.map((group) => ({
+  const groups = buildSettingsNavGroups();
+  return groups.map((group) => ({
     ...group,
     items: group.items.filter((item) => {
       if (item.requiresWrite && !options.canWriteSettings) return false;
@@ -222,7 +230,7 @@ export function settingsSectionLabel(
       if (child) return child.label;
     }
   }
-  return "Settings";
+  return i18n.t(I18nKey.COMMON$SETTINGS);
 }
 
 export const DEFAULT_SETTINGS_SECTION: SettingsSectionId = "agent";

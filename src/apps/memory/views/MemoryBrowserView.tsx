@@ -1,3 +1,6 @@
+import { I18nKey } from "../../../i18n/declaration";
+import i18n from "../../../i18n/index";
+import { T } from "../../../i18n/T";
 import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import type { MemoryEntry, MemoryKind } from "../types";
@@ -36,8 +39,8 @@ function MemoryCard({ entry }: { entry: MemoryEntry }) {
       <p className="arco-memory-card__summary">{entry.summary}</p>
       <div className="arco-memory-card__meta">
         <span className="arco-memory-card__kind">{KIND_LABELS[entry.kind]}</span>
-        <span>{entry.confidence}% confidence</span>
-        <span>Last accessed {formatRelative(entry.lastAccessedAt)}</span>
+        <span>{entry.confidence}<T k={I18nKey.APPS$MEMORY_CONFIDENCE} /></span>
+        <span><T k={I18nKey.APPS$MEMORY_LAST_ACCESSED} />{formatRelative(entry.lastAccessedAt)}</span>
       </div>
       <div className="arco-memory-card__confidence" aria-hidden="true">
         <div className="arco-memory-card__confidence-fill" style={{ width: `${entry.confidence}%` }} />
@@ -91,17 +94,15 @@ export function MemoryBrowserView({ entries }: { entries: MemoryEntry[] }) {
   return (
     <div className="arco-memory-view">
       <header className="arco-memory-view__header">
-        <h1 className="arco-memory-view__title">Memory</h1>
-        <p className="arco-memory-view__subtitle">
-          Episodic traces, semantic facts, working context, and procedural patterns.
-        </p>
+        <h1 className="arco-memory-view__title"><T k={I18nKey.APPS$MEMORY_MEMORY} /></h1>
+        <p className="arco-memory-view__subtitle"><T k={I18nKey.APPS$MEMORY_EPISODIC_TRACES_SEMANTIC_FACTS_WORKING_CONTEXT_AND_PROCE} /></p>
       </header>
 
       <div className="arco-memory-filters">
         <Input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search memories, tags, sources…"
+          placeholder={i18n.t(I18nKey.APPS$MEMORY_SEARCH_MEMORIES_TAGS_SOURCES)}
           startSlot={<Search size={14} aria-hidden="true" />}
           className="arco-memory-filters__search"
         />

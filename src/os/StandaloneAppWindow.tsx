@@ -1,3 +1,5 @@
+import { I18nKey } from "../i18n/declaration";
+import { T } from "../i18n/T";
 /**
  * Standalone Electron app window — one app, native OS chrome, no shell desktop.
  */
@@ -22,7 +24,7 @@ export function StandaloneAppWindow({ windowKey }: { windowKey: string }) {
   return (
     <AuthGate standalone>
       {!kind ? (
-        <EmptyState>Unknown app window.</EmptyState>
+        <EmptyState><T k={I18nKey.OS_STANDALONEAPPWINDOW_UNKNOWN_APP_WINDOW} /></EmptyState>
       ) : (
         <div className="arco-standalone-window">
           <WindowContent kind={kind} />

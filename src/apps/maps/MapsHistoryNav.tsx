@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { Car, Clock, MapPin, Search, Trash2 } from "lucide-react";
 import { ListItem, NavSidebar, NavSidebarSectionHeader } from "../../components/patterns";
 import { Button } from "../../components/ui";
@@ -24,7 +27,7 @@ export function MapsHistoryNav({
   return (
     <NavSidebar
       className="arco-maps-history-nav"
-      header={<h1 className="arco-maps-history-nav__title">Maps</h1>}
+      header={<h1 className="arco-maps-history-nav__title"><T k={I18nKey.APPS$MAPS_MAPS} /></h1>}
       quickLinks={[
         {
           id: "search",
@@ -46,12 +49,12 @@ export function MapsHistoryNav({
         history.length === 0 ? (
           <div className="arco-maps-history-nav__empty">
             <Clock size={16} aria-hidden />
-            <p>Places and routes you look up will appear here for this session.</p>
+            <p><T k={I18nKey.APPS$MAPS_PLACES_AND_ROUTES_YOU_LOOK_UP_WILL_APPEAR_HERE_FOR_THIS_} /></p>
           </div>
         ) : (
           <div className="arco-nav-sidebar__sections">
             <div>
-              <NavSidebarSectionHeader title="Session history" />
+              <NavSidebarSectionHeader title={i18n.t(I18nKey.APPS$MAPS_SESSION_HISTORY)} />
               <div className="arco-nav-sidebar__section-items">
                 {history.map((entry) => {
                   if (entry.kind === "place" && entry.place) {
@@ -91,9 +94,7 @@ export function MapsHistoryNav({
       footer={
         history.length > 0 ? (
           <Button variant="ghost" className="arco-maps-history-nav__clear" onClick={onClearHistory}>
-            <Trash2 size={14} aria-hidden />
-            Clear history
-          </Button>
+            <Trash2 size={14} aria-hidden /><T k={I18nKey.APPS$MAPS_CLEAR_HISTORY} /></Button>
         ) : null
       }
     />

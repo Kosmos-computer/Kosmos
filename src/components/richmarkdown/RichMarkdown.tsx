@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import { T } from "../../i18n/T";
 /**
  * Shared markdown pipeline — prose, widget fences, inline directives, and
  * optional openui-lang blocks (docs/rich-content-widgets-plan.md Phase 1–2).
@@ -47,7 +49,7 @@ function WidgetSegment({ source, open }: { source: string; open?: boolean }) {
   if (open) {
     return (
       <div className="arco-widget arco-widget--streaming">
-        <div className="arco-widget__error-label">Widget (streaming…)</div>
+        <div className="arco-widget__error-label"><T k={I18nKey.COMPONENTS$RICHMARKDOWN_WIDGET_STREAMING} /></div>
         <pre className="arco-richmd__pre">{source.trim() || "…"}</pre>
       </div>
     );

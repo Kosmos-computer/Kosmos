@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { useCallback, useMemo } from "react";
 import { Plus, Trash2, X } from "lucide-react";
 import { Menu, type MenuItem } from "../../components/Menu";
@@ -99,7 +102,7 @@ export function BentoWorkspace({ onClose }: BentoWorkspaceProps) {
           id: `add-${template.templateId}`,
           label: (
             <span className="arco-bento-menu__label">
-              <span>Add {template.label}</span>
+              <span><T k={I18nKey.COMMON$ADD} />{template.label}</span>
               <span className="arco-bento-menu__meta">
                 {template.colSpan}×{template.rowSpan}
               </span>
@@ -149,13 +152,13 @@ export function BentoWorkspace({ onClose }: BentoWorkspaceProps) {
         <div className="arco-bento-workspace__stage">
           <div className="arco-bento-workspace__toolbar">
             <Menu
-              aria-label="Widget actions"
+              aria-label={i18n.t(I18nKey.OS_BENTO_WIDGET_ACTIONS)}
               align="end"
               trigger={
                 <button
                   type="button"
                   className="arco-bento-workspace__float-btn"
-                  aria-label="Add or manage widgets"
+                  aria-label={i18n.t(I18nKey.OS_BENTO_ADD_OR_MANAGE_WIDGETS)}
                 >
                   <Plus size={16} />
                 </button>
@@ -166,7 +169,7 @@ export function BentoWorkspace({ onClose }: BentoWorkspaceProps) {
               type="button"
               className="arco-bento-workspace__float-btn"
               onClick={onClose}
-              aria-label="Close bento drawer"
+              aria-label={i18n.t(I18nKey.OS_BENTO_CLOSE_BENTO_DRAWER)}
             >
               <X size={16} />
             </button>

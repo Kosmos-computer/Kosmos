@@ -1,3 +1,5 @@
+import { I18nKey } from "../../../i18n/declaration";
+import { T } from "../../../i18n/T";
 import type { MemoryMetric } from "../types";
 
 const TONE_CLASS: Record<NonNullable<MemoryMetric["tone"]>, string> = {
@@ -11,10 +13,8 @@ export function MemoryDashboardView({ metrics }: { metrics: MemoryMetric[] }) {
   return (
     <div className="arco-memory-view">
       <header className="arco-memory-view__header">
-        <h1 className="arco-memory-view__title">Dashboard</h1>
-        <p className="arco-memory-view__subtitle">
-          Overview of memory entries, graph size, RAG activity, and vector health.
-        </p>
+        <h1 className="arco-memory-view__title"><T k={I18nKey.APPS$MEMORY_DASHBOARD} /></h1>
+        <p className="arco-memory-view__subtitle"><T k={I18nKey.APPS$MEMORY_OVERVIEW_OF_MEMORY_ENTRIES_GRAPH_SIZE_RAG_ACTIVITY_AND_V} /></p>
       </header>
       <div className="arco-memory-metrics">
         {metrics.map((metric) => (

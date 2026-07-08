@@ -1,8 +1,11 @@
+import { I18nKey } from "../../i18n/declaration";
+
 export interface RecommendedAutomation {
   id: string;
-  name: string;
-  category: string;
-  description: string;
+  nameKey: I18nKey;
+  categoryKey: I18nKey;
+  descriptionKey: I18nKey;
+  /** Agent prompt — kept in English for reliable tool use; UI strings are localized separately. */
   prompt: string;
   /** MCP server ids required before launch. */
   requiredMcpServerIds: string[];
@@ -12,9 +15,9 @@ export interface RecommendedAutomation {
 export const AUTOMATION_CATALOG: RecommendedAutomation[] = [
   {
     id: "morning-briefing",
-    name: "Morning briefing",
-    category: "Productivity",
-    description: "Summarize today's calendar, weather, and open tasks every morning.",
+    nameKey: I18nKey.APPS$AUTOMATIONS_CATALOG_MORNING_BRIEFING_NAME,
+    categoryKey: I18nKey.APPS$AUTOMATIONS_CATALOG_CATEGORY_PRODUCTIVITY,
+    descriptionKey: I18nKey.APPS$AUTOMATIONS_CATALOG_MORNING_BRIEFING_DESC,
     prompt:
       "Create a morning briefing automation that runs every weekday at 9am. Summarize my calendar for today, notable open tasks, and anything urgent from recent chat sessions. Keep it under 200 words.",
     requiredMcpServerIds: [],
@@ -22,9 +25,9 @@ export const AUTOMATION_CATALOG: RecommendedAutomation[] = [
   },
   {
     id: "dashboard-refresh",
-    name: "Dashboard refresh",
-    category: "Apps",
-    description: "Refresh live dashboard apps with the latest data on a schedule.",
+    nameKey: I18nKey.APPS$AUTOMATIONS_CATALOG_DASHBOARD_REFRESH_NAME,
+    categoryKey: I18nKey.APPS$AUTOMATIONS_CATALOG_CATEGORY_APPS,
+    descriptionKey: I18nKey.APPS$AUTOMATIONS_CATALOG_DASHBOARD_REFRESH_DESC,
     prompt:
       "Set up a daily automation at 8am that updates my dashboard apps with fresh data. Name each app explicitly and report what changed.",
     requiredMcpServerIds: [],
@@ -32,9 +35,9 @@ export const AUTOMATION_CATALOG: RecommendedAutomation[] = [
   },
   {
     id: "github-pr-reviewer",
-    name: "GitHub PR reviewer",
-    category: "GitHub",
-    description: "Review new pull requests when they open and post a concise summary.",
+    nameKey: I18nKey.APPS$AUTOMATIONS_CATALOG_GITHUB_PR_REVIEWER_NAME,
+    categoryKey: I18nKey.APPS$AUTOMATIONS_CATALOG_CATEGORY_GITHUB,
+    descriptionKey: I18nKey.APPS$AUTOMATIONS_CATALOG_GITHUB_PR_REVIEWER_DESC,
     prompt:
       "Create an event-triggered automation for GitHub pull_request.opened events. When a PR opens, read the diff and post a structured review summary (risks, test gaps, suggested follow-ups).",
     requiredMcpServerIds: ["github"],
@@ -42,9 +45,9 @@ export const AUTOMATION_CATALOG: RecommendedAutomation[] = [
   },
   {
     id: "github-repo-monitor",
-    name: "GitHub repo monitor",
-    category: "GitHub",
-    description: "Daily scan of repository activity and open issues.",
+    nameKey: I18nKey.APPS$AUTOMATIONS_CATALOG_GITHUB_REPO_MONITOR_NAME,
+    categoryKey: I18nKey.APPS$AUTOMATIONS_CATALOG_CATEGORY_GITHUB,
+    descriptionKey: I18nKey.APPS$AUTOMATIONS_CATALOG_GITHUB_REPO_MONITOR_DESC,
     prompt:
       "Schedule a weekday automation at 5pm that summarizes today's GitHub activity in my active repo: merged PRs, new issues, and stale items needing attention.",
     requiredMcpServerIds: ["github"],
@@ -52,9 +55,9 @@ export const AUTOMATION_CATALOG: RecommendedAutomation[] = [
   },
   {
     id: "slack-standup-digest",
-    name: "Standup digest",
-    category: "Messaging",
-    description: "Collect standup notes and deliver a digest to a channel.",
+    nameKey: I18nKey.APPS$AUTOMATIONS_CATALOG_STANDUP_DIGEST_NAME,
+    categoryKey: I18nKey.APPS$AUTOMATIONS_CATALOG_CATEGORY_MESSAGING,
+    descriptionKey: I18nKey.APPS$AUTOMATIONS_CATALOG_STANDUP_DIGEST_DESC,
     prompt:
       "Create a weekday 9:30am automation that drafts a standup digest from yesterday's activity and prepares it for delivery to my team channel.",
     requiredMcpServerIds: ["slack"],

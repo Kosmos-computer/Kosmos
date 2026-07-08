@@ -1,3 +1,6 @@
+import { I18nKey } from "../../../i18n/declaration";
+import i18n from "../../../i18n/index";
+import { T } from "../../../i18n/T";
 /**
  * BrowserTab — run and preview the open project (the agent-canvas browser
  * pane): a runs strip starts/stops long-lived dev servers through the run
@@ -92,7 +95,7 @@ export function BrowserTab() {
       <div className="arco-studio__runsbar">
         <input
           className="arco-studio__commitmsg"
-          placeholder="Start a dev server… e.g. npm start"
+          placeholder={i18n.t(I18nKey.APPS$STUDIO_START_A_DEV_SERVER_E_G_NPM_START)}
           value={command}
           onChange={(e) => setCommand(e.target.value)}
           onKeyDown={(e) => {
@@ -100,8 +103,7 @@ export function BrowserTab() {
           }}
         />
         <button className="arco-btn arco-btn--primary" disabled={!command.trim()} onClick={() => void start()}>
-          <Play size={13} /> Run
-        </button>
+          <Play size={13} /><T k={I18nKey.APPS$STUDIO_RUN} /></button>
       </div>
       {runs.length > 0 && (
         <div className="arco-studio__runs">
@@ -109,13 +111,13 @@ export function BrowserTab() {
             <div key={run.id} className="arco-studio__run">
               <span className={`arco-toolcard__status arco-toolcard__status--${run.alive ? "running" : "error"}`} />
               <code className="arco-studio__runcmd">{run.command}</code>
-              <button className="arco-btn arco-btn--icon" onClick={() => void toggleLog(run.id)} aria-label="Show log">
+              <button className="arco-btn arco-btn--icon" onClick={() => void toggleLog(run.id)} aria-label={i18n.t(I18nKey.APPS$STUDIO_SHOW_LOG)}>
                 <ScrollText size={12} />
               </button>
               <button
                 className="arco-btn arco-btn--icon"
                 onClick={() => void api.stopRun(run.id).then(refreshRuns)}
-                aria-label="Stop run"
+                aria-label={i18n.t(I18nKey.APPS$STUDIO_STOP_RUN)}
               >
                 <Square size={12} />
               </button>
@@ -129,13 +131,13 @@ export function BrowserTab() {
         url={browserUrl}
         onNavigate={navigate}
         placeholder="http://localhost:5173 (or just a port number)"
-        title="Project preview"
+        title={i18n.t(I18nKey.APPS$STUDIO_PROJECT_PREVIEW)}
         toolbarExtra={
           <button
             className="arco-btn"
             disabled={!browserUrl}
             onClick={() => void addToDock()}
-            aria-label="Add this app to the dock"
+            aria-label={i18n.t(I18nKey.APPS$STUDIO_ADD_THIS_APP_TO_THE_DOCK)}
           >
             {mounted ? <Check size={13} /> : <BookmarkPlus size={13} />}
             {mounted ? "Added" : "Add to Dock"}

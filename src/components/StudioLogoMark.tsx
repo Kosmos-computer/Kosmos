@@ -1,4 +1,4 @@
-/** Square-grid mark for Agent Studio (105×105 viewBox). */
+/** Square-grid mark for Techno Studio (105×105 viewBox). */
 export const STUDIO_MARK_VIEWBOX = { width: 105, height: 105 } as const;
 
 const STUDIO_MARK_SQUARES: ReadonlyArray<{
@@ -21,8 +21,8 @@ type StudioLogoMarkProps = {
   title?: string;
 };
 
-/** Square Kosmos mark used in Agent Studio chrome. */
-export function StudioLogoMark({ className, title = "Agent Studio" }: StudioLogoMarkProps) {
+/** Square Kosmos mark used in Techno Studio chrome. */
+export function StudioLogoMark({ className, title = "Techno Studio" }: StudioLogoMarkProps) {
   return (
     <svg
       className={className}

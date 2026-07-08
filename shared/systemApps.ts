@@ -10,7 +10,7 @@ export interface SystemAppCatalogEntry {
 /** Every built-in shell app the agent can open. */
 export const SYSTEM_APP_CATALOG: SystemAppCatalogEntry[] = [
   { id: "chat", title: "Chat" },
-  { id: "studio", title: "Agent Studio" },
+  { id: "studio", title: "Techno Studio" },
   { id: "apps", title: "Apps" },
   { id: "skills", title: "Skills" },
   { id: "memory", title: "Memory" },

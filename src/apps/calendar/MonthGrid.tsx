@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import { T } from "../../i18n/T";
 import { useMemo } from "react";
 import { EventChip } from "./EventChip";
 import { toISODate, WEEKDAY_LABELS, type CalendarEvent } from "./types";
@@ -93,7 +95,7 @@ export function MonthGrid({
                   <EventChip key={event.id} event={event} onClick={() => onSelectEvent?.(event)} />
                 ))}
                 {overflow > 0 ? (
-                  <div className="arco-cal-month__overflow">+{overflow} more</div>
+                  <div className="arco-cal-month__overflow">+{overflow}<T k={I18nKey.APPS$CALENDAR_MORE} /></div>
                 ) : null}
               </div>
             </div>

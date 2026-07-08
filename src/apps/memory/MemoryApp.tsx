@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
 /**
  * Memory — operator workspace for typed memory, vector stores, RAG, and identity docs.
  * Phase 0: stub hook + mock data. See docs/memory-plan.md.
@@ -59,7 +61,7 @@ export function MemoryApp() {
       case "settings":
         return (
           <MemoryPlaceholderView
-            title="Memory settings"
+            title={i18n.t(I18nKey.APPS$MEMORY_MEMORY_SETTINGS)}
             description="Backend, embedder, and retention controls live in Settings → Memory until this view is wired."
           />
         );

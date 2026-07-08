@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 /**
  * Settings → MCP Servers — manage external tool providers. Each card shows
  * live status (running / connecting / error / disabled), the tools the
@@ -72,7 +75,7 @@ function ToolPolicyChip({
     onChanged();
   };
   return (
-    <Chip active={Boolean(current)} onClick={() => void cycle()} title="Agent policy for this tool">
+    <Chip active={Boolean(current)} onClick={() => void cycle()} title={i18n.t(I18nKey.APPS$SETTINGS_AGENT_POLICY_FOR_THIS_TOOL)}>
       {current ?? "default"}
     </Chip>
   );
@@ -178,7 +181,7 @@ function ServerCard({
             <Chip active={cfg.enabled} onClick={() => void setEnabled(!cfg.enabled)} aria-pressed={cfg.enabled}>
               {cfg.enabled ? "enabled" : "disabled"}
             </Chip>
-            <Button size="icon" onClick={() => void restart()} aria-label={`Restart ${cfg.name}`} title="Restart">
+            <Button size="icon" onClick={() => void restart()} aria-label={`Restart ${cfg.name}`} title={i18n.t(I18nKey.APPS$SETTINGS_RESTART)}>
               <RefreshCw size={13} />
             </Button>
             <Button size="icon" onClick={() => void remove()} aria-label={`Remove ${cfg.name}`}>
@@ -193,7 +196,7 @@ function ServerCard({
       <SettingsRow>
         <Button className="arco-card__meta" onClick={() => setExpanded((e) => !e)} aria-expanded={expanded}>
           {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-          {server.tools.length} tool{server.tools.length === 1 ? "" : "s"}
+          {server.tools.length}<T k={I18nKey.APPS$SETTINGS_TOOL} />{server.tools.length === 1 ? "" : "s"}
         </Button>
         {cfg.transport.kind === "stdio" && (
           <Button className="arco-card__meta" onClick={() => void viewLog()}>
@@ -288,11 +291,11 @@ export function McpServersSection() {
 
   return (
     <SettingsPage>
-      <SettingsSection intro="External tool providers (Model Context Protocol). Tools from running servers join the agent; writes ask for approval unless you set a policy rule.">
+      <SettingsSection intro={i18n.t(I18nKey.APPS$SETTINGS_EXTERNAL_TOOL_PROVIDERS_MODEL_CONTEXT_PROTOCOL_TOOLS_FRO)}>
         {error ? <SettingsAlert tone="error">{error}</SettingsAlert> : null}
 
         {servers.length === 0 ? (
-          <SettingsEmpty>No MCP servers configured.</SettingsEmpty>
+          <SettingsEmpty><T k={I18nKey.APPS$SETTINGS_NO_MCP_SERVERS_CONFIGURED} /></SettingsEmpty>
         ) : (
           <SettingsStack>
             {servers.map((server) => (
@@ -309,13 +312,13 @@ export function McpServersSection() {
 
         {canManage && (
           <>
-            <SettingsSubhead>Add server</SettingsSubhead>
+            <SettingsSubhead><T k={I18nKey.APPS$SETTINGS_ADD_SERVER} /></SettingsSubhead>
             <SettingsStack>
-              <SettingsFieldRow label="Name" htmlFor="mcp-name">
+              <SettingsFieldRow label={i18n.t(I18nKey.APPS$SKILLS_NAME)} htmlFor="mcp-name">
                 <Input
                   id="mcp-name"
                   width="auto"
-                  placeholder="Name (e.g. Filesystem)"
+                  placeholder={i18n.t(I18nKey.APPS$SETTINGS_NAME_E_G_FILESYSTEM)}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
@@ -323,21 +326,21 @@ export function McpServersSection() {
                   className="arco-input arco-input--compact"
                   value={kind}
                   onChange={(e) => setKind(e.target.value as typeof kind)}
-                  aria-label="Transport kind"
+                  aria-label={i18n.t(I18nKey.APPS$SETTINGS_TRANSPORT_KIND)}
                 >
-                  <option value="stdio">stdio</option>
-                  <option value="http">http</option>
-                  <option value="sse">sse</option>
+                  <option value="stdio"><T k={I18nKey.APPS$SETTINGS_STDIO} /></option>
+                  <option value="http"><T k={I18nKey.APPS$SETTINGS_HTTP} /></option>
+                  <option value="sse"><T k={I18nKey.APPS$SETTINGS_SSE} /></option>
                 </select>
               </SettingsFieldRow>
               <SettingsFieldRow label={kind === "stdio" ? "Command" : "URL"}>
                 {kind === "stdio" ? (
                   <Input
                     width="auto"
-                    placeholder="npx -y @modelcontextprotocol/server-filesystem /tmp"
+                    placeholder={i18n.t(I18nKey.APPS$SETTINGS_NPX_Y_MODELCONTEXTPROTOCOL_SERVER_FILESYSTEM_TMP)}
                     value={command}
                     onChange={(e) => setCommand(e.target.value)}
-                    aria-label="Command"
+                    aria-label={i18n.t(I18nKey.APPS$SETTINGS_COMMAND)}
                   />
                 ) : (
                   <Input
@@ -345,7 +348,7 @@ export function McpServersSection() {
                     placeholder="https://example.com/mcp"
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
-                    aria-label="Server URL"
+                    aria-label={i18n.t(I18nKey.APPS$SETTINGS_SERVER_URL)}
                   />
                 )}
               </SettingsFieldRow>

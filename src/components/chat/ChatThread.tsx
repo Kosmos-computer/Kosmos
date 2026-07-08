@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import { T } from "../../i18n/T";
 /**
  * Shared chat thread renderer — used by Chat and Studio so message blocks
  * stay consistent as new agent block types are added.
@@ -75,7 +77,7 @@ export function ChatThread({ items, streaming, turnMeta, onFollowUp }: ChatThrea
             return <ChatErrorBlock key={item.id} text={item.text} />;
         }
       })}
-      {streaming ? <AgentStatusLine meta={meta}>Working…</AgentStatusLine> : null}
+      {streaming ? <AgentStatusLine meta={meta}><T k={I18nKey.COMPONENTS$CHAT_WORKING} /></AgentStatusLine> : null}
     </>
   );
 }

@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 /**
  * Searchable OpenRouter model dropdown for Settings → Model provider.
  * Caps rendered options so a 300+ model catalog cannot freeze the UI.
@@ -66,7 +69,7 @@ export function OpenRouterModelPicker({ model, apiKey, onModelChange }: OpenRout
       <ListSearch
         value={searchQuery}
         onChange={setSearchQuery}
-        placeholder="Search models…"
+        placeholder={i18n.t(I18nKey.APPS$SETTINGS_SEARCH_MODELS)}
         ariaLabel="Search OpenRouter models"
       />
       <select
@@ -75,7 +78,7 @@ export function OpenRouterModelPicker({ model, apiKey, onModelChange }: OpenRout
         value={model}
         disabled={loading || visible.length === 0}
         onChange={(e) => onModelChange(e.target.value)}
-        aria-label="OpenRouter model"
+        aria-label={i18n.t(I18nKey.APPS$SETTINGS_OPENROUTER_MODEL)}
       >
         {model && !visible.some((entry) => entry.id === model) ? (
           <option value={model}>{model}</option>
@@ -93,8 +96,7 @@ export function OpenRouterModelPicker({ model, apiKey, onModelChange }: OpenRout
       {error ? <SettingsAlert tone="error">{error}</SettingsAlert> : null}
       {!loading && !error && models.length > 0 ? (
         <SettingsAlert tone="muted">
-          {models.length} models in catalog
-          {truncated ? ` — showing ${visible.length} of ${filtered.length} matches` : null}
+          {models.length}<T k={I18nKey.APPS$SETTINGS_MODELS_IN_CATALOG} />{truncated ? ` — showing ${visible.length} of ${filtered.length} matches` : null}
           {truncated ? ". Refine search to narrow the list." : null}
         </SettingsAlert>
       ) : null}

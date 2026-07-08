@@ -615,7 +615,7 @@
 
 /* ── Column resize handle (shared) ─────────────────────────────────────────
    Overlaps adjacent panes (negative margin) so the 1px grip sits on the
-   seam with no dead space — used by SidebarPane, Agent Studio, etc. */
+   seam with no dead space — used by SidebarPane, Techno Studio, etc. */
 
 .arco-resize-handle {
   position: relative;

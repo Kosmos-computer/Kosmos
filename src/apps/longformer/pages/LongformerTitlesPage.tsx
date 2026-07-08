@@ -1,3 +1,6 @@
+import { I18nKey } from "../../../i18n/declaration";
+import i18n from "../../../i18n/index";
+import { T } from "../../../i18n/T";
 import { ArtifactPageLayout } from "../ArtifactPageLayout";
 import { linesFromArtifact } from "../artifactContent";
 import type { LongformerViewModel } from "../longformerStore";
@@ -19,7 +22,7 @@ export function LongformerTitlesPage({ vm, detail }: LongformerTitlesPageProps) 
 
   return (
     <ArtifactPageLayout
-      title="Titles"
+      title={i18n.t(I18nKey.APPS$LONGFORMER_TITLES)}
       description="Suggested episode titles generated from your transcript."
       artifactKind="titles"
       generating={vm.generatingArtifact === "titles"}
@@ -35,9 +38,7 @@ export function LongformerTitlesPage({ vm, detail }: LongformerTitlesPageProps) 
               type="button"
               className="arco-longformer-titles-list__copy"
               onClick={() => void navigator.clipboard.writeText(title)}
-            >
-              Copy
-            </button>
+            ><T k={I18nKey.COMMON$COPY} /></button>
           </li>
         ))}
       </ol>

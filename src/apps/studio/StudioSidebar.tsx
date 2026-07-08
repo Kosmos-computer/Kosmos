@@ -1,5 +1,8 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 /**
- * StudioSidebar — Agent Studio conversation rail (agent-canvas semantics):
+ * StudioSidebar — Techno Studio conversation rail (agent-canvas semantics):
  * filter views, workspace-folder groups with drag reorder, collapse, and +
  * on each group to start a chat in that folder/repo.
  */
@@ -113,7 +116,7 @@ export function StudioSidebar({
   }, [unpinnedSessions, projects, sortField, groupOrder]);
 
   return (
-    <aside className="arco-sidenav" aria-label="Conversations">
+    <aside className="arco-sidenav" aria-label={i18n.t(I18nKey.APPS$STUDIO_CONVERSATIONS)}>
       <div className="arco-sidenav__brand-row">
         <StudioLogoMark className="arco-sidenav__brand" title="" />
         {onClose ? (
@@ -122,7 +125,7 @@ export function StudioSidebar({
             className="arco-btn arco-btn--icon"
             onClick={onClose}
             aria-pressed
-            aria-label="Hide conversations"
+            aria-label={i18n.t(I18nKey.APPS$STUDIO_HIDE_CONVERSATIONS)}
           >
             <PanelLeft size={14} />
           </button>
@@ -131,8 +134,7 @@ export function StudioSidebar({
 
       <div className="arco-sidenav__header">
         <button className="arco-btn arco-sidenav__primary" onClick={onNewChat}>
-          <Plus size={14} /> New chat
-        </button>
+          <Plus size={14} /><T k={I18nKey.APPS$STUDIO_NEW_CHAT} /></button>
         <div className="arco-sidenav__quicklinks">
           <button
             type="button"
@@ -143,35 +145,31 @@ export function StudioSidebar({
               setQuery("");
             }}
           >
-            <Search size={14} /> Search
-          </button>
+            <Search size={14} /><T k={I18nKey.COMMON$SEARCH} /></button>
           <button
             type="button"
             className="arco-sidenav__quicklink"
             onClick={() => openSystem("skills")}
           >
-            <Layers size={14} /> Skills
-          </button>
+            <Layers size={14} /><T k={I18nKey.APPS$STUDIO_SKILLS} /></button>
           <button
             type="button"
             className="arco-sidenav__quicklink"
             onClick={() => openSystem("automations")}
           >
-            <Calendar size={14} /> Scheduled
-          </button>
+            <Calendar size={14} /><T k={I18nKey.APPS$STUDIO_SCHEDULED} /></button>
           <button
             type="button"
             className="arco-sidenav__quicklink"
             onClick={() => openSystem("apps")}
           >
-            <LayoutGrid size={14} /> Plugins
-          </button>
+            <LayoutGrid size={14} /><T k={I18nKey.APPS$STUDIO_PLUGINS} /></button>
         </div>
         {searchOpen && (
           <input
             className="arco-input"
-            placeholder="Search conversations…"
-            aria-label="Search conversations"
+            placeholder={i18n.t(I18nKey.APPS$STUDIO_SEARCH_CONVERSATIONS)}
+            aria-label={i18n.t(I18nKey.APPS$MESSENGER_SEARCH_CONVERSATIONS)}
             value={query}
             autoFocus
             onChange={(e) => setQuery(e.target.value)}
@@ -184,8 +182,7 @@ export function StudioSidebar({
           <div className="arco-sidenav__pinnedsection">
             <div className="arco-sidenav__sectionheader">
               <span className="arco-sidenav__sectiontitle arco-sidenav__sectiontitle--icon">
-                <Pin size={12} aria-hidden="true" /> Pinned
-              </span>
+                <Pin size={12} aria-hidden="true" /><T k={I18nKey.APPS$STUDIO_PINNED} /></span>
             </div>
             <div className="arco-sidenav__items">
               {pinnedSessions.map((session) => (
@@ -204,7 +201,7 @@ export function StudioSidebar({
         )}
 
         <div className="arco-sidenav__sectionheader">
-          <span className="arco-sidenav__sectiontitle">Conversations</span>
+          <span className="arco-sidenav__sectiontitle"><T k={I18nKey.APPS$STUDIO_CONVERSATIONS} /></span>
           <div className="arco-sidenav__sectionactions">
             <StudioSidebarFilterMenu
               organizeMode={organizeMode}

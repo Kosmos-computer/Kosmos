@@ -1,3 +1,6 @@
+import { I18nKey } from "../../../i18n/declaration";
+import i18n from "../../../i18n/index";
+import { T } from "../../../i18n/T";
 /**
  * FilesTab — workspace tree beside a Monaco editor (the Studio's "full
  * editing" surface). The tree lazily lists directories on expand, refetches
@@ -174,7 +177,7 @@ export function FilesTab() {
         >
           <FileText size={13} style={{ color: "var(--arco-text-tertiary)" }} />
           <span className="arco-studio__treename">{entry.name}</span>
-          {isChanged && <span className="arco-studio__changedot" title="Changed by agent" />}
+          {isChanged && <span className="arco-studio__changedot" title={i18n.t(I18nKey.APPS$STUDIO_CHANGED_BY_AGENT)} />}
         </button>
       );
     });
@@ -184,15 +187,13 @@ export function FilesTab() {
     <div className="arco-studio__files">
       <div className="arco-studio__tree arco-scroll">
         <div className="arco-studio__treeheader">
-          <span className="arco-label">workspace</span>
-          <button className="arco-btn arco-btn--icon" onClick={() => void loadDir(".")} aria-label="Refresh tree">
+          <span className="arco-label"><T k={I18nKey.APPS$STUDIO_WORKSPACE} /></span>
+          <button className="arco-btn arco-btn--icon" onClick={() => void loadDir(".")} aria-label={i18n.t(I18nKey.APPS$STUDIO_REFRESH_TREE)}>
             <RotateCw size={12} />
           </button>
         </div>
         {(dirs["."] ?? []).length === 0 && (
-          <div className="arco-empty" style={{ padding: "var(--arco-space-m)" }}>
-            Empty workspace
-          </div>
+          <div className="arco-empty" style={{ padding: "var(--arco-space-m)" }}><T k={I18nKey.APPS$STUDIO_EMPTY_WORKSPACE} /></div>
         )}
         {renderDir(".", 0)}
       </div>
@@ -203,7 +204,10 @@ export function FilesTab() {
             <div className="arco-studio__editorbar">
               <span className="arco-studio__editorpath">
                 {file.path}
-                {file.dirty && <span className="arco-studio__dirty">●</span>}
+                {file.dirty && (
+                  /* eslint-disable-next-line i18next/no-literal-string -- dirty file indicator */
+                  <span className="arco-studio__dirty">●</span>
+                )}
               </span>
               <button
                 className="arco-btn arco-btn--primary"
@@ -214,7 +218,7 @@ export function FilesTab() {
               </button>
             </div>
             <div className="arco-studio__editorhost">
-              <Suspense fallback={<div className="arco-empty">Loading editor…</div>}>
+              <Suspense fallback={<div className="arco-empty"><T k={I18nKey.APPS$STUDIO_LOADING_EDITOR} /></div>}>
                 <CodeEditor
                   path={file.path}
                   value={file.content}
@@ -228,7 +232,7 @@ export function FilesTab() {
             </div>
           </>
         ) : (
-          <div className="arco-empty">Select a file to edit</div>
+          <div className="arco-empty"><T k={I18nKey.APPS$STUDIO_SELECT_A_FILE_TO_EDIT} /></div>
         )}
       </div>
     </div>

@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
 import { useState } from "react";
 import { PreviewPane, SidebarPane } from "../../components/patterns";
 import { AddTaskModal } from "./AddTaskModal";
@@ -52,7 +54,7 @@ export function TasksApp() {
           onWidthChange={tasks.setDrawerWidth}
           minWidth={300}
           maxWidth={480}
-          handleLabel="Resize task drawer"
+          handleLabel={i18n.t(I18nKey.APPS$TASKS_RESIZE_TASK_DRAWER)}
         >
           <TaskDrawer
             task={tasks.selectedTask}

@@ -1,9 +1,10 @@
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 /**
  * Settings — LLM provider (presets + custom + mock), theme, wallpaper.
  * API keys persist server-side and come back masked.
  */
 import { useEffect, useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
 import type { LlmProvider, Settings } from "@shared/types";
 import { ACP_PRESETS, PROVIDER_PRESETS } from "@shared/types";
 import { api } from "../../lib/api";
@@ -59,6 +60,7 @@ import {
   settingsSectionLabel,
   visibleSettingsNavGroups,
 } from "./settingsSections";
+import { navigateSettingsSection } from "../../os/shellNavigation";
 import { useSettingsStore } from "./settingsStore";
 import { ACCOUNT_STUB_SECTION_IDS } from "./settingsStubMock";
 import { SettingsStubPane } from "./SettingsStubSection";
@@ -79,7 +81,6 @@ const PROVIDERS: { id: LlmProvider; label: string }[] = [
 const NAV_BRAND_MAX_BYTES = 512 * 1024;
 
 export function SettingsApp() {
-  const { t } = useTranslation();
   const {
     theme,
     setTheme,
@@ -124,7 +125,7 @@ export function SettingsApp() {
 
   const navGroups = useMemo(
     () => visibleSettingsNavGroups({ canWriteSettings, canManageUsers }),
-    [canWriteSettings, canManageUsers],
+    [canWriteSettings, canManageUsers, i18n.language],
   );
 
   const refreshSettings = async () => {
@@ -149,16 +150,14 @@ export function SettingsApp() {
 
   if (loadError) {
     return (
-      <EmptyState title="Could not load settings">
+      <EmptyState title={i18n.t(I18nKey.APPS$SETTINGS_COULD_NOT_LOAD_SETTINGS)}>
         {loadError}
-        <Button variant="primary" onClick={() => void refreshSettings()}>
-          Retry
-        </Button>
+        <Button variant="primary" onClick={() => void refreshSettings()}><T k={I18nKey.COMMON$RETRY} /></Button>
       </EmptyState>
     );
   }
 
-  if (!settings) return <EmptyState>Loading settings…</EmptyState>;
+  if (!settings) return <EmptyState><T k={I18nKey.APPS$SETTINGS_LOADING_SETTINGS} /></EmptyState>;
 
   const update = (patch: Partial<Settings>) => {
     setSettings((s) => (s ? { ...s, ...patch } : s));
@@ -211,12 +210,12 @@ export function SettingsApp() {
         onWidthChange={setSidebarWidth}
         minWidth={200}
         maxWidth={320}
-        handleLabel="Resize settings sidebar"
+        handleLabel={i18n.t(I18nKey.APPS$SETTINGS_RESIZE_SETTINGS_SIDEBAR)}
       >
         <SettingsNav
           groups={navGroups}
           activeSection={activeSection}
-          onSelect={setActiveSection}
+          onSelect={navigateSettingsSection}
           searchQuery={navSearch}
           onSearchChange={setNavSearch}
         />
@@ -241,10 +240,10 @@ export function SettingsApp() {
           {activeSection === "agent" && (
             <SettingsPage>
               <SettingsSection
-                intro="Choose which agent runtime handles chat. Cursor uses the Cursor SDK; external ACP agents bring their own model and tools."
+                intro={i18n.t(I18nKey.APPS$SETTINGS_CHOOSE_WHICH_AGENT_RUNTIME_HANDLES_CHAT_CURSOR_USES_THE_)}
               >
                 <SettingsStack>
-                  <SettingsFieldRow label="Runtime">
+                  <SettingsFieldRow label={i18n.t(I18nKey.APPS$SETTINGS_RUNTIME)}>
                     <SettingsChipRow>
                       {[
                         { id: "builtin", label: "Built-in" },
@@ -263,7 +262,7 @@ export function SettingsApp() {
                   ) : null}
                   {settings.agent === "acp" && (
                     <SettingsFieldRow
-                      label="Spawn command"
+                      label={i18n.t(I18nKey.APPS$SETTINGS_SPAWN_COMMAND)}
                       htmlFor="set-acp-command"
                       hint="stdio ACP server — sign in with the provider CLI or set a matching API key below"
                     >
@@ -271,16 +270,14 @@ export function SettingsApp() {
                         id="set-acp-command"
                         width="auto"
                         value={settings.acpCommand}
-                        placeholder="npx -y @zed-industries/claude-code-acp"
+                        placeholder={i18n.t(I18nKey.APPS$SETTINGS_NPX_Y_ZED_INDUSTRIES_CLAUDE_CODE_ACP)}
                         onChange={(e) => update({ acpCommand: e.target.value })}
                       />
                     </SettingsFieldRow>
                   )}
                 </SettingsStack>
                 <SettingsSaveBar saved={saved}>
-                  <Button variant="primary" onClick={() => void save()}>
-                    Save
-                  </Button>
+                  <Button variant="primary" onClick={() => void save()}><T k={I18nKey.COMMON$SAVE} /></Button>
                 </SettingsSaveBar>
               </SettingsSection>
             </SettingsPage>
@@ -288,24 +285,19 @@ export function SettingsApp() {
 
           {activeSection === "model" && (
             <SettingsPage>
-              <SettingsSection intro="Provider settings apply to the built-in agent and automations. This section mirrors the Agent & Chat slot in the Models app, where every model the OS uses — voice and local models included — is managed.">
+              <SettingsSection intro={i18n.t(I18nKey.APPS$SETTINGS_PROVIDER_SETTINGS_APPLY_TO_THE_BUILT_IN_AGENT_AND_AUTOMA)}>
                 <SettingsStack>
                   <SettingsRow>
-                    <SettingsRowMeta>
-                      Assign models per use-case, download local models, and add providers in the
-                      Models app.
-                    </SettingsRowMeta>
+                    <SettingsRowMeta><T k={I18nKey.APPS$SETTINGS_ASSIGN_MODELS_PER_USE_CASE_DOWNLOAD_LOCAL_MODELS_AND_ADD} /></SettingsRowMeta>
                     <SettingsRowActions>
                       <Button
                         onClick={() =>
                           useWindowStore.getState().open({ type: "system", app: "models" }, "Models")
                         }
-                      >
-                        Open Models
-                      </Button>
+                      ><T k={I18nKey.APPS$SETTINGS_OPEN_MODELS} /></Button>
                     </SettingsRowActions>
                   </SettingsRow>
-                  <SettingsFieldRow label="Provider">
+                  <SettingsFieldRow label={i18n.t(I18nKey.COMPONENTS$PATTERNS_PROVIDER)}>
                     <SettingsChipRow>
                       {PROVIDERS.map((p) => (
                         <Chip
@@ -320,7 +312,7 @@ export function SettingsApp() {
                   </SettingsFieldRow>
                   {settings.provider !== "mock" && (
                     <>
-                      <SettingsFieldRow label="Base URL" htmlFor="set-baseurl">
+                      <SettingsFieldRow label={i18n.t(I18nKey.APPS$MODELS_BASE_URL)} htmlFor="set-baseurl">
                         <Input
                           id="set-baseurl"
                           width="auto"
@@ -329,7 +321,7 @@ export function SettingsApp() {
                         />
                       </SettingsFieldRow>
                       <SettingsFieldRow
-                        label="Model"
+                        label={i18n.t(I18nKey.APPS$SETTINGS_MODEL)}
                         htmlFor={settings.provider === "openrouter" ? "set-openrouter-model" : "set-model"}
                         hint={
                           settings.provider === "openrouter"
@@ -352,13 +344,13 @@ export function SettingsApp() {
                           />
                         )}
                       </SettingsFieldRow>
-                      <SettingsFieldRow label="API key" htmlFor="set-key">
+                      <SettingsFieldRow label={i18n.t(I18nKey.APPS$STARTUP_API_KEY)} htmlFor="set-key">
                         <Input
                           id="set-key"
                           width="auto"
                           type="password"
                           value={settings.apiKey}
-                          placeholder="sk-…"
+                          placeholder={i18n.t(I18nKey.INSTALL$API_KEY_PLACEHOLDER)}
                           onChange={(e) => update({ apiKey: e.target.value })}
                         />
                       </SettingsFieldRow>
@@ -366,9 +358,7 @@ export function SettingsApp() {
                   )}
                 </SettingsStack>
                 <SettingsSaveBar saved={saved}>
-                  <Button variant="primary" onClick={() => void save()}>
-                    Save
-                  </Button>
+                  <Button variant="primary" onClick={() => void save()}><T k={I18nKey.COMMON$SAVE} /></Button>
                 </SettingsSaveBar>
               </SettingsSection>
             </SettingsPage>
@@ -376,9 +366,9 @@ export function SettingsApp() {
 
           {activeSection === "appearance" && (
             <SettingsPage>
-              <SettingsSection intro="Theme, typography, spacing, assistant face, and background for the desktop and sign-in screen.">
+              <SettingsSection intro={i18n.t(I18nKey.APPS$SETTINGS_THEME_TYPOGRAPHY_SPACING_ASSISTANT_FACE_AND_BACKGROUND_F)}>
                 <SettingsStack>
-                  <SettingsFieldRow label={t(I18nKey.SETTINGS$LANGUAGE)} hint={t(I18nKey.SETTINGS$LANGUAGE_HINT)}>
+                  <SettingsFieldRow label={i18n.t(I18nKey.SETTINGS$LANGUAGE)} hint={i18n.t(I18nKey.SETTINGS$LANGUAGE_HINT)}>
                     <SettingsChipRow>
                       {AvailableLanguages.map((lang) => (
                         <Chip
@@ -394,7 +384,7 @@ export function SettingsApp() {
                       ))}
                     </SettingsChipRow>
                   </SettingsFieldRow>
-                  <SettingsFieldRow label="Theme">
+                  <SettingsFieldRow label={i18n.t(I18nKey.OS_BENTO_THEME)}>
                     <SettingsChipRow>
                       {(["dark", "light"] as const).map((t) => (
                         <Chip key={t} active={theme === t} onClick={() => setTheme(t)}>
@@ -404,7 +394,7 @@ export function SettingsApp() {
                     </SettingsChipRow>
                   </SettingsFieldRow>
                   <SettingsFieldRow
-                    label="UI font"
+                    label={i18n.t(I18nKey.APPS$SETTINGS_UI_FONT)}
                     hint="Typeface for labels, menus, and body text across the shell."
                     alignTop
                   >
@@ -421,16 +411,14 @@ export function SettingsApp() {
                           <span
                             className="arco-font-preset-swatch__preview"
                             style={{ fontFamily: option.family }}
-                          >
-                            Aa
-                          </span>
+                          ><T k={I18nKey.APPS$SETTINGS_AA} /></span>
                           <span className="arco-font-preset-swatch__label">{option.label}</span>
                         </button>
                       ))}
                     </div>
                   </SettingsFieldRow>
                   <SettingsFieldRow
-                    label="Text size"
+                    label={i18n.t(I18nKey.APPS$SETTINGS_TEXT_SIZE)}
                     hint="Scale for labels, body copy, and headings."
                   >
                     <SettingsChipRow>
@@ -446,7 +434,7 @@ export function SettingsApp() {
                     </SettingsChipRow>
                   </SettingsFieldRow>
                   <SettingsFieldRow
-                    label="Padding & spacing"
+                    label={i18n.t(I18nKey.APPS$SETTINGS_PADDING_SPACING)}
                     hint="Gaps and padding in panels, lists, and controls."
                   >
                     <SettingsChipRow>
@@ -462,7 +450,7 @@ export function SettingsApp() {
                     </SettingsChipRow>
                   </SettingsFieldRow>
                   <SettingsFieldRow
-                    label="Accent color"
+                    label={i18n.t(I18nKey.APPS$SETTINGS_ACCENT_COLOR)}
                     hint="Buttons, links, and other accent-colored controls across the shell."
                     alignTop
                   >
@@ -486,7 +474,7 @@ export function SettingsApp() {
                     </div>
                   </SettingsFieldRow>
                   <SettingsFieldRow
-                    label="Corner radius"
+                    label={i18n.t(I18nKey.APPS$SETTINGS_CORNER_RADIUS)}
                     hint="Roundness for buttons, inputs, panels, and windows."
                     alignTop
                   >
@@ -507,7 +495,7 @@ export function SettingsApp() {
                     </div>
                   </SettingsFieldRow>
                   <SettingsFieldRow
-                    label="Window controls"
+                    label={i18n.t(I18nKey.APPS$SETTINGS_WINDOW_CONTROLS)}
                     hint="Close, minimize, and maximize buttons in the desktop window title bar."
                     alignTop
                   >
@@ -530,7 +518,7 @@ export function SettingsApp() {
                     </div>
                   </SettingsFieldRow>
                   <SettingsFieldRow
-                    label="Control alignment"
+                    label={i18n.t(I18nKey.APPS$SETTINGS_CONTROL_ALIGNMENT)}
                     hint="Place window controls on the left (macOS-style) or right (Windows-style)."
                   >
                     <SettingsChipRow>
@@ -547,7 +535,7 @@ export function SettingsApp() {
                   </SettingsFieldRow>
                   {isArcoDesktop() && (
                     <SettingsFieldRow
-                      label="App windows"
+                      label={i18n.t(I18nKey.APPS$SETTINGS_APP_WINDOWS)}
                       hint="In Desktop view, open each app in its own window or inside the main Arco window."
                     >
                       <SettingsChipRow>
@@ -569,7 +557,7 @@ export function SettingsApp() {
                     </SettingsFieldRow>
                   )}
                   <SettingsFieldRow
-                    label="Space rig"
+                    label={i18n.t(I18nKey.APPS$SETTINGS_SPACE_RIG)}
                     hint="Choose the assistant face renderer used in voice chat and previews."
                   >
                     <SettingsChipRow>
@@ -585,7 +573,7 @@ export function SettingsApp() {
                     </SettingsChipRow>
                   </SettingsFieldRow>
                   <SettingsFieldRow
-                    label="Assistant face"
+                    label={i18n.t(I18nKey.APPS$SETTINGS_ASSISTANT_FACE)}
                     hint="Background color for rigs that support it (Minimal and Round). Use the preview to try speaking states and expressions."
                     alignTop
                   >
@@ -610,26 +598,24 @@ export function SettingsApp() {
                           ))}
                         </div>
                         <label className="arco-settings-face-color__custom">
-                          <span className="arco-settings-face-color__custom-label">Custom</span>
+                          <span className="arco-settings-face-color__custom-label"><T k={I18nKey.APPS$SETTINGS_CUSTOM} /></span>
                           <input
                             type="color"
                             className="arco-settings-face-color__input"
                             value={isCustomFaceBg(faceBg) ? faceBg : "#7c9dff"}
                             onChange={(e) => setFaceBg(e.target.value)}
-                            aria-label="Custom face background color"
+                            aria-label={i18n.t(I18nKey.APPS$SETTINGS_CUSTOM_FACE_BACKGROUND_COLOR)}
                           />
                         </label>
                       </div>
                       <FacePreviewWidget />
                     </div>
                   </SettingsFieldRow>
-                  <SettingsFieldRow label="Nav brand" hint="Shown at the top of the left nav rail." alignTop>
+                  <SettingsFieldRow label={i18n.t(I18nKey.APPS$SETTINGS_NAV_BRAND)} hint="Shown at the top of the left nav rail." alignTop>
                     <div className="arco-settings-nav-brand">
                       <NavBrandMark />
                       <div className="arco-settings-nav-brand__actions">
-                        <label className="arco-btn arco-settings-nav-brand__upload">
-                          Choose image
-                          <input
+                        <label className="arco-btn arco-settings-nav-brand__upload"><T k={I18nKey.APPS$SETTINGS_CHOOSE_IMAGE} /><input
                             type="file"
                             accept="image/*"
                             hidden
@@ -654,9 +640,7 @@ export function SettingsApp() {
                           />
                         </label>
                         {navBrandImage ? (
-                          <Button variant="ghost" onClick={() => setNavBrandImage(null)}>
-                            Reset to default
-                          </Button>
+                          <Button variant="ghost" onClick={() => setNavBrandImage(null)}><T k={I18nKey.APPS$SETTINGS_RESET_TO_DEFAULT} /></Button>
                         ) : null}
                       </div>
                     </div>

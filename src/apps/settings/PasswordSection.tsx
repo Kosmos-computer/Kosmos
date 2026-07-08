@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
 /**
  * PasswordSection — change the signed-in user's own password. Requires the
  * current password (server-verified); on success the server rotates every
@@ -45,13 +47,13 @@ export function PasswordSection() {
 
   return (
     <SettingsPage>
-      <SettingsSection intro="Change your password. Other active sessions will be signed out.">
+      <SettingsSection intro={i18n.t(I18nKey.APPS$SETTINGS_CHANGE_YOUR_PASSWORD_OTHER_ACTIVE_SESSIONS_WILL_BE_SIGNE)}>
         <form onSubmit={(e) => void submit(e)}>
           {message ? (
             <SettingsAlert tone={message.kind === "ok" ? "success" : "error"}>{message.text}</SettingsAlert>
           ) : null}
           <SettingsStack>
-            <SettingsFieldRow label="Current" htmlFor="pw-current">
+            <SettingsFieldRow label={i18n.t(I18nKey.APPS$SETTINGS_CURRENT)} htmlFor="pw-current">
               <Input
                 id="pw-current"
                 type="password"
@@ -61,7 +63,7 @@ export function PasswordSection() {
                 required
               />
             </SettingsFieldRow>
-            <SettingsFieldRow label="New password" htmlFor="pw-new">
+            <SettingsFieldRow label={i18n.t(I18nKey.APPS$SETTINGS_NEW_PASSWORD)} htmlFor="pw-new">
               <Input
                 id="pw-new"
                 type="password"
@@ -72,7 +74,7 @@ export function PasswordSection() {
                 required
               />
             </SettingsFieldRow>
-            <SettingsFieldRow label="Confirm" htmlFor="pw-confirm">
+            <SettingsFieldRow label={i18n.t(I18nKey.APPS$SETTINGS_CONFIRM)} htmlFor="pw-confirm">
               <Input
                 id="pw-confirm"
                 type="password"

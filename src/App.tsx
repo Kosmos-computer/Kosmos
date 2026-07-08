@@ -3,13 +3,13 @@
  * the desktop or mobile shell by viewport (the chrome profile).
  */
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { BrowserRouter } from "react-router-dom";
 import { AuthGate } from "./os/auth/AuthGate";
-import { Desktop } from "./os/Desktop";
 import { ElectronShell } from "./os/ElectronShell";
 import { EmbedAppShell, readEmbedLaunch } from "./os/EmbedAppShell";
-import { MobileShell } from "./os/MobileShell";
 import { StandaloneAppWindow } from "./os/StandaloneAppWindow";
-import { CommandPalette } from "./os/CommandPalette";
+import { ShellRoutes } from "./os/ShellRoutes";
 import { getStandaloneWindowKey } from "./os/nativeAppWindows";
 import { I18nLocaleSync } from "./i18n/I18nLocaleSync";
 
@@ -25,13 +25,14 @@ function useIsMobile(): boolean {
 }
 
 export default function App() {
+  const { i18n } = useTranslation();
   const standaloneKey = getStandaloneWindowKey();
   const isMobile = useIsMobile();
   const embedLaunch = typeof window !== "undefined" ? readEmbedLaunch() : null;
 
   if (standaloneKey) {
     return (
-      <ElectronShell windowKey={standaloneKey}>
+      <ElectronShell windowKey={standaloneKey} key={i18n.language}>
         <StandaloneAppWindow windowKey={standaloneKey} />
       </ElectronShell>
     );
@@ -39,7 +40,7 @@ export default function App() {
 
   if (embedLaunch) {
     return (
-      <ElectronShell>
+      <ElectronShell key={i18n.language}>
         <I18nLocaleSync />
         <AuthGate>
           <EmbedAppShell />
@@ -49,11 +50,12 @@ export default function App() {
   }
 
   return (
-    <ElectronShell>
+    <ElectronShell key={i18n.language}>
       <I18nLocaleSync />
       <AuthGate>
-        {isMobile ? <MobileShell /> : <Desktop />}
-        <CommandPalette />
+        <BrowserRouter>
+          <ShellRoutes isMobile={isMobile} />
+        </BrowserRouter>
       </AuthGate>
     </ElectronShell>
   );

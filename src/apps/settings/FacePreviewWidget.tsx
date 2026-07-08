@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import { T } from "../../i18n/T";
 /**
  * Settings preview for assistant faces — manual speaking states and
  * expressions without a live voice session.
@@ -84,7 +86,7 @@ export function FacePreviewWidget() {
       />
       <div className="arco-settings-face-preview__controls">
         <div className="arco-settings-face-preview__group">
-          <span className="arco-settings-face-preview__label">Speaking</span>
+          <span className="arco-settings-face-preview__label"><T k={I18nKey.APPS$SETTINGS_SPEAKING} /></span>
           <SettingsChipRow>
             {SPEAKING_OPTIONS.map((option) => (
               <Chip
@@ -98,7 +100,7 @@ export function FacePreviewWidget() {
           </SettingsChipRow>
         </div>
         <div className="arco-settings-face-preview__group">
-          <span className="arco-settings-face-preview__label">Expression</span>
+          <span className="arco-settings-face-preview__label"><T k={I18nKey.APPS$SETTINGS_EXPRESSION} /></span>
           <SettingsChipRow>
             {EXPRESSION_OPTIONS.map((option) => (
               <Chip

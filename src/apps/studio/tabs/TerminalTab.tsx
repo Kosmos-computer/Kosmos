@@ -1,3 +1,6 @@
+import { I18nKey } from "../../../i18n/declaration";
+import i18n from "../../../i18n/index";
+import { T } from "../../../i18n/T";
 /**
  * TerminalTab — one merged command log: the agent's exec calls stream in
  * live (via the studio store) and the input row runs user commands through
@@ -48,26 +51,26 @@ export function TerminalTab() {
     <div className="arco-terminal">
       <div ref={scrollRef} className="arco-terminal__output arco-scroll">
         {commands.length === 0 && (
-          <div style={{ color: "var(--arco-text-tertiary)" }}>
-            Agent commands appear here as they run. You can also run your own below.
-          </div>
+          <div style={{ color: "var(--arco-text-tertiary)" }}><T k={I18nKey.APPS$STUDIO_AGENT_COMMANDS_APPEAR_HERE_AS_THEY_RUN_YOU_CAN_ALSO_RUN_} /></div>
         )}
         {commands.map((entry) => (
           <div key={entry.id} style={{ marginBottom: 10 }}>
             <div>
+              {/* eslint-disable-next-line i18next/no-literal-string -- shell prompt glyph */}
               <span style={{ color: "var(--arco-accent)" }}>❯</span> {entry.command}
-              {entry.source === "agent" && <span className="arco-studio__cmdbadge">agent</span>}
+              {entry.source === "agent" && <span className="arco-studio__cmdbadge"><T k={I18nKey.APPS$STUDIO_AGENT} /></span>}
             </div>
             {entry.exitCode === null && <div style={{ color: "var(--arco-text-tertiary)" }}>…</div>}
             {entry.stdout && <pre>{entry.stdout}</pre>}
             {entry.stderr && <pre style={{ color: "var(--arco-danger)" }}>{entry.stderr}</pre>}
             {entry.exitCode !== null && entry.exitCode !== 0 && (
-              <div style={{ color: "var(--arco-danger)" }}>exit {entry.exitCode}</div>
+              <div style={{ color: "var(--arco-danger)" }}><T k={I18nKey.APPS$STUDIO_EXIT} />{entry.exitCode}</div>
             )}
           </div>
         ))}
       </div>
       <div className="arco-terminal__inputrow">
+        {/* eslint-disable-next-line i18next/no-literal-string -- shell prompt glyph */}
         <span style={{ color: "var(--arco-accent)" }}>❯</span>
         <input
           className="arco-terminal__input"
@@ -79,7 +82,7 @@ export function TerminalTab() {
           }}
           placeholder={busy ? "running…" : "run a command in the workspace"}
           spellCheck={false}
-          aria-label="Terminal command"
+          aria-label={i18n.t(I18nKey.APPS$STUDIO_TERMINAL_COMMAND)}
         />
       </div>
     </div>

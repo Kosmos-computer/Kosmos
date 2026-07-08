@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FileEntry } from "@shared/capabilities/files";
 import {
   DOC_MIME,
@@ -11,6 +11,7 @@ import {
 import { EMPTY_DOC_JSON } from "@shared/capabilities/docs";
 import { EMPTY_SHEET_JSON } from "@shared/capabilities/sheets";
 import { api } from "../../lib/api";
+import { onAppEvent } from "../../os/appEventBus";
 import { useAuthStore } from "../../os/auth/authStore";
 import { openDriveFile } from "../../os/openDriveFile";
 import {
@@ -80,6 +81,9 @@ export function useDrive() {
     null,
   );
   const [pdfFile, setPdfFile] = useState<{ id: string; name: string } | null>(null);
+  const [shareFile, setShareFile] = useState<DriveFileItem | null>(null);
+  const [moveFile, setMoveFile] = useState<DriveFileItem | null>(null);
+  const uploadInputRef = useRef<HTMLInputElement | null>(null);
 
   const currentFolderId = folderPath[folderPath.length - 1]?.id ?? null;
 
@@ -113,6 +117,14 @@ export function useDrive() {
 
   useEffect(() => {
     void refresh();
+  }, [refresh]);
+
+  useEffect(() => {
+    return onAppEvent((detail) => {
+      if (detail.topic === "files.changed" || detail.topic === "shares.changed") {
+        void refresh();
+      }
+    });
   }, [refresh]);
 
   const files: DriveFileItem[] = useMemo(
@@ -297,6 +309,62 @@ export function useDrive() {
     [refresh, selectedId],
   );
 
+  const renameFile = useCallback(
+    async (id: string, currentName: string) => {
+      const name = window.prompt("New name:", currentName);
+      if (!name?.trim() || name.trim() === currentName) return;
+      try {
+        await api.patchDriveEntry(id, { name: name.trim() });
+        await refresh();
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Could not rename item");
+      }
+    },
+    [refresh],
+  );
+
+  const moveFileTo = useCallback(
+    async (id: string, parentId: string | null) => {
+      await api.patchDriveEntry(id, { parentId });
+      if (selectedId === id) setSelectedId(null);
+      await refresh();
+      setError(null);
+    },
+    [refresh, selectedId],
+  );
+
+  const downloadFile = useCallback(async (file: DriveFileItem) => {
+    try {
+      await api.downloadDriveFile(file.id, file.name);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not download file");
+    }
+  }, []);
+
+  const uploadFiles = useCallback(
+    async (fileList: FileList | File[]) => {
+      const files = Array.from(fileList);
+      if (files.length === 0) return;
+      const parentId = location === "drive" || location === "music" ? currentFolderId : null;
+      try {
+        for (const file of files) {
+          await api.uploadDriveFile(file, parentId);
+        }
+        await refresh();
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Could not upload file");
+      }
+    },
+    [currentFolderId, location, refresh],
+  );
+
+  const triggerUpload = useCallback(() => {
+    uploadInputRef.current?.click();
+  }, []);
+
   const selectLocation = useCallback((next: FilesLocation) => {
     setLocation(next);
     setSearchQuery("");
@@ -353,6 +421,11 @@ export function useDrive() {
     setEditorFile,
     pdfFile,
     setPdfFile,
+    shareFile,
+    setShareFile,
+    moveFile,
+    setMoveFile,
+    uploadInputRef,
     openFile,
     openFileEditor,
     saveEditor,
@@ -362,6 +435,11 @@ export function useDrive() {
     trashFile,
     restoreFile,
     deleteForever,
+    renameFile,
+    moveFileTo,
+    downloadFile,
+    uploadFiles,
+    triggerUpload,
     refresh,
   };
 }

@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 /**
  * Pay — unified payment gateway workspace (Venmo / PayPal-style prototype).
  *
@@ -40,7 +43,7 @@ function TransactionRow({ tx }: { tx: PaymentTransaction }) {
         </div>
         <div className="arco-pay__tx-meta">
           <time>{relativeTime(tx.timestamp)}</time>
-          {isPending ? <span className="arco-pay__tx-status">Pending</span> : null}
+          {isPending ? <span className="arco-pay__tx-status"><T k={I18nKey.APPS$PAY_PENDING_2} /></span> : null}
         </div>
       </div>
       <div
@@ -81,7 +84,7 @@ export function PayApp() {
 
   return (
     <div className="arco-pay">
-      <aside className="arco-pay__rail" aria-label="Payment providers">
+      <aside className="arco-pay__rail" aria-label={i18n.t(I18nKey.APPS$PAY_PAYMENT_PROVIDERS)}>
         {ALL_PROVIDERS.map((id) => {
           const meta = providerMeta(id);
           const connected = pay.connected.has(id);
@@ -101,7 +104,7 @@ export function PayApp() {
         <button
           type="button"
           className="arco-pay__rail-tile arco-pay__rail-tile--add"
-          aria-label="Connect another payment method"
+          aria-label={i18n.t(I18nKey.APPS$PAY_CONNECT_ANOTHER_PAYMENT_METHOD)}
           onClick={() => openConnect()}
         >
           <Plus size={16} />
@@ -115,32 +118,24 @@ export function PayApp() {
             <Chip
               className={feedTab === "all" ? "arco-pay__tab--active" : ""}
               onClick={() => setFeedTab("all")}
-            >
-              Activity
-            </Chip>
+            ><T k={I18nKey.APPS$PAY_ACTIVITY} /></Chip>
             <Chip
               className={feedTab === "pending" ? "arco-pay__tab--active" : ""}
               onClick={() => setFeedTab("pending")}
-            >
-              Pending
-            </Chip>
+            ><T k={I18nKey.APPS$PAY_PENDING_2} /></Chip>
           </div>
         </header>
 
         {!isConnected ? (
           <>
             <div className="arco-pay__demo-banner">
-              <p>
-                Demo activity below. Connect {activeMeta.label} to send, request, and see live balance.
-              </p>
-              <Button variant="primary" onClick={() => openConnect(pay.activeProviderId)}>
-                Connect account
-              </Button>
+              <p><T k={I18nKey.APPS$PAY_DEMO_ACTIVITY_BELOW_CONNECT} />{activeMeta.label}<T k={I18nKey.APPS$PAY_TO_SEND_REQUEST_AND_SEE_LIVE_BALANCE} /></p>
+              <Button variant="primary" onClick={() => openConnect(pay.activeProviderId)}><T k={I18nKey.APPS$PAY_CONNECT_ACCOUNT} /></Button>
             </div>
             <div className="arco-pay__feed arco-scroll">
               {pay.transactions.length === 0 ? (
-                <EmptyState title="No activity for this provider">
-                  <p>Switch providers or connect an account.</p>
+                <EmptyState title={i18n.t(I18nKey.APPS$PAY_NO_ACTIVITY_FOR_THIS_PROVIDER)}>
+                  <p><T k={I18nKey.APPS$PAY_SWITCH_PROVIDERS_OR_CONNECT_AN_ACCOUNT} /></p>
                 </EmptyState>
               ) : (
                 pay.transactions.map((tx) => <TransactionRow key={tx.id} tx={tx} />)
@@ -150,8 +145,8 @@ export function PayApp() {
         ) : (
           <div className="arco-pay__feed arco-scroll">
             {visibleTransactions.length === 0 ? (
-              <EmptyState title="No activity yet">
-                <p>Send or request money to see transactions here.</p>
+              <EmptyState title={i18n.t(I18nKey.APPS$PAY_NO_ACTIVITY_YET)}>
+                <p><T k={I18nKey.APPS$PAY_SEND_OR_REQUEST_MONEY_TO_SEE_TRANSACTIONS_HERE} /></p>
               </EmptyState>
             ) : (
               visibleTransactions.map((tx) => <TransactionRow key={tx.id} tx={tx} />)
@@ -164,11 +159,11 @@ export function PayApp() {
         <section className="arco-pay__balance-card">
           <div className="arco-pay__balance-head">
             <Wallet size={18} aria-hidden />
-            <span>Available balance</span>
+            <span><T k={I18nKey.APPS$PAY_AVAILABLE_BALANCE} /></span>
             <button
               type="button"
               className="arco-pay__refresh"
-              aria-label="Refresh balance"
+              aria-label={i18n.t(I18nKey.APPS$PAY_REFRESH_BALANCE)}
               disabled={!isConnected || pay.busy}
               onClick={() => void pay.refreshBalance()}
             >
@@ -180,15 +175,14 @@ export function PayApp() {
               <p className="arco-pay__balance-amount">{formatMoney(pay.activeBalance.available)}</p>
               {pay.activeBalance.pending ? (
                 <p className="arco-pay__balance-pending">
-                  {formatMoney(pay.activeBalance.pending)} pending
-                </p>
+                  {formatMoney(pay.activeBalance.pending)}<T k={I18nKey.APPS$PAY_PENDING} /></p>
               ) : null}
               {pay.activeConnection?.accountHint ? (
                 <p className="arco-pay__balance-account">{pay.activeConnection.accountHint}</p>
               ) : null}
             </>
           ) : (
-            <p className="arco-pay__balance-empty">Connect a provider to see balance</p>
+            <p className="arco-pay__balance-empty"><T k={I18nKey.APPS$PAY_CONNECT_A_PROVIDER_TO_SEE_BALANCE} /></p>
           )}
 
           <div className="arco-pay__actions">
@@ -197,16 +191,14 @@ export function PayApp() {
               disabled={!isConnected || pay.busy}
               onClick={() => setSendOpen(true)}
             >
-              <ArrowUpRight size={16} /> Send
-            </Button>
+              <ArrowUpRight size={16} /><T k={I18nKey.APPS$PAY_SEND} /></Button>
             <Button disabled={!isConnected || pay.busy} onClick={() => setRequestOpen(true)}>
-              <ArrowDownLeft size={16} /> Request
-            </Button>
+              <ArrowDownLeft size={16} /><T k={I18nKey.APPS$PAY_REQUEST} /></Button>
           </div>
         </section>
 
         <section className="arco-pay__panel">
-          <h2>Recent contacts</h2>
+          <h2><T k={I18nKey.APPS$PAY_RECENT_CONTACTS} /></h2>
           <ul className="arco-pay__contacts">
             {pay.recipients
               .filter((r) => r.recent)
@@ -223,11 +215,8 @@ export function PayApp() {
         </section>
 
         <section className="arco-pay__panel arco-pay__panel--muted">
-          <h2>Gateway architecture</h2>
-          <p>
-            Each provider implements a shared adapter contract. The gateway routes send, request, and
-            balance calls — swap stub adapters for Stripe SDK, PayPal REST, Plaid Link, or wallet connect.
-          </p>
+          <h2><T k={I18nKey.APPS$PAY_GATEWAY_ARCHITECTURE} /></h2>
+          <p><T k={I18nKey.APPS$PAY_EACH_PROVIDER_IMPLEMENTS_A_SHARED_ADAPTER_CONTRACT_THE_G} /></p>
         </section>
 
         {pay.lastError ? <p className="arco-pay__error" role="alert">{pay.lastError}</p> : null}

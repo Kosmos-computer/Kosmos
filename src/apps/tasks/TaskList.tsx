@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import { T } from "../../i18n/T";
 import { Check, History, Plus } from "lucide-react";
 import { Badge, Button } from "../../components/ui";
 import { TaskAssigneeMeta } from "./AssignToPicker";
@@ -75,31 +77,21 @@ export function TasksList({
     <div className="arco-tasks__main">
       <div className="arco-tasks__header">
         <div className="arco-tasks__header-title">
-          <Check size={15} strokeWidth={1.75} />
-          Tasks
-          <Badge>{openCount}</Badge>
+          <Check size={15} strokeWidth={1.75} /><T k={I18nKey.APPS$TASKS_TASKS} /><Badge>{openCount}</Badge>
         </div>
         <div className="arco-tasks__header-actions">
           <Button variant="default" onClick={onShowHistory}>
-            <History size={13} />
-            History
-          </Button>
+            <History size={13} /><T k={I18nKey.APPS$TASKS_HISTORY} /></Button>
           <Button variant="primary" onClick={onAddTask}>
-            <Plus size={13} />
-            Add task
-          </Button>
+            <Plus size={13} /><T k={I18nKey.APPS$TASKS_ADD_TASK} /></Button>
         </div>
       </div>
       <div className="arco-tasks__scroll arco-scroll">
         {groups.length === 0 ? (
           <div className="arco-empty">
-            <strong className="arco-empty__title">No tasks yet</strong>
-            Add a task to get started, or let the agent create them for you.
-            <div className="arco-empty__actions">
+            <strong className="arco-empty__title"><T k={I18nKey.APPS$TASKS_NO_TASKS_YET} /></strong><T k={I18nKey.APPS$TASKS_ADD_A_TASK_TO_GET_STARTED_OR_LET_THE_AGENT_CREATE_THEM_F} /><div className="arco-empty__actions">
               <Button variant="primary" onClick={onAddTask}>
-                <Plus size={13} />
-                Add task
-              </Button>
+                <Plus size={13} /><T k={I18nKey.APPS$TASKS_ADD_TASK} /></Button>
             </div>
           </div>
         ) : (

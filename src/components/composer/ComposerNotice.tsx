@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
 /**
  * ComposerNotice — thin banner docked under the composer card (plan upsells,
  * context warnings, connection status). The card overlaps the notice's top
@@ -45,7 +47,7 @@ export function ComposerNotice({
         <button
           type="button"
           className="arco-composer__noticedismiss"
-          aria-label="Dismiss notification"
+          aria-label={i18n.t(I18nKey.COMPONENTS$COMPOSER_DISMISS_NOTIFICATION)}
           onClick={onDismiss}
         >
           <X size={13} />

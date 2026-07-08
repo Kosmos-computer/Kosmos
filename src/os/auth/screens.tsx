@@ -1,3 +1,7 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
+import { useTranslation } from "react-i18next";
 /**
  * Auth screens — boot splash, first-run setup, login, and lock.
  *
@@ -29,8 +33,9 @@ function AuthRainbowCorner() {
 
 /** Logo + loading bar; the bar's CSS animation is timed to MIN_BOOT_MS. */
 export function BootScreen() {
+  const { t } = useTranslation();
   return (
-    <div className="arco-boot" role="status" aria-label="Arco OS is starting">
+    <div className="arco-boot" role="status" aria-label={i18n.t(I18nKey.OS_AUTH_ARCO_OS_IS_STARTING)}>
       <div className="arco-boot__logo">
         <SpriteWorkingMark className="arco-boot__mark" mode="boot" />
       </div>
@@ -103,12 +108,12 @@ export function SetupScreen() {
     <AuthCard>
       <div className="arco-authscreen__header">
         <div className="arco-authscreen__mark" />
-        <div className="arco-authscreen__title">Welcome to Arco</div>
-        <div className="arco-authscreen__subtitle">Create the owner account to secure this instance</div>
+        <div className="arco-authscreen__title"><T k={I18nKey.OS_AUTH_WELCOME_TO_ARCO} /></div>
+        <div className="arco-authscreen__subtitle"><T k={I18nKey.OS_AUTH_CREATE_THE_OWNER_ACCOUNT_TO_SECURE_THIS_INSTANCE} /></div>
       </div>
       <form className="arco-authscreen__form" onSubmit={(e) => void submit(e)}>
         <div>
-          <label className="arco-label" htmlFor="setup-username">Username</label>
+          <label className="arco-label" htmlFor="setup-username"><T k={I18nKey.OS_AUTH_USERNAME} /></label>
           <input
             id="setup-username"
             className="arco-input"
@@ -120,7 +125,7 @@ export function SetupScreen() {
           />
         </div>
         <div>
-          <label className="arco-label" htmlFor="setup-display">Display name (optional)</label>
+          <label className="arco-label" htmlFor="setup-display"><T k={I18nKey.OS_AUTH_DISPLAY_NAME_OPTIONAL} /></label>
           <input
             id="setup-display"
             className="arco-input"
@@ -129,7 +134,7 @@ export function SetupScreen() {
           />
         </div>
         <div>
-          <label className="arco-label" htmlFor="setup-password">Password</label>
+          <label className="arco-label" htmlFor="setup-password"><T k={I18nKey.OS_AUTH_PASSWORD} /></label>
           <input
             id="setup-password"
             className="arco-input"
@@ -142,7 +147,7 @@ export function SetupScreen() {
           />
         </div>
         <div>
-          <label className="arco-label" htmlFor="setup-confirm">Confirm password</label>
+          <label className="arco-label" htmlFor="setup-confirm"><T k={I18nKey.OS_AUTH_CONFIRM_PASSWORD} /></label>
           <input
             id="setup-confirm"
             className="arco-input"
@@ -183,11 +188,11 @@ export function LoginScreen() {
   return (
     <AuthCard branding={<ArcoLogo className="arco-authscreen__logo" />} rainbowCorner>
       <div className="arco-authscreen__header">
-        <div className="arco-authscreen__lead">Sign in to continue</div>
+        <div className="arco-authscreen__lead"><T k={I18nKey.OS_AUTH_SIGN_IN_TO_CONTINUE} /></div>
       </div>
       <form className="arco-authscreen__form" onSubmit={(e) => void submit(e)}>
         <div>
-          <label className="arco-label" htmlFor="login-username">Username</label>
+          <label className="arco-label" htmlFor="login-username"><T k={I18nKey.OS_AUTH_USERNAME} /></label>
           <input
             id="login-username"
             className="arco-input"
@@ -199,7 +204,7 @@ export function LoginScreen() {
           />
         </div>
         <div>
-          <label className="arco-label" htmlFor="login-password">Password</label>
+          <label className="arco-label" htmlFor="login-password"><T k={I18nKey.OS_AUTH_PASSWORD} /></label>
           <PasswordInput
             id="login-password"
             autoComplete="current-password"
@@ -256,12 +261,12 @@ export function LockScreen() {
           {name.charAt(0).toUpperCase()}
         </div>
         <div className="arco-authscreen__title">{name}</div>
-        <div className="arco-authscreen__subtitle">Enter your password to unlock</div>
+        <div className="arco-authscreen__subtitle"><T k={I18nKey.OS_AUTH_ENTER_YOUR_PASSWORD_TO_UNLOCK} /></div>
       </div>
       <form className="arco-authscreen__form" onSubmit={(e) => void submit(e)}>
         <PasswordInput
           ref={inputRef}
-          aria-label="Password"
+          aria-label={i18n.t(I18nKey.OS_AUTH_PASSWORD)}
           autoComplete="current-password"
           autoFocus
           value={password}
@@ -274,9 +279,7 @@ export function LockScreen() {
         </button>
       </form>
       <div className="arco-authscreen__footer">
-        <button className="arco-authscreen__link" onClick={() => void logout()}>
-          Not you? Sign out
-        </button>
+        <button className="arco-authscreen__link" onClick={() => void logout()}><T k={I18nKey.OS_AUTH_NOT_YOU_SIGN_OUT} /></button>
       </div>
     </AuthCard>
   );

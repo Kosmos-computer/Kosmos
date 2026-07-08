@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
 import { useMemo } from "react";
 import { Check } from "lucide-react";
 import { MiniCalendar } from "../tasks/MiniCalendar";
@@ -60,7 +62,7 @@ export function CalendarSidebar({
         onSelectDate={onSelectDate ?? (() => {})}
         highlightedDates={highlightedDates ?? []}
       />
-      <div className="arco-cal-sidebar__sources" role="group" aria-label="Calendars">
+      <div className="arco-cal-sidebar__sources" role="group" aria-label={i18n.t(I18nKey.APPS$CALENDAR_CALENDARS)}>
         {groupedSources.map(({ group, items }) => (
           <div key={group} className="arco-cal-sidebar__group">
             <div className="arco-cal-sidebar__group-title">{group}</div>

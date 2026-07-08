@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 /**
  * Settings → Connected accounts — team chat and social network links.
  */
@@ -48,20 +51,20 @@ export function ConnectedAccountsSection() {
 
   return (
     <SettingsPage>
-      <SettingsSection intro="Accounts linked to Groups and Social workspaces. OAuth and server-side token storage replace local stubs in a later phase.">
+      <SettingsSection intro={i18n.t(I18nKey.APPS$SETTINGS_ACCOUNTS_LINKED_TO_GROUPS_AND_SOCIAL_WORKSPACES_OAUTH_AN)}>
         <SettingsStack>
           {connections.length > 0 ? (
             <ListSearch
               value={searchQuery}
               onChange={setSearchQuery}
-              placeholder="Search connected accounts"
+              placeholder={i18n.t(I18nKey.APPS$SETTINGS_SEARCH_CONNECTED_ACCOUNTS)}
               ariaLabel="Search connected accounts"
             />
           ) : null}
           {connections.length === 0 ? (
-            <SettingsEmpty>No connected accounts yet.</SettingsEmpty>
+            <SettingsEmpty><T k={I18nKey.APPS$SETTINGS_NO_CONNECTED_ACCOUNTS_YET} /></SettingsEmpty>
           ) : filteredConnections.length === 0 ? (
-            <SettingsEmpty>No accounts match your search.</SettingsEmpty>
+            <SettingsEmpty><T k={I18nKey.APPS$SETTINGS_NO_ACCOUNTS_MATCH_YOUR_SEARCH} /></SettingsEmpty>
           ) : (
             filteredConnections.map((connection) => (
               <SettingsPanel key={connection.id}>
@@ -76,8 +79,7 @@ export function ConnectedAccountsSection() {
                     {canManage ? (
                       <SettingsRowActions>
                         <Button variant="ghost" onClick={() => removeConnection(connection.id)}>
-                          <Trash2 size={14} /> Remove
-                        </Button>
+                          <Trash2 size={14} /><T k={I18nKey.COMMON$REMOVE} /></Button>
                       </SettingsRowActions>
                     ) : null}
                   </SettingsRow>
@@ -89,8 +91,8 @@ export function ConnectedAccountsSection() {
           {canManage ? (
             <SettingsRow>
               <SettingsRowActions>
-                <Button onClick={() => openConnect("teams")}>Connect team chat</Button>
-                <Button onClick={() => openConnect("social")}>Connect social</Button>
+                <Button onClick={() => openConnect("teams")}><T k={I18nKey.APPS$SETTINGS_CONNECT_TEAM_CHAT} /></Button>
+                <Button onClick={() => openConnect("social")}><T k={I18nKey.APPS$SETTINGS_CONNECT_SOCIAL} /></Button>
               </SettingsRowActions>
             </SettingsRow>
           ) : null}

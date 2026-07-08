@@ -1,3 +1,6 @@
+import { I18nKey } from "../i18n/declaration";
+import i18n from "../i18n/index";
+import { T } from "../i18n/T";
 /**
  * Mobile shell — the same windows become full-screen sheets: a home grid of
  * app icons, a bottom dock of open surfaces, one surface visible at a time.
@@ -6,13 +9,16 @@
  */
 import { ChevronLeft, Globe } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Bell } from "lucide-react";
 import { ListSearch } from "../components/patterns";
 import { matchesListSearch } from "../lib/listSearch";
 import { useOsStore } from "./osStore";
 import { useWindowStore } from "./windowStore";
+import { focusShellWindow, openShellWindow } from "./shellNavigation";
 import { useShellApps } from "./shellApps";
 import { systemApp } from "./systemApps";
+import { resolveWindowTitle } from "./resolveWindowTitle";
 import { AppSurface } from "../apps/appview/AppSurface";
 import { WebAppSurface } from "../apps/appview/WebAppSurface";
 import { AppHost } from "../apps/appview/AppHost";
@@ -22,6 +28,7 @@ import { VideoShell } from "../apps/video/VideoShell";
 import { PodcastShell } from "../apps/podcast/PodcastShell";
 
 export function MobileShell() {
+  const { i18n } = useTranslation();
   const refreshApps = useOsStore((s) => s.refreshApps);
   const shellApps = useShellApps();
   const [homeSearch, setHomeSearch] = useState("");
@@ -29,8 +36,6 @@ export function MobileShell() {
   const notifications = useOsStore((s) => s.notifications);
   const dismiss = useOsStore((s) => s.dismissNotification);
   const windows = useWindowStore((s) => s.windows);
-  const open = useWindowStore((s) => s.open);
-  const focus = useWindowStore((s) => s.focus);
   const toggleMinimize = useWindowStore((s) => s.toggleMinimize);
 
   useEffect(() => {
@@ -45,8 +50,8 @@ export function MobileShell() {
   );
 
   const filteredWindows = useMemo(
-    () => windows.filter((w) => matchesListSearch(dockSearch, w.title)),
-    [windows, dockSearch],
+    () => windows.filter((w) => matchesListSearch(dockSearch, resolveWindowTitle(w))),
+    [windows, dockSearch, i18n.language],
   );
 
   return (
@@ -55,10 +60,10 @@ export function MobileShell() {
         {active ? (
           <>
             <header className="arco-mobile-shell__header">
-              <button onClick={() => toggleMinimize(active.id)} aria-label="Back to home">
+              <button onClick={() => toggleMinimize(active.id)} aria-label={i18n.t(I18nKey.OS_MOBILESHELL_BACK_TO_HOME)}>
                 <ChevronLeft size={20} />
               </button>
-              <strong style={{ fontSize: "var(--arco-text-md)" }}>{active.title}</strong>
+              <strong style={{ fontSize: "var(--arco-text-md)" }}>{resolveWindowTitle(active)}</strong>
             </header>
             <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
               {active.kind.type === "system" ? (
@@ -81,13 +86,13 @@ export function MobileShell() {
               <ListSearch
                 value={homeSearch}
                 onChange={setHomeSearch}
-                placeholder="Search apps"
+                placeholder={i18n.t(I18nKey.APPS$LIBRARY_SEARCH_APPS)}
                 ariaLabel="Search apps"
               />
             </div>
             <div className="arco-mobile-home">
               {filteredShellApps.length === 0 ? (
-                <p className="arco-mobile-home__empty">No apps match your search</p>
+                <p className="arco-mobile-home__empty"><T k={I18nKey.OS_MOBILESHELL_NO_APPS_MATCH_YOUR_SEARCH} /></p>
               ) : null}
               {filteredShellApps.map((entry) => {
                 const Icon = entry.icon;
@@ -95,7 +100,7 @@ export function MobileShell() {
                   <button
                     key={entry.id}
                     className="arco-mobile-home__icon"
-                    onClick={() => open(entry.kind, entry.title)}
+                    onClick={() => openShellWindow(entry.kind, entry.title)}
                   >
                     <span
                       className="arco-mobile-home__glyph"
@@ -112,13 +117,13 @@ export function MobileShell() {
         )}
       </div>
 
-      <nav className="arco-mobile-shell__dock" aria-label="Open surfaces">
+      <nav className="arco-mobile-shell__dock" aria-label={i18n.t(I18nKey.OS_MOBILESHELL_OPEN_SURFACES)}>
         {windows.length > 3 ? (
           <div className="arco-mobile-shell__dock-search">
             <ListSearch
               value={dockSearch}
               onChange={setDockSearch}
-              placeholder="Filter open apps"
+              placeholder={i18n.t(I18nKey.OS_MOBILESHELL_FILTER_OPEN_APPS)}
               ariaLabel="Filter open apps"
               compact
             />
@@ -131,8 +136,8 @@ export function MobileShell() {
           return (
             <button
               key={w.id}
-              onClick={() => (isActive ? toggleMinimize(w.id) : focus(w.id))}
-              aria-label={w.title}
+              onClick={() => (isActive ? toggleMinimize(w.id) : focusShellWindow(w.id))}
+              aria-label={resolveWindowTitle(w)}
               style={{
                 display: "flex",
                 flexDirection: "column",
@@ -148,9 +153,7 @@ export function MobileShell() {
           );
         })}
         {windows.length === 0 && (
-          <span style={{ fontSize: "var(--arco-text-xs)", color: "var(--arco-text-tertiary)", padding: 6 }}>
-            Open an app to get started
-          </span>
+          <span style={{ fontSize: "var(--arco-text-xs)", color: "var(--arco-text-tertiary)", padding: 6 }}><T k={I18nKey.OS_MOBILESHELL_OPEN_AN_APP_TO_GET_STARTED} /></span>
         )}
       </nav>
 
@@ -160,7 +163,7 @@ export function MobileShell() {
             <div key={n.id} className="arco-notification">
               <Bell size={15} style={{ flexShrink: 0, marginTop: 2 }} />
               <span style={{ flex: 1 }}>{n.message}</span>
-              <button onClick={() => dismiss(n.id)} aria-label="Dismiss notification">
+              <button onClick={() => dismiss(n.id)} aria-label={i18n.t(I18nKey.COMPONENTS$COMPOSER_DISMISS_NOTIFICATION)}>
                 ×
               </button>
             </div>

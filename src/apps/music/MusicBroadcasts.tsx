@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { useState } from "react";
 import {
   ChevronLeft,
@@ -101,11 +104,9 @@ export function MusicSongDetail({ vm }: MusicBroadcastsProps) {
           type="button"
           className="arco-music__back-btn"
           onClick={() => vm.closeSongDetail()}
-          aria-label="Back"
+          aria-label={i18n.t(I18nKey.COMMON$BACK)}
         >
-          <ChevronLeft size={18} strokeWidth={1.75} />
-          Back
-        </button>
+          <ChevronLeft size={18} strokeWidth={1.75} /><T k={I18nKey.COMMON$BACK} /></button>
 
         <section className="arco-music__broadcast-hero">
           <MusicBroadcastCover
@@ -116,7 +117,7 @@ export function MusicSongDetail({ vm }: MusicBroadcastsProps) {
             alt={song.title}
           />
           <div className="arco-music__broadcast-hero-copy">
-            <span className="arco-music__featured-label">Song</span>
+            <span className="arco-music__featured-label"><T k={I18nKey.APPS$MUSIC_SONG} /></span>
             <h1>{song.title}</h1>
             <p>
               {song.artists} · {song.feedLabel}
@@ -125,8 +126,7 @@ export function MusicSongDetail({ vm }: MusicBroadcastsProps) {
             <div className="arco-music__broadcast-hero-actions">
               {playable ? (
                 <button type="button" className="arco-music__play-btn" onClick={() => vm.playTrack(song.id, true)}>
-                  <Play size={18} /> Play
-                </button>
+                  <Play size={18} /><T k={I18nKey.APPS$MUSIC_PLAY} /></button>
               ) : null}
               <a
                 className="arco-music__link-btn"
@@ -134,21 +134,19 @@ export function MusicSongDetail({ vm }: MusicBroadcastsProps) {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <ExternalLink size={16} /> Read post
-              </a>
+                <ExternalLink size={16} /><T k={I18nKey.APPS$MUSIC_READ_POST} /></a>
             </div>
           </div>
         </section>
 
         <section className="arco-music__section">
-          <h2 className="arco-music__section-title">About this track</h2>
+          <h2 className="arco-music__section-title"><T k={I18nKey.APPS$MUSIC_ABOUT_THIS_TRACK} /></h2>
           {song.summary ? (
             <p className="arco-music__broadcast-description">{song.summary}</p>
           ) : (
-            <p className="arco-music__news-status">No description available for this track.</p>
+            <p className="arco-music__news-status"><T k={I18nKey.APPS$MUSIC_NO_DESCRIPTION_AVAILABLE_FOR_THIS_TRACK} /></p>
           )}
-          <p className="arco-music__broadcast-meta">
-            Published {formatPublishedDate(song.publishedAt)} ·{" "}
+          <p className="arco-music__broadcast-meta"><T k={I18nKey.APPS$MUSIC_PUBLISHED} />{formatPublishedDate(song.publishedAt)} ·{" "}
             {MUSIC_RSS_FEED_CATEGORY_LABELS[song.category as MusicRssFeedCategory] ?? song.category}
           </p>
         </section>
@@ -173,11 +171,9 @@ export function MusicBroadcastFeedDetail({ vm }: MusicBroadcastsProps) {
           type="button"
           className="arco-music__back-btn"
           onClick={() => vm.closeBroadcastFeed()}
-          aria-label="Back to broadcasts"
+          aria-label={i18n.t(I18nKey.APPS$MUSIC_BACK_TO_BROADCASTS)}
         >
-          <ChevronLeft size={18} strokeWidth={1.75} />
-          Back
-        </button>
+          <ChevronLeft size={18} strokeWidth={1.75} /><T k={I18nKey.COMMON$BACK} /></button>
 
         <section className="arco-music__broadcast-hero">
           <MusicBroadcastCover
@@ -188,7 +184,7 @@ export function MusicBroadcastFeedDetail({ vm }: MusicBroadcastsProps) {
             alt={feed.label}
           />
           <div className="arco-music__broadcast-hero-copy">
-            <span className="arco-music__featured-label">Broadcast</span>
+            <span className="arco-music__featured-label"><T k={I18nKey.APPS$MUSIC_BROADCAST} /></span>
             <h1>{feed.label}</h1>
             <p>
               {feed.publisher}
@@ -203,25 +199,20 @@ export function MusicBroadcastFeedDetail({ vm }: MusicBroadcastsProps) {
                 className="arco-music__play-btn"
                 onClick={() => vm.playTrack(latestPlayable.id, true)}
               >
-                <Play size={18} /> Play latest
-              </button>
+                <Play size={18} /><T k={I18nKey.APPS$MUSIC_PLAY_LATEST} /></button>
             ) : null}
           </div>
         </section>
 
         <section className="arco-music__section">
-          <h2 className="arco-music__section-title">Songs</h2>
+          <h2 className="arco-music__section-title"><T k={I18nKey.APPS$MUSIC_SONGS} /></h2>
           {vm.broadcastFeedLoading && songs.length === 0 ? (
             <p className="arco-music__news-status">
-              <Loader2 size={16} className="arco-music__spin" /> Loading songs…
-            </p>
+              <Loader2 size={16} className="arco-music__spin" /><T k={I18nKey.APPS$MUSIC_LOADING_SONGS} /></p>
           ) : vm.broadcastFeedError && songs.length === 0 ? (
             <p className="arco-music__feed-error">{vm.broadcastFeedError}</p>
           ) : songs.length === 0 ? (
-            <p className="arco-music__news-status">
-              This feed has no audio enclosures (MP3). Most music blog RSS feeds are articles only — try NPR World
-              Cafe or Internet Archive under Discovery &amp; curation.
-            </p>
+            <p className="arco-music__news-status"><T k={I18nKey.APPS$MUSIC_THIS_FEED_HAS_NO_AUDIO_ENCLOSURES_MP3_MOST_MUSIC_BLOG_RS} /></p>
           ) : (
             <div className="arco-music__song-list">
               {songs.map((song) => (
@@ -265,7 +256,7 @@ function LiveStationCard({
       <div className="arco-music__broadcast-card-body">
         <h3>
           {station.label}
-          <span className="arco-music__live-pill">Live</span>
+          <span className="arco-music__live-pill"><T k={I18nKey.APPS$MUSIC_LIVE} /></span>
         </h3>
         <p className="arco-music__broadcast-card-publisher">
           {station.publisher} · {station.location}
@@ -388,7 +379,7 @@ function BroadcastFeedManager({ vm }: { vm: MusicViewModel }) {
   return (
     <section className="arco-music__section arco-music__feed-manager">
       <div className="arco-music__feed-manager-header">
-        <h2 className="arco-music__section-title">Add RSS feed</h2>
+        <h2 className="arco-music__section-title"><T k={I18nKey.APPS$MUSIC_ADD_RSS_FEED} /></h2>
         <Button
           variant="ghost"
           className="arco-music__refresh-btn"
@@ -401,17 +392,13 @@ function BroadcastFeedManager({ vm }: { vm: MusicViewModel }) {
       </div>
       {needsPlayableFeeds ? (
         <div className="arco-music__feed-callout">
-          <p>
-            Most subscribed feeds are music news blogs without MP3 enclosures. Add playable podcast and archive
-            feeds to hear songs.
-          </p>
+          <p><T k={I18nKey.APPS$MUSIC_MOST_SUBSCRIBED_FEEDS_ARE_MUSIC_NEWS_BLOGS_WITHOUT_MP3_E} /></p>
           <Button
             variant="primary"
             disabled={vm.feedsLoading}
             onClick={() => void vm.seedAudioBroadcasts()}
           >
-            <Plus size={16} /> Add playable feeds
-          </Button>
+            <Plus size={16} /><T k={I18nKey.APPS$MUSIC_ADD_PLAYABLE_FEEDS} /></Button>
         </div>
       ) : null}
       <form
@@ -423,14 +410,13 @@ function BroadcastFeedManager({ vm }: { vm: MusicViewModel }) {
       >
         <Input
           type="url"
-          placeholder="Paste music blog RSS feed URL"
+          placeholder={i18n.t(I18nKey.APPS$MUSIC_PASTE_MUSIC_BLOG_RSS_FEED_URL)}
           value={feedUrl}
           onChange={(event) => setFeedUrl(event.target.value)}
-          aria-label="Music RSS feed URL"
+          aria-label={i18n.t(I18nKey.APPS$MUSIC_MUSIC_RSS_FEED_URL)}
         />
         <Button variant="primary" type="submit" disabled={vm.feedsLoading || !feedUrl.trim()}>
-          <Plus size={16} /> Add feed
-        </Button>
+          <Plus size={16} /><T k={I18nKey.APPS$MUSIC_ADD_FEED} /></Button>
       </form>
       {addError ? <p className="arco-music__feed-error">{addError}</p> : null}
       {vm.rssError ? <p className="arco-music__feed-error">{vm.rssError}</p> : null}
@@ -504,34 +490,27 @@ export function MusicBroadcastDirectory({ vm }: MusicBroadcastsProps) {
       <div className="arco-music__main-scroll arco-music__scrollable">
         <header className="arco-music__broadcast-header">
           <div>
-            <h1 className="arco-music__broadcast-title">Broadcasts</h1>
-            <p className="arco-music__broadcast-subtitle">
-              Independent live radio and music blog RSS feeds. {vm.liveStations.length} live station
-              {vm.liveStations.length === 1 ? "" : "s"}, {vm.rssFeeds.length} RSS feed
-              {vm.rssFeeds.length === 1 ? "" : "s"}.
+            <h1 className="arco-music__broadcast-title"><T k={I18nKey.APPS$MUSIC_BROADCASTS} /></h1>
+            <p className="arco-music__broadcast-subtitle"><T k={I18nKey.APPS$MUSIC_INDEPENDENT_LIVE_RADIO_AND_MUSIC_BLOG_RSS_FEEDS} />{vm.liveStations.length}<T k={I18nKey.APPS$MUSIC_LIVE_STATION} />{vm.liveStations.length === 1 ? "" : "s"}, {vm.rssFeeds.length}<T k={I18nKey.APPS$MUSIC_RSS_FEED} />{vm.rssFeeds.length === 1 ? "" : "s"}.
             </p>
           </div>
         </header>
 
-        <div className="arco-music__content-filters" role="tablist" aria-label="Broadcast categories">
+        <div className="arco-music__content-filters" role="tablist" aria-label={i18n.t(I18nKey.APPS$MUSIC_BROADCAST_CATEGORIES)}>
           <button
             type="button"
             role="tab"
             aria-selected={category === "all"}
             className={`arco-music__filter-chip${category === "all" ? " arco-music__filter-chip--active" : ""}`}
             onClick={() => setCategory("all")}
-          >
-            All
-          </button>
+          ><T k={I18nKey.COMMON$ALL} /></button>
           <button
             type="button"
             role="tab"
             aria-selected={category === "live"}
             className={`arco-music__filter-chip${category === "live" ? " arco-music__filter-chip--active" : ""}`}
             onClick={() => setCategory("live")}
-          >
-            Live radio
-          </button>
+          ><T k={I18nKey.APPS$MUSIC_LIVE_RADIO} /></button>
           {LIVE_STATION_CATEGORIES.map((item) => (
             <button
               key={`live-${item.id}`}
@@ -590,10 +569,9 @@ export function MusicBroadcastDirectory({ vm }: MusicBroadcastsProps) {
         {showRssSection ? (
           vm.rssLoading && vm.rssFeeds.length === 0 ? (
             <p className="arco-music__news-status">
-              <Loader2 size={16} className="arco-music__spin" /> Loading broadcasts…
-            </p>
+              <Loader2 size={16} className="arco-music__spin" /><T k={I18nKey.APPS$MUSIC_LOADING_BROADCASTS} /></p>
           ) : rssFeeds.length === 0 && !showLiveSection ? (
-            <EmptyState title="No broadcasts found">Try another category or search term.</EmptyState>
+            <EmptyState title={i18n.t(I18nKey.APPS$MUSIC_NO_BROADCASTS_FOUND)}><T k={I18nKey.APPS$MUSIC_TRY_ANOTHER_CATEGORY_OR_SEARCH_TERM} /></EmptyState>
           ) : rssFeeds.length > 0 ? (
             showGroupedRss ? (
               BROADCAST_FEED_CATEGORIES.map((section) => {
@@ -604,7 +582,7 @@ export function MusicBroadcastDirectory({ vm }: MusicBroadcastsProps) {
                 );
               })
             ) : (
-              <BroadcastSection title="RSS results" feeds={rssFeeds} vm={vm} />
+              <BroadcastSection title={i18n.t(I18nKey.APPS$MUSIC_RSS_RESULTS)} feeds={rssFeeds} vm={vm} />
             )
           ) : null
         ) : null}

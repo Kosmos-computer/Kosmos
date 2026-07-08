@@ -1,5 +1,7 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
 /**
- * Agent Studio — Arco's workbench surface (agent-canvas layout): a
+ * Techno Studio — Arco's workbench surface (agent-canvas layout): a
  * conversation sidebar on the left, the chat thread + rich composer in the
  * middle, and a resizable context drawer on the right whose tabs
  * (Files / Diffs / Terminal / Preview) update live as the agent works.
@@ -222,7 +224,7 @@ export function StudioApp() {
       onSubmit={() => submit()}
       streaming={chat.streaming}
       onStop={chat.stop}
-      placeholder="Ask the agent to build, script, or automate…"
+      placeholder={i18n.t(I18nKey.APPS$STUDIO_ASK_THE_AGENT_TO_BUILD_SCRIPT_OR_AUTOMATE)}
       modes={COMPOSER_MODES}
       activeModeId={mode}
       onModeChange={setMode}
@@ -268,14 +270,14 @@ export function StudioApp() {
             onClose={() => setNavOpen(false)}
           />
         ) : (
-          <div className="arco-studio__rail arco-studio__rail--left" aria-label="Conversations">
+          <div className="arco-studio__rail arco-studio__rail--left" aria-label={i18n.t(I18nKey.APPS$STUDIO_CONVERSATIONS)}>
             <StudioLogoMark className="arco-studio__railbrand" title="" />
             <button
               type="button"
               className="arco-btn arco-btn--icon"
               onClick={() => setNavOpen(true)}
               aria-pressed={false}
-              aria-label="Show conversations"
+              aria-label={i18n.t(I18nKey.APPS$STUDIO_SHOW_CONVERSATIONS)}
             >
               <PanelLeft size={14} />
             </button>
@@ -343,12 +345,12 @@ export function StudioApp() {
               className="arco-resize-handle"
               role="separator"
               aria-orientation="vertical"
-              aria-label="Resize workspace drawer"
+              aria-label={i18n.t(I18nKey.APPS$STUDIO_RESIZE_WORKSPACE_DRAWER)}
               onPointerDown={onDividerPointerDown}
             >
               <span className="arco-resize-handle__grip" aria-hidden="true" />
             </div>
-            <section className="arco-studio__drawer" aria-label="Workspace">
+            <section className="arco-studio__drawer" aria-label={i18n.t(I18nKey.APPS$STUDIO_WORKSPACE_2)}>
               <div className="arco-studio__tabbar">
                 <div className="arco-studio__tabs" role="tablist">
                   {DRAWER_TABS.map(({ id, label, icon: Icon }) => (
@@ -373,7 +375,7 @@ export function StudioApp() {
                     className="arco-btn arco-btn--icon"
                     onClick={() => setDrawerOpen(false)}
                     aria-pressed
-                    aria-label="Hide workspace drawer"
+                    aria-label={i18n.t(I18nKey.APPS$STUDIO_HIDE_WORKSPACE_DRAWER)}
                   >
                     <PanelRight size={14} />
                   </button>
@@ -389,7 +391,7 @@ export function StudioApp() {
             </section>
           </>
         ) : (
-          <div className="arco-studio__rail arco-studio__rail--right" aria-label="Workspace">
+          <div className="arco-studio__rail arco-studio__rail--right" aria-label={i18n.t(I18nKey.APPS$STUDIO_WORKSPACE_2)}>
             {DRAWER_TABS.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}

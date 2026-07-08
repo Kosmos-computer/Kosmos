@@ -1,3 +1,5 @@
+import { I18nKey } from "../../../i18n/declaration";
+import { T } from "../../../i18n/T";
 /**
  * PreviewTab — renders the generated app the agent is currently working on
  * (last app_create/app_update/open_app), with a switcher for the rest of the
@@ -18,7 +20,7 @@ export function PreviewTab() {
     return (
       <div className="arco-empty">
         <AppWindow size={18} />
-        <span>No generated apps yet — ask the agent to build one.</span>
+        <span><T k={I18nKey.APPS$STUDIO_NO_GENERATED_APPS_YET_ASK_THE_AGENT_TO_BUILD_ONE} /></span>
       </div>
     );
   }

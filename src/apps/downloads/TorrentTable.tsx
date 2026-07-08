@@ -1,5 +1,9 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { EmptyState } from "../../components/ui";
 import type { TorrentItem } from "./types";
+import { useTranslation } from "react-i18next";
 
 const STATUS_LABELS: Record<TorrentItem["status"], string> = {
   downloading: "Downloading",
@@ -18,27 +22,28 @@ export interface TorrentTableProps {
 }
 
 export function TorrentTable({ torrents, selectedIds, onSelect }: TorrentTableProps) {
+  const { t } = useTranslation();
   if (torrents.length === 0) {
     return (
       <div className="arco-downloads__table-empty">
-        <EmptyState title="No torrents">Add a torrent or change your filters.</EmptyState>
+        <EmptyState title={i18n.t(I18nKey.APPS$DOWNLOADS_NO_TORRENTS)}><T k={I18nKey.APPS$DOWNLOADS_ADD_A_TORRENT_OR_CHANGE_YOUR_FILTERS} /></EmptyState>
       </div>
     );
   }
 
   return (
-    <div className="arco-downloads__table-wrap arco-scroll" role="region" aria-label="Torrent list">
+    <div className="arco-downloads__table-wrap arco-scroll" role="region" aria-label={i18n.t(I18nKey.APPS$DOWNLOADS_TORRENT_LIST)}>
       <div className="arco-downloads__table-header" aria-hidden="true">
-        <span>Name</span>
-        <span>Size</span>
-        <span>Done</span>
-        <span>Status</span>
-        <span>Seeds</span>
-        <span>Peers</span>
-        <span>Up speed</span>
-        <span>Ratio</span>
-        <span>Uploaded</span>
-        <span>Down speed</span>
+        <span><T k={I18nKey.APPS$DOWNLOADS_NAME} /></span>
+        <span><T k={I18nKey.APPS$DOWNLOADS_SIZE} /></span>
+        <span><T k={I18nKey.COMMON$DONE} /></span>
+        <span><T k={I18nKey.APPS$DOWNLOADS_STATUS} /></span>
+        <span><T k={I18nKey.APPS$DOWNLOADS_SEEDS} /></span>
+        <span><T k={I18nKey.APPS$DOWNLOADS_PEERS} /></span>
+        <span><T k={I18nKey.APPS$DOWNLOADS_UP_SPEED} /></span>
+        <span><T k={I18nKey.APPS$DOWNLOADS_RATIO} /></span>
+        <span><T k={I18nKey.APPS$DOWNLOADS_UPLOADED} /></span>
+        <span><T k={I18nKey.APPS$DOWNLOADS_DOWN_SPEED} /></span>
       </div>
       {torrents.map((torrent) => {
         const selected = selectedIds.includes(torrent.id);

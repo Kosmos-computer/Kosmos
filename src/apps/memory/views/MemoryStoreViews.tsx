@@ -1,3 +1,5 @@
+import { I18nKey } from "../../../i18n/declaration";
+import { T } from "../../../i18n/T";
 import type {
   IdentityDocument,
   MemoryCollection,
@@ -12,7 +14,7 @@ export function MemoryPlaceholderView({ title, description }: { title: string; d
     <div className="arco-memory-view arco-memory-view--placeholder">
       <h1 className="arco-memory-view__title">{title}</h1>
       <p className="arco-memory-view__subtitle">{description}</p>
-      <p className="arco-memory-view__stub">Stub view — wired in Phase 2–3.</p>
+      <p className="arco-memory-view__stub"><T k={I18nKey.APPS$MEMORY_STUB_VIEW_WIRED_IN_PHASE_2_3} /></p>
     </div>
   );
 }
@@ -27,10 +29,8 @@ export function MemoryGraphView({
   return (
     <div className="arco-memory-view">
       <header className="arco-memory-view__header">
-        <h1 className="arco-memory-view__title">Knowledge graph</h1>
-        <p className="arco-memory-view__subtitle">
-          Relations between entities, concepts, and memory entries ({nodes.length} nodes, {edges.length} edges).
-        </p>
+        <h1 className="arco-memory-view__title"><T k={I18nKey.APPS$MEMORY_KNOWLEDGE_GRAPH} /></h1>
+        <p className="arco-memory-view__subtitle"><T k={I18nKey.APPS$MEMORY_RELATIONS_BETWEEN_ENTITIES_CONCEPTS_AND_MEMORY_ENTRIES} />{nodes.length}<T k={I18nKey.APPS$MEMORY_NODES} />{edges.length}<T k={I18nKey.APPS$MEMORY_EDGES} /></p>
       </header>
       <ul className="arco-memory-list">
         {edges.map((edge) => {
@@ -62,31 +62,35 @@ export function MemoryRagView({
   return (
     <div className="arco-memory-view">
       <header className="arco-memory-view__header">
-        <h1 className="arco-memory-view__title">RAG pipeline</h1>
-        <p className="arco-memory-view__subtitle">Recent retrieval traces and top chunks.</p>
+        <h1 className="arco-memory-view__title"><T k={I18nKey.APPS$MEMORY_RAG_PIPELINE} /></h1>
+        <p className="arco-memory-view__subtitle"><T k={I18nKey.APPS$MEMORY_RECENT_RETRIEVAL_TRACES_AND_TOP_CHUNKS} /></p>
       </header>
       <section className="arco-memory-section">
-        <h2 className="arco-memory-section__title">Recent queries</h2>
+        <h2 className="arco-memory-section__title"><T k={I18nKey.APPS$MEMORY_RECENT_QUERIES} /></h2>
         <ul className="arco-memory-list">
           {queries.map((query) => (
             <li key={query.id} className="arco-memory-list__row arco-memory-list__row--stacked">
               <span className="arco-memory-list__primary">{query.query}</span>
               <span className="arco-memory-list__meta">
-                {query.timestamp} · {query.latencyMs}ms · {query.chunksRetrieved} chunks
-              </span>
+                {query.timestamp} · {query.latencyMs}<T k={I18nKey.APPS$MEMORY_MS} />{query.chunksRetrieved}<T k={I18nKey.APPS$MEMORY_CHUNKS} /></span>
               <span className="arco-memory-list__preview">{query.answerPreview}</span>
             </li>
           ))}
         </ul>
       </section>
       <section className="arco-memory-section">
-        <h2 className="arco-memory-section__title">Sample chunks</h2>
+        <h2 className="arco-memory-section__title"><T k={I18nKey.APPS$MEMORY_SAMPLE_CHUNKS} /></h2>
         <ul className="arco-memory-list">
           {chunks.map((chunk) => (
             <li key={chunk.id} className="arco-memory-list__row arco-memory-list__row--stacked">
               <span className="arco-memory-list__primary">{chunk.source}</span>
               <span className="arco-memory-list__meta">
-                score {(chunk.score * 100).toFixed(0)}% · {chunk.tokens} tokens
+                <T k={I18nKey.APPS$MEMORY_SCORE} />
+                {(chunk.score * 100).toFixed(0)}%
+                {/* eslint-disable-next-line i18next/no-literal-string -- separator */}
+                {" · "}
+                {chunk.tokens}
+                <T k={I18nKey.APPS$MEMORY_TOKENS} />
               </span>
               <span className="arco-memory-list__preview">{chunk.content}</span>
             </li>
@@ -101,15 +105,15 @@ export function MemoryVectorView({ collections }: { collections: MemoryCollectio
   return (
     <div className="arco-memory-view">
       <header className="arco-memory-view__header">
-        <h1 className="arco-memory-view__title">Vector database</h1>
-        <p className="arco-memory-view__subtitle">Embedding collections powering semantic search and RAG.</p>
+        <h1 className="arco-memory-view__title"><T k={I18nKey.APPS$MEMORY_VECTOR_DATABASE} /></h1>
+        <p className="arco-memory-view__subtitle"><T k={I18nKey.APPS$MEMORY_EMBEDDING_COLLECTIONS_POWERING_SEMANTIC_SEARCH_AND_RAG} /></p>
       </header>
       <ul className="arco-memory-list">
         {collections.map((collection) => (
           <li key={collection.id} className="arco-memory-list__row arco-memory-list__row--stacked">
             <span className="arco-memory-list__primary">{collection.name}</span>
             <span className="arco-memory-list__meta">
-              {collection.vectorCount.toLocaleString()} vectors · {collection.dimensions}d · {collection.health} ·{" "}
+              {collection.vectorCount.toLocaleString()}<T k={I18nKey.APPS$MEMORY_VECTORS} />{collection.dimensions}<T k={I18nKey.APPS$MEMORY_D} />{collection.health} ·{" "}
               {collection.backendId}
             </span>
             {collection.description ? (
@@ -128,7 +132,7 @@ export function MemoryIdentityView({ document }: { document: IdentityDocument })
       <header className="arco-memory-view__header">
         <h1 className="arco-memory-view__title">{document.title}</h1>
         <p className="arco-memory-view__subtitle">
-          {document.filename} · v{document.version} · edited {document.lastEdited}
+          {document.filename}<T k={I18nKey.APPS$MEMORY_V} />{document.version}<T k={I18nKey.APPS$MEMORY_EDITED} />{document.lastEdited}
         </p>
       </header>
       {document.sections.map((section) => (

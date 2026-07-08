@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 /**
  * STUB: Renders Longformer SettingsWorkspace section content using Arco patterns.
  */
@@ -152,7 +155,7 @@ function StubWallpaperPanel({
 
   return (
     <div className="arco-settings-stub-wallpaper">
-      <div className="arco-settings-stub-wallpaper__grid" role="listbox" aria-label="Wallpaper presets">
+      <div className="arco-settings-stub-wallpaper__grid" role="listbox" aria-label={i18n.t(I18nKey.APPS$SETTINGS_WALLPAPER_PRESETS)}>
         {presets.map((preset) => {
           const selected = activeUrl === preset.url;
           return (
@@ -181,7 +184,7 @@ function StubWallpaperPanel({
           );
         })}
       </div>
-      <SettingsFieldRow label="Custom image URL" htmlFor="stub-wallpaper-url">
+      <SettingsFieldRow label={i18n.t(I18nKey.APPS$SETTINGS_CUSTOM_IMAGE_URL)} htmlFor="stub-wallpaper-url">
         <Input
           id="stub-wallpaper-url"
           width="auto"
@@ -191,7 +194,7 @@ function StubWallpaperPanel({
         />
       </SettingsFieldRow>
       {usingCustom ? (
-        <p className="arco-settings-stub-wallpaper__custom-note">Using a custom wallpaper not in the preset list.</p>
+        <p className="arco-settings-stub-wallpaper__custom-note"><T k={I18nKey.APPS$SETTINGS_USING_A_CUSTOM_WALLPAPER_NOT_IN_THE_PRESET_LIST} /></p>
       ) : null}
     </div>
   );
@@ -253,7 +256,7 @@ export function SettingsStubSection({
           </SettingsStack>
         ) : null}
         {section.standing ? <StubStandingCard standing={section.standing} /> : null}
-        {!hasContent ? <SettingsEmpty>No settings in this section yet.</SettingsEmpty> : null}
+        {!hasContent ? <SettingsEmpty><T k={I18nKey.APPS$SETTINGS_NO_SETTINGS_IN_THIS_SECTION_YET} /></SettingsEmpty> : null}
       </SettingsSection>
     </SettingsPage>
   );
@@ -276,7 +279,7 @@ export function SettingsStubPane({
     return (
       <SettingsPage>
         <SettingsStubNotice />
-        <SettingsEmpty>Section not found.</SettingsEmpty>
+        <SettingsEmpty><T k={I18nKey.APPS$SETTINGS_SECTION_NOT_FOUND} /></SettingsEmpty>
       </SettingsPage>
     );
   }

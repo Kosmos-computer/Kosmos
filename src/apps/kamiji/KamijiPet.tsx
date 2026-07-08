@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import { T } from "../../i18n/T";
 import type { EvolutionStage, PetMood } from "./types";
 
 interface KamijiPetProps {
@@ -39,7 +41,7 @@ export function KamijiPet({ stage, mood, poopCount }: KamijiPetProps) {
               </div>
               <span className={`arco-kamiji-pet__mouth arco-kamiji-pet__mouth--${mood}`} />
               {mood === "sick" && <span className="arco-kamiji-pet__sweat">💧</span>}
-              {mood === "sleeping" && <span className="arco-kamiji-pet__zzz">z z z</span>}
+              {mood === "sleeping" && <span className="arco-kamiji-pet__zzz"><T k={I18nKey.APPS$KAMIJI_Z_Z_Z} /></span>}
             </div>
             <div className="arco-kamiji-pet__belly" />
             <div className="arco-kamiji-pet__feet">

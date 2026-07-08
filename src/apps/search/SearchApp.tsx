@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { useTranslation } from "react-i18next";
 import {
   BrowserShell,
   SearchAttribution,
@@ -7,6 +10,7 @@ import {
 import { useSearch } from "./useSearch";
 
 export function SearchApp() {
+  const { t } = useTranslation();
   const vm = useSearch();
 
   if (vm.view === "browse") {
@@ -16,8 +20,8 @@ export function SearchApp() {
           url={vm.browseUrl}
           onNavigate={vm.setBrowseUrl}
           onFallbackBack={vm.goResults}
-          placeholder="Address bar — edit URL or search term"
-          title="Search result preview"
+          placeholder={i18n.t(I18nKey.APPS$SEARCH_ADDRESS_BAR_EDIT_URL_OR_SEARCH_TERM)}
+          title={i18n.t(I18nKey.APPS$SEARCH_SEARCH_RESULT_PREVIEW)}
           toolbarExtra={<SearchAttribution className="arco-search-app__attribution" />}
         />
       </div>

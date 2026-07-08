@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { useRef, useState } from "react";
 import { FileUp, Upload, X } from "lucide-react";
 import { Button, Chip } from "../../components/ui";
@@ -73,17 +76,15 @@ export function ContactImportModal({ open, accountLabel, onClose, onImport }: Co
         <header className="arco-contact-modal__header">
           <div className="arco-contact-modal__title-row">
             <Upload size={18} aria-hidden />
-            <h2 id="contact-import-title">Import contacts</h2>
+            <h2 id="contact-import-title"><T k={I18nKey.APPS$CONTACTS_IMPORT_CONTACTS} /></h2>
           </div>
-          <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={handleClose} aria-label="Close">
+          <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={handleClose} aria-label={i18n.t(I18nKey.COMMON$CLOSE)}>
             <X size={16} />
           </button>
         </header>
 
         <div className="arco-contact-modal__body">
-          <p className="arco-contact-modal__hint">
-            Import into <strong>{accountLabel}</strong>. Supports vCard (.vcf) and CSV exports.
-          </p>
+          <p className="arco-contact-modal__hint"><T k={I18nKey.APPS$CONTACTS_IMPORT_INTO} /><strong>{accountLabel}</strong><T k={I18nKey.APPS$CONTACTS_SUPPORTS_VCARD_VCF_AND_CSV_EXPORTS} /></p>
 
           <button
             type="button"
@@ -107,19 +108,15 @@ export function ContactImportModal({ open, accountLabel, onClose, onImport }: Co
           {preview.length > 0 ? (
             <>
               <section className="arco-contact-modal__section">
-                <span className="arco-contact-modal__label">Import mode</span>
-                <div className="arco-contact-modal__chips" role="group" aria-label="Import mode">
-                  <Chip active={mode === "merge"} aria-pressed={mode === "merge"} onClick={() => setMode("merge")}>
-                    Merge with existing
-                  </Chip>
-                  <Chip active={mode === "replace"} aria-pressed={mode === "replace"} onClick={() => setMode("replace")}>
-                    Replace all in account
-                  </Chip>
+                <span className="arco-contact-modal__label"><T k={I18nKey.APPS$CONTACTS_IMPORT_MODE} /></span>
+                <div className="arco-contact-modal__chips" role="group" aria-label={i18n.t(I18nKey.APPS$CONTACTS_IMPORT_MODE)}>
+                  <Chip active={mode === "merge"} aria-pressed={mode === "merge"} onClick={() => setMode("merge")}><T k={I18nKey.APPS$CONTACTS_MERGE_WITH_EXISTING} /></Chip>
+                  <Chip active={mode === "replace"} aria-pressed={mode === "replace"} onClick={() => setMode("replace")}><T k={I18nKey.APPS$CONTACTS_REPLACE_ALL_IN_ACCOUNT} /></Chip>
                 </div>
               </section>
 
               <section className="arco-contact-modal__section">
-                <span className="arco-contact-modal__label">Preview</span>
+                <span className="arco-contact-modal__label"><T k={I18nKey.APPS$CONTACTS_PREVIEW} /></span>
                 <ul className="arco-contact-import__preview arco-scroll">
                   {preview.slice(0, 8).map((row, index) => (
                     <li key={`${row.name}-${index}`}>
@@ -129,7 +126,7 @@ export function ContactImportModal({ open, accountLabel, onClose, onImport }: Co
                     </li>
                   ))}
                   {preview.length > 8 ? (
-                    <li className="arco-contact-import__preview-more">+ {preview.length - 8} more</li>
+                    <li className="arco-contact-import__preview-more">+ {preview.length - 8}<T k={I18nKey.APPS$CONTACTS_MORE} /></li>
                   ) : null}
                 </ul>
               </section>
@@ -138,12 +135,8 @@ export function ContactImportModal({ open, accountLabel, onClose, onImport }: Co
         </div>
 
         <footer className="arco-contact-modal__footer">
-          <Button variant="ghost" onClick={handleClose}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={handleImport} disabled={preview.length === 0}>
-            Import {preview.length > 0 ? preview.length : ""} contacts
-          </Button>
+          <Button variant="ghost" onClick={handleClose}><T k={I18nKey.COMMON$CANCEL} /></Button>
+          <Button variant="primary" onClick={handleImport} disabled={preview.length === 0}><T k={I18nKey.APPS$CONTACTS_IMPORT} />{preview.length > 0 ? preview.length : ""}<T k={I18nKey.APPS$CONTACTS_CONTACTS} /></Button>
         </footer>
       </div>
     </div>

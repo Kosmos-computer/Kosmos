@@ -1,3 +1,7 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
+import { useTranslation } from "react-i18next";
 import {
   Clock,
   Compass,
@@ -53,26 +57,27 @@ export interface VideoSidebarProps {
 }
 
 export function VideoSidebar({ vm, connectOpen, onOpenConnect, onCloseConnect }: VideoSidebarProps) {
+  const { t } = useTranslation();
   const connections = useConnectionStore((s) => s.connections);
   const addConnection = useConnectionStore((s) => s.addConnection);
   const videoConnections = connections.filter((c) => c.domain === "video");
 
   return (
     <>
-      <aside className="arco-video__sidebar" aria-label="Video navigation">
+      <aside className="arco-video__sidebar" aria-label={i18n.t(I18nKey.APPS$VIDEO_VIDEO_NAVIGATION)}>
         <NavSidebar
           className="arco-video-sidebar-nav"
           header={
             <div className="arco-video-sidebar-nav__brand">
               <span className="arco-video-sidebar-nav__logo" aria-hidden="true">▶</span>
-              <span>Video</span>
+              <span><T k={I18nKey.APPS$VIDEO_VIDEO} /></span>
             </div>
           }
           sections={[]}
           scrollContent={
             <div className="arco-nav-sidebar__sections">
               <div>
-                <NavSidebarSectionHeader title="Browse" />
+                <NavSidebarSectionHeader title={i18n.t(I18nKey.APPS$PODCAST_BROWSE)} />
                 <div className="arco-nav-sidebar__section-items">
                   {NAV_ITEMS.map((item) => {
                     const Icon = item.icon;
@@ -91,11 +96,11 @@ export function VideoSidebar({ vm, connectOpen, onOpenConnect, onCloseConnect }:
               </div>
 
               <div>
-                <NavSidebarSectionHeader title="Sources" />
+                <NavSidebarSectionHeader title={i18n.t(I18nKey.APPS$PODCAST_SOURCES)} />
                 <div className="arco-nav-sidebar__section-items">
                   <ListItem
                     className="arco-nav-sidebar__nav-item"
-                    label="Local library"
+                    label={i18n.t(I18nKey.APPS$PODCAST_LOCAL_LIBRARY)}
                     active={vm.sourceFilter === "local"}
                     onClick={() => vm.setSourceFilter("local")}
                   />
@@ -126,7 +131,7 @@ export function VideoSidebar({ vm, connectOpen, onOpenConnect, onCloseConnect }:
                   <ListItem
                     className="arco-nav-sidebar__nav-item"
                     leading={<Plus size={16} />}
-                    label="Connect account"
+                    label={i18n.t(I18nKey.APPS$SOCIAL_CONNECT_ACCOUNT)}
                     onClick={onOpenConnect}
                   />
                 </div>
@@ -163,6 +168,7 @@ export interface VideoFeedProps {
 }
 
 export function VideoFeed({ vm }: VideoFeedProps) {
+  const { t } = useTranslation();
   const active = vm.nowPlaying.video;
   const isRemote = vm.sourceFilter === "remote";
   const connection = useConnectionStore((s) =>
@@ -170,20 +176,19 @@ export function VideoFeed({ vm }: VideoFeedProps) {
   );
 
   if (vm.loading) {
-    return <EmptyState title="Loading videos…">Scanning your local library</EmptyState>;
+    return <EmptyState title={i18n.t(I18nKey.APPS$VIDEO_LOADING_VIDEOS)}><T k={I18nKey.APPS$VIDEO_SCANNING_YOUR_LOCAL_LIBRARY} /></EmptyState>;
   }
 
   if (isRemote && !connection) {
     return (
-      <EmptyState title={`Connect ${vm.providerLabel}`}>
-        Link your account to browse subscriptions and recommendations from {vm.providerLabel}.
+      <EmptyState title={`Connect ${vm.providerLabel}`}><T k={I18nKey.APPS$VIDEO_LINK_YOUR_ACCOUNT_TO_BROWSE_SUBSCRIPTIONS_AND_RECOMMENDA} />{vm.providerLabel}.
       </EmptyState>
     );
   }
 
   if (vm.visibleVideos.length === 0) {
     return (
-      <EmptyState title="No videos found">
+      <EmptyState title={i18n.t(I18nKey.APPS$VIDEO_NO_VIDEOS_FOUND)}>
         {vm.sourceFilter === "local"
           ? "Add MP4/MOV files to ~/Movies or set VIDEO_SEED_DIR."
           : `Connect ${vm.providerLabel} with a valid token to load remote videos.`}
@@ -198,19 +203,17 @@ export function VideoFeed({ vm }: VideoFeedProps) {
           <Search size={18} aria-hidden="true" />
           <input
             type="search"
-            placeholder="Search videos"
+            placeholder={i18n.t(I18nKey.APPS$VIDEO_SEARCH_VIDEOS)}
             value={vm.searchQuery}
             onChange={(event) => vm.setSearchQuery(event.target.value)}
-            aria-label="Search videos"
+            aria-label={i18n.t(I18nKey.APPS$VIDEO_SEARCH_VIDEOS)}
           />
         </label>
         <div className="arco-video__source-tabs">
           <Chip
             className={vm.sourceFilter === "local" ? "arco-video__tab--active" : ""}
             onClick={() => vm.setSourceFilter("local")}
-          >
-            Local
-          </Chip>
+          ><T k={I18nKey.APPS$VIDEO_LOCAL} /></Chip>
           <Chip
             className={vm.sourceFilter === "remote" ? "arco-video__tab--active" : ""}
             onClick={() => vm.setSourceFilter("remote")}
@@ -271,11 +274,9 @@ export function VideoFeed({ vm }: VideoFeedProps) {
 
         {active.source === "remote" && active.watchUrl ? (
           <section className="arco-video__remote-banner">
-            <EmptyState title={active.title}>
-              Remote playback opens in {vm.providerLabel}. Select a video below or open the watch page.
-            </EmptyState>
+            <EmptyState title={active.title}><T k={I18nKey.APPS$VIDEO_REMOTE_PLAYBACK_OPENS_IN} />{vm.providerLabel}<T k={I18nKey.APPS$VIDEO_SELECT_A_VIDEO_BELOW_OR_OPEN_THE_WATCH_PAGE} /></EmptyState>
             <Button variant="primary" onClick={() => window.open(active.watchUrl, "_blank", "noopener,noreferrer")}>
-              <ExternalLink size={16} /> Watch on {vm.providerLabel}
+              <ExternalLink size={16} /><T k={I18nKey.APPS$VIDEO_WATCH_ON} />{vm.providerLabel}
             </Button>
           </section>
         ) : null}
@@ -319,11 +320,12 @@ export interface VideoPlayerBarProps {
 }
 
 export function VideoPlayerBar({ vm }: VideoPlayerBarProps) {
+  const { t } = useTranslation();
   const { video, progress, elapsed, duration } = vm.nowPlaying;
   if (!video.id || video.source === "remote") return null;
 
   return (
-    <footer className="arco-video__player-bar" aria-label="Video controls">
+    <footer className="arco-video__player-bar" aria-label={i18n.t(I18nKey.APPS$VIDEO_VIDEO_CONTROLS)}>
       <div className="arco-video__player-bar-track">
         <VideoThumbnail video={video} />
         <div>
@@ -348,7 +350,7 @@ export function VideoPlayerBar({ vm }: VideoPlayerBarProps) {
         />
       </div>
       <div className="arco-video__player-bar-extra">
-        <button type="button" className="arco-video__icon-btn" aria-label="Volume">
+        <button type="button" className="arco-video__icon-btn" aria-label={i18n.t(I18nKey.APPS$LONGFORMER_VOLUME)}>
           <Volume2 size={18} />
         </button>
       </div>

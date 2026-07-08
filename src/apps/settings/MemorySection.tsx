@@ -1,3 +1,7 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
+import { useTranslation } from "react-i18next";
 /**
  * Settings → Memory — backends, embedders, and agent grant matrix (Phase 0 stub).
  */
@@ -17,18 +21,17 @@ import {
 import { Chip } from "../../components/ui";
 
 export function MemorySection() {
+  const { t } = useTranslation();
   const { backends, embedders, grants } = MEMORY_WORKSPACE_MOCK;
 
   return (
     <SettingsPage>
-      <SettingsSection intro="Vector backends, embedding models, and which agents may read or write each memory kind. Server wiring lands in Phase 1–2.">
+      <SettingsSection intro={i18n.t(I18nKey.APPS$SETTINGS_VECTOR_BACKENDS_EMBEDDING_MODELS_AND_WHICH_AGENTS_MAY_RE)}>
         <SettingsStack>
-          <SettingsAlert tone="muted">
-            Memory is in Phase 0 — browse entries in the Memory app. Changes here are preview-only until{" "}
-            <code>/api/memory</code> ships.
-          </SettingsAlert>
+          <SettingsAlert tone="muted"><T k={I18nKey.APPS$SETTINGS_MEMORY_IS_IN_PHASE_0_BROWSE_ENTRIES_IN_THE_MEMORY_APP_CH} />{" "}
+            <code><T k={I18nKey.APPS$SETTINGS_API_MEMORY} /></code><T k={I18nKey.APPS$SETTINGS_SHIPS} /></SettingsAlert>
 
-          <SettingsSubhead>Vector backends</SettingsSubhead>
+          <SettingsSubhead><T k={I18nKey.APPS$SETTINGS_VECTOR_BACKENDS} /></SettingsSubhead>
           {backends.map((backend) => (
             <SettingsPanel key={backend.id}>
               <SettingsPanelHeader>
@@ -37,37 +40,37 @@ export function MemorySection() {
               </SettingsPanelHeader>
               <SettingsPanelBody>
                 <p className="arco-settings-panel__desc">{backend.description}</p>
-                <SettingsFieldRow label="Status">
+                <SettingsFieldRow label={i18n.t(I18nKey.APPS$LONGFORMER_STATUS)}>
                   <Chip active={backend.status === "available"}>{backend.status}</Chip>
                 </SettingsFieldRow>
               </SettingsPanelBody>
             </SettingsPanel>
           ))}
 
-          <SettingsSubhead>Embedders</SettingsSubhead>
+          <SettingsSubhead><T k={I18nKey.APPS$SETTINGS_EMBEDDERS} /></SettingsSubhead>
           {embedders.map((embedder) => (
             <SettingsPanel key={embedder.id}>
               <SettingsPanelHeader>
                 <span className="arco-settings-panel__title">{embedder.label}</span>
-                <span className="arco-settings-panel__meta">{embedder.dimensions}d</span>
+                <span className="arco-settings-panel__meta">{embedder.dimensions}<T k={I18nKey.APPS$SETTINGS_D} /></span>
               </SettingsPanelHeader>
               <SettingsPanelBody>
-                <SettingsFieldRow label="Status">
+                <SettingsFieldRow label={i18n.t(I18nKey.APPS$LONGFORMER_STATUS)}>
                   <Chip active={embedder.status === "available"}>{embedder.status}</Chip>
                 </SettingsFieldRow>
               </SettingsPanelBody>
             </SettingsPanel>
           ))}
 
-          <SettingsSubhead>Agent memory grants (preview)</SettingsSubhead>
+          <SettingsSubhead><T k={I18nKey.APPS$SETTINGS_AGENT_MEMORY_GRANTS_PREVIEW} /></SettingsSubhead>
           <SettingsPanel>
             <SettingsPanelBody>
               <table className="arco-memory-grants-table">
                 <thead>
                   <tr>
-                    <th>Principal</th>
-                    <th>Scope</th>
-                    <th>Access</th>
+                    <th><T k={I18nKey.APPS$SETTINGS_PRINCIPAL} /></th>
+                    <th><T k={I18nKey.APPS$SETTINGS_SCOPE} /></th>
+                    <th><T k={I18nKey.APPS$SETTINGS_ACCESS} /></th>
                   </tr>
                 </thead>
                 <tbody>

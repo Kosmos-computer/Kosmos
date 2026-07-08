@@ -1,3 +1,5 @@
+import { I18nKey } from "../../i18n/declaration";
+import { T } from "../../i18n/T";
 import { Button } from "../../components/ui";
 
 export function DeleteConfirmModal({
@@ -23,18 +25,15 @@ export function DeleteConfirmModal({
         onClick={(e) => e.stopPropagation()}
       >
         <header className="arco-task-modal__header">
-          <h2 id="delete-automation-title">Delete automation?</h2>
+          <h2 id="delete-automation-title"><T k={I18nKey.APPS$AUTOMATIONS_DELETE_AUTOMATION} /></h2>
         </header>
         <div className="arco-task-modal__body">
           <p style={{ margin: 0, fontSize: "var(--arco-text-sm)" }}>
-            <strong>{name}</strong> will be permanently removed along with its run history.
-          </p>
+            <strong>{name}</strong><T k={I18nKey.APPS$AUTOMATIONS_WILL_BE_PERMANENTLY_REMOVED_ALONG_WITH_ITS_RUN_HISTORY} /></p>
         </div>
         <footer className="arco-task-modal__footer">
-          <Button onClick={onCancel}>Cancel</Button>
-          <Button variant="danger" onClick={onConfirm}>
-            Delete
-          </Button>
+          <Button onClick={onCancel}><T k={I18nKey.COMMON$CANCEL} /></Button>
+          <Button variant="danger" onClick={onConfirm}><T k={I18nKey.COMMON$DELETE} /></Button>
         </footer>
       </div>
     </div>

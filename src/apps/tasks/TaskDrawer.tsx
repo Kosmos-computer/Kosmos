@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import {
   Archive,
   ArchiveRestore,
@@ -102,7 +105,7 @@ export function TaskDrawer({
           </button>
           <h2 className="arco-task-drawer__title">{task.title}</h2>
         </div>
-        <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onClose} aria-label="Close">
+        <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onClose} aria-label={i18n.t(I18nKey.COMMON$CLOSE)}>
           <X size={16} />
         </button>
       </header>
@@ -112,7 +115,7 @@ export function TaskDrawer({
           <div className="arco-task-drawer__meta-row">
             <Clock size={14} aria-hidden />
             <span>{TASK_STATUS_LABEL[task.status]}</span>
-            {task.archived ? <Badge tone="default">Archived</Badge> : null}
+            {task.archived ? <Badge tone="default"><T k={I18nKey.APPS$TASKS_ARCHIVED} /></Badge> : null}
           </div>
           {dueLabel ? (
             <div className="arco-task-drawer__meta-row">
@@ -122,7 +125,7 @@ export function TaskDrawer({
           ) : null}
           {task.priority ? (
             <div className="arco-task-drawer__meta-row">
-              <Badge tone={task.priority === "high" ? "danger" : "default"}>{task.priority} priority</Badge>
+              <Badge tone={task.priority === "high" ? "danger" : "default"}>{task.priority}<T k={I18nKey.APPS$TASKS_PRIORITY_2} /></Badge>
             </div>
           ) : null}
           {task.assignee ? (
@@ -134,37 +137,29 @@ export function TaskDrawer({
 
         {task.description ? (
           <section className="arco-task-drawer__section">
-            <h3 className="arco-task-drawer__section-label">Description</h3>
+            <h3 className="arco-task-drawer__section-label"><T k={I18nKey.APPS$TASKS_DESCRIPTION} /></h3>
             <p className="arco-task-drawer__description">{task.description}</p>
           </section>
         ) : null}
 
         <section className="arco-task-drawer__section">
-          <h3 className="arco-task-drawer__section-label">Recent activity</h3>
+          <h3 className="arco-task-drawer__section-label"><T k={I18nKey.APPS$TASKS_RECENT_ACTIVITY} /></h3>
           <TaskHistoryList events={recentHistory} emptyMessage="No activity recorded for this task." />
         </section>
       </div>
 
       <footer className="arco-task-drawer__footer">
         <Button variant="default" onClick={() => onEdit(task.id)}>
-          <Pencil size={14} />
-          Edit
-        </Button>
+          <Pencil size={14} /><T k={I18nKey.COMMON$EDIT} /></Button>
         {task.archived ? (
           <Button variant="default" onClick={() => onRestore(task.id)}>
-            <ArchiveRestore size={14} />
-            Restore
-          </Button>
+            <ArchiveRestore size={14} /><T k={I18nKey.APPS$TASKS_RESTORE} /></Button>
         ) : (
           <Button variant="default" onClick={() => onArchive(task.id)}>
-            <Archive size={14} />
-            Archive
-          </Button>
+            <Archive size={14} /><T k={I18nKey.APPS$TASKS_ARCHIVE} /></Button>
         )}
         <Button variant="danger" onClick={() => onDelete(task.id)}>
-          <Trash2 size={14} />
-          Delete
-        </Button>
+          <Trash2 size={14} /><T k={I18nKey.COMMON$DELETE} /></Button>
       </footer>
     </div>
   );
@@ -190,10 +185,10 @@ export function TaskHistoryPanel({ open, events, onClose }: TaskHistoryPanelProp
       >
         <header className="arco-task-history-panel__header">
           <div>
-            <h2 id="task-history-title">Task history</h2>
-            <p className="arco-task-history-panel__subtitle">All activity across your tasks</p>
+            <h2 id="task-history-title"><T k={I18nKey.APPS$TASKS_TASK_HISTORY} /></h2>
+            <p className="arco-task-history-panel__subtitle"><T k={I18nKey.APPS$TASKS_ALL_ACTIVITY_ACROSS_YOUR_TASKS} /></p>
           </div>
-          <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onClose} aria-label="Close">
+          <button type="button" className="arco-btn arco-btn--ghost arco-btn--icon" onClick={onClose} aria-label={i18n.t(I18nKey.COMMON$CLOSE)}>
             <X size={16} />
           </button>
         </header>

@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { Pause, Play, SkipForward } from "lucide-react";
 import { AlbumArt } from "../../apps/music/AlbumArt";
 import { useMusicStore } from "../../apps/music/musicStore";
@@ -16,15 +19,15 @@ export function BentoMusicWidget() {
   if (loading) {
     return (
       <div className="arco-bento-card arco-bento-card--music">
-        <span className="arco-bento-card__label">Now playing</span>
-        <span className="arco-bento-card__meta">Loading library…</span>
+        <span className="arco-bento-card__label"><T k={I18nKey.OS_BENTO_NOW_PLAYING} /></span>
+        <span className="arco-bento-card__meta"><T k={I18nKey.OS_BENTO_LOADING_LIBRARY} /></span>
       </div>
     );
   }
 
   return (
     <div className="arco-bento-card arco-bento-card--music">
-      <span className="arco-bento-card__label">Now playing</span>
+      <span className="arco-bento-card__label"><T k={I18nKey.OS_BENTO_NOW_PLAYING} /></span>
       <div className="arco-bento-card--music__row">
         <AlbumArt
           trackId={track.id !== "empty" ? track.id : undefined}
@@ -52,7 +55,7 @@ export function BentoMusicWidget() {
         <button
           type="button"
           className="arco-music-widget__btn"
-          aria-label="Next track"
+          aria-label={i18n.t(I18nKey.APPS$MUSIC_NEXT_TRACK)}
           onClick={playNext}
         >
           <SkipForward size={15} />
@@ -61,9 +64,7 @@ export function BentoMusicWidget() {
           type="button"
           className="arco-btn arco-btn--ghost arco-btn--sm"
           onClick={restoreMusicWindow}
-        >
-          Open Music
-        </button>
+        ><T k={I18nKey.OS_BENTO_OPEN_MUSIC} /></button>
       </div>
     </div>
   );

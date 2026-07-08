@@ -2,8 +2,8 @@ import { AppWindow, Monitor, type LucideIcon } from "lucide-react";
 import { openSettingsApp } from "../apps/settings/settingsStore";
 import type { SettingsNavGroup } from "../apps/settings/settingsSections";
 import { useOsStore, type AppWindowHost, type ShellView } from "./osStore";
+import { openShellWindow } from "./shellNavigation";
 import type { ShellAppEntry } from "./shellApps";
-import { useWindowStore } from "./windowStore";
 
 export type CommandPaletteEntryKind = "app" | "settings" | "shell";
 
@@ -56,7 +56,7 @@ export function buildCommandPaletteEntries(options: {
       keywords: [app.title, "app", "open", "launch"],
       icon: app.icon,
       group: "Apps",
-      run: () => useWindowStore.getState().open(app.kind, app.title),
+      run: () => openShellWindow(app.kind, app.title),
     });
   }
 

@@ -1,3 +1,6 @@
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 import { useMemo } from "react";
 import { Link2 } from "lucide-react";
 import { Badge } from "../../components/ui";
@@ -45,7 +48,7 @@ function GraphCanvas({
       className={["arco-notes-graph__canvas", compact ? "arco-notes-graph__canvas--compact" : ""]
         .filter(Boolean)
         .join(" ")}
-      aria-label="Notes graph visualization"
+      aria-label={i18n.t(I18nKey.APPS$NOTES_NOTES_GRAPH_VISUALIZATION)}
     >
       <svg className="arco-notes-graph__edges" aria-hidden="true">
         {edges.map((edge) => {
@@ -116,8 +119,8 @@ export function NotesGraphView({
     return (
       <div className="arco-notes-graph arco-notes-graph--compact">
         <header className="arco-notes-graph__compact-header">
-          <span className="arco-notes-graph__compact-title">Graph of {activeNoteTitle ?? "vault"}</span>
-          <Badge>{nodes.length} notes</Badge>
+          <span className="arco-notes-graph__compact-title"><T k={I18nKey.APPS$NOTES_GRAPH_OF} />{activeNoteTitle ?? "vault"}</span>
+          <Badge>{nodes.length}<T k={I18nKey.APPS$NOTES_NOTES_2} /></Badge>
         </header>
         <GraphCanvas
           nodes={nodes}
@@ -126,9 +129,7 @@ export function NotesGraphView({
           onNodeClick={onNodeClick}
           compact
         />
-        <p className="arco-notes-graph__compact-hint">
-          Click a node to open that note. Green highlights show links from the active page.
-        </p>
+        <p className="arco-notes-graph__compact-hint"><T k={I18nKey.APPS$NOTES_CLICK_A_NODE_TO_OPEN_THAT_NOTE_GREEN_HIGHLIGHTS_SHOW_LIN} /></p>
       </div>
     );
   }
@@ -136,10 +137,8 @@ export function NotesGraphView({
   return (
     <div className="arco-notes-graph arco-scroll">
       <header className="arco-notes-graph__header">
-        <h1 className="arco-notes-graph__title">Graph view</h1>
-        <p className="arco-notes-graph__subtitle">
-          Explore connections between notes — derived from wikilinks, backlinks, and shared tags in your vault.
-        </p>
+        <h1 className="arco-notes-graph__title"><T k={I18nKey.APPS$NOTES_GRAPH_VIEW} /></h1>
+        <p className="arco-notes-graph__subtitle"><T k={I18nKey.APPS$NOTES_EXPLORE_CONNECTIONS_BETWEEN_NOTES_DERIVED_FROM_WIKILINKS} /></p>
       </header>
 
       <div className="arco-notes-graph__layout">
@@ -148,23 +147,23 @@ export function NotesGraphView({
         </div>
 
         <aside className="arco-notes-graph__sidebar">
-          <h2 className="arco-notes-graph__section-title">Vault stats</h2>
+          <h2 className="arco-notes-graph__section-title"><T k={I18nKey.APPS$NOTES_VAULT_STATS} /></h2>
           <div className="arco-notes-graph__stats">
             <div className="arco-notes-graph__stat">
               <span className="arco-notes-graph__stat-value">{nodes.length}</span>
-              <span className="arco-notes-graph__stat-label">Notes</span>
+              <span className="arco-notes-graph__stat-label"><T k={I18nKey.APPS$NOTES_NOTES} /></span>
             </div>
             <div className="arco-notes-graph__stat">
               <span className="arco-notes-graph__stat-value">{edges.length}</span>
-              <span className="arco-notes-graph__stat-label">Links</span>
+              <span className="arco-notes-graph__stat-label"><T k={I18nKey.APPS$NOTES_LINKS} /></span>
             </div>
             <div className="arco-notes-graph__stat">
               <span className="arco-notes-graph__stat-value">{avgDegree.toFixed(1)}</span>
-              <span className="arco-notes-graph__stat-label">Avg degree</span>
+              <span className="arco-notes-graph__stat-label"><T k={I18nKey.APPS$NOTES_AVG_DEGREE} /></span>
             </div>
           </div>
 
-          <h2 className="arco-notes-graph__section-title">Notes</h2>
+          <h2 className="arco-notes-graph__section-title"><T k={I18nKey.APPS$NOTES_NOTES} /></h2>
           <div className="arco-notes-graph__node-list">
             {nodes.map((node) => (
               <button
@@ -189,14 +188,14 @@ export function NotesGraphView({
                 />
                 <div className="arco-notes-graph__node-info">
                   <div className="arco-notes-graph__node-name">{node.label}</div>
-                  <div className="arco-notes-graph__node-meta">{node.connections} connections</div>
+                  <div className="arco-notes-graph__node-meta">{node.connections}<T k={I18nKey.APPS$NOTES_CONNECTIONS} /></div>
                 </div>
                 {node.tags?.[0] ? <Badge>{node.tags[0]}</Badge> : null}
               </button>
             ))}
           </div>
 
-          <h2 className="arco-notes-graph__section-title">Recent links</h2>
+          <h2 className="arco-notes-graph__section-title"><T k={I18nKey.APPS$NOTES_RECENT_LINKS} /></h2>
           <div className="arco-notes-graph__edge-list">
             {edges.slice(0, 6).map((edge) => (
               <div key={edge.id} className="arco-notes-graph__edge-row">

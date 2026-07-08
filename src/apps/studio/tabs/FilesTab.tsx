@@ -12,7 +12,7 @@ import { ChevronRight, FileText, Folder, RotateCw, Save } from "lucide-react";
 import type { WorkspaceEntry } from "@shared/types";
 import { api } from "../../../lib/api";
 import { useOsStore } from "../../../os/osStore";
-import { useStudioStore } from "../studioStore";
+import { useStudioStore, useSessionActivity } from "../studioStore";
 
 const CodeEditor = lazy(() => import("../editor/CodeEditor"));
 
@@ -24,10 +24,9 @@ interface OpenFile {
 
 export function FilesTab() {
   const theme = useOsStore((s) => s.theme);
-  const filesVersion = useStudioStore((s) => s.filesVersion);
+  const { filesVersion, changes } = useSessionActivity();
   const requestedPath = useStudioStore((s) => s.requestedPath);
   const requestFile = useStudioStore((s) => s.requestFile);
-  const changes = useStudioStore((s) => s.changes);
 
   const [dirs, setDirs] = useState<Record<string, WorkspaceEntry[]>>({});
   const [expanded, setExpanded] = useState<Set<string>>(new Set(["."]));

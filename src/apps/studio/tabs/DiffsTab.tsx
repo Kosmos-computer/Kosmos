@@ -8,13 +8,13 @@ import { T } from "../../../i18n/T";
 import { Suspense, lazy, useState } from "react";
 import { ChevronRight, FileDiff, SquarePen } from "lucide-react";
 import { useOsStore } from "../../../os/osStore";
-import { useStudioStore } from "../studioStore";
+import { useStudioStore, useSessionActivity } from "../studioStore";
 
 const DiffViewer = lazy(() => import("../editor/DiffViewer"));
 
 export function DiffsTab() {
   const theme = useOsStore((s) => s.theme);
-  const changes = useStudioStore((s) => s.changes);
+  const { changes } = useSessionActivity();
   const requestFile = useStudioStore((s) => s.requestFile);
   const setActiveTab = useStudioStore((s) => s.setActiveTab);
   const [openPath, setOpenPath] = useState<string | null>(null);

@@ -49,13 +49,11 @@ function openAppById(appId: string): void {
 }
 
 /** Handle the shell-relevant subset of AgentEvents (chat handles the rest). */
-export function handleShellEvent(event: AgentEvent): void {
+export function handleShellEvent(event: AgentEvent, sessionKey?: string | null): void {
   const os = useOsStore.getState();
   const wm = useWindowStore.getState();
 
-  // The Studio's workspace drawer mirrors all agent activity (commands, file
-  // edits, app builds) no matter which chat surface ran the turn.
-  useStudioStore.getState().ingestAgentEvent(event);
+  useStudioStore.getState().ingestAgentEvent(event, sessionKey);
 
   switch (event.type) {
     case "apps_changed":

@@ -9,6 +9,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type { WorkspaceFeatures } from "../../shared/types.js";
 import { dataDirs } from "../env.js";
+import { isGitHubOAuthConfigured } from "../github/githubOAuth.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -40,5 +41,6 @@ export async function getWorkspaceFeatures(): Promise<WorkspaceFeatures> {
     hosted,
     defaultBrowsePath: hosted ? projectsDir : os.homedir(),
     githubClone: true,
+    githubOAuthConfigured: isGitHubOAuthConfigured(),
   };
 }

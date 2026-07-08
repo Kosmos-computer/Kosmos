@@ -1,11 +1,8 @@
 /**
  * Studio workspace store — the drawer's memory. Agent events (exec commands,
- * file writes, app creation) stream in through `ingestAgentEvent`, and the
- * Files/Diffs/Terminal/Preview tabs subscribe to the slices they render.
- *
- * The store is global (not per-Studio-window) because Arco has one workspace:
- * activity from the plain Chat app also lands here, so opening the Studio
- * mid-conversation shows what already happened.
+ * file writes, app creation) stream in through `ingestAgentEvent`, scoped to
+ * the active conversation so switching sidebar tabs restores that thread's
+ * terminal log, diffs, and file tree version.
  */
 import { create } from "zustand";
 import type { AgentEvent, ProjectsInfo, WorkspaceTab } from "@shared/types";
@@ -35,11 +32,44 @@ export interface FileChange {
   at: number;
 }
 
+/** Per-conversation workspace drawer activity. */
+export interface SessionActivity {
+  commands: CommandEntry[];
+  changes: Record<string, FileChange>;
+  filesVersion: number;
+  previewAppId: string | null;
+}
+
+/** Unsaved thread before the server assigns a session id. */
+export const DRAFT_SESSION_KEY = "__draft__";
+
+export function sessionActivityKey(id: string | null | undefined): string {
+  return id ?? DRAFT_SESSION_KEY;
+}
+
+function emptyActivity(): SessionActivity {
+  return { commands: [], changes: {}, filesVersion: 0, previewAppId: null };
+}
+
+function getActivity(
+  sessions: Record<string, SessionActivity>,
+  key: string,
+): SessionActivity {
+  return sessions[key] ?? emptyActivity();
+}
+
+function patchActivity(
+  sessions: Record<string, SessionActivity>,
+  key: string,
+  patch: Partial<SessionActivity> | ((activity: SessionActivity) => SessionActivity),
+): Record<string, SessionActivity> {
+  const current = getActivity(sessions, key);
+  const next = typeof patch === "function" ? patch(current) : { ...current, ...patch };
+  return { ...sessions, [key]: next };
+}
+
 // ---------------------------------------------------------------------------
 // UI layout persistence
-//
-// Panel width and tab choice survive reloads (agent-canvas semantics); the
-// activity log does not — it is session-scoped by nature.
 // ---------------------------------------------------------------------------
 
 const LAYOUT_KEY = "arco:studio:v1";
@@ -87,15 +117,10 @@ function persistLayout(state: StudioStore): void {
 // ---------------------------------------------------------------------------
 
 interface StudioStore extends PersistedStudioLayout {
-  commands: CommandEntry[];
-  /** Keyed by path — a re-edit replaces the entry but keeps the first `before`. */
-  changes: Record<string, FileChange>;
-  /** The generated app the Preview tab shows (last created/updated/opened). */
-  previewAppId: string | null;
+  activeSessionKey: string;
+  sessionActivity: Record<string, SessionActivity>;
   /** File the Files tab should select — set by os_ui or a Diffs "open" click. */
   requestedPath: string | null;
-  /** Bumped whenever the agent touches files so the tree refetches. */
-  filesVersion: number;
   /** Registry of opened folders + which one is active (null = sandbox). */
   projectsInfo: ProjectsInfo;
   /** Working-tree change count (written by the Git tab; drives the badge). */
@@ -108,26 +133,36 @@ interface StudioStore extends PersistedStudioLayout {
   setNavOpen: (open: boolean) => void;
   setChatWidthPct: (pct: number) => void;
   requestFile: (path: string | null) => void;
+  setActiveSession: (sessionId: string | null) => void;
+  migrateSessionActivity: (from: string, to: string) => void;
+  removeSessionActivity: (sessionId: string) => void;
   appendUserCommand: (entry: CommandEntry) => void;
   updateUserCommand: (id: string, patch: Partial<CommandEntry>) => void;
   clearActivity: () => void;
-  ingestAgentEvent: (event: AgentEvent) => void;
+  ingestAgentEvent: (event: AgentEvent, sessionKey?: string | null) => void;
   refreshProjects: () => Promise<void>;
-  /** Open a folder (registers + activates) or switch/close via id. */
   openFolder: (path: string) => Promise<void>;
   switchProject: (id: string | null) => Promise<void>;
+  setPreviewAppId: (appId: string) => void;
 }
 
-/** Correlates exec tool_start (command) with its tool_end (output). */
-const pendingExecs = new Map<string, string>();
+/** Correlates exec tool_start (command) with its tool_end (output), per session. */
+const pendingExecs = new Map<string, Map<string, string>>();
 
-export const useStudioStore = create<StudioStore>((set) => ({
+function pendingFor(key: string): Map<string, string> {
+  let map = pendingExecs.get(key);
+  if (!map) {
+    map = new Map();
+    pendingExecs.set(key, map);
+  }
+  return map;
+}
+
+export const useStudioStore = create<StudioStore>((set, get) => ({
   ...loadLayout(),
-  commands: [],
-  changes: {},
-  previewAppId: null,
+  activeSessionKey: DRAFT_SESSION_KEY,
+  sessionActivity: {},
   requestedPath: null,
-  filesVersion: 0,
   projectsInfo: { projects: [], activeId: null },
   gitChangeCount: 0,
   browserUrl: "",
@@ -162,14 +197,60 @@ export const useStudioStore = create<StudioStore>((set) => ({
 
   requestFile: (path) => set({ requestedPath: path }),
 
-  appendUserCommand: (entry) => set((s) => ({ commands: [...s.commands, entry] })),
+  setActiveSession: (sessionId) =>
+    set({ activeSessionKey: sessionActivityKey(sessionId) }),
+
+  migrateSessionActivity: (from, to) =>
+    set((s) => {
+      const sessions = { ...s.sessionActivity };
+      const fromActivity = sessions[from];
+      if (fromActivity) {
+        sessions[to] = fromActivity;
+        delete sessions[from];
+      }
+      const fromPending = pendingExecs.get(from);
+      if (fromPending) {
+        pendingExecs.set(to, fromPending);
+        pendingExecs.delete(from);
+      }
+      const nextKey = s.activeSessionKey === from ? to : s.activeSessionKey;
+      return { sessionActivity: sessions, activeSessionKey: nextKey };
+    }),
+
+  removeSessionActivity: (sessionId) =>
+    set((s) => {
+      const sessions = { ...s.sessionActivity };
+      delete sessions[sessionId];
+      pendingExecs.delete(sessionId);
+      return { sessionActivity: sessions };
+    }),
+
+  appendUserCommand: (entry) =>
+    set((s) => {
+      const key = s.activeSessionKey;
+      return {
+        sessionActivity: patchActivity(s.sessionActivity, key, (activity) => ({
+          ...activity,
+          commands: [...activity.commands, entry],
+        })),
+      };
+    }),
 
   updateUserCommand: (id, patch) =>
-    set((s) => ({
-      commands: s.commands.map((c) => (c.id === id ? { ...c, ...patch } : c)),
-    })),
+    set((s) => {
+      const key = s.activeSessionKey;
+      return {
+        sessionActivity: patchActivity(s.sessionActivity, key, (activity) => ({
+          ...activity,
+          commands: activity.commands.map((c) => (c.id === id ? { ...c, ...patch } : c)),
+        })),
+      };
+    }),
 
-  clearActivity: () => set({ commands: [], changes: {} }),
+  clearActivity: () =>
+    set((s) => ({
+      sessionActivity: patchActivity(s.sessionActivity, s.activeSessionKey, emptyActivity()),
+    })),
 
   refreshProjects: async () => {
     try {
@@ -182,46 +263,58 @@ export const useStudioStore = create<StudioStore>((set) => ({
   openFolder: async (path) => {
     await api.addProject(path);
     const projectsInfo = await api.listProjects();
-    // Session diffs and command logs belong to the previous root.
-    set((s) => ({ projectsInfo, commands: [], changes: {}, filesVersion: s.filesVersion + 1 }));
+    set((s) => ({
+      projectsInfo,
+      sessionActivity: patchActivity(s.sessionActivity, s.activeSessionKey, emptyActivity()),
+    }));
   },
 
   switchProject: async (id) => {
     const projectsInfo = await api.setActiveProject(id);
-    set((s) => ({ projectsInfo, commands: [], changes: {}, filesVersion: s.filesVersion + 1 }));
+    set((s) => ({
+      projectsInfo,
+      sessionActivity: patchActivity(s.sessionActivity, s.activeSessionKey, emptyActivity()),
+    }));
   },
 
-  // -------------------------------------------------------------------------
-  // Agent event ingestion
-  //
-  // Called from handleShellEvent for every streamed AgentEvent, regardless of
-  // which chat surface originated the turn.
-  // -------------------------------------------------------------------------
-  ingestAgentEvent: (event) => {
+  setPreviewAppId: (appId) =>
+    set((s) => ({
+      sessionActivity: patchActivity(s.sessionActivity, s.activeSessionKey, {
+        previewAppId: appId,
+      }),
+    })),
+
+  ingestAgentEvent: (event, sessionKey) => {
+    const key = sessionActivityKey(sessionKey ?? get().activeSessionKey);
+    const pending = pendingFor(key);
+
     switch (event.type) {
       case "tool_start": {
         if (event.name === "exec" && typeof event.args.command === "string") {
-          pendingExecs.set(event.callId, event.args.command);
+          pending.set(event.callId, event.args.command);
           set((s) => ({
-            commands: [
-              ...s.commands,
-              {
-                id: event.callId,
-                command: event.args.command as string,
-                stdout: "",
-                stderr: "",
-                exitCode: null,
-                source: "agent",
-              },
-            ],
+            sessionActivity: patchActivity(s.sessionActivity, key, (activity) => ({
+              ...activity,
+              commands: [
+                ...activity.commands,
+                {
+                  id: event.callId,
+                  command: event.args.command as string,
+                  stdout: "",
+                  stderr: "",
+                  exitCode: null,
+                  source: "agent",
+                },
+              ],
+            })),
           }));
         }
         break;
       }
 
       case "tool_end": {
-        if (event.name === "exec" && pendingExecs.has(event.callId)) {
-          pendingExecs.delete(event.callId);
+        if (event.name === "exec" && pending.has(event.callId)) {
+          pending.delete(event.callId);
           let stdout = "";
           let stderr = "";
           let exitCode = 0;
@@ -240,19 +333,25 @@ export const useStudioStore = create<StudioStore>((set) => ({
             exitCode = 1;
           }
           set((s) => ({
-            commands: s.commands.map((c) =>
-              c.id === event.callId ? { ...c, stdout, stderr, exitCode } : c,
-            ),
-            // Shell commands can create files or change git state — nudge the
-            // tree and Git tab to refetch.
-            filesVersion: s.filesVersion + 1,
+            sessionActivity: patchActivity(s.sessionActivity, key, (activity) => ({
+              ...activity,
+              commands: activity.commands.map((c) =>
+                c.id === event.callId ? { ...c, stdout, stderr, exitCode } : c,
+              ),
+              filesVersion: activity.filesVersion + 1,
+            })),
           }));
         }
-        // A freshly created/updated app becomes the Preview tab's subject.
         if (event.name === "app_create" || event.name === "app_update") {
           try {
             const parsed = JSON.parse(event.result) as { id?: string };
-            if (typeof parsed.id === "string") set({ previewAppId: parsed.id });
+            if (typeof parsed.id === "string") {
+              set((s) => ({
+                sessionActivity: patchActivity(s.sessionActivity, key, {
+                  previewAppId: parsed.id,
+                }),
+              }));
+            }
           } catch {
             // Result without an id — leave the preview as-is.
           }
@@ -261,23 +360,24 @@ export const useStudioStore = create<StudioStore>((set) => ({
       }
 
       case "file_changed": {
-        set((s) => {
-          const prior = s.changes[event.path];
-          return {
-            changes: {
-              ...s.changes,
-              [event.path]: {
-                path: event.path,
-                // Keep the original baseline across successive agent edits so
-                // the diff always shows "since the conversation started".
-                before: prior ? prior.before : event.before,
-                after: event.after,
-                at: Date.now(),
+        set((s) => ({
+          sessionActivity: patchActivity(s.sessionActivity, key, (activity) => {
+            const prior = activity.changes[event.path];
+            return {
+              ...activity,
+              changes: {
+                ...activity.changes,
+                [event.path]: {
+                  path: event.path,
+                  before: prior ? prior.before : event.before,
+                  after: event.after,
+                  at: Date.now(),
+                },
               },
-            },
-            filesVersion: s.filesVersion + 1,
-          };
-        });
+              filesVersion: activity.filesVersion + 1,
+            };
+          }),
+        }));
         break;
       }
 
@@ -285,7 +385,6 @@ export const useStudioStore = create<StudioStore>((set) => ({
         const action = event.action;
         if (action.action === "open_workspace_tab") {
           set((s) => {
-            // For the browser tab, path carries a URL; elsewhere it's a file.
             const isBrowser = action.tab === "browser";
             const next = {
               ...s,
@@ -298,7 +397,11 @@ export const useStudioStore = create<StudioStore>((set) => ({
             return next;
           });
         } else if (action.action === "open_app") {
-          set({ previewAppId: action.appId });
+          set((s) => ({
+            sessionActivity: patchActivity(s.sessionActivity, key, {
+              previewAppId: action.appId,
+            }),
+          }));
         }
         break;
       }
@@ -308,3 +411,8 @@ export const useStudioStore = create<StudioStore>((set) => ({
     }
   },
 }));
+
+/** Active conversation's drawer slices — use in Studio tabs. */
+export function useSessionActivity() {
+  return useStudioStore((s) => getActivity(s.sessionActivity, s.activeSessionKey));
+}

@@ -605,6 +605,8 @@ export interface WorkspaceFeatures {
   defaultBrowsePath: string;
   /** Server can clone owner/repo or URLs into the managed projects directory. */
   githubClone: boolean;
+  /** GitHub OAuth app credentials are configured on the server. */
+  githubOAuthConfigured: boolean;
 }
 
 // ── Settings ─────────────────────────────────────────────────────────────────

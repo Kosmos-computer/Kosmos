@@ -66,6 +66,7 @@ import type {
   MailThread,
   MailThreadDetail,
 } from "@shared/mail";
+import type { GitHubAccountInfo, GitHubRepoSummary } from "@shared/github";
 
 /** GET /api/models — the registry and the slot table in one payload. */
 export interface ModelsResponse {
@@ -722,6 +723,28 @@ export const api = {
     post<{ ok: true }>("/api/mail/send", input),
   starMailThread: (id: string, starred: boolean, accountId?: string) =>
     post<{ ok: true }>(`/api/mail/threads/${encodeURIComponent(id)}/star`, { starred, accountId }),
+
+  // GitHub (OAuth + repo picker)
+  githubStatus: () =>
+    fetch("/api/github/status").then((r) =>
+      json<{ oauthConfigured: boolean; accounts: GitHubAccountInfo[] }>(r),
+    ),
+  listGitHubRepos: (q?: string, accountId?: string) => {
+    const params = new URLSearchParams();
+    if (q) params.set("q", q);
+    if (accountId) params.set("accountId", accountId);
+    const suffix = params.toString();
+    return fetch(`/api/github/repos${suffix ? `?${suffix}` : ""}`).then((r) =>
+      json<GitHubRepoSummary[]>(r),
+    );
+  },
+  disconnectGitHubAccount: (id: string) =>
+    fetch(`/api/github/accounts/${encodeURIComponent(id)}`, { method: "DELETE" }).then((r) =>
+      json<{ ok: true }>(r),
+    ),
+  connectGitHub: () => {
+    window.location.href = "/api/github/oauth/start";
+  },
 
   // Channels (external messaging: Telegram, …)
   listChannels: () => fetch("/api/channels").then((r) => json<ChannelInfo[]>(r)),

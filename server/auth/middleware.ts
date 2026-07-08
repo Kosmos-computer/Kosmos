@@ -30,6 +30,7 @@ export const requireAuth: MiddlewareHandler<AuthEnv> = async (c, next) => {
   if (c.req.path.startsWith("/api/auth/")) return next();
   // OAuth provider callbacks arrive without a session cookie — state carries user binding.
   if (c.req.path === "/api/mail/oauth/google/callback") return next();
+  if (c.req.path === "/api/github/oauth/callback") return next();
   if (!c.req.path.startsWith("/api/")) return next();
 
   const token =

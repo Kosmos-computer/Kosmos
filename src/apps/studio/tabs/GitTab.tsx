@@ -23,7 +23,7 @@ import {
 import type { GitFileChange, GitInfo } from "@shared/types";
 import { api } from "../../../lib/api";
 import { useOsStore } from "../../../os/osStore";
-import { useStudioStore } from "../studioStore";
+import { useStudioStore, useSessionActivity } from "../studioStore";
 import { DiffsTab } from "./DiffsTab";
 
 const DiffViewer = lazy(() => import("../editor/DiffViewer"));
@@ -96,7 +96,7 @@ function ChangeRow({ change, theme }: { change: GitFileChange; theme: "light" | 
 
 export function GitTab() {
   const theme = useOsStore((s) => s.theme);
-  const filesVersion = useStudioStore((s) => s.filesVersion);
+  const { filesVersion } = useSessionActivity();
   const [info, setInfo] = useState<GitInfo | null>(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState<"commit" | "push" | "pull" | null>(null);

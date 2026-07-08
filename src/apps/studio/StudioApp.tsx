@@ -32,7 +32,7 @@ import { Composer } from "../../components/composer/Composer";
 import { ComposerNotice } from "../../components/composer/ComposerNotice";
 import { StudioLogoMark } from "../../components/StudioLogoMark";
 import { contextPercent, type UsageStats } from "../../components/composer/UsagePopover";
-import { useStudioStore } from "./studioStore";
+import { useStudioStore, useSessionActivity } from "./studioStore";
 import { useResizableSplit } from "./useResizableSplit";
 import { useModelSelection } from "./useModelSelection";
 import { ProjectPicker } from "./ProjectPicker";
@@ -113,8 +113,9 @@ export function StudioApp() {
   const setActiveTab = useStudioStore((s) => s.setActiveTab);
   const chatWidthPct = useStudioStore((s) => s.chatWidthPct);
   // Badge prefers real git state; session snapshots cover the sandbox case.
+  const sessionActivity = useSessionActivity();
   const changeCount = useStudioStore((s) =>
-    s.gitChangeCount > 0 ? s.gitChangeCount : Object.keys(s.changes).length,
+    s.gitChangeCount > 0 ? s.gitChangeCount : Object.keys(sessionActivity.changes).length,
   );
 
   // Follow the stream unless the user scrolled up (same pattern as ChatApp).

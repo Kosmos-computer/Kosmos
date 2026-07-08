@@ -41,8 +41,17 @@ export function parseGitRef(ref: string): { url: string; name: string } {
 }
 
 /** Clone into data/workspace/projects and return the absolute destination path. */
-export async function cloneGitRepo(ref: string, branch?: string): Promise<string> {
-  const { url, name } = parseGitRef(ref);
+export async function cloneGitRepo(
+  ref: string,
+  branch?: string,
+  accessToken?: string,
+): Promise<string> {
+  const { url: rawUrl, name } = parseGitRef(ref);
+  const token = accessToken?.trim() || process.env.GITHUB_TOKEN?.trim();
+  const url =
+    token && rawUrl.startsWith("https://github.com/")
+      ? rawUrl.replace("https://", `https://x-access-token:${token}@`)
+      : rawUrl;
   const base = path.join(dataDirs.workspace, "projects");
   fs.mkdirSync(base, { recursive: true });
 

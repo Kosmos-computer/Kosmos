@@ -9,12 +9,12 @@ import { T } from "../../../i18n/T";
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../../../lib/api";
-import { useStudioStore } from "../studioStore";
+import { useStudioStore, useSessionActivity } from "../studioStore";
 
 let userCmdCounter = 0;
 
 export function TerminalTab() {
-  const commands = useStudioStore((s) => s.commands);
+  const { commands } = useSessionActivity();
   const appendUserCommand = useStudioStore((s) => s.appendUserCommand);
   const updateUserCommand = useStudioStore((s) => s.updateUserCommand);
   const [draft, setDraft] = useState("");

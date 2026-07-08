@@ -8,13 +8,13 @@ import { T } from "../../../i18n/T";
  */
 import { AppWindow } from "lucide-react";
 import { useOsStore } from "../../../os/osStore";
-import { useStudioStore } from "../studioStore";
+import { useStudioStore, useSessionActivity } from "../studioStore";
 import { AppSurface } from "../../appview/AppSurface";
 
 export function PreviewTab() {
   const apps = useOsStore((s) => s.apps);
-  const previewAppId = useStudioStore((s) => s.previewAppId);
-  const setPreview = useStudioStore.setState;
+  const { previewAppId } = useSessionActivity();
+  const setPreviewAppId = useStudioStore((s) => s.setPreviewAppId);
 
   if (apps.length === 0) {
     return (
@@ -34,7 +34,7 @@ export function PreviewTab() {
           <button
             key={app.id}
             className={`arco-chip ${app.id === activeId ? "arco-chip--active" : ""}`}
-            onClick={() => setPreview({ previewAppId: app.id })}
+            onClick={() => setPreviewAppId(app.id)}
           >
             {app.title}
           </button>

@@ -13,6 +13,10 @@ import type { AgentEvent, ConfirmOption, Session, SessionSummary } from "@shared
 import { api, streamChat } from "../../lib/api";
 import { handleShellEvent } from "../../os/osActions";
 import { useOsStore } from "../../os/osStore";
+import {
+  DRAFT_SESSION_KEY,
+  useStudioStore,
+} from "../studio/studioStore";
 
 export type ChatItem =
   | { kind: "user"; id: string; text: string; timestamp?: string }
@@ -278,6 +282,7 @@ export function useChat(opts?: { activeProjectId?: string | null }) {
   const loadSession = useCallback(
     async (id: string) => {
       activeKeyRef.current = id;
+      useStudioStore.getState().setActiveSession(id);
       const session = await api.getSession(id);
       if (!buffersRef.current.has(id)) {
         buffersRef.current.set(id, {
@@ -299,6 +304,7 @@ export function useChat(opts?: { activeProjectId?: string | null }) {
     }
     buffersRef.current.set(DRAFT_KEY, emptyBuffer());
     activeKeyRef.current = DRAFT_KEY;
+    useStudioStore.getState().setActiveSession(null);
     syncActive(DRAFT_KEY);
     refreshStreamingSessions();
   }, [syncActive, refreshStreamingSessions]);
@@ -308,6 +314,7 @@ export function useChat(opts?: { activeProjectId?: string | null }) {
       abortControllersRef.current.get(id)?.abort();
       abortControllersRef.current.delete(id);
       buffersRef.current.delete(id);
+      useStudioStore.getState().removeSessionActivity(id);
       await api.deleteSession(id);
       if (activeKeyRef.current === id) newChat();
       refreshStreamingSessions();
@@ -349,13 +356,18 @@ export function useChat(opts?: { activeProjectId?: string | null }) {
       let resolvedSessionId = streamKey === DRAFT_KEY ? undefined : streamKey;
 
       const onEvent = (event: AgentEvent) => {
-        handleShellEvent(event);
+        handleShellEvent(
+          event,
+          targetKey === DRAFT_KEY ? null : targetKey,
+        );
         if (event.type === "session") {
           resolvedSessionId = event.sessionId;
           if (targetKey === DRAFT_KEY) {
             migrateBuffer(DRAFT_KEY, event.sessionId);
+            useStudioStore.getState().migrateSessionActivity(DRAFT_SESSION_KEY, event.sessionId);
             targetKey = event.sessionId;
           }
+          useStudioStore.getState().setActiveSession(event.sessionId);
           return;
         }
         updateBuffer(targetKey, (buf) => applyAgentEvent(buf, event));

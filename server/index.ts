@@ -152,6 +152,14 @@ import { mailStore } from "./mail/mailStore.js";
 import { getInstallStatus } from "./system/installStatus.js";
 import { getWorkspaceFeatures } from "./system/workspaceFeatures.js";
 import { cloneGitRepo } from "./gitClone.js";
+import {
+  buildGitHubAuthUrl,
+  consumeOAuthState as consumeGitHubOAuthState,
+  createOAuthState as createGitHubOAuthState,
+  webOriginAfterOAuth as githubWebOriginAfterOAuth,
+} from "./github/githubOAuth.js";
+import { githubGateway } from "./github/githubGateway.js";
+import { githubStore } from "./github/githubStore.js";
 import { getOpsStatus } from "./ops/deployOps.js";
 import { startSelfHeal } from "./ops/selfHeal.js";
 
@@ -1487,7 +1495,9 @@ app.post("/api/projects/clone-git", requireCap("files:write"), async (c) => {
   const body = (await c.req.json()) as { repo: string; branch?: string };
   if (!body.repo?.trim()) return c.json({ error: "repo is required" }, 400);
   try {
-    const dest = await cloneGitRepo(body.repo, body.branch);
+    const user = currentUser(c);
+    const token = githubGateway.accessTokenFor(user.id);
+    const dest = await cloneGitRepo(body.repo, body.branch, token);
     const project = projectStore.add(dest);
     return c.json(project);
   } catch (err) {
@@ -1918,6 +1928,68 @@ app.get("/api/mail/oauth/google/callback", async (c) => {
   } catch (err) {
     const message = err instanceof Error ? err.message : "oauth_failed";
     return c.redirect(`${webOriginAfterOAuth()}/?mailError=${encodeURIComponent(message)}`);
+  }
+});
+
+// ── GitHub (OAuth + repo picker) ─────────────────────────────────────────────
+
+app.get("/api/github/status", (c) => {
+  const user = currentUser(c);
+  return c.json({
+    oauthConfigured: githubGateway.oauthConfigured(),
+    accounts: githubGateway.listAccounts(user.id),
+  });
+});
+
+app.get("/api/github/accounts", (c) => c.json(githubGateway.listAccounts(currentUser(c).id)));
+
+app.delete("/api/github/accounts/:id", requireCap("settings:write"), (c) => {
+  const ok = githubGateway.disconnect(currentUser(c).id, c.req.param("id"));
+  if (!ok) return c.json({ error: "Account not found" }, 404);
+  return c.json({ ok: true });
+});
+
+app.get("/api/github/repos", async (c) => {
+  const query = c.req.query("q") ?? undefined;
+  const accountId = c.req.query("accountId") ?? undefined;
+  try {
+    return c.json(
+      await githubGateway.listRepos(currentUser(c).id, query, accountId),
+    );
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Could not list repos" }, 400);
+  }
+});
+
+app.get("/api/github/oauth/start", (c) => {
+  if (!githubGateway.oauthConfigured()) {
+    return c.json({ error: "GitHub OAuth is not configured on this server" }, 503);
+  }
+  const user = currentUser(c);
+  const state = createGitHubOAuthState(user.id);
+  return c.redirect(buildGitHubAuthUrl(state));
+});
+
+app.get("/api/github/oauth/callback", async (c) => {
+  const error = c.req.query("error");
+  if (error) {
+    return c.redirect(`${githubWebOriginAfterOAuth()}/?githubError=${encodeURIComponent(error)}`);
+  }
+  const code = c.req.query("code");
+  const state = c.req.query("state");
+  if (!code || !state) {
+    return c.redirect(`${githubWebOriginAfterOAuth()}/?githubError=missing_code`);
+  }
+  const userId = consumeGitHubOAuthState(state);
+  if (!userId) {
+    return c.redirect(`${githubWebOriginAfterOAuth()}/?githubError=invalid_state`);
+  }
+  try {
+    await githubStore.completeGitHubOAuth({ userId, code });
+    return c.redirect(`${githubWebOriginAfterOAuth()}/?githubConnected=1`);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "oauth_failed";
+    return c.redirect(`${githubWebOriginAfterOAuth()}/?githubError=${encodeURIComponent(message)}`);
   }
 });
 

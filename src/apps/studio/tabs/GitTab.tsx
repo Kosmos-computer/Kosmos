@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import type { GitFileChange, GitInfo } from "@shared/types";
 import { api } from "../../../lib/api";
+import { useGitHubConnection } from "../../../connections/useGitHubConnection";
+import { Button } from "../../../components/ui";
 import { useOsStore } from "../../../os/osStore";
 import { useStudioStore, useSessionActivity } from "../studioStore";
 import { DiffsTab } from "./DiffsTab";
@@ -96,6 +98,7 @@ function ChangeRow({ change, theme }: { change: GitFileChange; theme: "light" | 
 
 export function GitTab() {
   const theme = useOsStore((s) => s.theme);
+  const github = useGitHubConnection();
   const { filesVersion } = useSessionActivity();
   const [info, setInfo] = useState<GitInfo | null>(null);
   const [message, setMessage] = useState("");
@@ -174,6 +177,11 @@ export function GitTab() {
         >
           {busy === "push" ? "Pushing…" : "Push"}
         </button>
+        {!github.isConnected && github.oauthConfigured ? (
+          <Button variant="ghost" onClick={github.connect}>
+            <T k={I18nKey.APPS$STUDIO_GITHUB_CONNECT} />
+          </Button>
+        ) : null}
         <button className="arco-btn arco-btn--icon" onClick={() => void refresh()} aria-label={i18n.t(I18nKey.APPS$STUDIO_REFRESH_GIT_STATUS)}>
           <RotateCw size={12} />
         </button>

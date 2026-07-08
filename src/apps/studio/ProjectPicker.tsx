@@ -24,8 +24,10 @@ import {
   X,
 } from "lucide-react";
 import type { DirListing, WorkspaceFeatures } from "@shared/types";
-import type { GitHubAccountInfo, GitHubRepoSummary } from "@shared/github";
+import type { GitHubRepoSummary } from "@shared/github";
+import { GitHubConnectCard } from "../../components/patterns";
 import { api } from "../../lib/api";
+import { useGitHubConnection } from "../../connections/useGitHubConnection";
 import { useStudioStore } from "./studioStore";
 
 const SANDBOX_LABEL = "Sandbox";
@@ -51,34 +53,16 @@ export function ProjectPicker({ compact }: ProjectPickerProps) {
   const [repoRef, setRepoRef] = useState("");
   const [repoBranch, setRepoBranch] = useState("");
   const [cloning, setCloning] = useState(false);
-  const [githubAccount, setGithubAccount] = useState<GitHubAccountInfo | null>(null);
+  const github = useGitHubConnection();
   const [githubRepos, setGithubRepos] = useState<GitHubRepoSummary[]>([]);
   const [repoSearch, setRepoSearch] = useState("");
   const [loadingRepos, setLoadingRepos] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
-  const refreshGitHub = useCallback(async () => {
-    try {
-      const status = await api.githubStatus();
-      setGithubAccount(status.accounts[0] ?? null);
-    } catch {
-      setGithubAccount(null);
-    }
-  }, []);
-
   useEffect(() => {
     void refreshProjects();
     void api.workspaceFeatures().then(setFeatures).catch(() => setFeatures(null));
-    void refreshGitHub();
-    const params = new URLSearchParams(window.location.search);
-    if (params.has("githubConnected") || params.has("githubError")) {
-      void refreshGitHub();
-      params.delete("githubConnected");
-      params.delete("githubError");
-      const next = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ""}`;
-      window.history.replaceState({}, "", next);
-    }
-  }, [refreshProjects, refreshGitHub]);
+  }, [refreshProjects]);
 
   // Close on outside click — standard dropdown hygiene.
   useEffect(() => {
@@ -172,7 +156,7 @@ export function ProjectPicker({ compact }: ProjectPickerProps) {
   );
 
   const loadGitHubRepos = useCallback(async (query?: string) => {
-    if (!githubAccount) return;
+    if (!github.isConnected) return;
     setLoadingRepos(true);
     try {
       setGithubRepos(await api.listGitHubRepos(query));
@@ -182,18 +166,17 @@ export function ProjectPicker({ compact }: ProjectPickerProps) {
     } finally {
       setLoadingRepos(false);
     }
-  }, [githubAccount]);
+  }, [github.isConnected]);
 
   useEffect(() => {
-    if (panel === "github" && githubAccount) {
+    if (panel === "github" && github.isConnected) {
       void loadGitHubRepos(repoSearch.trim() || undefined);
     }
-  }, [panel, githubAccount, repoSearch, loadGitHubRepos]);
+  }, [panel, github.isConnected, repoSearch, loadGitHubRepos]);
 
   const blocked = error !== null && error.includes("macOS is blocking");
   const showNativePicker = features?.nativeFolderPicker ?? false;
   const showGitHubClone = features?.githubClone ?? true;
-  const showGitHubOAuth = features?.githubOAuthConfigured ?? false;
 
   const iconSize = compact ? 11 : 13;
   const chevronSize = compact ? 10 : 12;
@@ -359,19 +342,15 @@ export function ProjectPicker({ compact }: ProjectPickerProps) {
               <p className="arco-projectpicker__hint">
                 <T k={I18nKey.APPS$STUDIO_GITHUB_CLONE_HINT} />
               </p>
-              {showGitHubOAuth && !githubAccount && (
-                <button
-                  className="arco-btn arco-btn--primary arco-projectpicker__clonebtn"
-                  onClick={() => api.connectGitHub()}
-                >
-                  <Github size={13} />
-                  <T k={I18nKey.APPS$STUDIO_GITHUB_CONNECT} />
-                </button>
-              )}
-              {githubAccount && (
+              {!github.isConnected ? (
+                <GitHubConnectCard connection={github} variant="inline" showRepoHint={false} />
+              ) : (
                 <>
                   <p className="arco-projectpicker__hint">
-                    <T k={I18nKey.APPS$STUDIO_GITHUB_CONNECTED_AS} values={{ login: githubAccount.login }} />
+                    <T
+                      k={I18nKey.APPS$STUDIO_GITHUB_CONNECTED_AS}
+                      values={{ login: github.account!.login }}
+                    />
                   </p>
                   <label className="arco-projectpicker__field">
                     <span>

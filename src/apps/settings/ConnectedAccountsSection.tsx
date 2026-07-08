@@ -2,17 +2,20 @@ import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
 import { T } from "../../i18n/T";
 /**
- * Settings → Connected accounts — team chat, social networks, and GitHub.
+ * Settings → Connected accounts — GitHub OAuth plus team/social links.
  */
-import { useCallback, useEffect, useState } from "react";
-import { Github, Link2, Trash2 } from "lucide-react";
-import type { GitHubAccountInfo } from "@shared/github";
+import { useCallback, useState } from "react";
+import { Link2, Trash2 } from "lucide-react";
 import { presetById } from "@shared/serviceConnections";
-import { ConnectServiceModal, ListSearch } from "../../components/patterns";
+import {
+  ConnectServiceModal,
+  GitHubConnectCard,
+  ListSearch,
+} from "../../components/patterns";
+import { useGitHubConnection } from "../../connections/useGitHubConnection";
 import { useConnectionStore } from "../../connections/useConnectionStore";
 import { useCan } from "../../os/auth/authStore";
 import { matchesListSearch } from "../../lib/listSearch";
-import { api } from "../../lib/api";
 import {
   SettingsEmpty,
   SettingsPage,
@@ -23,11 +26,13 @@ import {
   SettingsRowActions,
   SettingsSection,
   SettingsStack,
+  SettingsSubhead,
 } from "../../components/patterns";
 import { Button } from "../../components/ui";
 
 export function ConnectedAccountsSection() {
   const canManage = useCan("settings:write");
+  const github = useGitHubConnection();
   const connections = useConnectionStore((s) => s.connections);
   const addConnection = useConnectionStore((s) => s.addConnection);
   const removeConnection = useConnectionStore((s) => s.removeConnection);
@@ -35,22 +40,6 @@ export function ConnectedAccountsSection() {
   const [connectOpen, setConnectOpen] = useState(false);
   const [connectDomain, setConnectDomain] = useState<"teams" | "social">("teams");
   const [searchQuery, setSearchQuery] = useState("");
-  const [githubStatus, setGithubStatus] = useState<{
-    oauthConfigured: boolean;
-    accounts: GitHubAccountInfo[];
-  } | null>(null);
-
-  const refreshGitHub = useCallback(async () => {
-    try {
-      setGithubStatus(await api.githubStatus());
-    } catch {
-      setGithubStatus(null);
-    }
-  }, []);
-
-  useEffect(() => {
-    void refreshGitHub();
-  }, [refreshGitHub]);
 
   const filteredConnections = connections.filter((connection) =>
     matchesListSearch(
@@ -71,46 +60,10 @@ export function ConnectedAccountsSection() {
     <SettingsPage>
       <SettingsSection intro={i18n.t(I18nKey.APPS$SETTINGS_ACCOUNTS_LINKED_TO_GROUPS_AND_SOCIAL_WORKSPACES_OAUTH_AN)}>
         <SettingsStack>
-          <SettingsPanel>
-            <SettingsPanelHeader title="GitHub" />
-            <SettingsPanelBody>
-              {githubStatus?.accounts[0] ? (
-                <SettingsRow>
-                  <Github size={14} className="arco-icon arco-icon--secondary" />
-                  <span>@{githubStatus.accounts[0].login}</span>
-                  {canManage ? (
-                    <SettingsRowActions>
-                      <Button
-                        variant="ghost"
-                        onClick={() =>
-                          void api
-                            .disconnectGitHubAccount(githubStatus.accounts[0].id)
-                            .then(() => refreshGitHub())
-                        }
-                      >
-                        <Trash2 size={14} />
-                        <T k={I18nKey.COMMON$REMOVE} />
-                      </Button>
-                    </SettingsRowActions>
-                  ) : null}
-                </SettingsRow>
-              ) : githubStatus?.oauthConfigured ? (
-                <SettingsRow>
-                  <SettingsRowActions>
-                    <Button onClick={() => api.connectGitHub()}>
-                      <Github size={14} />
-                      <T k={I18nKey.APPS$STUDIO_GITHUB_CONNECT} />
-                    </Button>
-                  </SettingsRowActions>
-                </SettingsRow>
-              ) : (
-                <SettingsEmpty>
-                  Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET on the server to enable OAuth.
-                </SettingsEmpty>
-              )}
-            </SettingsPanelBody>
-          </SettingsPanel>
+          <SettingsSubhead>GitHub</SettingsSubhead>
+          <GitHubConnectCard connection={github} variant="inline" />
 
+          <SettingsSubhead><T k={I18nKey.APPS$SETTINGS_OTHER_CONNECTED_ACCOUNTS} /></SettingsSubhead>
           {connections.length > 0 ? (
             <ListSearch
               value={searchQuery}

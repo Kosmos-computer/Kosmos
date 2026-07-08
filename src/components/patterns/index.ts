@@ -42,6 +42,7 @@ export {
 export { SidebarPane, type SidebarPaneProps } from "./SidebarPane";
 export { PreviewPane, type PreviewPaneProps } from "./PreviewPane";
 export { ConnectServiceModal, type ConnectServiceModalProps } from "./ConnectServiceModal";
+export { GitHubConnectCard, type GitHubConnectCardProps } from "./GitHubConnectCard";
 export { MediaPlayerBar, type MediaPlayerBarProps } from "./MediaPlayerBar";
 export { MediaProgressScrubber, type MediaProgressScrubberProps } from "./MediaProgressScrubber";
 export { useColumnResize, type UseColumnResizeOptions } from "./useColumnResize";

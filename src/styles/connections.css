@@ -149,3 +149,90 @@
   padding: var(--arco-space-m) var(--arco-space-l);
   border-top: 1px solid var(--arco-border);
 }
+
+/* GitHub OAuth connect card (Settings, Studio, Git tab) */
+
+.arco-github-connect {
+  display: flex;
+  justify-content: center;
+}
+
+.arco-github-connect--inline {
+  justify-content: stretch;
+}
+
+.arco-github-connect__card {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-m);
+  padding: var(--arco-space-l);
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-lg);
+  background: var(--arco-bg-elevated);
+}
+
+.arco-github-connect--inline .arco-github-connect__card {
+  max-width: none;
+  padding: var(--arco-space-m);
+}
+
+.arco-github-connect__card--connected {
+  border-color: color-mix(in srgb, var(--arco-accent) 35%, var(--arco-border));
+}
+
+.arco-github-connect__brand {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--arco-space-s);
+  color: var(--arco-text-primary);
+}
+
+.arco-github-connect__title {
+  margin: 0;
+  font-size: var(--arco-text-lg);
+  font-weight: 600;
+}
+
+.arco-github-connect__meta {
+  margin: 2px 0 0;
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-secondary);
+}
+
+.arco-github-connect__lead,
+.arco-github-connect__hint,
+.arco-github-connect__note {
+  margin: 0;
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-secondary);
+  line-height: 1.5;
+}
+
+.arco-github-connect__note code,
+.arco-github-connect__hint code {
+  font-family: var(--arco-font-mono);
+  font-size: 0.92em;
+}
+
+.arco-github-connect__error {
+  margin: 0;
+  font-size: var(--arco-text-sm);
+  color: var(--arco-danger);
+}
+
+.arco-github-connect__loading {
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-secondary);
+}
+
+.arco-github-connect__btn {
+  align-self: flex-start;
+  gap: var(--arco-space-xs);
+}
+
+.arco-github-connect--inline .arco-github-connect__btn {
+  align-self: stretch;
+  justify-content: center;
+}

@@ -17,6 +17,7 @@ import { HoverMenuBar } from "./HoverMenuBar";
 import { WindowFrame } from "./WindowFrame";
 import { BentoDrawer } from "./bento/BentoDrawer";
 import { connectShellEvents } from "./shellEvents";
+import { consumeGitHubOAuthReturn } from "../connections/useGitHubConnection";
 import { WindowContentById } from "./windowContent";
 import { AgentCursor } from "./cursor/AgentCursor";
 import { FloatingKeyboard } from "./FloatingKeyboard";
@@ -90,6 +91,7 @@ export function Desktop() {
   const shellView = useOsStore((s) => s.shellView);
   const appWindowHost = useOsStore((s) => s.appWindowHost);
   const refreshApps = useOsStore((s) => s.refreshApps);
+  const notify = useOsStore((s) => s.notify);
   const windows = useWindowStore((s) => s.windows);
   const [menuBarOpen, setMenuBarOpen] = useState(false);
   const nativeHost = shouldUseNativeAppWindows();
@@ -111,6 +113,12 @@ export function Desktop() {
       disconnectNative();
     };
   }, [refreshApps]);
+
+  useEffect(() => {
+    const { connected, error } = consumeGitHubOAuthReturn();
+    if (connected) notify("GitHub connected — you can clone repos from Studio");
+    if (error) notify(`GitHub connect failed: ${error}`);
+  }, [notify]);
 
   useEffect(() => {
     migrateAppWindowHost(appWindowHost, shellView);

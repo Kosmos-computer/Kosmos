@@ -11,6 +11,15 @@ import { getCookie } from "hono/cookie";
 import type { AuthUser, Capability } from "../../shared/types.js";
 import { authSessionStore } from "./sessionStore.js";
 import { userStore } from "./userStore.js";
+import { externalClients } from "../platform/externalClients.js";
+
+/**
+ * Paths a scoped external-client bearer token (server/platform/externalClients.ts)
+ * may authenticate, in addition to /mcp — programs, not people, connecting
+ * from another server (e.g. a remote kosmos backend relaying chat turns).
+ * Read-only scoped tokens are rejected here; only "readwrite" may post chat.
+ */
+const EXTERNAL_TOKEN_PATHS = new Set(["/api/chat", "/api/remote/ping"]);
 
 export const AUTH_COOKIE = "arco_session";
 
@@ -43,6 +52,20 @@ export const requireAuth: MiddlewareHandler<AuthEnv> = async (c, next) => {
   const session = token ? authSessionStore.get(token) : null;
   const user = session ? userStore.getAuthUser(session.userId) : null;
   if (!session || !user) {
+    if (token && EXTERNAL_TOKEN_PATHS.has(c.req.path)) {
+      const client = externalClients.authenticate(token);
+      if (client && client.scope === "readwrite") {
+        c.set("user", {
+          id: `external:${client.id}`,
+          username: client.name,
+          displayName: client.name,
+          role: "viewer",
+          capabilities: ["chat"],
+        });
+        c.set("sessionToken", token);
+        return next();
+      }
+    }
     return c.json({ error: "Authentication required", code: "unauthenticated" }, 401);
   }
   if (session.locked) {

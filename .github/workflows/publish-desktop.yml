@@ -1,0 +1,121 @@
+name: Publish desktop app
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/desktop/**"
+      - "apps/docs/**"
+      - "apps/menubar-tasks/**"
+      - "server/**"
+      - "shared/**"
+      - "src/**"
+      - "public/**"
+      - "packages/**"
+      - "scripts/generate-prompts.ts"
+      - "scripts/postinstall.mts"
+      - "scripts/sync-desktop-version.mjs"
+      - "scripts/check-desktop-version.mjs"
+      - "vite.config.ts"
+      - "index.html"
+      - "package.json"
+      - "package-lock.json"
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump when run manually"
+        required: false
+        default: patch
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+concurrency:
+  group: desktop-release
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-14
+    if: github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[skip desktop]')
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Decide whether to release
+        id: plan
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "ship=true" >> "$GITHUB_OUTPUT"
+            echo "Manual release requested"
+            exit 0
+          fi
+          if npm run release:should-ship -w @arco/desktop; then
+            echo "ship=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ship=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Resolve next version
+        if: steps.plan.outputs.ship == 'true'
+        id: version
+        run: |
+          BUMP="${{ github.event_name == 'workflow_dispatch' && inputs.bump || 'patch' }}"
+          VERSION="$(node apps/desktop/scripts/next-desktop-version.mjs --bump="$BUMP")"
+          TAG="desktop-v${VERSION}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Next release: $TAG"
+
+      - name: Guard against duplicate tag
+        if: steps.plan.outputs.ship == 'true'
+        run: |
+          if git rev-parse "${{ steps.version.outputs.tag }}" >/dev/null 2>&1; then
+            echo "Tag ${{ steps.version.outputs.tag }} already exists"
+            exit 1
+          fi
+
+      - name: Sync version files
+        if: steps.plan.outputs.ship == 'true'
+        run: node scripts/sync-desktop-version.mjs --set "${{ steps.version.outputs.version }}"
+
+      - name: Commit version bump
+        if: steps.plan.outputs.ship == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/desktop/VERSION package.json apps/desktop/package.json
+          git commit -m "chore(desktop): release v${{ steps.version.outputs.version }} [skip desktop]"
+
+      - name: Build and publish to GitHub Releases
+        if: steps.plan.outputs.ship == 'true'
+        env:
+          DESKTOP_VERSION: ${{ steps.version.outputs.version }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_LINK: ${{ secrets.DESKTOP_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.DESKTOP_CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.DESKTOP_APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.DESKTOP_APPLE_APP_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.DESKTOP_APPLE_TEAM_ID }}
+        run: npm run release:publish -w @arco/desktop
+
+      - name: Push release commit and tag
+        if: steps.plan.outputs.ship == 'true'
+        run: |
+          git tag -a "${{ steps.version.outputs.tag }}" -m "Arco OS ${{ steps.version.outputs.version }}"
+          git push origin HEAD:main
+          git push origin "${{ steps.version.outputs.tag }}"

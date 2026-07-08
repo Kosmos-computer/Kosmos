@@ -44,6 +44,9 @@ import type {
   UsageResponse,
   CursorConnectionStatus,
   CursorModelInfo,
+  AgentBackend,
+  AgentBackendKind,
+  AgentBackendConnectionStatus,
   OpenRouterModelInfo,
   Skill,
   SkillMeta,
@@ -884,6 +887,35 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(apiKey ? { apiKey } : {}),
     }).then((r) => json<{ models: OpenRouterModelInfo[]; error?: string }>(r)),
+
+  testAgentBackend: (kind: AgentBackendKind, host: string, apiKey?: string) =>
+    fetch("/api/agent-backends/test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kind, host, apiKey }),
+    }).then((r) => json<AgentBackendConnectionStatus>(r)),
+
+  listAgentBackends: () =>
+    fetch("/api/agent-backends").then((r) =>
+      json<{ backends: AgentBackend[]; activeId: string | null }>(r),
+    ),
+
+  addAgentBackend: (backend: Omit<AgentBackend, "id">) =>
+    fetch("/api/agent-backends", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(backend),
+    }).then((r) => json<{ backend: AgentBackend; activeId: string | null }>(r)),
+
+  activateAgentBackend: (id: string) =>
+    fetch(`/api/agent-backends/${id}/activate`, { method: "POST" }).then((r) =>
+      json<{ activeId: string | null }>(r),
+    ),
+
+  removeAgentBackend: (id: string) =>
+    fetch(`/api/agent-backends/${id}`, { method: "DELETE" }).then((r) =>
+      json<{ backends: AgentBackend[]; activeId: string | null }>(r),
+    ),
 };
 
 /**

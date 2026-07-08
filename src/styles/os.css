@@ -1360,3 +1360,222 @@ html[data-electron] .arco-notifications {
   color: var(--arco-text-secondary);
   font-size: var(--arco-text-md);
 }
+
+/* Desktop auto-update modal */
+.arco-update-modal__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: color-mix(in srgb, var(--arco-bg-base) 55%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.arco-update-modal {
+  width: min(420px, calc(100vw - 32px));
+  padding: 20px;
+  border-radius: var(--arco-radius-lg);
+  border: 1px solid var(--arco-border-subtle);
+  background: var(--arco-bg-surface-solid);
+  box-shadow: var(--arco-shadow-lg);
+}
+
+.arco-update-modal__header {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.arco-update-modal__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--arco-radius-md);
+  background: color-mix(in srgb, var(--arco-accent) 14%, transparent);
+  color: var(--arco-accent);
+  flex-shrink: 0;
+}
+
+.arco-update-modal__title {
+  margin: 0;
+  font-size: var(--arco-text-lg);
+  font-weight: 600;
+  color: var(--arco-text-primary);
+}
+
+.arco-update-modal__subtitle {
+  margin: 4px 0 0;
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-secondary);
+  line-height: 1.45;
+}
+
+.arco-update-modal__notes {
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: var(--arco-radius-md);
+  background: var(--arco-bg-muted);
+}
+
+.arco-update-modal__notes-label {
+  margin: 0 0 6px;
+  font-size: var(--arco-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--arco-text-tertiary);
+}
+
+.arco-update-modal__notes-body {
+  margin: 0;
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-secondary);
+  white-space: pre-wrap;
+  line-height: 1.5;
+  max-height: 120px;
+  overflow: auto;
+}
+
+.arco-update-modal__progress {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.arco-update-modal__progress-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--arco-bg-muted);
+  overflow: hidden;
+}
+
+.arco-update-modal__progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--arco-accent);
+  transition: width 180ms ease;
+}
+
+.arco-update-modal__progress-label {
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+}
+
+.arco-update-modal__actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.arco-update-modal__actions--stacked {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+}
+
+.arco-update-modal__actions-primary {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.arco-update-modal__skip {
+  border: 0;
+  background: none;
+  padding: 0;
+  align-self: center;
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.arco-update-modal__skip:hover {
+  color: var(--arco-text-secondary);
+}
+
+.arco-settings-panel__row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.arco-settings-updates__notes {
+  padding: 12px;
+  border-radius: var(--arco-radius-md);
+  background: var(--arco-bg-muted);
+}
+
+.arco-settings-updates__notes-label {
+  margin: 0 0 6px;
+  font-size: var(--arco-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--arco-text-tertiary);
+}
+
+.arco-settings-updates__notes-body {
+  margin: 0;
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-secondary);
+  white-space: pre-wrap;
+  line-height: 1.5;
+  max-height: 120px;
+  overflow: auto;
+}
+
+.arco-settings-updates__progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.arco-settings-updates__progress-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--arco-bg-muted);
+  overflow: hidden;
+}
+
+.arco-settings-updates__progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--arco-accent);
+}
+
+.arco-settings-updates__progress-label {
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+}
+
+.arco-settings-updates__defer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+}
+
+.arco-settings-updates__link {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--arco-text-secondary);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.arco-settings-updates__link:hover {
+  color: var(--arco-text-primary);
+}

@@ -20,11 +20,13 @@ import {
   WINDOW_CONTROL_STYLE_OPTIONS,
 } from "../../os/themeTokens";
 import { isArcoDesktop } from "../../lib/desktopBridge";
+import { DesktopUpdatesSection } from "./DesktopUpdatesSection";
 import { PasswordSection } from "./PasswordSection";
 import { UsersSection } from "./UsersSection";
 import { AppsSection } from "./AppsSection";
 import { AgentSection } from "./AgentSection";
 import { CursorConnectionFields } from "./CursorConnectionFields";
+import { AgentBackendsFields } from "./AgentBackendsFields";
 import { OpenRouterModelPicker } from "./OpenRouterModelPicker";
 import { ChannelsSection } from "./ChannelsSection";
 import { ConnectedAccountsSection } from "./ConnectedAccountsSection";
@@ -185,15 +187,23 @@ export function SettingsApp() {
   const activeAgentChip =
     settings.agent === "cursor"
       ? "cursor"
-      : settings.agent !== "acp"
-        ? "builtin"
-        : (ACP_PRESETS.find((p) => p.command === settings.acpCommand)?.id ?? "custom");
+      : settings.agent === "openhands"
+        ? "openhands"
+        : settings.agent === "kosmos"
+          ? "kosmos"
+          : settings.agent !== "acp"
+            ? "builtin"
+            : (ACP_PRESETS.find((p) => p.command === settings.acpCommand)?.id ?? "custom");
 
   const pickAgent = (chip: string) => {
     if (chip === "builtin") {
       update({ agent: "builtin" });
     } else if (chip === "cursor") {
       update({ agent: "cursor" });
+    } else if (chip === "openhands") {
+      update({ agent: "openhands" });
+    } else if (chip === "kosmos") {
+      update({ agent: "kosmos" });
     } else if (chip === "custom") {
       update({ agent: "acp" });
     } else {
@@ -249,6 +259,8 @@ export function SettingsApp() {
                       {[
                         { id: "builtin", label: "Built-in" },
                         { id: "cursor", label: "Cursor" },
+                        { id: "openhands", label: "OpenHands" },
+                        { id: "kosmos", label: "Kosmos" },
                         ...ACP_PRESETS,
                         { id: "custom", label: "Custom (ACP)" },
                       ].map((a) => (
@@ -260,6 +272,12 @@ export function SettingsApp() {
                   </SettingsFieldRow>
                   {settings.agent === "cursor" ? (
                     <CursorConnectionFields settings={settings} update={update} />
+                  ) : null}
+                  {settings.agent === "openhands" ? (
+                    <AgentBackendsFields kind="openhands" settings={settings} update={update} />
+                  ) : null}
+                  {settings.agent === "kosmos" ? (
+                    <AgentBackendsFields kind="kosmos" settings={settings} update={update} />
                   ) : null}
                   {settings.agent === "acp" && (
                     <SettingsFieldRow
@@ -534,6 +552,14 @@ export function SettingsApp() {
                       ))}
                     </SettingsChipRow>
                   </SettingsFieldRow>
+                  {isArcoDesktop() && (
+                    <SettingsFieldRow
+                      label="Software updates"
+                      hint="Arco OS checks for updates in the background and prompts you to restart when a new build is ready."
+                    >
+                      <DesktopUpdatesSection />
+                    </SettingsFieldRow>
+                  )}
                   {isArcoDesktop() && (
                     <SettingsFieldRow
                       label={i18n.t(I18nKey.APPS$SETTINGS_APP_WINDOWS)}

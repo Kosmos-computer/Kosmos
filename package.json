@@ -25,8 +25,11 @@
     "build": "npm run build:apps && vite build",
     "desktop": "npm run build && npm run start -w @arco/desktop",
     "dist:desktop": "npm run generate && npm run build && npm run dist -w @arco/desktop",
+    "dist:desktop:publish": "npm run generate && npm run build && npm run dist:publish -w @arco/desktop",
     "verify:desktop": "npm run verify -w @arco/desktop",
     "verify:desktop:app": "npm run verify:app -w @arco/desktop",
+    "version:sync": "node scripts/sync-desktop-version.mjs",
+    "version:check": "node scripts/check-desktop-version.mjs",
     "setup:desktop:local-models": "npm run setup:local-models -w @arco/desktop",
     "desktop:dev": "concurrently -n web,desktop -c cyan,magenta \"npm run dev:web\" \"npm run dev -w @arco/desktop\"",
     "desktop:dev:all": "concurrently -n server,web,desktop -c yellow,cyan,magenta \"npm run dev:server\" \"npm run dev:web\" \"npm run dev -w @arco/desktop\"",
@@ -43,7 +46,7 @@
     "sprite-mark:sync": "tsx scripts/sync-sprite-mark-library.mts",
     "check-translation-completeness": "node scripts/check-translation-completeness.cjs",
     "i18n:migrate": "node scripts/i18n-bulk-migrate.cjs --write && node scripts/i18n-migrate-props.cjs && node scripts/i18n-fix-imports.cjs && node scripts/i18n-normalize.cjs && node scripts/i18n-clean-stale-hooks.cjs && npm run make-i18n",
-    "test": "tsx --test server/automations/*.test.ts server/stores/automationStore.test.ts",
+    "test": "tsx --test server/automations/*.test.ts server/stores/automationStore.test.ts server/openhands/openhandsAgent.test.ts server/kosmos-remote/kosmosRemoteAgent.test.ts server/agentBackends.test.ts",
     "ops:mcp": "node --import tsx/esm scripts/kosmos-ops-mcp.ts"
   },
   "dependencies": {
@@ -51,6 +54,7 @@
     "@hono/node-server": "^1.14.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@monaco-editor/react": "^4.7.0",
+    "@openhands/typescript-client": "^1.32.1",
     "@openuidev/lang-core": "^0.2.7",
     "@openuidev/react-headless": "^0.9.1",
     "@openuidev/react-lang": "^0.2.8",

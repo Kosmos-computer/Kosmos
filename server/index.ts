@@ -26,6 +26,7 @@ import { createReadStream, type ReadStream } from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import type {
+  AgentBackend,
   AgentEvent,
   AutomationTrigger,
   DirListing,
@@ -37,6 +38,10 @@ import { runAgentTurn } from "./agent/loop.js";
 import { runAcpTurn, stopAllAcpRuns } from "./acp/acpAgent.js";
 import { runCursorTurn, stopAllCursorRuns } from "./cursor/cursorAgent.js";
 import { listCursorModels, testCursorConnection } from "./cursor/cursorConnect.js";
+import { runOpenhandsTurn, stopAllOpenhandsRuns } from "./openhands/openhandsAgent.js";
+import { testOpenhandsConnection } from "./openhands/openhandsConnect.js";
+import { runKosmosRemoteTurn, stopAllKosmosRemoteRuns } from "./kosmos-remote/kosmosRemoteAgent.js";
+import { testKosmosConnection } from "./kosmos-remote/kosmosRemoteConnect.js";
 import { listOpenRouterModels } from "./openrouter/openrouterModels.js";
 import { openaiCompatRoutes } from "./agent/openaiCompat.js";
 import { invokeRuntimeTool, runExec } from "./agent/tools.js";
@@ -274,7 +279,15 @@ app.post("/api/chat", requireCap("chat"), async (c) => {
       // has unresolved lifecycle semantics — see the extensibility plan).
       const agentKind = loadSettings().agent;
       const turnRunner =
-        agentKind === "acp" ? runAcpTurn : agentKind === "cursor" ? runCursorTurn : runAgentTurn;
+        agentKind === "acp"
+          ? runAcpTurn
+          : agentKind === "cursor"
+            ? runCursorTurn
+            : agentKind === "openhands"
+              ? runOpenhandsTurn
+              : agentKind === "kosmos"
+                ? runKosmosRemoteTurn
+                : runAgentTurn;
       await turnRunner({
         sessionId: session.id,
         userMessage: message,
@@ -2351,19 +2364,31 @@ app.put("/api/settings", requireCap("settings:write"), async (c) => {
       ]),
     );
   }
-  // Agent config changes tear down live ACP subprocesses so the next turn
-  // respawns with the new command; running turns fail fast rather than
-  // continuing on stale settings.
+  if (patch.agentBackends) {
+    // A masked apiKey echoed back for an existing backend must not clobber the real one.
+    const saved = new Map(loadSettings().agentBackends.map((b) => [b.id, b]));
+    patch.agentBackends = patch.agentBackends.map((b) => ({
+      ...b,
+      apiKey: b.apiKey.startsWith("••••") ? (saved.get(b.id)?.apiKey ?? "") : b.apiKey,
+    }));
+  }
+  // Agent config changes tear down live ACP/Cursor/OpenHands/kosmos-remote
+  // runs so the next turn respawns with the new command/connection; running
+  // turns fail fast rather than continuing on stale settings.
   if (
     patch.agent !== undefined ||
     patch.acpCommand !== undefined ||
     patch.cursorApiKey !== undefined ||
     patch.cursorModel !== undefined ||
     patch.cursorRuntime !== undefined ||
-    patch.cursorRepoUrl !== undefined
+    patch.cursorRepoUrl !== undefined ||
+    patch.agentBackends !== undefined ||
+    patch.activeAgentBackendId !== undefined
   ) {
     stopAllAcpRuns();
     stopAllCursorRuns();
+    stopAllOpenhandsRuns();
+    stopAllKosmosRemoteRuns();
   }
   const merged = saveSettings(patch);
   // Legacy write path: keep the model registry's agent.chat slot in step
@@ -2389,6 +2414,82 @@ app.get("/api/cursor/models", requireCap("settings:write"), async (c) => {
     const message = err instanceof Error ? err.message : "Failed to list Cursor models";
     return c.json({ error: message, models: [] as { id: string; displayName: string }[] }, 400);
   }
+});
+
+// ── Remote agent backends (OpenHands + kosmos) ──────────────────────────────
+//
+// A lightweight authenticated no-op, also reachable with a scoped
+// external-client bearer token (see requireAuth) — used by testKosmosConnection
+// to validate a remote kosmos backend's host + token before it's saved.
+app.get("/api/remote/ping", (c) => c.json({ ok: true }));
+
+app.post("/api/agent-backends/test", requireCap("settings:write"), async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as {
+    kind?: string;
+    host?: string;
+    apiKey?: string;
+  };
+  if (body.kind === "kosmos") {
+    return c.json(await testKosmosConnection(body.host ?? "", body.apiKey ?? ""));
+  }
+  return c.json(await testOpenhandsConnection(body.host ?? "", body.apiKey));
+});
+
+app.get("/api/agent-backends", requireCap("settings:write"), (c) => {
+  const settings = loadSettings();
+  return c.json({
+    backends: settings.agentBackends.map((b) => ({ ...b, apiKey: b.apiKey ? "••••" : "" })),
+    activeId: settings.activeAgentBackendId,
+  });
+});
+
+app.post("/api/agent-backends", requireCap("settings:write"), async (c) => {
+  const body = (await c.req.json()) as Omit<AgentBackend, "id">;
+  if (body.kind !== "openhands" && body.kind !== "kosmos") {
+    return c.json({ error: "kind must be openhands or kosmos" }, 400);
+  }
+  if (!body.host?.trim()) return c.json({ error: "Host is required" }, 400);
+  const backend: AgentBackend = {
+    id: crypto.randomUUID(),
+    name: body.name?.trim() || body.host.trim(),
+    kind: body.kind,
+    host: body.host.trim(),
+    apiKey: body.apiKey?.trim() ?? "",
+    ...(body.kind === "openhands" ? { variant: body.variant === "cloud" ? "cloud" : "local" } : {}),
+  };
+  const settings = loadSettings();
+  stopAllOpenhandsRuns();
+  stopAllKosmosRemoteRuns();
+  const merged = saveSettings({
+    agentBackends: [...settings.agentBackends, backend],
+    activeAgentBackendId: backend.id,
+  });
+  return c.json({ backend, activeId: merged.activeAgentBackendId });
+});
+
+app.post("/api/agent-backends/:id/activate", requireCap("settings:write"), (c) => {
+  const id = c.req.param("id");
+  const settings = loadSettings();
+  if (!settings.agentBackends.some((b) => b.id === id)) {
+    return c.json({ error: "Backend not found" }, 404);
+  }
+  stopAllOpenhandsRuns();
+  stopAllKosmosRemoteRuns();
+  const merged = saveSettings({ activeAgentBackendId: id });
+  return c.json({ activeId: merged.activeAgentBackendId });
+});
+
+app.delete("/api/agent-backends/:id", requireCap("settings:write"), (c) => {
+  const id = c.req.param("id");
+  const settings = loadSettings();
+  const remaining = settings.agentBackends.filter((b) => b.id !== id);
+  stopAllOpenhandsRuns();
+  stopAllKosmosRemoteRuns();
+  const merged = saveSettings({
+    agentBackends: remaining,
+    activeAgentBackendId: settings.activeAgentBackendId === id ? null : settings.activeAgentBackendId,
+  });
+  return c.json({ backends: merged.agentBackends, activeId: merged.activeAgentBackendId });
 });
 
 app.post("/api/openrouter/models", requireCap("settings:write"), async (c) => {

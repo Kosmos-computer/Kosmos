@@ -18,3 +18,35 @@ export interface OpenAppWindowPayload {
   id: string;
   title: string;
 }
+
+export const UPDATE_IPC = {
+  getState: "arco:update-get-state",
+  check: "arco:update-check",
+  install: "arco:update-install",
+  remindLater: "arco:update-remind-later",
+  skip: "arco:update-skip",
+  stateChanged: "arco:update-state-changed",
+} as const;
+
+export type UpdateStatus =
+  | "idle"
+  | "checking"
+  | "available"
+  | "not-available"
+  | "downloading"
+  | "ready"
+  | "error";
+
+export type UpdateSuppressed = "none" | "snooze" | "skip";
+
+export interface DesktopUpdateState {
+  status: UpdateStatus;
+  currentVersion: string;
+  version?: string;
+  releaseNotes?: string;
+  progress?: number;
+  error?: string;
+  downloaded?: boolean;
+  suppressed?: UpdateSuppressed;
+  remindAfter?: number;
+}

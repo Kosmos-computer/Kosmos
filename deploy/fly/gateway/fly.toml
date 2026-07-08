@@ -1,0 +1,24 @@
+# Arco credits gateway (LiteLLM Proxy) on Fly.io.
+# Deploy from this directory: fly deploy
+#
+# Fly app names are global — if "arco-gateway" is taken, rename here and pass
+# --gateway to scripts/provision-tenant.ts.
+
+app = "arco-gateway"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 4000
+  force_https = true
+  # Tenants wake on demand; the gateway they all call stays resident.
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1

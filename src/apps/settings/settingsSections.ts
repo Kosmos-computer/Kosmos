@@ -48,6 +48,7 @@ export type SettingsSectionId =
   | "permissions"
   | "providers"
   | "external"
+  | "usage"
   | "password"
   | "users";
 
@@ -157,6 +158,7 @@ export function buildSettingsNavGroups(): SettingsNavGroup[] {
       title: i18n.t(I18nKey.SETTINGS$SECTION_ACCOUNT),
       items: [
         { id: "permissions", label: i18n.t(I18nKey.SETTINGS$SECTION_PERMISSIONS), icon: Shield, requiresWrite: true },
+        { id: "usage", label: "Usage & credits", icon: CreditCard },
         { id: "password", label: i18n.t(I18nKey.SETTINGS$SECTION_PASSWORD), icon: Lock },
         { id: "users", label: i18n.t(I18nKey.SETTINGS$SECTION_USERS), icon: Users, requiresUsersManage: true },
       ],

@@ -1,0 +1,13 @@
+# Build-and-push config for the shared tenant image. Run from the repo root:
+#
+#   fly deploy . --config deploy/fly/template.fly.toml \
+#     --build-only --push --image-label demo
+#
+# → registry.fly.io/arco-template:demo, which provision-tenant.ts deploys
+# per tenant. If the remote builder runs out of memory on the Vite build,
+# retry with --local-only (needs Docker/Colima running locally).
+
+app = "arco-template"
+
+[build]
+  dockerfile = "Dockerfile"

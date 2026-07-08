@@ -38,6 +38,13 @@ import { skillStore } from "../skills/skillStore.js";
 import { bus } from "../bus.js";
 import { requestClientAction } from "./clientRequests.js";
 import { isRiskyCommand, requestConfirmation } from "./confirmations.js";
+import {
+  checkWorkspaceQuota,
+  invalidateWorkspaceUsage,
+  quotaApplies,
+  quotaLimitBytes,
+  workspaceUsageBytes,
+} from "./workspaceQuota.js";
 import type { LlmToolDef } from "./llm.js";
 
 const execAsync = promisify(execCb);
@@ -347,7 +354,25 @@ export const agentTools: AgentTool[] = [
           return { error: "User denied this command. Do not retry it; ask what they'd like instead." };
         }
       }
-      return runExec(command);
+      const result = await runExec(command);
+      // Commands can write arbitrary files — re-measure and surface an
+      // over-quota state so the model stops piling on before write_file
+      // starts refusing.
+      if (quotaApplies()) {
+        invalidateWorkspaceUsage();
+        const used = await workspaceUsageBytes();
+        const limit = quotaLimitBytes();
+        if (used > limit) {
+          return {
+            ...result,
+            quotaWarning:
+              `Workspace is over its disk quota (${Math.round(used / 1048576)}MB used of ` +
+              `${Math.round(limit / 1048576)}MB). Further file writes will be refused — ` +
+              `delete files to free space.`,
+          };
+        }
+      }
+      return result;
     },
   },
   {
@@ -383,8 +408,16 @@ export const agentTools: AgentTool[] = [
       // event lets the Studio render a real before/after diff without the
       // LLM ever carrying the old text through its context.
       const before = await fs.readFile(abs, "utf-8").catch(() => null);
+      // Overwrites only count the growth against the quota.
+      const incoming = Math.max(
+        0,
+        Buffer.byteLength(content, "utf-8") - (before === null ? 0 : Buffer.byteLength(before, "utf-8")),
+      );
+      const quota = await checkWorkspaceQuota(incoming);
+      if (!quota.ok) return { error: quota.error };
       await fs.mkdir(path.dirname(abs), { recursive: true });
       await fs.writeFile(abs, content, "utf-8");
+      invalidateWorkspaceUsage();
       ctx.emit({ type: "file_changed", path: String(args.path ?? ""), before, after: content });
       return { path: args.path, bytes: content.length };
     },

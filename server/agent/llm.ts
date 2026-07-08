@@ -10,6 +10,7 @@ import type {
   ChatCompletionTool,
 } from "openai/resources/chat/completions.mjs";
 import type { Settings } from "../../shared/types.js";
+import { recordUsage } from "../stores/usageStore.js";
 
 export type LlmMessage = ChatCompletionMessageParam;
 
@@ -58,10 +59,18 @@ export interface StreamTurnOptions {
  * Run one completion: stream text deltas out through the callback, accumulate
  * tool-call argument deltas, and return the assembled turn. The agent loop
  * decides whether to execute tools and go again.
+ *
+ * Every completion in the OS (chat, automations, the /v1 facade) funnels
+ * through here, so this is also where the per-instance usage meter is fed
+ * (data/usage.json → Settings → Usage & credits).
  */
 export async function streamTurn(opts: StreamTurnOptions): Promise<LlmTurn> {
-  if (opts.settings.provider === "mock") return mockTurn(opts);
+  const turn = opts.settings.provider === "mock" ? await mockTurn(opts) : await apiTurn(opts);
+  if (turn.usage) recordUsage(turn.usage);
+  return turn;
+}
 
+async function apiTurn(opts: StreamTurnOptions): Promise<LlmTurn> {
   const client = new OpenAI({
     apiKey: opts.settings.apiKey || "missing",
     baseURL: opts.settings.baseUrl,

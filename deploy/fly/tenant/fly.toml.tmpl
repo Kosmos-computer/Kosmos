@@ -1,0 +1,30 @@
+# Tenant instance template — scripts/provision-tenant.ts fills the __PLACEHOLDERS__
+# and writes one copy per tenant into deploy/fly/tenants/ (gitignored).
+#
+# No [build] section: every tenant deploys the prebuilt template image via
+# `fly deploy --image`, so provisioning never rebuilds Arco.
+
+app = "__APP__"
+primary_region = "__REGION__"
+
+[env]
+  PORT = "4600"
+  ARCO_DATA_DIR = "/data"
+
+[mounts]
+  source = "arco_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 4600
+  force_https = true
+  # The usage-based economics: idle tenants stop (storage-only billing) and
+  # Fly's proxy cold-starts them on the next request.
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[vm]]
+  memory = "1gb"
+  cpu_kind = "shared"
+  cpus = 1

@@ -51,7 +51,23 @@ The explicit `name:` is important — it prevents Coolify from creating a fresh 
 
 3. **Dockerfile**: use repo root `Dockerfile` (runs `npm run build`). Do **not** use `Dockerfile.prod` — it skips the UI build.
 
-4. **Redeploy safely**: push code → Coolify rebuilds the **image** only. The named volume at `/data` is untouched.
+4. **Redeploy safely**: push code → CI publishes a new GHCR image → redeploy the compose service. The named volume at `/data` is untouched.
+
+## Auto-deploy on push to main
+
+`kosmos.tiru.fm` runs a **pinned GHCR image** (`ghcr.io/kosmos-computer/kosmos:<sha>-amd64`), not a live git build. Pushing to GitHub alone does not update production until:
+
+1. **GitHub Actions** (`.github/workflows/publish-docker.yml`) builds and pushes a new image on every `main` push.
+2. You **redeploy** the Coolify compose service to pull that tag:
+
+   ```bash
+   ./scripts/deploy-coolify.sh        # uses current git HEAD short sha
+   ./scripts/deploy-coolify.sh a0d3e70 # or an explicit tag
+   ```
+
+   On the server this updates `/data/coolify/applications/kosmos-os/docker-compose.yaml` and runs `docker compose up -d`.
+
+To make GHCR pulls work on the host, either make the package public or set `GHCR_TOKEN` + `GHCR_USER` when running the deploy script.
 
 ### Verify persistence
 

@@ -2,8 +2,10 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { translateOpenhandsEvent } from "./openhandsAgent.js";
 
-function baseEvent(kind: string, extra: Record<string, unknown> = {}) {
-  return { id: "e1", kind, timestamp: new Date().toISOString(), source: "agent", ...extra };
+function baseEvent(kind: string, extra: Record<string, unknown> = {}): Parameters<typeof translateOpenhandsEvent>[0] {
+  return { id: "e1", kind, timestamp: new Date().toISOString(), source: "agent", ...extra } as Parameters<
+    typeof translateOpenhandsEvent
+  >[0];
 }
 
 describe("translateOpenhandsEvent", () => {

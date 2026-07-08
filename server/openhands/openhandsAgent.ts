@@ -12,8 +12,8 @@
 import { ConversationClient } from "@openhands/typescript-client/clients";
 import { WebSocketCallbackClient } from "@openhands/typescript-client";
 import type { Event as OpenhandsEvent } from "@openhands/typescript-client";
-import type { AgentEvent, OpenhandsBackend, Settings } from "../../shared/types.js";
-import { loadSettings, resolveActiveOpenhandsBackend } from "../env.js";
+import type { AgentBackend, AgentEvent, Settings } from "../../shared/types.js";
+import { loadSettings, resolveActiveAgentBackend } from "../env.js";
 import type { RunTurnOptions } from "../agent/loop.js";
 import { sessionStore } from "../stores/sessionStore.js";
 
@@ -26,7 +26,7 @@ interface PendingTurn {
 
 interface OpenhandsRun {
   settingsKey: string;
-  backend: OpenhandsBackend;
+  backend: AgentBackend;
   client: ConversationClient;
   ws: WebSocketCallbackClient;
   conversationId: string;
@@ -37,12 +37,12 @@ interface OpenhandsRun {
 
 const runs = new Map<string, OpenhandsRun>();
 
-function settingsKey(backend: OpenhandsBackend): string {
+function settingsKey(backend: AgentBackend): string {
   return [backend.id, backend.host, backend.apiKey].join("|");
 }
 
-function requireBackend(settings: Settings): OpenhandsBackend {
-  const backend = resolveActiveOpenhandsBackend(settings);
+function requireBackend(settings: Settings): AgentBackend {
+  const backend = resolveActiveAgentBackend(settings, "openhands");
   if (!backend) {
     throw new Error(
       "No OpenHands backend configured. Add one in Settings → Agent.",
@@ -136,7 +136,7 @@ function handleEvent(run: OpenhandsRun, event: OpenhandsEvent): void {
 
 async function createRun(
   arcoSessionId: string,
-  backend: OpenhandsBackend,
+  backend: AgentBackend,
   emit: (event: AgentEvent) => void,
 ): Promise<OpenhandsRun> {
   const client = new ConversationClient({ host: backend.host, apiKey: backend.apiKey || undefined });
@@ -169,7 +169,7 @@ async function createRun(
 
 async function ensureRun(
   arcoSessionId: string,
-  backend: OpenhandsBackend,
+  backend: AgentBackend,
   emit: (event: AgentEvent) => void,
 ): Promise<OpenhandsRun> {
   const existing = runs.get(arcoSessionId);

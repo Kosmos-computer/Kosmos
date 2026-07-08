@@ -2,13 +2,13 @@
  * OpenHands Agent Server connection helpers — validate host + API key for Settings.
  */
 import { ServerClient } from "@openhands/typescript-client/clients";
-import type { OpenhandsConnectionStatus } from "../../shared/types.js";
+import type { AgentBackendConnectionStatus } from "../../shared/types.js";
 
 /** Validate an OpenHands Agent Server connection via GET /server_info. */
 export async function testOpenhandsConnection(
   host: string,
   apiKey?: string,
-): Promise<OpenhandsConnectionStatus> {
+): Promise<AgentBackendConnectionStatus> {
   const trimmedHost = host.trim();
   if (!trimmedHost) {
     return { connected: false, error: "Host is required." };

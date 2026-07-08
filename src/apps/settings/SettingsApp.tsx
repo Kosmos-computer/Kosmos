@@ -26,7 +26,7 @@ import { UsersSection } from "./UsersSection";
 import { AppsSection } from "./AppsSection";
 import { AgentSection } from "./AgentSection";
 import { CursorConnectionFields } from "./CursorConnectionFields";
-import { OpenhandsBackendFields } from "./OpenhandsBackendFields";
+import { AgentBackendsFields } from "./AgentBackendsFields";
 import { OpenRouterModelPicker } from "./OpenRouterModelPicker";
 import { ChannelsSection } from "./ChannelsSection";
 import { ConnectedAccountsSection } from "./ConnectedAccountsSection";
@@ -189,9 +189,11 @@ export function SettingsApp() {
       ? "cursor"
       : settings.agent === "openhands"
         ? "openhands"
-        : settings.agent !== "acp"
-          ? "builtin"
-          : (ACP_PRESETS.find((p) => p.command === settings.acpCommand)?.id ?? "custom");
+        : settings.agent === "kosmos"
+          ? "kosmos"
+          : settings.agent !== "acp"
+            ? "builtin"
+            : (ACP_PRESETS.find((p) => p.command === settings.acpCommand)?.id ?? "custom");
 
   const pickAgent = (chip: string) => {
     if (chip === "builtin") {
@@ -200,6 +202,8 @@ export function SettingsApp() {
       update({ agent: "cursor" });
     } else if (chip === "openhands") {
       update({ agent: "openhands" });
+    } else if (chip === "kosmos") {
+      update({ agent: "kosmos" });
     } else if (chip === "custom") {
       update({ agent: "acp" });
     } else {
@@ -256,6 +260,7 @@ export function SettingsApp() {
                         { id: "builtin", label: "Built-in" },
                         { id: "cursor", label: "Cursor" },
                         { id: "openhands", label: "OpenHands" },
+                        { id: "kosmos", label: "Kosmos" },
                         ...ACP_PRESETS,
                         { id: "custom", label: "Custom (ACP)" },
                       ].map((a) => (
@@ -269,7 +274,10 @@ export function SettingsApp() {
                     <CursorConnectionFields settings={settings} update={update} />
                   ) : null}
                   {settings.agent === "openhands" ? (
-                    <OpenhandsBackendFields settings={settings} update={update} />
+                    <AgentBackendsFields kind="openhands" settings={settings} update={update} />
+                  ) : null}
+                  {settings.agent === "kosmos" ? (
+                    <AgentBackendsFields kind="kosmos" settings={settings} update={update} />
                   ) : null}
                   {settings.agent === "acp" && (
                     <SettingsFieldRow

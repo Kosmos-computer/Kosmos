@@ -172,9 +172,18 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
   });
 }
 filesService.ensureSeeds();
-warmPodcastRssFeeds();
-warmMusicRssFeeds();
-warmPodcastDownloads();
+// Defer RSS-heavy warmups on small VPS hosts so the process can bind :4600
+// and pass health checks before background feed/download work runs.
+const deferWarmups = () => {
+  warmPodcastRssFeeds();
+  warmMusicRssFeeds();
+  warmPodcastDownloads();
+};
+if (process.env.ARCO_LOW_MEMORY === "1") {
+  setTimeout(deferWarmups, 60_000);
+} else {
+  deferWarmups();
+}
 // Skills: static seeds from ./skills, plus the generated OpenUI app-authoring
 // guide as a gating skill (it left the always-on system prompt in Phase C).
 skillStore.ensureSeeds(path.resolve("skills"));

@@ -1,0 +1,36 @@
+FROM node:22-bookworm-slim
+
+# Native deps for better-sqlite3; git for workspace tools at runtime.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends python3 make g++ git ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+COPY model-manager/package.json model-manager/
+COPY packages/app-sdk/package.json packages/app-sdk/
+COPY packages/editor-kit/package.json packages/editor-kit/
+COPY apps/desktop/package.json apps/desktop/
+COPY apps/docs/package.json apps/docs/
+
+ENV ARCO_SKIP_POSTINSTALL=1
+# tsx/typescript are devDependencies but required at runtime (server is TypeScript).
+RUN npm ci --ignore-scripts
+
+COPY . .
+
+RUN npm rebuild better-sqlite3
+
+ENV NODE_ENV=production
+ENV PORT=4600
+ENV ARCO_DATA_DIR=/data
+
+EXPOSE 4600
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=90s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:' + (process.env.PORT || 4600) + '/api/system/install-status').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+
+VOLUME ["/data"]
+
+CMD ["node", "--import", "tsx/esm", "server/index.ts"]

@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { app, BrowserWindow, dialog, nativeImage, shell } from "electron";
 import { registerAppWindowIpc } from "./appWindows.js";
 import { appIconPath, desktopDataDir, repoRoot } from "./paths.js";
-import { attachServerLogging, startServerProcess, waitForUrl } from "./serverProcess.js";
+import { attachServerLogging, resolveServerPort, startServerProcess, waitForUrl } from "./serverProcess.js";
 import { registerTitleBarIpc } from "./titleBarIpc.js";
 import { registerWindowControlsIpc } from "./windowControlsIpc.js";
 import { titleBarWindowOptions } from "./titleBar.js";
@@ -16,9 +16,10 @@ const preloadPath = path.join(path.dirname(fileURLToPath(import.meta.url)), "pre
 let mainWindow: BrowserWindow | null = null;
 let serverProcess: ReturnType<typeof startServerProcess> | null = null;
 let quitting = false;
+let activeServerPort = SERVER_PORT;
 
 function shellUrl(): string {
-  return DEV_SHELL ? DEV_URL : `http://127.0.0.1:${SERVER_PORT}`;
+  return DEV_SHELL ? DEV_URL : `http://127.0.0.1:${activeServerPort}`;
 }
 
 async function showStartupError(title: string, detail: string): Promise<void> {
@@ -39,9 +40,15 @@ async function ensureServer(): Promise<void> {
 
   const root = repoRoot();
   const dataDir = desktopDataDir();
+  activeServerPort = await resolveServerPort(SERVER_PORT);
+  if (activeServerPort !== SERVER_PORT) {
+    console.warn(
+      `[arco-desktop] port ${SERVER_PORT} is in use; starting backend on ${activeServerPort}`,
+    );
+  }
   serverProcess = startServerProcess({
     root,
-    port: SERVER_PORT,
+    port: activeServerPort,
     dataDir,
     nodeExecutable: process.execPath,
     packaged: app.isPackaged,
@@ -57,7 +64,7 @@ async function ensureServer(): Promise<void> {
   });
 
   try {
-    await waitForUrl(`http://127.0.0.1:${SERVER_PORT}/api/settings`);
+    await waitForUrl(`http://127.0.0.1:${activeServerPort}/api/settings`);
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
     throw new Error(`The Arco backend did not start in time.\n\n${detail}`);

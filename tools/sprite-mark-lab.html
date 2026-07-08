@@ -1,0 +1,1246 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sprite Mark Lab</title>
+    <style>
+      :root {
+        --bg: #0e0f11;
+        --surface: #181a1f;
+        --surface-2: #22252c;
+        --border: #2e333d;
+        --text: #e8eaed;
+        --muted: #8b929e;
+        --accent: #6ee7b7;
+        --accent-dim: #2d6b55;
+        --danger: #f87171;
+        --pixel-on: #e8eaed;
+        --pixel-off: #2a2f38;
+        --pixel-hover: #3d4450;
+        --radius: 8px;
+        --font: "SF Mono", "Fira Code", "Cascadia Code", ui-monospace, monospace;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--font);
+        font-size: 12px;
+        line-height: 1.4;
+      }
+
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.75rem 1.25rem;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface);
+      }
+
+      header h1 {
+        margin: 0;
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      header p {
+        margin: 0.15rem 0 0;
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 260px 1fr 280px;
+        min-height: calc(100vh - 52px);
+      }
+
+      .panel {
+        border-right: 1px solid var(--border);
+        padding: 1rem;
+        overflow: auto;
+      }
+
+      .panel:last-child { border-right: none; }
+
+      .panel h2 {
+        margin: 0 0 0.75rem;
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .stage {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1.25rem;
+        padding: 2rem 1.5rem;
+        background:
+          radial-gradient(circle at 50% 30%, #1a1f28 0%, transparent 55%),
+          var(--bg);
+      }
+
+      .display-wrap {
+        position: relative;
+        padding: 2rem;
+        border: 1px solid var(--border);
+        border-radius: calc(var(--radius) * 2);
+        background: var(--surface);
+        box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(7, 48px);
+        grid-template-rows: repeat(5, 48px);
+        gap: 6px;
+      }
+
+      .cell {
+        width: 48px;
+        height: 48px;
+        border: none;
+        border-radius: 4px;
+        background: var(--pixel-off);
+        cursor: pointer;
+        transition: background 0.08s ease, transform 0.08s ease, box-shadow 0.08s ease;
+      }
+
+      .cell.on {
+        background: var(--pixel-on);
+        box-shadow: 0 0 12px rgba(232, 234, 237, 0.15);
+      }
+
+      .cell:hover { background: var(--pixel-hover); }
+      .cell.on:hover { background: #fff; }
+
+      .cell.edit:active { transform: scale(0.92); }
+
+      .meta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .badge {
+        padding: 0.2rem 0.5rem;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        color: var(--muted);
+        font-size: 10px;
+      }
+
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        max-width: 520px;
+      }
+
+      button, select, input[type="text"], input[type="number"], textarea {
+        font: inherit;
+        color: var(--text);
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 0.45rem 0.65rem;
+      }
+
+      button {
+        cursor: pointer;
+        transition: border-color 0.12s ease, background 0.12s ease;
+      }
+
+      button:hover { border-color: var(--accent-dim); }
+      button.primary {
+        background: var(--accent-dim);
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      button.danger { color: var(--danger); border-color: #7f1d1d; }
+
+      input[type="range"] {
+        width: 120px;
+        accent-color: var(--accent);
+      }
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        margin-bottom: 0.85rem;
+      }
+
+      .field label {
+        color: var(--muted);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+
+      .field-row {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+      }
+
+      .library {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        max-height: 280px;
+        overflow: auto;
+      }
+
+      .library-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.4rem 0.5rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--surface-2);
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .library-item:hover, .library-item.active {
+        border-color: var(--accent-dim);
+        background: #1e2a26;
+      }
+
+      .library-item .thumb {
+        width: 42px;
+        height: 30px;
+        flex-shrink: 0;
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        grid-template-rows: repeat(5, 1fr);
+        gap: 1px;
+        background: var(--border);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+
+      .library-item .thumb span {
+        background: var(--pixel-off);
+      }
+
+      .library-item .thumb span.on { background: var(--pixel-on); }
+
+      .library-item .name {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .sequence {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        max-height: 340px;
+        overflow: auto;
+      }
+
+      .seq-item {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.35rem 0.45rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--surface-2);
+      }
+
+      .seq-item.active { border-color: var(--accent); }
+
+      .seq-item .idx {
+        width: 1.4rem;
+        color: var(--muted);
+        text-align: right;
+        flex-shrink: 0;
+      }
+
+      .seq-item .thumb {
+        width: 35px;
+        height: 25px;
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        grid-template-rows: repeat(5, 1fr);
+        gap: 1px;
+        background: var(--border);
+        border-radius: 2px;
+        overflow: hidden;
+        flex-shrink: 0;
+      }
+
+      .seq-item .thumb span { background: var(--pixel-off); }
+      .seq-item .thumb span.on { background: var(--pixel-on); }
+
+      .seq-item .label {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .seq-item button {
+        padding: 0.2rem 0.4rem;
+        font-size: 10px;
+      }
+
+      .tabs {
+        display: flex;
+        gap: 0.35rem;
+        margin-bottom: 0.75rem;
+      }
+
+      .tab {
+        flex: 1;
+        padding: 0.35rem;
+        text-align: center;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: transparent;
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .tab.active {
+        color: var(--accent);
+        border-color: var(--accent-dim);
+        background: #1a2420;
+      }
+
+      .tab-panel { display: none; }
+      .tab-panel.active { display: block; }
+
+      textarea {
+        width: 100%;
+        min-height: 140px;
+        resize: vertical;
+        font-size: 10px;
+        line-height: 1.5;
+      }
+
+      .hint {
+        color: var(--muted);
+        font-size: 10px;
+        margin-top: 0.35rem;
+      }
+
+      .category-label {
+        margin: 0.75rem 0 0.35rem;
+        font-size: 9px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      @media (max-width: 1100px) {
+        .layout { grid-template-columns: 1fr; }
+        .panel { border-right: none; border-bottom: 1px solid var(--border); }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div>
+        <h1>Sprite Mark Lab</h1>
+        <p>7×5 pixel screen — refine patterns, sequences, faces &amp; radiating math</p>
+      </div>
+      <div class="badge" id="gridInfo">35 cells · synced with sprite-mark library</div>
+    </header>
+
+    <div class="layout">
+      <aside class="panel">
+        <h2>Sequence</h2>
+        <div class="field-row" style="margin-bottom: 0.75rem">
+          <button class="primary" id="addFrameBtn">+ Add frame</button>
+          <button id="dupFrameBtn">Duplicate</button>
+          <button class="danger" id="clearSeqBtn">Clear</button>
+        </div>
+        <div class="sequence" id="sequenceList"></div>
+
+        <div class="category-label">Playback</div>
+        <div class="field">
+          <label>Frame interval (ms)</label>
+          <input type="number" id="frameMs" value="140" min="40" max="2000" step="10" />
+        </div>
+        <div class="field-row">
+          <button id="playSeqBtn" class="primary">Play sequence</button>
+          <button id="stopSeqBtn">Stop</button>
+        </div>
+        <p class="hint">Build a sequence from the library or hand-painted frames. Export when ready.</p>
+      </aside>
+
+      <main class="stage">
+        <div class="display-wrap">
+          <div class="grid" id="grid" aria-label="7 by 5 sprite mark grid"></div>
+        </div>
+
+        <div class="meta-row">
+          <span class="badge" id="frameLabel">Frame: logo</span>
+          <span class="badge" id="litCount">16 lit</span>
+          <span class="badge" id="binaryPreview">mask</span>
+        </div>
+
+        <div class="controls">
+          <button id="playLibBtn" class="primary">▶ Cycle library</button>
+          <button id="pauseBtn">⏸ Pause</button>
+          <button id="prevBtn">◀</button>
+          <button id="nextBtn">▶</button>
+          <label class="badge">
+            speed
+            <input type="range" id="speed" min="0.25" max="3" step="0.25" value="1" />
+          </label>
+          <button id="invertBtn">Invert</button>
+          <button id="clearBtn">Clear</button>
+          <button id="logoBtn">Logo</button>
+          <button id="fillBtn">Fill</button>
+        </div>
+      </main>
+
+      <aside class="panel">
+        <div class="tabs">
+          <button class="tab active" data-tab="library">Library</button>
+          <button class="tab" data-tab="organic">Organic</button>
+          <button class="tab" data-tab="export">Export</button>
+        </div>
+
+        <div class="tab-panel active" id="tab-library">
+          <input type="text" id="libSearch" placeholder="Search patterns…" style="width:100%;margin-bottom:0.5rem" />
+          <div class="library" id="library"></div>
+        </div>
+
+        <div class="tab-panel" id="tab-organic">
+          <div class="field">
+            <label>Generator</label>
+            <select id="organicType" style="width:100%">
+              <option value="ripple">Ripple (manhattan)</option>
+              <option value="ring">Ring pulse</option>
+              <option value="spiral">Spiral sweep</option>
+              <option value="sine">Sine wave field</option>
+              <option value="breath">Breathing center</option>
+              <option value="noise">Organic noise</option>
+              <option value="rotate">Rotating diamond</option>
+              <option value="interference">Wave interference</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Phase <span id="phaseVal">0</span></label>
+            <input type="range" id="phase" min="0" max="31" value="0" style="width:100%" />
+          </div>
+          <div class="field">
+            <label>Intensity <span id="intensityVal">0.5</span></label>
+            <input type="range" id="intensity" min="0" max="1" step="0.05" value="0.5" style="width:100%" />
+          </div>
+          <div class="field-row">
+            <button id="applyOrganicBtn" class="primary">Apply</button>
+            <button id="animateOrganicBtn">Animate 8 phases</button>
+          </div>
+          <p class="hint">Tweak phase &amp; intensity, then add to sequence or save to library.</p>
+        </div>
+
+        <div class="tab-panel" id="tab-export">
+          <div class="field">
+            <label>Frame name</label>
+            <input type="text" id="frameName" value="custom" style="width:100%" />
+          </div>
+          <div class="field-row" style="margin-bottom:0.75rem">
+            <button id="saveLibBtn">Save to library</button>
+            <button id="copyMaskBtn">Copy mask</button>
+          </div>
+          <div class="field">
+            <label>Export (JSON / TS-ready)</label>
+            <textarea id="exportArea" readonly></textarea>
+          </div>
+          <div class="field-row">
+            <button id="refreshExportBtn">Refresh export</button>
+            <button id="copyExportBtn" class="primary">Copy export</button>
+            <button id="loadRepoLibBtn">Load repo library</button>
+          </div>
+          <p class="hint">Run <code>npm run sprite-mark:sync</code> after editing data files. Paste new patterns into <code>src/components/sprite-mark/data/custom.json</code>.</p>
+          <div class="field" style="margin-top:0.75rem">
+            <label>Import JSON</label>
+            <textarea id="importArea" placeholder='{"name":"my-seq","frameMs":140,"frames":[...]}'></textarea>
+          </div>
+          <button id="importBtn">Import</button>
+        </div>
+      </aside>
+    </div>
+
+    <script>
+      // ── Grid constants (keep in sync with src/components/spriteMarkSquares.ts) ──
+      const COLS = 7;
+      const ROWS = 5;
+      const COUNT = COLS * ROWS;
+      const CENTER_COL = Math.floor(COLS / 2);
+      const CENTER_ROW = Math.floor(ROWS / 2);
+
+      const LOGO_CELLS = [
+        [0,0],[3,0],[6,0],[1,1],[3,1],[5,1],[0,2],[2,2],[4,2],[6,2],
+        [1,3],[3,3],[5,3],[0,4],[3,4],[6,4],
+      ];
+
+      const LOGO_INDICES = new Set(LOGO_CELLS.map(([c,r]) => r * COLS + c));
+
+      function idx(c, r) { return r * COLS + c; }
+      function coords(i) { return { col: i % COLS, row: Math.floor(i / COLS) }; }
+
+      function fromPredicate(fn) {
+        return Array.from({ length: COUNT }, (_, i) => {
+          const { col, row } = coords(i);
+          return fn(col, row, i);
+        });
+      }
+
+      function fromIndices(indices) {
+        const set = new Set(indices);
+        return Array.from({ length: COUNT }, (_, i) => set.has(i));
+      }
+
+      function logoPattern() { return fromIndices(LOGO_INDICES); }
+
+      // ── Pattern builders (ported from spriteMarkPatterns.ts) ──
+      function diagonalSweeps() {
+        const max = COLS - 1 + ROWS - 1;
+        return Array.from({ length: max + 1 }, (_, sum) =>
+          fromPredicate((c, r) => c + r === sum));
+      }
+
+      function antiDiagonalSweeps() {
+        const min = -(ROWS - 1);
+        const max = COLS - 1;
+        return Array.from({ length: max - min + 1 }, (_, o) => {
+          const d = min + o;
+          return fromPredicate((c, r) => c - r === d);
+        });
+      }
+
+      function diamonds(inclusive = true) {
+        const maxR = Math.max(CENTER_COL, COLS - 1 - CENTER_COL, CENTER_ROW, ROWS - 1 - CENTER_ROW) + 1;
+        return Array.from({ length: maxR + 1 }, (_, radius) =>
+          fromPredicate((c, r) => {
+            const d = Math.abs(c - CENTER_COL) + Math.abs(r - CENTER_ROW);
+            return inclusive ? d <= radius : d === radius;
+          }));
+      }
+
+      function wavePatterns() {
+        return Array.from({ length: 8 }, (_, phase) =>
+          fromPredicate((c, r) => (c + r + phase) % 4 === 0));
+      }
+
+      function equalizerPatterns() {
+        const bars = [2, 4, 5, 3, 5, 4, 2];
+        return Array.from({ length: 6 }, (_, phase) =>
+          fromPredicate((c, r) => {
+            const h = ((bars[c] + phase + c) % ROWS) + 1;
+            return r >= ROWS - h;
+          }));
+      }
+
+      function logoPulsePatterns() {
+        return [
+          logoPattern(),
+          fromPredicate((c, r, i) => {
+            if (LOGO_INDICES.has(i)) return true;
+            return Math.abs(c - CENTER_COL) + Math.abs(r - CENTER_ROW) <= 2;
+          }),
+          fromPredicate((_, __, i) => true),
+          fromPredicate((_, __, i) => !LOGO_INDICES.has(i)),
+        ];
+      }
+
+      function quadrantPatterns() {
+        return [
+          fromPredicate((c, r) => c < CENTER_COL && r < CENTER_ROW),
+          fromPredicate((c, r) => c > CENTER_COL && r < CENTER_ROW),
+          fromPredicate((c, r) => c < CENTER_COL && r > CENTER_ROW),
+          fromPredicate((c, r) => c > CENTER_COL && r > CENTER_ROW),
+        ];
+      }
+
+      function bandPatterns() {
+        return [
+          fromPredicate((c) => c % 2 === 0),
+          fromPredicate((c) => c % 2 === 1),
+          fromPredicate((_, r) => r % 2 === 0),
+          fromPredicate((_, r) => r % 2 === 1),
+        ];
+      }
+
+      // ── Faces, glyphs, words ──
+      const FACE_PATTERNS = {
+        "face · neutral": fromIndices([idx(2,1), idx(4,1), idx(2,3), idx(3,3), idx(4,3)]),
+        "face · smile": fromIndices([
+          idx(2,1), idx(4,1),
+          idx(1,3), idx(2,4), idx(3,4), idx(4,4), idx(5,3),
+        ]),
+        "face · grin": fromIndices([
+          idx(2,1), idx(4,1),
+          idx(1,3), idx(2,3), idx(3,3), idx(4,3), idx(5,3),
+          idx(2,4), idx(4,4),
+        ]),
+        "face · blink": fromIndices([idx(1,3), idx(2,4), idx(3,4), idx(4,4), idx(5,3)]),
+        "face · wink": fromIndices([
+          idx(2,1), idx(4,1), idx(4,0),
+          idx(1,3), idx(2,4), idx(3,4), idx(4,4), idx(5,3),
+        ]),
+        "face · surprised": fromIndices([
+          idx(2,0), idx(4,0), idx(2,1), idx(4,1),
+          idx(3,3),
+        ]),
+        "face · sleep": fromIndices([
+          idx(1,1), idx(2,1), idx(4,1), idx(5,1),
+          idx(2,3), idx(3,3), idx(4,3),
+        ]),
+      };
+
+      const GLYPH_PATTERNS = {
+        "A": fromIndices([idx(3,0), idx(1,1), idx(5,1), idx(0,2), idx(2,2), idx(4,2), idx(6,2), idx(1,3), idx(5,3), idx(0,4), idx(6,4)]),
+        "R": fromIndices([idx(0,0), idx(1,0), idx(2,0), idx(3,0), idx(0,1), idx(4,1), idx(0,2), idx(2,2), idx(3,2), idx(0,3), idx(4,3), idx(0,4), idx(5,4)]),
+        "C": fromIndices([idx(1,0), idx(2,0), idx(3,0), idx(4,0), idx(0,1), idx(0,2), idx(0,3), idx(1,4), idx(2,4), idx(3,4), idx(4,4)]),
+        "O": fromIndices([idx(1,0), idx(2,0), idx(3,0), idx(4,0), idx(0,1), idx(5,1), idx(0,2), idx(5,2), idx(0,3), idx(5,3), idx(1,4), idx(2,4), idx(3,4), idx(4,4)]),
+        "S": fromIndices([idx(1,0), idx(2,0), idx(3,0), idx(4,0), idx(0,1), idx(1,2), idx(2,2), idx(3,2), idx(5,3), idx(0,4), idx(1,4), idx(2,4), idx(3,4)]),
+        "I": fromIndices([idx(3,0), idx(3,1), idx(3,2), idx(3,3), idx(3,4)]),
+        "N": fromIndices([idx(0,0), idx(0,1), idx(0,2), idx(0,3), idx(0,4), idx(1,1), idx(2,2), idx(3,3), idx(4,4), idx(5,0), idx(5,1), idx(5,2), idx(5,3), idx(5,4)]),
+        "G": fromIndices([idx(1,0), idx(2,0), idx(3,0), idx(4,0), idx(0,1), idx(0,2), idx(3,2), idx(5,2), idx(0,3), idx(5,3), idx(1,4), idx(2,4), idx(3,4), idx(4,4)]),
+        "!": fromIndices([idx(3,0), idx(3,1), idx(3,2), idx(3,4)]),
+        "·": fromIndices([idx(3,2)]),
+        "♥": fromIndices([idx(1,1), idx(2,0), idx(3,0), idx(4,0), idx(5,1), idx(1,2), idx(2,2), idx(3,2), idx(4,2), idx(5,2), idx(2,3), idx(3,3), idx(4,3), idx(3,4)]),
+      };
+
+      const WORD_SEQUENCES = {
+        "word · ARCO": ["A", "R", "C", "O"],
+        "word · ON": ["O", "N"],
+        "word · HI": [
+          fromIndices([idx(0,0), idx(0,1), idx(0,2), idx(0,3), idx(0,4), idx(2,2), idx(4,0), idx(4,1), idx(4,2), idx(4,3), idx(4,4)]),
+          fromIndices([idx(2,0), idx(2,1), idx(2,2), idx(2,3), idx(2,4), idx(0,2), idx(4,2)]),
+        ],
+      };
+
+      // ── Build full geometric library ──
+      function buildGeometricLibrary() {
+        const items = [];
+        const add = (name, mask) => items.push({ name, mask, category: "geometric" });
+
+        add("logo", logoPattern());
+        add("fill", fromPredicate(() => true));
+        add("checker · even", fromPredicate((c,r) => (c+r)%2===0));
+        add("checker · odd", fromPredicate((c,r) => (c+r)%2===1));
+
+        for (let r = 0; r < ROWS; r++) add(`row ${r}`, fromPredicate((_,cr) => cr === r));
+        for (let c = 0; c < COLS; c++) add(`col ${c}`, fromPredicate((cc) => cc === c));
+
+        diagonalSweeps().forEach((m, i) => add(`diag sweep ${i}`, m));
+        antiDiagonalSweeps().forEach((m, i) => add(`anti-diag ${i}`, m));
+
+        add("border", fromPredicate((c,r) => c===0||r===0||c===COLS-1||r===ROWS-1));
+        add("cross", fromPredicate((c,r) => c===CENTER_COL||r===CENTER_ROW));
+        add("x", fromPredicate((c,r) => c-r===CENTER_COL-CENTER_ROW||c+r===CENTER_COL+CENTER_ROW));
+
+        diamonds(true).forEach((m,i) => add(`diamond fill ${i}`, m));
+        diamonds(false).forEach((m,i) => add(`ring ${i}`, m));
+        quadrantPatterns().forEach((m,i) => add(`quadrant ${i}`, m));
+        bandPatterns().forEach((m,i) => add(`band ${i}`, m));
+        wavePatterns().forEach((m,i) => add(`wave ${i}`, m));
+        equalizerPatterns().forEach((m,i) => add(`eq ${i}`, m));
+        logoPulsePatterns().forEach((m,i) => add(`logo pulse ${i}`, m));
+
+        add("top edge", fromPredicate((c,r) => r===0||r===ROWS-1));
+        add("side edge", fromPredicate((c,r) => c===0||c===COLS-1));
+        add("corners", fromPredicate((c,r) => (c===0||c===COLS-1)&&(r===0||r===ROWS-1)));
+
+        return items;
+      }
+
+      // ── Organic generators ──
+      function organicPattern(type, phase, intensity) {
+        const t = intensity;
+        switch (type) {
+          case "ripple":
+            return fromPredicate((c, r) => {
+              const d = Math.abs(c - CENTER_COL) + Math.abs(r - CENTER_ROW);
+              return (d + phase) % 4 < 2;
+            });
+          case "ring":
+            return fromPredicate((c, r) => {
+              const d = Math.abs(c - CENTER_COL) + Math.abs(r - CENTER_ROW);
+              return d === (phase % 5);
+            });
+          case "spiral": {
+            const order = [];
+            let t2 = 0, b = 0, l = 0, r2 = COLS - 1, top = 0, bot = ROWS - 1;
+            while (t2 <= b && l <= r2) {
+              for (let c = l; c <= r2; c++) order.push(idx(c, t2));
+              t2++;
+              for (let row = t2; row <= bot; row++) order.push(idx(r2, row));
+              r2--;
+              if (t2 <= bot) { for (let c = r2; c >= l; c--) order.push(idx(c, bot)); bot--; }
+              if (l <= r2) { for (let row = bot; row >= t2; row--) order.push(idx(l, row)); l++; }
+            }
+            const lit = new Set(order.slice(0, (phase % COUNT) + 1));
+            return fromPredicate((_, __, i) => lit.has(i));
+          }
+          case "sine":
+            return fromPredicate((c, r) => {
+              const v = Math.sin((c * 0.9 + phase * 0.4) * t * 2) + Math.cos((r * 1.1 - phase * 0.3) * t * 2);
+              return v > 0;
+            });
+          case "breath":
+            return fromPredicate((c, r) => {
+              const d = Math.hypot(c - CENTER_COL, (r - CENTER_ROW) * 1.4);
+              const radius = 1.2 + Math.sin(phase * 0.35) * (1.5 + t * 2);
+              return d <= radius;
+            });
+          case "noise":
+            return fromPredicate((c, r) => {
+              const n = Math.sin(c * 12.9898 + r * 78.233 + phase) * 43758.5453;
+              return (n - Math.floor(n)) > (1 - t);
+            });
+          case "rotate":
+            return fromPredicate((c, r) => {
+              const dx = c - CENTER_COL, dy = r - CENTER_ROW;
+              const angle = Math.atan2(dy, dx) + phase * 0.4;
+              const d = Math.abs(dx) + Math.abs(dy);
+              return Math.sin(angle * 3) * d < 1.5 + t;
+            });
+          case "interference":
+            return fromPredicate((c, r) => {
+              const w1 = Math.sin((c + phase * 0.2) * t * 3);
+              const w2 = Math.sin((r - phase * 0.15) * t * 4);
+              return w1 + w2 > 0.2;
+            });
+          default:
+            return logoPattern();
+        }
+      }
+
+      function libraryFromJson(bundle) {
+        const patterns = (bundle.patterns || []).map((entry) => ({
+          id: entry.id,
+          name: entry.name,
+          mask: entry.mask || fromIndices(entry.indices || []),
+          category: entry.category || "custom",
+        }));
+        const sequences = (bundle.sequences || []).map((seq) => ({
+          id: seq.id,
+          name: seq.name,
+          frameMs: seq.frameMs || 140,
+          loop: seq.loop,
+          frames: (seq.frames || []).map((frame) => ({
+            name: frame.name,
+            mask: frame.mask || fromIndices(frame.indices || []),
+          })),
+        }));
+        return { patterns, sequences };
+      }
+
+      function applyRepoLibrary(bundle) {
+        const { patterns, sequences } = libraryFromJson(bundle);
+        library = [
+          ...patterns,
+          ...buildOrganicLibrary(),
+          ...buildWordLibrary(),
+        ];
+        repoSequences = sequences;
+        libIndex = 0;
+        if (library.length) setMask(library[0].mask, library[0].name);
+        renderLibrary(libSearch.value);
+        refreshExport();
+      }
+
+      function buildOrganicLibrary() {
+        return [{ name: "organic · ripple preview", mask: organicPattern("ripple", 0, 0.5), category: "organic" }];
+      }
+
+      function buildWordLibrary() {
+        return Object.entries(WORD_SEQUENCES).map(([name, frames]) => {
+          const resolved = frames.map((f) => (typeof f === "string" ? GLYPH_PATTERNS[f] : f));
+          return {
+            name,
+            mask: resolved[0],
+            category: "words",
+            sequence: resolved.map((m, i) => ({ name: `${name} ${i}`, mask: m })),
+          };
+        });
+      }
+
+      async function loadRepoLibrary() {
+        try {
+          const res = await fetch("./sprite-mark-library.json", { cache: "no-store" });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          applyRepoLibrary(await res.json());
+        } catch (err) {
+          console.warn("Could not fetch sprite-mark-library.json, using inline fallback.", err);
+          applyRepoLibrary({
+            version: 1,
+            patterns: [
+              ...buildGeometricLibrary().map((item) => ({
+                name: item.name,
+                category: item.category,
+                indices: maskToIndices(item.mask),
+              })),
+              ...Object.entries(FACE_PATTERNS).map(([name, mask]) => ({
+                name,
+                category: "faces",
+                indices: maskToIndices(mask),
+              })),
+              ...Object.entries(GLYPH_PATTERNS).map(([name, mask]) => ({
+                name: `glyph · ${name}`,
+                category: "glyphs",
+                indices: maskToIndices(mask),
+              })),
+            ],
+            sequences: [],
+          });
+        }
+      }
+
+
+      let library = [];
+      let repoSequences = [];
+      let currentMask = [...logoPattern()];
+      let editMode = true;
+      let libIndex = 0;
+      let playing = false;
+      let playTimer = null;
+      let sequence = [];
+      let seqIndex = 0;
+      let seqPlaying = false;
+      let seqTimer = null;
+
+      // ── DOM ──
+      const gridEl = document.getElementById("grid");
+      const libraryEl = document.getElementById("library");
+      const sequenceEl = document.getElementById("sequenceList");
+      const frameLabel = document.getElementById("frameLabel");
+      const litCount = document.getElementById("litCount");
+      const binaryPreview = document.getElementById("binaryPreview");
+      const exportArea = document.getElementById("exportArea");
+      const frameNameInput = document.getElementById("frameName");
+      const libSearch = document.getElementById("libSearch");
+      const speedInput = document.getElementById("speed");
+      const frameMsInput = document.getElementById("frameMs");
+
+      // Build grid cells
+      const cellEls = [];
+      for (let i = 0; i < COUNT; i++) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "cell edit";
+        btn.dataset.index = i;
+        btn.title = `(${coords(i).col}, ${coords(i).row})`;
+        btn.addEventListener("click", () => {
+          if (!editMode) return;
+          currentMask[i] = !currentMask[i];
+          renderGrid();
+          updateMeta();
+        });
+        gridEl.appendChild(btn);
+        cellEls.push(btn);
+      }
+
+      function renderGrid() {
+        cellEls.forEach((el, i) => el.classList.toggle("on", currentMask[i]));
+      }
+
+      function renderThumb(container, mask) {
+        container.innerHTML = "";
+        for (let i = 0; i < COUNT; i++) {
+          const s = document.createElement("span");
+          if (mask[i]) s.classList.add("on");
+          container.appendChild(s);
+        }
+      }
+
+      function updateMeta() {
+        const lit = currentMask.filter(Boolean).length;
+        litCount.textContent = `${lit} lit`;
+        const bits = currentMask.map(b => b ? "1" : "0").join("");
+        binaryPreview.textContent = bits.match(/.{1,7}/g).join(" ");
+        refreshExport();
+      }
+
+      function setMask(mask, label = "custom") {
+        currentMask = [...mask];
+        frameLabel.textContent = `Frame: ${label}`;
+        frameNameInput.value = label.replace(/[^a-z0-9_-]/gi, "_").toLowerCase();
+        renderGrid();
+        updateMeta();
+      }
+
+      function maskToIndices(mask) {
+        return mask.map((on, i) => on ? i : -1).filter(i => i >= 0);
+      }
+
+      function renderLibrary(filter = "") {
+        const q = filter.toLowerCase();
+        libraryEl.innerHTML = "";
+        let lastCat = "";
+
+        library.forEach((item, index) => {
+          if (q && !item.name.toLowerCase().includes(q)) return;
+          if (item.category !== lastCat) {
+            lastCat = item.category;
+            const label = document.createElement("div");
+            label.className = "category-label";
+            label.textContent = item.category;
+            libraryEl.appendChild(label);
+          }
+
+          const el = document.createElement("button");
+          el.type = "button";
+          el.className = "library-item" + (index === libIndex ? " active" : "");
+          const thumb = document.createElement("div");
+          thumb.className = "thumb";
+          renderThumb(thumb, item.mask);
+          const name = document.createElement("span");
+          name.className = "name";
+          name.textContent = item.name;
+          el.append(thumb, name);
+          el.addEventListener("click", () => {
+            libIndex = index;
+            setMask(item.mask, item.name);
+            if (item.sequence) {
+              sequence = item.sequence.map((f) => ({ ...f }));
+              seqIndex = 0;
+              renderSequence();
+              refreshExport();
+            }
+            renderLibrary(libSearch.value);
+          });
+          libraryEl.appendChild(el);
+        });
+      }
+
+      function renderSequence() {
+        sequenceEl.innerHTML = "";
+        if (!sequence.length) {
+          sequenceEl.innerHTML = '<p class="hint">No frames yet. Add from current view.</p>';
+          return;
+        }
+        sequence.forEach((frame, i) => {
+          const el = document.createElement("div");
+          el.className = "seq-item" + (i === seqIndex ? " active" : "");
+          const idxEl = document.createElement("span");
+          idxEl.className = "idx";
+          idxEl.textContent = i;
+          const thumb = document.createElement("div");
+          thumb.className = "thumb";
+          renderThumb(thumb, frame.mask);
+          const label = document.createElement("span");
+          label.className = "label";
+          label.textContent = frame.name;
+          const up = document.createElement("button");
+          up.textContent = "↑";
+          up.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (i === 0) return;
+            [sequence[i-1], sequence[i]] = [sequence[i], sequence[i-1]];
+            if (seqIndex === i) seqIndex = i - 1;
+            else if (seqIndex === i - 1) seqIndex = i;
+            renderSequence();
+          });
+          const del = document.createElement("button");
+          del.className = "danger";
+          del.textContent = "×";
+          del.addEventListener("click", (e) => {
+            e.stopPropagation();
+            sequence.splice(i, 1);
+            seqIndex = Math.min(seqIndex, Math.max(0, sequence.length - 1));
+            renderSequence();
+            refreshExport();
+          });
+          el.addEventListener("click", () => {
+            seqIndex = i;
+            setMask(frame.mask, frame.name);
+            renderSequence();
+          });
+          el.append(idxEl, thumb, label, up, del);
+          sequenceEl.appendChild(el);
+        });
+      }
+
+      function refreshExport() {
+        const customPatterns = library
+          .filter((item) => item.category === "custom")
+          .map((item) => ({
+            id: item.id,
+            name: item.name,
+            category: item.category,
+            indices: maskToIndices(item.mask),
+          }));
+
+        const customSequences = sequence.map((frame) => ({
+          name: frame.name,
+          indices: maskToIndices(frame.mask),
+        }));
+
+        const customJson = {
+          version: 1,
+          patterns: customPatterns.length
+            ? customPatterns
+            : [{ name: frameNameInput.value, category: "custom", indices: maskToIndices(currentMask) }],
+          sequences: sequence.length
+            ? [{
+                name: frameNameInput.value || "custom-sequence",
+                frameMs: Number(frameMsInput.value) || 140,
+                loop: true,
+                frames: customSequences,
+              }]
+            : [],
+        };
+
+        const payload = {
+          name: "sprite-mark-sequence",
+          frameMs: Number(frameMsInput.value) || 140,
+          grid: { cols: COLS, rows: ROWS },
+          frames: sequence.length
+            ? sequence.map((f) => ({ name: f.name, indices: maskToIndices(f.mask) }))
+            : [{ name: frameNameInput.value, indices: maskToIndices(currentMask) }],
+        };
+
+        exportArea.value = [
+          "// Paste into src/components/sprite-mark/data/custom.json",
+          JSON.stringify(customJson, null, 2),
+          "",
+          "// Sequence preview JSON",
+          JSON.stringify(payload, null, 2),
+          "",
+          `// Repo sequences loaded: ${repoSequences.length}`,
+          "// After editing data files run: npm run sprite-mark:sync",
+        ].join("\n");
+      }
+
+      function getPlayInterval() {
+        const base = Number(frameMsInput.value) || 140;
+        const speed = Number(speedInput.value) || 1;
+        return Math.max(30, base / speed);
+      }
+
+      function stopAll() {
+        playing = false;
+        seqPlaying = false;
+        clearInterval(playTimer);
+        clearInterval(seqTimer);
+        playTimer = null;
+        seqTimer = null;
+      }
+
+      function playLibrary() {
+        stopAll();
+        playing = true;
+        playTimer = setInterval(() => {
+          libIndex = (libIndex + 1) % library.length;
+          const item = library[libIndex];
+          setMask(item.mask, item.name);
+          renderLibrary(libSearch.value);
+        }, getPlayInterval());
+      }
+
+      function playSequence() {
+        if (!sequence.length) return;
+        stopAll();
+        seqPlaying = true;
+        seqTimer = setInterval(() => {
+          seqIndex = (seqIndex + 1) % sequence.length;
+          const frame = sequence[seqIndex];
+          setMask(frame.mask, frame.name);
+          renderSequence();
+        }, Number(frameMsInput.value) || 140);
+      }
+
+      // ── Tabs ──
+      document.querySelectorAll(".tab").forEach(tab => {
+        tab.addEventListener("click", () => {
+          document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+          document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+          tab.classList.add("active");
+          document.getElementById("tab-" + tab.dataset.tab).classList.add("active");
+        });
+      });
+
+      // ── Controls ──
+      document.getElementById("playLibBtn").addEventListener("click", playLibrary);
+      document.getElementById("pauseBtn").addEventListener("click", stopAll);
+      document.getElementById("prevBtn").addEventListener("click", () => {
+        stopAll();
+        libIndex = (libIndex - 1 + library.length) % library.length;
+        setMask(library[libIndex].mask, library[libIndex].name);
+        renderLibrary(libSearch.value);
+      });
+      document.getElementById("nextBtn").addEventListener("click", () => {
+        stopAll();
+        libIndex = (libIndex + 1) % library.length;
+        setMask(library[libIndex].mask, library[libIndex].name);
+        renderLibrary(libSearch.value);
+      });
+      document.getElementById("invertBtn").addEventListener("click", () => {
+        currentMask = currentMask.map(v => !v);
+        renderGrid(); updateMeta();
+      });
+      document.getElementById("clearBtn").addEventListener("click", () => {
+        setMask(fromPredicate(() => false), "empty");
+      });
+      document.getElementById("logoBtn").addEventListener("click", () => setMask(logoPattern(), "logo"));
+      document.getElementById("fillBtn").addEventListener("click", () => setMask(fromPredicate(() => true), "fill"));
+
+      document.getElementById("addFrameBtn").addEventListener("click", () => {
+        sequence.push({ name: frameNameInput.value || `frame ${sequence.length}`, mask: [...currentMask] });
+        seqIndex = sequence.length - 1;
+        renderSequence();
+        refreshExport();
+      });
+      document.getElementById("dupFrameBtn").addEventListener("click", () => {
+        sequence.push({ name: (frameNameInput.value || "frame") + " copy", mask: [...currentMask] });
+        seqIndex = sequence.length - 1;
+        renderSequence();
+        refreshExport();
+      });
+      document.getElementById("clearSeqBtn").addEventListener("click", () => {
+        sequence = [];
+        seqIndex = 0;
+        renderSequence();
+        refreshExport();
+      });
+      document.getElementById("playSeqBtn").addEventListener("click", playSequence);
+      document.getElementById("stopSeqBtn").addEventListener("click", stopAll);
+
+      document.getElementById("saveLibBtn").addEventListener("click", () => {
+        const name = frameNameInput.value || `custom ${library.length}`;
+        library.push({ id: `custom.${name}`, name, mask: [...currentMask], category: "custom" });
+        libIndex = library.length - 1;
+        renderLibrary(libSearch.value);
+      });
+
+      document.getElementById("copyMaskBtn").addEventListener("click", async () => {
+        const text = maskToIndices(currentMask).join(", ");
+        await navigator.clipboard.writeText(`[${text}]`);
+      });
+
+      document.getElementById("refreshExportBtn").addEventListener("click", refreshExport);
+      document.getElementById("copyExportBtn").addEventListener("click", async () => {
+        await navigator.clipboard.writeText(exportArea.value);
+      });
+
+      document.getElementById("loadRepoLibBtn").addEventListener("click", () => {
+        loadRepoLibrary();
+      });
+
+      document.getElementById("importBtn").addEventListener("click", () => {
+        try {
+          const data = JSON.parse(document.getElementById("importArea").value);
+          if (data.frameMs) frameMsInput.value = data.frameMs;
+          if (Array.isArray(data.frames)) {
+            sequence = data.frames.map(f => ({
+              name: f.name || "imported",
+              mask: f.mask || fromIndices(f.indices || []),
+            }));
+            seqIndex = 0;
+            setMask(sequence[0].mask, sequence[0].name);
+            renderSequence();
+          }
+          if (Array.isArray(data.library)) {
+            data.library.forEach(item => {
+              library.push({
+                name: item.name,
+                mask: item.mask || fromIndices(item.indices),
+                category: item.category || "imported",
+              });
+            });
+            renderLibrary(libSearch.value);
+          }
+          if (data.patterns || data.sequences) {
+            applyRepoLibrary(data);
+          }
+          refreshExport();
+        } catch (e) {
+          alert("Import failed: " + e.message);
+        }
+      });
+
+      libSearch.addEventListener("input", () => renderLibrary(libSearch.value));
+      frameMsInput.addEventListener("change", refreshExport);
+
+      // Organic tab
+      const phaseInput = document.getElementById("phase");
+      const intensityInput = document.getElementById("intensity");
+      const phaseVal = document.getElementById("phaseVal");
+      const intensityVal = document.getElementById("intensityVal");
+      const organicType = document.getElementById("organicType");
+
+      phaseInput.addEventListener("input", () => {
+        phaseVal.textContent = phaseInput.value;
+        setMask(organicPattern(organicType.value, Number(phaseInput.value), Number(intensityInput.value)), organicType.value);
+      });
+      intensityInput.addEventListener("input", () => {
+        intensityVal.textContent = Number(intensityInput.value).toFixed(2);
+        setMask(organicPattern(organicType.value, Number(phaseInput.value), Number(intensityInput.value)), organicType.value);
+      });
+      organicType.addEventListener("change", () => {
+        setMask(organicPattern(organicType.value, Number(phaseInput.value), Number(intensityInput.value)), organicType.value);
+      });
+
+      document.getElementById("applyOrganicBtn").addEventListener("click", () => {
+        const name = `${organicType.value} p${phaseInput.value}`;
+        setMask(organicPattern(organicType.value, Number(phaseInput.value), Number(intensityInput.value)), name);
+      });
+
+      document.getElementById("animateOrganicBtn").addEventListener("click", () => {
+        stopAll();
+        const type = organicType.value;
+        const intensity = Number(intensityInput.value);
+        const frames = [];
+        for (let p = 0; p < 8; p++) {
+          frames.push({ name: `${type} ${p}`, mask: organicPattern(type, p * 4, intensity) });
+        }
+        sequence = frames;
+        seqIndex = 0;
+        setMask(frames[0].mask, frames[0].name);
+        renderSequence();
+        playSequence();
+      });
+
+      // Keyboard shortcuts
+      window.addEventListener("keydown", (e) => {
+        if (e.target.matches("input, textarea")) return;
+        if (e.code === "Space") { e.preventDefault(); playing || seqPlaying ? stopAll() : (sequence.length ? playSequence() : playLibrary()); }
+        if (e.code === "ArrowRight") document.getElementById("nextBtn").click();
+        if (e.code === "ArrowLeft") document.getElementById("prevBtn").click();
+      });
+
+      // Init — load synced repo library (falls back to inline patterns offline)
+      loadRepoLibrary().then(() => {
+        renderSequence();
+      });
+    </script>
+  </body>
+</html>

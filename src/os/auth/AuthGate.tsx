@@ -11,6 +11,14 @@ import { BootScreen, LockScreen, LoginScreen } from "./screens";
 
 /** Boot splash lingers at least this long — matches the bar-fill animation. */
 const MIN_BOOT_MS = 4000;
+const BOOT_TEST_MS = 30_000;
+
+function useBootTestMode(): boolean {
+  const [enabled] = useState(
+    () => typeof window !== "undefined" && new URLSearchParams(window.location.search).has("boottest"),
+  );
+  return enabled;
+}
 
 /** Must match --arco-dur-xfade in auth.css. */
 const XFADE_MS = 600;
@@ -97,7 +105,8 @@ export function AuthGate({ children, standalone = false }: { children: ReactNode
   const phase = useAuthStore((s) => s.phase);
   const init = useAuthStore((s) => s.init);
   const [bootElapsed, setBootElapsed] = useState(false);
-  const minBootMs = standalone ? 0 : MIN_BOOT_MS;
+  const bootTest = useBootTestMode();
+  const minBootMs = bootTest ? BOOT_TEST_MS : standalone ? 0 : MIN_BOOT_MS;
 
   useEffect(() => {
     void init();
@@ -109,7 +118,9 @@ export function AuthGate({ children, standalone = false }: { children: ReactNode
 
   // Hold the splash until both the minimum duration and the status fetch
   // finish — the bar completes, then the real screen cross-fades in.
-  const screen: ScreenKey = !bootElapsed || phase === "booting" ? "boot" : phase;
+  // ?boottest=1 keeps the boot splash up for previewing the sprite animation.
+  const screen: ScreenKey =
+    bootTest || !bootElapsed || phase === "booting" ? "boot" : phase;
 
   return (
     <FadeSwitch screenKey={screen}>

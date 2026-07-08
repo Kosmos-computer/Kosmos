@@ -1,36 +1,70 @@
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import {
   SPRITE_MARK_GRID_SQUARES,
   SPRITE_MARK_VIEWBOX,
 } from "./spriteMarkSquares";
 import {
-  pickRandomGeometricPatternIndex,
-  SPRITE_GEOMETRIC_PATTERNS,
-} from "./spriteMarkPatterns";
+  resolveSpriteMarkPlayback,
+  spriteMarkEmojiPlayback,
+  spriteMarkTextSequence,
+  useSpriteMarkPlayer,
+  type SpriteMarkAnimation,
+  type SpriteMarkStatus,
+} from "./sprite-mark";
 
 type SpriteWorkingMarkProps = {
   className?: string;
-  /** Boot splash uses faster ticks. */
+  /** Preset playback — random geometric, boot speed, or a named library sequence. */
+  animation?: SpriteMarkAnimation;
+  /** Map UI/agent state to a library sequence. */
+  status?: SpriteMarkStatus;
+  /** Spell text using the glyph library (cycles one character at a time). */
+  text?: string;
+  /** Emoji or emoticon mapped to a face, glyph, or short sequence. */
+  emoji?: string;
+  /** Direct library sequence id (from lab export or `SPRITE_MARK_SEQUENCES`). */
+  sequenceId?: string;
+  frameMs?: number;
+  /** @deprecated Use `animation="boot"` instead. */
   mode?: "default" | "boot";
 };
 
-const DEFAULT_FRAME_MS = 140;
-const BOOT_FRAME_MS = 100;
+/** Animated logo mark — driven by the sprite mark pattern library. */
+export function SpriteWorkingMark({
+  className = "",
+  animation,
+  status,
+  text,
+  emoji,
+  sequenceId,
+  frameMs,
+  mode = "default",
+}: SpriteWorkingMarkProps) {
+  const playback = useMemo(() => {
+    if (text) {
+      const sequence = spriteMarkTextSequence(text, { frameMs });
+      if (sequence) {
+        return { kind: "sequence" as const, sequence, frameMs: sequence.frameMs };
+      }
+    }
 
-/** Animated logo mark — squares cycle through random geometric patterns. */
-export function SpriteWorkingMark({ className = "", mode = "default" }: SpriteWorkingMarkProps) {
-  const isBoot = mode === "boot";
-  const [frame, setFrame] = useState(() => pickRandomGeometricPatternIndex());
+    if (emoji) {
+      const emojiPlayback = spriteMarkEmojiPlayback(emoji, frameMs);
+      if (emojiPlayback) return emojiPlayback;
+    }
 
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setFrame((current) => pickRandomGeometricPatternIndex(current));
-    }, isBoot ? BOOT_FRAME_MS : DEFAULT_FRAME_MS);
+    const resolvedAnimation =
+      animation ?? (mode === "boot" ? "boot" : status === undefined ? "working" : undefined);
 
-    return () => window.clearInterval(timer);
-  }, [isBoot]);
+    return resolveSpriteMarkPlayback({
+      animation: resolvedAnimation,
+      status,
+      sequenceId,
+      frameMs,
+    });
+  }, [animation, emoji, frameMs, mode, sequenceId, status, text]);
 
-  const pattern = SPRITE_GEOMETRIC_PATTERNS[frame];
+  const mask = useSpriteMarkPlayer(playback);
 
   return (
     <svg
@@ -47,7 +81,7 @@ export function SpriteWorkingMark({ className = "", mode = "default" }: SpriteWo
           y={square.y}
           width={square.size}
           height={square.size}
-          data-on={pattern[index] ? "true" : "false"}
+          data-on={mask[index] ? "true" : "false"}
         />
       ))}
     </svg>

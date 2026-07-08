@@ -35,10 +35,14 @@ interface UserRecord {
 // with the parameters embedded in the stored string.
 // ---------------------------------------------------------------------------
 
-const SCRYPT = { N: 2 ** 15, r: 8, p: 1, keyLen: 64 };
+/** On small VPS instances (e.g. 2GB RAM + full swap), N=2^15 can OOM-kill the process during setup. */
+const LOW_MEMORY = process.env.ARCO_LOW_MEMORY === "1";
+const SCRYPT = LOW_MEMORY
+  ? { N: 2 ** 14, r: 8, p: 1, keyLen: 64 }
+  : { N: 2 ** 15, r: 8, p: 1, keyLen: 64 };
 
 /** Node caps scrypt at 32MB by default; N=2^15, r=8 needs 128·N·r = exactly 32MB. */
-const SCRYPT_MAXMEM = 64 * 1024 * 1024;
+const SCRYPT_MAXMEM = LOW_MEMORY ? 32 * 1024 * 1024 : 64 * 1024 * 1024;
 
 export function hashPassword(password: string): string {
   const salt = crypto.randomBytes(16);

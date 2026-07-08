@@ -122,18 +122,67 @@ function acpMcpServers(): AcpMcpServer[] {
     });
 }
 
+/** Resolve OpenAI key from settings wallet or env — not only the legacy top-level field. */
+function resolveOpenAiKey(settings: Settings): string {
+  return (
+    settings.apiKey.trim() ||
+    settings.apiKeys?.openai?.trim() ||
+    process.env.OPENAI_API_KEY?.trim() ||
+    process.env.LLM_API_KEY?.trim() ||
+    ""
+  );
+}
+
+function formatAcpError(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (err && typeof err === "object") {
+    const o = err as { message?: string; code?: number; data?: unknown };
+    const detail =
+      typeof o.data === "string" ? o.data : o.data != null ? JSON.stringify(o.data) : "";
+    return [o.message, detail].filter(Boolean).join(": ") || JSON.stringify(err);
+  }
+  return String(err);
+}
+
 /**
  * Subprocess environment: inherit ours, then export the Settings API key
  * under the env var the provider CLI reads. Harmless when a subscription
  * login exists — the CLIs prefer their own stored login over env keys.
  */
 function spawnEnv(settings: Settings): NodeJS.ProcessEnv {
-  const env: NodeJS.ProcessEnv = { ...process.env };
-  if (settings.apiKey) {
-    if (settings.provider === "anthropic") env.ANTHROPIC_API_KEY = settings.apiKey;
-    if (settings.provider === "openai") env.OPENAI_API_KEY = settings.apiKey;
+  const env: NodeJS.ProcessEnv = { ...process.env, NO_BROWSER: "1" };
+  const openaiKey = resolveOpenAiKey(settings);
+  if (openaiKey) {
+    env.OPENAI_API_KEY = openaiKey;
+    env.CODEX_API_KEY = openaiKey;
+    env.DEFAULT_AUTH_REQUEST = JSON.stringify({ methodId: "openai-api-key" });
+  }
+  if (settings.apiKey && settings.provider === "anthropic") {
+    env.ANTHROPIC_API_KEY = settings.apiKey;
   }
   return env;
+}
+
+async function authenticateAcpAgent(
+  conn: ClientSideConnection,
+  init: { authMethods?: { id: string }[] },
+  settings: Settings,
+): Promise<void> {
+  const methods = init.authMethods?.map((m) => m.id) ?? [];
+  if (methods.length === 0) return;
+
+  const openaiKey = resolveOpenAiKey(settings);
+  let methodId: string | null = null;
+  if (openaiKey && methods.includes("openai-api-key")) methodId = "openai-api-key";
+  else if (openaiKey && methods.includes("codex-api-key")) methodId = "codex-api-key";
+
+  if (!methodId) {
+    throw new Error(
+      "ACP agent requires authentication. Add an OpenAI API key in Settings → Providers, " +
+        "or sign in with the provider CLI (e.g. `codex login`).",
+    );
+  }
+  await conn.authenticate({ methodId });
 }
 
 /**
@@ -306,10 +355,11 @@ async function spawnRun(
   run.conn = new ClientSideConnection(() => makeClient(run), stream);
 
   const handshake = (async () => {
-    await run.conn.initialize({
+    const init = await run.conn.initialize({
       protocolVersion: PROTOCOL_VERSION,
       clientCapabilities: { fs: { readTextFile: true, writeTextFile: true }, terminal: false },
     });
+    await authenticateAcpAgent(run.conn, init, settings);
     const created = await run.conn.newSession({ cwd: getActiveRoot(), mcpServers: acpMcpServers() });
     run.acpSessionId = created.sessionId;
   })();
@@ -319,7 +369,7 @@ async function spawnRun(
   } catch (err) {
     child.kill();
     runs.delete(arcoSessionId);
-    const message = err instanceof Error ? err.message : String(err);
+    const message = formatAcpError(err);
     // auth_required is the one error every user will eventually hit; make it
     // actionable instead of surfacing a bare JSON-RPC code.
     if (/auth/i.test(message)) {

@@ -1,0 +1,156 @@
+{
+  "version": 1,
+  "patterns": [
+    {
+      "id": "face.neutral",
+      "name": "face · neutral",
+      "category": "faces",
+      "indices": [16, 18, 23, 24, 25]
+    },
+    {
+      "id": "face.smile",
+      "name": "face · smile",
+      "category": "faces",
+      "indices": [16, 18, 22, 30, 31, 32, 26]
+    },
+    {
+      "id": "face.grin",
+      "name": "face · grin",
+      "category": "faces",
+      "indices": [16, 18, 22, 23, 24, 25, 26, 30, 32]
+    },
+    {
+      "id": "face.blink",
+      "name": "face · blink",
+      "category": "faces",
+      "indices": [22, 30, 31, 32, 26]
+    },
+    {
+      "id": "face.wink",
+      "name": "face · wink",
+      "category": "faces",
+      "indices": [16, 18, 11, 22, 30, 31, 32, 26]
+    },
+    {
+      "id": "face.surprised",
+      "name": "face · surprised",
+      "category": "faces",
+      "indices": [9, 11, 16, 18, 24]
+    },
+    {
+      "id": "face.sleep",
+      "name": "face · sleep",
+      "category": "faces",
+      "indices": [8, 9, 11, 12, 23, 24, 25]
+    },
+    {
+      "id": "glyph.A",
+      "name": "glyph · A",
+      "category": "glyphs",
+      "indices": [3, 8, 12, 14, 16, 18, 20, 22, 26, 28, 34]
+    },
+    {
+      "id": "glyph.R",
+      "name": "glyph · R",
+      "category": "glyphs",
+      "indices": [0, 1, 2, 3, 7, 11, 14, 16, 17, 21, 25, 33]
+    },
+    {
+      "id": "glyph.C",
+      "name": "glyph · C",
+      "category": "glyphs",
+      "indices": [1, 2, 3, 4, 7, 14, 21, 29, 30, 31, 32]
+    },
+    {
+      "id": "glyph.O",
+      "name": "glyph · O",
+      "category": "glyphs",
+      "indices": [1, 2, 3, 4, 7, 12, 14, 19, 21, 26, 29, 30, 31, 32]
+    },
+    {
+      "id": "glyph.S",
+      "name": "glyph · S",
+      "category": "glyphs",
+      "indices": [1, 2, 3, 4, 7, 9, 10, 11, 19, 28, 29, 30, 31]
+    },
+    {
+      "id": "glyph.I",
+      "name": "glyph · I",
+      "category": "glyphs",
+      "indices": [3, 10, 17, 24, 31]
+    },
+    {
+      "id": "glyph.N",
+      "name": "glyph · N",
+      "category": "glyphs",
+      "indices": [0, 7, 14, 21, 28, 8, 16, 24, 32, 6, 13, 20, 27, 34]
+    },
+    {
+      "id": "glyph.G",
+      "name": "glyph · G",
+      "category": "glyphs",
+      "indices": [1, 2, 3, 4, 7, 14, 17, 19, 21, 26, 29, 30, 31, 32]
+    },
+    {
+      "id": "glyph.H",
+      "name": "glyph · H",
+      "category": "glyphs",
+      "indices": [0, 7, 14, 21, 28, 17, 2, 9, 16, 23, 30, 6, 13, 20, 27, 34]
+    },
+    {
+      "id": "glyph.exclaim",
+      "name": "glyph · !",
+      "category": "glyphs",
+      "indices": [3, 10, 17, 31]
+    },
+    {
+      "id": "glyph.dot",
+      "name": "glyph · ·",
+      "category": "glyphs",
+      "indices": [17]
+    },
+    {
+      "id": "glyph.heart",
+      "name": "glyph · ♥",
+      "category": "glyphs",
+      "indices": [8, 9, 10, 11, 12, 15, 16, 17, 18, 19, 23, 24, 25, 31]
+    }
+  ],
+  "sequences": [
+    {
+      "id": "word.arco",
+      "name": "word · ARCO",
+      "frameMs": 220,
+      "loop": true,
+      "frames": [
+        { "name": "A", "indices": [3, 8, 12, 14, 16, 18, 20, 22, 26, 28, 34] },
+        { "name": "R", "indices": [0, 1, 2, 3, 7, 11, 14, 16, 17, 21, 25, 33] },
+        { "name": "C", "indices": [1, 2, 3, 4, 7, 14, 21, 29, 30, 31, 32] },
+        { "name": "O", "indices": [1, 2, 3, 4, 7, 12, 14, 19, 21, 26, 29, 30, 31, 32] }
+      ]
+    },
+    {
+      "id": "word.hi",
+      "name": "word · HI",
+      "frameMs": 220,
+      "loop": true,
+      "frames": [
+        { "name": "H", "indices": [0, 7, 14, 21, 28, 17, 2, 9, 16, 23, 30, 6, 13, 20, 27, 34] },
+        { "name": "I", "indices": [3, 10, 17, 24, 31] }
+      ]
+    },
+    {
+      "id": "faces.smile-cycle",
+      "name": "face · smile cycle",
+      "frameMs": 160,
+      "loop": true,
+      "frames": [
+        { "name": "neutral", "indices": [16, 18, 23, 24, 25] },
+        { "name": "smile", "indices": [16, 18, 22, 30, 31, 32, 26] },
+        { "name": "grin", "indices": [16, 18, 22, 23, 24, 25, 26, 30, 32] },
+        { "name": "blink", "indices": [22, 30, 31, 32, 26] },
+        { "name": "wink", "indices": [16, 18, 11, 22, 30, 31, 32, 26] }
+      ]
+    }
+  ]
+}

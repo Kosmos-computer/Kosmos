@@ -1,4 +1,6 @@
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import fs from "node:fs";
+import net from "node:net";
 import path from "node:path";
 
 export type ServerProcessOptions = {
@@ -10,10 +12,40 @@ export type ServerProcessOptions = {
   packaged?: boolean;
 };
 
+function isPortAvailable(port: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const server = net.createServer();
+    server.once("error", () => resolve(false));
+    server.once("listening", () => {
+      server.close(() => resolve(true));
+    });
+    // Match @hono/node-server bind (all interfaces) so we detect dev servers on :4600.
+    server.listen({ port, exclusive: true });
+  });
+}
+
+/** Pick preferred when free, otherwise scan upward for an open port. */
+export async function resolveServerPort(preferred: number, maxAttempts = 20): Promise<number> {
+  if (await isPortAvailable(preferred)) return preferred;
+  for (let port = preferred + 1; port < preferred + maxAttempts; port++) {
+    if (await isPortAvailable(port)) return port;
+  }
+  throw new Error(`No available port in range ${preferred}-${preferred + maxAttempts - 1}`);
+}
+
 /** Spawn the Hono server using Electron's embedded Node (no system Node required). */
 export function startServerProcess(options: ServerProcessOptions): ChildProcessWithoutNullStreams {
   const tsxCli = path.join(options.root, "node_modules", "tsx", "dist", "cli.mjs");
   const serverEntry = path.join(options.root, "server", "index.ts");
+
+  const brewLlama = "/opt/homebrew/bin/llama-server";
+  const packagedPath = [
+    "/opt/homebrew/bin",
+    "/usr/local/bin",
+    process.env.PATH,
+  ]
+    .filter(Boolean)
+    .join(":");
 
   return spawn(options.nodeExecutable, [tsxCli, serverEntry], {
     cwd: options.root,
@@ -23,7 +55,13 @@ export function startServerProcess(options: ServerProcessOptions): ChildProcessW
       PORT: String(options.port),
       ARCO_DATA_DIR: options.dataDir,
       NODE_ENV: "production",
-      ...(options.packaged ? { ARCO_PACKAGED: "1" } : {}),
+      ...(options.packaged
+        ? {
+            ARCO_PACKAGED: "1",
+            PATH: packagedPath,
+            ...(fs.existsSync(brewLlama) ? { ARCO_LLAMA_SERVER: brewLlama } : {}),
+          }
+        : {}),
     },
     stdio: "pipe",
   });

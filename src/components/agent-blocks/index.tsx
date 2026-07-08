@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { ChevronRight, List, Terminal } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { SpriteWorkingMark } from "../SpriteWorkingMark";
+import type { SpriteMarkStatus } from "../sprite-mark";
 
 /** "37m 47s" below an hour, "1h 02m" at/above it, "8s" under a minute. */
 function formatElapsed(ms: number): string {
@@ -224,13 +225,26 @@ export interface AgentStatusLineProps {
   /** Rendered at the right edge (e.g. a live TurnMeter). */
   meta?: ReactNode;
   className?: string;
+  /** Sprite mark status — working, thinking, success, etc. */
+  markStatus?: SpriteMarkStatus;
+  /** Spell a short status label on the sprite mark (e.g. "OK", "HI"). */
+  markText?: string;
+  /** Emoji / emoticon on the sprite mark (e.g. "✨", ":)"). */
+  markEmoji?: string;
 }
 
 /** Inline agent activity status (streaming, connecting, etc.). */
-export function AgentStatusLine({ children, meta, className = "" }: AgentStatusLineProps) {
+export function AgentStatusLine({
+  children,
+  meta,
+  className = "",
+  markStatus = "working",
+  markText,
+  markEmoji,
+}: AgentStatusLineProps) {
   return (
     <div className={["arco-agent-status", className].filter(Boolean).join(" ")}>
-      <SpriteWorkingMark />
+      <SpriteWorkingMark status={markStatus} text={markText} emoji={markEmoji} />
       <span className="arco-agent-status__label">{children}</span>
       {meta ? <span className="arco-agent-status__meta">{meta}</span> : null}
     </div>

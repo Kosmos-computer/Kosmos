@@ -12,49 +12,56 @@
     "prestart": "npm run icon",
     "start": "npm run build && electron .",
     "dev": "npm run build && electron . --dev",
-    "pack": "npm run build && node scripts/validate-packaging.mjs && electron-builder --dir",
-    "dist": "npm run build && node scripts/validate-packaging.mjs && electron-builder",
+    "pack": "npm run build && node scripts/validate-packaging.mjs && node scripts/stage-packaging.mjs && node scripts/verify-packaging.mjs --staged --smoke && electron-builder --dir",
+    "dist": "npm run build && node scripts/validate-packaging.mjs && node scripts/stage-packaging.mjs && node scripts/verify-packaging.mjs --staged --smoke && electron-builder",
+    "verify": "node scripts/verify-packaging.mjs --staged --smoke",
+    "verify:app": "node scripts/verify-packaging.mjs --app \"release/mac-arm64/Arco OS.app\" --smoke --skip-build-check",
+    "setup:local-models": "node scripts/setup-local-models.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "build": {
+    "electronVersion": "35.7.5",
     "appId": "com.arco.os",
     "productName": "Arco OS",
     "directories": {
       "output": "release",
       "buildResources": "build"
     },
+    "npmArgs": [
+      "--ignore-scripts"
+    ],
+    "npmRebuild": false,
+    "buildDependenciesFromSource": false,
+    "disableDefaultIgnoredFiles": true,
     "files": [
       "dist/**/*",
       "package.json"
     ],
     "extraResources": [
       {
-        "from": "../..",
-        "to": "arco",
-        "filter": [
-          "dist/**/*",
-          "server/**/*",
-          "shared/**/*",
-          "packages/**/*",
-          "apps/**/*",
-          "skills/**/*",
-          "package.json",
-          "node_modules/**/*"
-        ]
+        "from": "pack-staging/arco",
+        "to": "arco"
       }
     ],
     "mac": {
       "category": "public.app-category.productivity",
       "icon": "build/icon.icns",
-      "target": ["dmg", "zip"]
+      "target": [
+        "dmg",
+        "zip"
+      ]
     },
     "win": {
       "icon": "build/icon.png",
-      "target": ["nsis"]
+      "target": [
+        "nsis"
+      ]
     },
     "linux": {
       "icon": "build/icon.png",
-      "target": ["AppImage"]
+      "target": [
+        "AppImage"
+      ]
     }
   },
   "devDependencies": {

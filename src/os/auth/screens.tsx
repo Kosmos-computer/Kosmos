@@ -37,7 +37,7 @@ export function BootScreen() {
   return (
     <div className="arco-boot" role="status" aria-label={i18n.t(I18nKey.OS_AUTH_ARCO_OS_IS_STARTING)}>
       <div className="arco-boot__logo">
-        <SpriteWorkingMark className="arco-boot__mark" mode="boot" />
+        <SpriteWorkingMark className="arco-boot__mark" animation="boot" />
       </div>
       <div className="arco-boot__bar">
         <div className="arco-boot__bar-fill" />

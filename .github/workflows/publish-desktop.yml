@@ -42,6 +42,8 @@ permissions:
 jobs:
   release:
     runs-on: macos-14
+    env:
+      NODE_OPTIONS: --max-old-space-size=8192
     if: github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[skip desktop]')
     steps:
       - uses: actions/checkout@v4

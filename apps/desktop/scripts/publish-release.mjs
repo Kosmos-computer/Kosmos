@@ -15,6 +15,16 @@ if (!version) {
   process.exit(1);
 }
 
+const signingReady = Boolean(process.env.CSC_LINK?.trim() && process.env.CSC_KEY_PASSWORD?.trim());
+if (!signingReady) {
+  process.env.CSC_IDENTITY_AUTO_DISCOVERY = "false";
+  delete process.env.CSC_LINK;
+  delete process.env.CSC_KEY_PASSWORD;
+  delete process.env.APPLE_ID;
+  delete process.env.APPLE_APP_SPECIFIC_PASSWORD;
+  delete process.env.APPLE_TEAM_ID;
+}
+
 function run(cmd, args, cwd = repoRoot) {
   const result = spawnSync(cmd, args, { cwd, stdio: "inherit", env: process.env });
   if (result.status !== 0) process.exit(result.status ?? 1);

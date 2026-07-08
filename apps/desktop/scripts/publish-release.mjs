@@ -41,6 +41,7 @@ run("npm", ["run", "build", "-w", "@arco/desktop"]);
 run("node", ["scripts/validate-packaging.mjs"], path.join(repoRoot, "apps/desktop"));
 run("node", ["scripts/stage-packaging.mjs"], path.join(repoRoot, "apps/desktop"));
 run("node", ["scripts/verify-packaging.mjs", "--staged", "--smoke"], path.join(repoRoot, "apps/desktop"));
+run("node", ["scripts/prepare-update-token.mjs"], path.join(repoRoot, "apps/desktop"));
 run("npx", ["electron-builder", "--publish", "always"], path.join(repoRoot, "apps/desktop"));
 
 console.log(`[desktop-release] published desktop-v${version}`);

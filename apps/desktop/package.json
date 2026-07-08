@@ -12,9 +12,9 @@
     "prestart": "npm run icon",
     "start": "npm run build && electron .",
     "dev": "npm run build && electron . --dev",
-    "pack": "npm run build && node scripts/validate-packaging.mjs && node scripts/stage-packaging.mjs && node scripts/verify-packaging.mjs --staged --smoke && electron-builder --dir",
-    "dist": "npm run build && node scripts/validate-packaging.mjs && node scripts/stage-packaging.mjs && node scripts/verify-packaging.mjs --staged --smoke && electron-builder",
-    "dist:publish": "npm run build && node scripts/validate-packaging.mjs && node scripts/stage-packaging.mjs && node scripts/verify-packaging.mjs --staged --smoke && electron-builder --publish always",
+    "pack": "npm run build && node scripts/prepare-update-token.mjs && node scripts/validate-packaging.mjs && node scripts/stage-packaging.mjs && node scripts/verify-packaging.mjs --staged --smoke && electron-builder --dir",
+    "dist": "npm run build && node scripts/prepare-update-token.mjs && node scripts/validate-packaging.mjs && node scripts/stage-packaging.mjs && node scripts/verify-packaging.mjs --staged --smoke && electron-builder",
+    "dist:publish": "npm run build && node scripts/prepare-update-token.mjs && node scripts/validate-packaging.mjs && node scripts/stage-packaging.mjs && node scripts/verify-packaging.mjs --staged --smoke && electron-builder --publish always",
     "release:version": "node scripts/next-desktop-version.mjs",
     "release:should-ship": "node scripts/should-release-desktop.mjs",
     "release:publish": "node scripts/publish-release.mjs",
@@ -45,6 +45,10 @@
       {
         "from": "pack-staging/arco",
         "to": "arco"
+      },
+      {
+        "from": "build/update-gh-token",
+        "to": "update-gh-token"
       }
     ],
     "mac": {
@@ -78,6 +82,7 @@
         "provider": "github",
         "owner": "Kosmos-computer",
         "repo": "Kosmos",
+        "private": true,
         "releaseType": "release"
       }
     ]

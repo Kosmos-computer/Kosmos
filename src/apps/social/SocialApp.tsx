@@ -5,9 +5,10 @@ import { Heart, MessageCircle, Plus, Repeat2, Send } from "lucide-react";
 import { useAuthStore } from "../../os/auth/authStore";
 import { ConnectServiceModal } from "../../components/patterns/ConnectServiceModal";
 import { Avatar, Button, Chip, EmptyState, Input } from "../../components/ui";
+import { SocialNetworkIcon } from "./SocialNetworkIcon";
 import { formatCount } from "./socialMock";
 import { useSocialStub } from "./useSocialStub";
-import type { SocialPost } from "./types";
+import type { SocialNetworkId, SocialPost } from "./types";
 import { useTranslation } from "react-i18next";
 
 function PostCard({ post }: { post: SocialPost }) {
@@ -57,9 +58,13 @@ export function SocialApp() {
               className={`arco-social__rail-tile${vm.activeNetworkId === network.id ? " arco-social__rail-tile--active" : ""}${connected ? "" : " arco-social__rail-tile--disconnected"}`}
               style={{ ["--social-accent" as string]: network.accent }}
               title={connected ? network.label : `${network.label} — not connected`}
-              onClick={() => vm.setActiveNetworkId(network.id)}
+              aria-label={network.label}
+              onClick={() => {
+                vm.setActiveNetworkId(network.id);
+                if (!connected) vm.openConnect(network.id as SocialNetworkId);
+              }}
             >
-              <span>{network.initials}</span>
+              <SocialNetworkIcon network={network.id} size={20} className="arco-social__rail-icon" />
             </button>
           );
         })}
@@ -85,6 +90,9 @@ export function SocialApp() {
         {!vm.activeConnection ? (
           <div className="arco-social__connect-banner">
             <EmptyState title={`Connect ${vm.networks.find((n) => n.id === vm.activeNetworkId)?.label}`}>
+              <div className="arco-social__connect-logo" style={{ ["--social-accent" as string]: vm.networks.find((n) => n.id === vm.activeNetworkId)?.accent }}>
+                <SocialNetworkIcon network={vm.activeNetworkId} size={28} className="arco-social__connect-icon" />
+              </div>
               <p><T k={I18nKey.APPS$SOCIAL_LINK_AN_ACCOUNT_TO_LOAD_YOUR_TIMELINE_AND_POST_FROM_KOSM} /></p>
               <Button variant="primary" onClick={() => vm.openConnect(vm.activeNetworkId)}><T k={I18nKey.APPS$SOCIAL_CONNECT_ACCOUNT} /></Button>
             </EmptyState>

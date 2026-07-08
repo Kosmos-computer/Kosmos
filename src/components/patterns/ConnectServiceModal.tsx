@@ -9,6 +9,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Plug, X } from "lucide-react";
 import type { ConnectionDomain, ServiceConnection, ServiceProviderId } from "@shared/serviceConnections";
 import { presetById, presetsForDomain } from "@shared/serviceConnections";
+import { isSocialNetworkId, SocialNetworkIcon } from "../../apps/social/SocialNetworkIcon";
 import { ListSearch } from "./ListSearch";
 import { matchesListSearch } from "../../lib/listSearch";
 import { Button, Chip, Input } from "../ui";
@@ -149,7 +150,16 @@ export function ConnectServiceModal({
                   className={option.id === providerId ? "arco-connect-modal__chip--selected" : ""}
                   onClick={() => setProviderId(option.id)}
                 >
-                  {option.label}
+                  {domain === "social" && isSocialNetworkId(option.id) ? (
+                    <span className="arco-connect-modal__chip-content">
+                      <span className="arco-connect-modal__chip-icon" style={{ color: option.accent }}>
+                        <SocialNetworkIcon network={option.id} size={14} />
+                      </span>
+                      {option.label}
+                    </span>
+                  ) : (
+                    option.label
+                  )}
                 </Chip>
               ))}
             </div>

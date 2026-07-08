@@ -30,6 +30,14 @@
   font-size: var(--arco-text-xs);
   font-weight: 700;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.arco-social__rail-icon {
+  flex-shrink: 0;
 }
 
 .arco-social__rail-tile--active {
@@ -95,6 +103,18 @@
 .arco-social__connect-banner p {
   margin: 0 0 var(--arco-space-m);
   color: var(--arco-text-secondary);
+}
+
+.arco-social__connect-logo {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto var(--arco-space-m);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--arco-radius-l);
+  background: var(--social-accent, var(--arco-accent));
+  color: #fff;
 }
 
 .arco-social__composer {

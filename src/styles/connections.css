@@ -80,6 +80,17 @@
   gap: var(--arco-space-xs);
 }
 
+.arco-connect-modal__chip-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.arco-connect-modal__chip-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
 .arco-connect-modal__chip--selected {
   outline: 2px solid var(--arco-accent);
   outline-offset: 1px;

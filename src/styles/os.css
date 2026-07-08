@@ -140,6 +140,122 @@
   background: var(--arco-danger);
 }
 
+.arco-menubar-backends__panel {
+  min-width: 280px;
+  max-width: 360px;
+  padding: var(--arco-space-s);
+}
+
+.arco-menubar-backends__section + .arco-menubar-backends__section {
+  margin-top: var(--arco-space-s);
+  padding-top: var(--arco-space-s);
+  border-top: 1px solid var(--arco-border-subtle);
+}
+
+.arco-menubar-backends__heading {
+  margin: 0 0 var(--arco-space-xs);
+  font-size: var(--arco-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--arco-text-tertiary);
+}
+
+.arco-menubar-backends__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.arco-menubar-backends__row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-xs) 0;
+}
+
+.arco-menubar-backends__row--static {
+  align-items: center;
+}
+
+.arco-menubar-backends__row .arco-menubar__status-dot {
+  position: static;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.arco-menubar-backends__row--static .arco-menubar__status-dot {
+  margin-top: 0;
+}
+
+.arco-menubar-backends__meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.arco-menubar-backends__name {
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-primary);
+}
+
+.arco-menubar-backends__detail,
+.arco-menubar-backends__status {
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arco-menubar-backends__empty {
+  margin: 0;
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+}
+
+.arco-menubar-backends__footer {
+  margin-top: var(--arco-space-s);
+  padding-top: var(--arco-space-s);
+  border-top: 1px solid var(--arco-border-subtle);
+}
+
+.arco-menubar-backends__add-btn {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--arco-space-xs);
+}
+
+.arco-menubar-backends__wizard-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-s);
+}
+
+.arco-menubar-backends__wizard-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--arco-space-s);
+  margin-top: var(--arco-space-m);
+}
+
+.arco-menubar-backends__wizard-success {
+  margin: var(--arco-space-s) 0 0;
+  font-size: var(--arco-text-sm);
+  color: var(--arco-success);
+}
+
+.arco-menubar-backends__wizard-error {
+  margin: var(--arco-space-s) 0 0;
+  font-size: var(--arco-text-sm);
+  color: var(--arco-danger);
+}
+
 .arco-menubar__volume-panel {
   min-width: 196px;
   padding: var(--arco-space-m);

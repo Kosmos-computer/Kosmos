@@ -895,6 +895,11 @@ export const api = {
       body: JSON.stringify({ kind, host, apiKey }),
     }).then((r) => json<AgentBackendConnectionStatus>(r)),
 
+  testAgentBackendById: (id: string) =>
+    fetch(`/api/agent-backends/${id}/test`, { method: "POST" }).then((r) =>
+      json<AgentBackendConnectionStatus>(r),
+    ),
+
   listAgentBackends: () =>
     fetch("/api/agent-backends").then((r) =>
       json<{ backends: AgentBackend[]; activeId: string | null }>(r),

@@ -2435,6 +2435,17 @@ app.post("/api/agent-backends/test", requireCap("settings:write"), async (c) => 
   return c.json(await testOpenhandsConnection(body.host ?? "", body.apiKey));
 });
 
+app.post("/api/agent-backends/:id/test", requireCap("settings:write"), async (c) => {
+  const id = c.req.param("id");
+  const settings = loadSettings();
+  const backend = settings.agentBackends.find((b) => b.id === id);
+  if (!backend) return c.json({ error: "Backend not found" }, 404);
+  if (backend.kind === "kosmos") {
+    return c.json(await testKosmosConnection(backend.host, backend.apiKey));
+  }
+  return c.json(await testOpenhandsConnection(backend.host, backend.apiKey));
+});
+
 app.get("/api/agent-backends", requireCap("settings:write"), (c) => {
   const settings = loadSettings();
   return c.json({

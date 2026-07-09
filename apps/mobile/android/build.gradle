@@ -24,6 +24,18 @@ allprojects {
     }
 }
 
+
+subprojects { sub ->
+    sub.afterEvaluate {
+        if (sub.hasProperty("android") && rootProject.ext.has("ndkVersion")) {
+            sub.android {
+                ndkVersion rootProject.ext.ndkVersion
+            }
+        }
+    }
+}
+
+
 task clean(type: Delete) {
     delete rootProject.buildDir
 }

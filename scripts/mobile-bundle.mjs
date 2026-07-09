@@ -8,6 +8,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { MOBILE_APK, MOBILE_DOWNLOAD } from "./mobile-apk-paths.mjs";
+import { gradleEnv } from "./mobile-android-env.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const androidDir = path.join(root, "apps/mobile/android");
@@ -42,7 +43,7 @@ if (fs.existsSync(capConfigPath)) {
 
 run(`"${gradlew}" assembleConnectDebug`, {
   cwd: androidDir,
-  env: { ...process.env, JAVA_HOME: javaHome },
+  env: gradleEnv(),
 });
 
 if (!fs.existsSync(apkPath)) {

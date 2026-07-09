@@ -32,6 +32,8 @@ const config: CapacitorConfig = {
     : {
         // http://localhost so WebView can reach LAN http:// backends (no mixed-content block).
         androidScheme: "http",
+        // Keep embedded sidecar navigation inside the app WebView (not external Chrome).
+        allowNavigation: ["127.0.0.1", "localhost"],
       },
   android: {
     allowMixedContent: true,

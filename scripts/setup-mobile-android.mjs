@@ -109,6 +109,91 @@ if (!existing.includes("onReceivedSslError")) {
   console.log("[mobile:patch] Patched MainActivity for mixed-content LAN APIs");
 }
 
+const isLocal = process.env.MOBILE_LOCAL === "1";
+const sdkRoot =
+  process.env.ANDROID_HOME ?? path.join(process.env.HOME ?? "", "Library/Android/sdk");
+const ndkRoot = path.join(sdkRoot, "ndk");
+
+function resolveNdkDir() {
+  if (process.env.ANDROID_NDK_HOME && fs.existsSync(process.env.ANDROID_NDK_HOME)) {
+    return process.env.ANDROID_NDK_HOME;
+  }
+  if (!fs.existsSync(ndkRoot)) return null;
+  const versions = fs
+    .readdirSync(ndkRoot)
+    .filter((v) => fs.existsSync(path.join(ndkRoot, v, "source.properties")))
+    .sort();
+  return versions.length ? path.join(ndkRoot, versions.at(-1)) : null;
+}
+
+const ndkDir = resolveNdkDir();
+const localProps = [`sdk.dir=${sdkRoot}`];
+if (ndkDir) localProps.push(`ndk.dir=${ndkDir}`);
+fs.writeFileSync(path.join(androidRoot, "local.properties"), `${localProps.join("\n")}\n`);
+if (ndkDir) console.log(`[mobile:patch] NDK: ${ndkDir}`);
+
+const variablesPath = path.join(androidRoot, "variables.gradle");
+if (ndkDir) {
+  const ndkVersion = path.basename(ndkDir);
+  let variables = fs.readFileSync(variablesPath, "utf8");
+  if (!variables.includes("ndkVersion")) {
+    variables = variables.replace(
+      "ext {",
+      `ext {\n    ndkVersion = '${ndkVersion}'`,
+    );
+    fs.writeFileSync(variablesPath, variables);
+    console.log(`[mobile:patch] ndkVersion=${ndkVersion}`);
+  }
+}
+
+const rootGradlePath = path.join(androidRoot, "build.gradle");
+let rootGradle = fs.readFileSync(rootGradlePath, "utf8");
+const subprojectsHook = `
+subprojects { sub ->
+    sub.afterEvaluate {
+        if (sub.hasProperty("android") && rootProject.ext.has("ndkVersion")) {
+            sub.android {
+                ndkVersion rootProject.ext.ndkVersion
+            }
+        }
+    }
+}
+`;
+if (!rootGradle.includes("ndkVersion rootProject.ext.ndkVersion")) {
+  rootGradle = rootGradle.replace(
+    "task clean(type: Delete) {",
+    `${subprojectsHook}\n\ntask clean(type: Delete) {`,
+  );
+  fs.writeFileSync(rootGradlePath, rootGradle);
+  console.log("[mobile:patch] Applied ndkVersion to all Android subprojects");
+}
+
+function patchCapacitorNodePlugin(includeNodejs) {
+  const settingsPath = path.join(androidRoot, "capacitor.settings.gradle");
+  const buildPath = path.join(androidRoot, "app/capacitor.build.gradle");
+
+  if (includeNodejs) {
+    console.log("[mobile:patch] Embedded Node plugin enabled (Arco Local build)");
+    return;
+  }
+
+  if (fs.existsSync(settingsPath)) {
+    const settings = fs
+      .readFileSync(settingsPath, "utf8")
+      .replace(/\ninclude ':capacitor-nodejs'\nproject\(':capacitor-nodejs'\)\.projectDir =[^\n]+\n?/g, "\n");
+    fs.writeFileSync(settingsPath, settings);
+  }
+  if (fs.existsSync(buildPath)) {
+    const build = fs
+      .readFileSync(buildPath, "utf8")
+      .replace(/\n\s*implementation project\(':capacitor-nodejs'\)\n?/g, "\n");
+    fs.writeFileSync(buildPath, build);
+  }
+  console.log("[mobile:patch] Embedded Node plugin disabled (Arco Connect build)");
+}
+
+patchCapacitorNodePlugin(isLocal);
+
 const iconsScript = path.join(root, "scripts/generate-mobile-android-icons.mjs");
 if (fs.existsSync(iconsScript)) {
   execSync(`node "${iconsScript}"`, { stdio: "inherit", cwd: root });

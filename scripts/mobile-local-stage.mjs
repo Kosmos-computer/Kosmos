@@ -1,38 +1,51 @@
 #!/usr/bin/env node
 /**
  * Stage the Arco Node backend into dist/nodejs for the embedded Android sidecar.
- * Invoked by mobile:local:bundle after build:mobile.
+ * Keeps the APK sidecar small: bundled server + better-sqlite3 only (no full node_modules).
  */
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import esbuild from "esbuild";
-import {
-  APP_DIRS,
-  COPY_PATHS,
-  findSqliteNative,
-} from "../apps/desktop/scripts/packaging-manifest.mjs";
+import { APP_DIRS, findSqliteNative } from "../apps/desktop/scripts/packaging-manifest.mjs";
+import { defaultNdkHome } from "./mobile-android-env.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const stageRoot = path.join(repoRoot, "apps/mobile/pack-staging/nodejs");
 const distNodeRoot = path.join(repoRoot, "dist/nodejs");
+const sqliteVersion =
+  JSON.parse(fs.readFileSync(path.join(repoRoot, "package.json"), "utf8")).dependencies[
+    "better-sqlite3"
+  ] ?? "^12.0.0";
 
-function copyTree(from, to) {
+function copyTree(from, to, filter) {
   fs.cpSync(from, to, {
     recursive: true,
     force: true,
     dereference: true,
-    filter: (src) => !src.includes(`${path.sep}.git${path.sep}`),
+    filter: (src) => {
+      if (src.includes(`${path.sep}.git${path.sep}`)) return false;
+      if (filter && !filter(src)) return false;
+      return true;
+    },
   });
 }
 
-function run(cmd, args, cwd) {
+/** Skip bulky artifacts that the embedded server does not need at runtime. */
+function skipBulkyDistPaths(src) {
+  const rel = path.relative(path.join(repoRoot, "dist"), src);
+  if (rel.startsWith(`downloads${path.sep}`)) return false;
+  if (rel.startsWith(`nodejs${path.sep}`)) return false;
+  return true;
+}
+
+function run(cmd, args, cwd, extraEnv = {}) {
   console.log(`\n→ ${cmd} ${args.join(" ")}`);
   const result = spawnSync(cmd, args, {
     cwd,
     stdio: "inherit",
-    env: { ...process.env, ARCO_SKIP_POSTINSTALL: "1" },
+    env: { ...process.env, ARCO_SKIP_POSTINSTALL: "1", ...extraEnv },
   });
   if (result.status !== 0) {
     process.exit(result.status ?? 1);
@@ -49,31 +62,41 @@ if (fs.existsSync(stageRoot)) {
 }
 fs.mkdirSync(stageRoot, { recursive: true });
 
-for (const relativePath of COPY_PATHS) {
+for (const relativePath of ["dist", "skills"]) {
   const source = path.join(repoRoot, relativePath);
-  const target = path.join(stageRoot, relativePath);
   if (!fs.existsSync(source)) {
     console.error(`[mobile:local:stage] missing ${relativePath}`);
     process.exit(1);
   }
   console.log(`  • ${relativePath}`);
-  copyTree(source, target);
+  const distFilter = relativePath === "dist" ? skipBulkyDistPaths : undefined;
+  copyTree(source, path.join(stageRoot, relativePath), distFilter);
 }
+
+const generatedDir = path.join(repoRoot, "server/generated");
+if (!fs.existsSync(generatedDir)) {
+  console.error("[mobile:local:stage] missing server/generated — run npm run generate");
+  process.exit(1);
+}
+console.log("  • server/generated");
+copyTree(generatedDir, path.join(stageRoot, "server/generated"));
+console.log("  • generated (esbuild bundle __dirname compat)");
+copyTree(generatedDir, path.join(stageRoot, "generated"));
+
+console.log("  • packages/app-sdk");
+fs.mkdirSync(path.join(stageRoot, "packages/app-sdk"), { recursive: true });
+fs.copyFileSync(
+  path.join(repoRoot, "packages/app-sdk/sdk.js"),
+  path.join(stageRoot, "packages/app-sdk/sdk.js"),
+);
 
 fs.mkdirSync(path.join(stageRoot, "apps"), { recursive: true });
 for (const appDir of APP_DIRS) {
   const source = path.join(repoRoot, "apps", appDir);
-  const target = path.join(stageRoot, "apps", appDir);
+  if (!fs.existsSync(source)) continue;
   console.log(`  • apps/${appDir}`);
-  copyTree(source, target);
+  copyTree(source, path.join(stageRoot, "apps", appDir));
 }
-
-const scriptsLib = path.join(repoRoot, "scripts/lib");
-console.log("  • scripts/lib");
-copyTree(scriptsLib, path.join(stageRoot, "scripts/lib"));
-
-console.log("  • npm ci --omit=dev (nodejs sidecar runtime)");
-run("npm", ["ci", "--omit=dev", "--ignore-scripts"], stageRoot);
 
 console.log("  • esbuild server bundle → server-boot.mjs");
 await esbuild.build({
@@ -84,34 +107,64 @@ await esbuild.build({
   format: "esm",
   target: "node18",
   external: ["better-sqlite3"],
-  packages: "external",
+  packages: "bundle",
+  alias: {
+    "@cursor/sdk": path.join(repoRoot, "scripts/mobile-stubs/cursor-sdk.mjs"),
+  },
   logLevel: "info",
 });
 
 console.log("  • mobile node entry + package.json");
-const mobileNodeTemplate = path.join(repoRoot, "apps/mobile/nodejs");
-copyTree(mobileNodeTemplate, stageRoot);
+copyTree(path.join(repoRoot, "apps/mobile/nodejs"), stageRoot);
 
-const ndk = process.env.ANDROID_NDK_HOME ?? process.env.NDK_HOME;
-if (ndk) {
-  console.log("  • nodejs-mobile rebuild better-sqlite3 (android arm64)");
-  run("npm", ["install", "nodejs-mobile@18.20.4", "--no-save"], stageRoot);
-  run(
-    "npx",
-    [
-      "nodejs-mobile-build",
-      "rebuild",
-      "--target-arch=arm64",
-      "--target-platform=android",
-      "better-sqlite3",
-    ],
-    stageRoot,
-  );
+const bridgeSrc = path.join(
+  repoRoot,
+  "node_modules/capacitor-nodejs/android/src/main/assets/builtin_modules/bridge",
+);
+const bridgeDest = path.join(stageRoot, "node_modules/bridge");
+console.log("  • node_modules/bridge (Capacitor IPC)");
+fs.mkdirSync(path.dirname(bridgeDest), { recursive: true });
+copyTree(bridgeSrc, bridgeDest);
+
+console.log(`  • npm install better-sqlite3@${sqliteVersion.replace(/^[\^~]/, "")}`);
+fs.writeFileSync(
+  path.join(stageRoot, "package.json"),
+  `${JSON.stringify(
+    {
+      name: "arco-mobile-local-backend",
+      private: true,
+      version: "0.1.2",
+      type: "module",
+      main: "main.mjs",
+      dependencies: {
+        "better-sqlite3": sqliteVersion,
+      },
+    },
+    null,
+    2,
+  )}\n`,
+);
+run("npm", ["install", "--omit=dev", "--ignore-scripts"], stageRoot);
+
+const nodeMobileHeaders = path.join(
+  repoRoot,
+  "node_modules/capacitor-nodejs/android/libnode",
+);
+const ndk = process.env.ANDROID_NDK_HOME ?? process.env.NDK_HOME ?? defaultNdkHome();
+
+if (ndk && fs.existsSync(nodeMobileHeaders)) {
+  console.log("  • node-gyp rebuild better-sqlite3 (android arm64, Node 18.20.4)");
+  run("npm", ["rebuild", "better-sqlite3", "--build-from-source"], stageRoot, {
+    npm_config_nodedir: nodeMobileHeaders,
+    npm_config_arch: "arm64",
+    npm_config_platform: "android",
+    ANDROID_NDK_HOME: ndk,
+    GYP_DEFINES: `android_ndk_path='${ndk}'`,
+  });
 } else {
   console.warn(
-    "[mobile:local:stage] ANDROID_NDK_HOME not set — skipping better-sqlite3 rebuild.",
+    "[mobile:local:stage] ANDROID_NDK_HOME not set — host rebuild only (won't run on Razr).",
   );
-  console.warn("  Install Android NDK and re-run for Razr/arm64 device builds.");
   run("npm", ["rebuild", "better-sqlite3"], stageRoot);
 }
 
@@ -119,7 +172,9 @@ const localRequired = [
   { path: "dist/index.html", hint: "Run npm run build:mobile first." },
   { path: "server-boot.mjs", hint: "esbuild bundle failed." },
   { path: "main.mjs", hint: "Copy apps/mobile/nodejs template." },
-  { path: "node_modules/hono/package.json", hint: "Production deps missing." },
+  { path: "server/generated/app-prompt.md", hint: "Run npm run generate." },
+  { path: "generated/openui-schema.json", hint: "Run npm run generate." },
+  { path: "packages/app-sdk/sdk.js", hint: "packages/app-sdk missing." },
   { path: "node_modules/better-sqlite3/package.json", hint: "better-sqlite3 missing." },
 ];
 
@@ -136,11 +191,23 @@ if (!findSqliteNative(stageRoot, fs, path)) {
   process.exit(1);
 }
 
+const fileCount = (dir) => {
+  let count = 0;
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) count += fileCount(full);
+    else count += 1;
+  }
+  return count;
+};
+
+const stagedFiles = fileCount(stageRoot);
+console.log(`  • sidecar file count: ${stagedFiles}`);
+
 if (fs.existsSync(distNodeRoot)) {
   fs.rmSync(distNodeRoot, { recursive: true, force: true });
 }
 fs.mkdirSync(path.dirname(distNodeRoot), { recursive: true });
 copyTree(stageRoot, distNodeRoot);
 
-const nodeSize = fs.readdirSync(distNodeRoot).length;
-console.log(`✓ Staged embedded backend at dist/nodejs (${nodeSize} top-level entries)`);
+console.log(`✓ Staged embedded backend at dist/nodejs (${stagedFiles} files)`);

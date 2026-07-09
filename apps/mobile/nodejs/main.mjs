@@ -3,12 +3,42 @@
  * Bundled runtime lives alongside this file under dist/nodejs/.
  */
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import fs from "node:fs";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import http from "node:http";
-import { channel, getDataPath } from "bridge";
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
+
+/** Bundled server resolves generated assets relative to public/ parent — mirror on device. */
+function ensureGeneratedPaths() {
+  const inPublic = path.join(ROOT, "generated");
+  const abovePublic = path.join(ROOT, "..", "generated");
+  if (!fs.existsSync(inPublic)) return;
+  if (fs.existsSync(abovePublic)) return;
+  fs.cpSync(inPublic, abovePublic, { recursive: true });
+}
+
+/** ESM cannot resolve the Capacitor `bridge` package via NODE_PATH — load explicitly. */
+async function importBridge() {
+  const candidates = [
+    path.join(ROOT, "node_modules", "bridge", "dist", "index.mjs"),
+    path.join(ROOT, "..", "builtin_modules", "bridge", "dist", "index.mjs"),
+  ];
+  let lastErr;
+  for (const candidate of candidates) {
+    try {
+      return await import(pathToFileURL(candidate).href);
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  throw lastErr ?? new Error("Capacitor nodejs bridge module not found");
+}
+
+const { channel, getDataPath } = await importBridge();
+
 process.chdir(ROOT);
+ensureGeneratedPaths();
 
 const dataRoot = path.join(getDataPath(), "arco");
 process.env.NODE_ENV = "production";

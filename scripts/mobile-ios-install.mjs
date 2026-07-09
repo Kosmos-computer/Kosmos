@@ -155,10 +155,10 @@ const deviceId = requireDevice();
 if (bundled) {
   console.log("[mobile:ios:install] Bundled mode — server URL chosen in app at first run");
   if (!process.env.SKIP_BUILD) {
-    run("npm run mobile:bundle");
-  } else {
-    run("npm run cap -w @arco/mobile sync ios");
+    // Force thin-client build; .env.mobile.local may set VITE_ARCO_MOBILE_LOCAL for Android.
+    run("VITE_ARCO_MOBILE_LOCAL= VITE_ARCO_MOBILE_BUNDLED=1 npm run build:mobile");
   }
+  run("npm run cap -w @arco/mobile sync ios");
 } else {
   const serverUrl =
     process.env.CAP_SERVER_URL?.trim() || (await detectLocalDevServerUrl());

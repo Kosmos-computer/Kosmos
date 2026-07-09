@@ -10,6 +10,7 @@
  */
 import { execSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { MOBILE_APK } from "./mobile-apk-paths.mjs";
 

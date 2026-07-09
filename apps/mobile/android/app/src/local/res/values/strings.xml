@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Arco Local</string>
-    <string name="title_activity_main">Arco Local</string>
+    <string name="app_name">Kosmos Local</string>
+    <string name="title_activity_main">Kosmos Local</string>
     <string name="package_name">com.arco.os.mobile.local</string>
     <string name="custom_url_scheme">com.arco.os.mobile.local</string>
 </resources>

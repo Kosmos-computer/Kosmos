@@ -48,7 +48,7 @@ Run models, agent workspace, and apps **on the Chromebook** with data in Linux, 
 
 ```bash
 # Prerequisites: Node 22+, git
-git clone …/Arco-Prototype-2 && cd Arco-Prototype-2
+git clone …/Kosmos && cd Kosmos
 npm install --ignore-scripts
 npm run build
 ARCO_DATA_DIR=$HOME/.arco-local npm start

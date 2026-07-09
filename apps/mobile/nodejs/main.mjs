@@ -1,5 +1,5 @@
 /**
- * Arco embedded backend entry — runs inside nodejs-mobile on Android.
+ * Kosmos embedded backend entry — runs inside nodejs-mobile on Android.
  * Bundled runtime lives alongside this file under dist/nodejs/.
  */
 import path from "node:path";
@@ -102,7 +102,7 @@ function waitForHealthyServer(port, maxMs = 120_000) {
         return;
       }
       if (Date.now() - started > maxMs) {
-        reject(new Error("Timed out waiting for Arco server"));
+        reject(new Error("Timed out waiting for Kosmos server"));
         return;
       }
       setTimeout(poll, 500);
@@ -118,7 +118,7 @@ async function resolveListenPort(preferred = 4600) {
     if (!apiOk) return { port, alreadyRunning: false };
     console.warn(`[arco-mobile-local] port ${port} has API but no shell — trying next port`);
   }
-  throw new Error("No available port for Arco local server (stale listeners on 4600–4609)");
+  throw new Error("No available port for Kosmos local server (stale listeners on 4600–4609)");
 }
 
 const { channel, getDataPath } = await importBridge();

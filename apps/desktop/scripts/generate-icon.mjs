@@ -43,7 +43,7 @@ const rects = LOGO_CELLS.map(
 ).join("\n      ");
 
 const svg = `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="${CANVAS}" height="${CANVAS}" viewBox="0 0 ${CANVAS} ${CANVAS}" role="img" aria-label="Arco OS">
+<svg xmlns="http://www.w3.org/2000/svg" width="${CANVAS}" height="${CANVAS}" viewBox="0 0 ${CANVAS} ${CANVAS}" role="img" aria-label="Kosmos">
   <rect width="${CANVAS}" height="${CANVAS}" rx="${CORNER_RADIUS}" ry="${CORNER_RADIUS}" fill="#000000"/>
   <g transform="translate(${CANVAS / 2} ${CANVAS / 2})">
     <g transform="scale(${MARK_SCALE}) translate(${-VIEWBOX.width / 2} ${-VIEWBOX.height / 2})" fill="#ffffff">

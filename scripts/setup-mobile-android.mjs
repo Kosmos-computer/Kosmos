@@ -173,7 +173,7 @@ function patchCapacitorNodePlugin(includeNodejs) {
   const buildPath = path.join(androidRoot, "app/capacitor.build.gradle");
 
   if (includeNodejs) {
-    console.log("[mobile:patch] Embedded Node plugin enabled (Arco Local build)");
+    console.log("[mobile:patch] Embedded Node plugin enabled (Kosmos Local build)");
     return;
   }
 
@@ -189,7 +189,7 @@ function patchCapacitorNodePlugin(includeNodejs) {
       .replace(/\n\s*implementation project\(':capacitor-nodejs'\)\n?/g, "\n");
     fs.writeFileSync(buildPath, build);
   }
-  console.log("[mobile:patch] Embedded Node plugin disabled (Arco Connect build)");
+  console.log("[mobile:patch] Embedded Node plugin disabled (Kosmos Connect build)");
 }
 
 patchCapacitorNodePlugin(isLocal);

@@ -1,8 +1,8 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
     <!-- Overridden per flavor in src/connect and src/local -->
-    <string name="app_name">Arco</string>
-    <string name="title_activity_main">Arco</string>
+    <string name="app_name">Kosmos</string>
+    <string name="title_activity_main">Kosmos</string>
     <string name="package_name">com.arco.os.mobile</string>
     <string name="custom_url_scheme">com.arco.os.mobile</string>
 </resources>

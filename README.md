@@ -218,7 +218,7 @@ First-time USB setup (Developer options, USB debugging): [`docs/mobile-sideload.
 Use the sibling **`kosmos-steamos`** repo (distribution layer for SteamOS Desktop Mode — Arco apps via embed, not a fork):
 
 ```bash
-# kosmos-steamos/ with Arco-Prototype-2 as sibling (see upstream/config.json)
+# kosmos-steamos/ with Kosmos as sibling (see upstream/config.json)
 npm install
 npm run dev:stack                 # Arco backend + UI + Kosmos shell
 

@@ -2,7 +2,7 @@
   "name": "@arco/mobile",
   "private": true,
   "version": "0.1.2",
-  "description": "Arco OS Capacitor shell — Android/iOS WebView wrap around the shared Vite UI.",
+  "description": "Kosmos Capacitor shell — Android/iOS WebView wrap around the shared Vite UI.",
   "type": "module",
   "scripts": {
     "cap": "cap",

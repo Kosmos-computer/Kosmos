@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Build embedded-backend APK — full Arco on device (nodejs-mobile sidecar).
+ * Build embedded-backend APK — full Kosmos on device (nodejs-mobile sidecar).
  * Thin client builds use npm run mobile:bundle instead.
  */
 import { execSync } from "node:child_process";
@@ -50,9 +50,9 @@ fs.mkdirSync(downloadsDir, { recursive: true });
 const dest = MOBILE_DOWNLOAD.local;
 fs.copyFileSync(apkPath, dest);
 console.log(`
-✓ Local Arco APK ready: ${dest}
+✓ Local Kosmos APK ready: ${dest}
 
 Install on Razr: npm run mobile:local:install
-Launcher name on device: Arco Local
+Launcher name on device: Kosmos Local
 First launch boots embedded Node + SQLite on device (~1 min).
 `);

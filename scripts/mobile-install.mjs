@@ -179,20 +179,20 @@ if (install.status !== 0) {
 
 console.log(bundled
   ? `
-✓ Bundled Arco OS installed on device.
+✓ Bundled Kosmos Connect installed on device.
 
-Open **Arco Connect** on the phone → enter your server URL (cloud, Tailscale, or LAN).
+Open **Kosmos Connect** on the phone → enter your server URL (cloud, Tailscale, or LAN).
 Use "Find on this network" on the same Wi‑Fi, then sign in.
 Switch servers later in Settings → Server.
 
-Launcher name on device: Arco Connect
+Launcher name on device: Kosmos Connect
 `
   : `
-✓ Arco OS installed on device (dev mode).
+✓ Kosmos Connect installed on device (dev mode).
 
 Next:
   Terminal 1:  npm run dev
-  On phone:    open "Arco OS"
+  On phone:    open "Kosmos Connect"
 
 USB dev uses adb reverse — phone loads Mac Vite from your machine.
 For bundled / server profiles: npm run mobile:install (default) or MOBILE_BUNDLED=1

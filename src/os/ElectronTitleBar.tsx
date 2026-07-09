@@ -18,7 +18,7 @@ export function ElectronTitleBar({ windowKey }: { windowKey?: string }) {
   const mac = desktop.platform === "darwin";
   const controlStyle: WindowControlStyle = mac ? "traffic" : "glyph";
   const align: WindowControlAlign = mac ? "left" : "right";
-  const showVersion = title === "Arco OS";
+  const showVersion = title === "Kosmos";
 
   return (
     <header
@@ -33,7 +33,7 @@ export function ElectronTitleBar({ windowKey }: { windowKey?: string }) {
       <span className="arco-window__title">
         {showVersion ? (
           <>
-            Arco OS
+            Kosmos
             <span className="arco-window__title-version"> · {desktop.version}</span>
           </>
         ) : (

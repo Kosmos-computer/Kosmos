@@ -159,6 +159,7 @@ if (bundled) {
     run("VITE_ARCO_MOBILE_LOCAL= VITE_ARCO_MOBILE_BUNDLED=1 npm run build:mobile");
   }
   run("npm run cap -w @arco/mobile sync ios");
+  run("npm run mobile:icons");
 } else {
   const serverUrl =
     process.env.CAP_SERVER_URL?.trim() || (await detectLocalDevServerUrl());
@@ -167,6 +168,7 @@ if (bundled) {
     run("npm run build:mobile");
   }
   run(`CAP_SERVER_URL=${serverUrl} npm run cap -w @arco/mobile sync ios`);
+  run("npm run mobile:icons");
 }
 
 if (!process.env.SKIP_XCODE) {
@@ -221,15 +223,15 @@ process.stderr.write(launch.stderr ?? "");
 
 console.log(bundled
   ? `
-✓ Arco OS installed on iPhone.
+✓ Kosmos Connect installed on iPhone.
 
 Open the app → enter your server URL (e.g. http://${lanIp()}:4600 on same Wi‑Fi).
 Keep npm run dev:server running on your Mac, or point at a hosted server.
 `
   : `
-✓ Arco OS installed on iPhone (dev mode).
+✓ Kosmos Connect installed on iPhone (dev mode).
 
 Next:
   Terminal 1:  npm run dev:mobile
-  On iPhone:   open "Arco OS"
+  On iPhone:   open "Kosmos Connect"
 `);

@@ -556,7 +556,7 @@ export function SettingsApp() {
                   {isArcoDesktop() && (
                     <SettingsFieldRow
                       label="Software updates"
-                      hint="Arco OS checks for updates in the background and prompts you to restart when a new build is ready."
+                      hint="Kosmos checks for updates in the background and prompts you to restart when a new build is ready."
                     >
                       <DesktopUpdatesSection />
                     </SettingsFieldRow>

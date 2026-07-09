@@ -61,11 +61,11 @@ if (install.status !== 0) {
 }
 
 console.log(`
-✓ Arco Local installed (${authorized[0].split("\t")[0]}).
+✓ Kosmos Local installed (${authorized[0].split("\t")[0]}).
 
-Open **Arco Local** on the phone (not Arco Connect).
+Open **Kosmos Local** on the phone (not Kosmos Connect).
 First boot starts the embedded server — wait for the setup wizard.
 Data stays on device under app storage (survives updates; cleared on uninstall).
 
-Thin client (remote server): npm run mobile:install → **Arco Connect**
+Thin client (remote server): npm run mobile:install → **Kosmos Connect**
 `);

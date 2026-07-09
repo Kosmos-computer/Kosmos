@@ -27,7 +27,7 @@ function shellUrl(): string {
 async function showStartupError(title: string, detail: string): Promise<void> {
   await dialog.showMessageBox({
     type: "error",
-    title: "Arco OS",
+    title: "Kosmos",
     message: title,
     detail,
     buttons: ["Quit"],
@@ -85,7 +85,7 @@ function createWindow(): void {
     height: 840,
     minWidth: 960,
     minHeight: 640,
-    title: "Arco OS",
+    title: "Kosmos",
     icon: appIconPath(),
     ...titleBarWindowOptions("dark"),
     webPreferences: {
@@ -145,7 +145,7 @@ if (!gotLock) {
     } catch (err) {
       console.error("[arco-desktop] failed to start:", err);
       const detail = err instanceof Error ? err.message : String(err);
-      await showStartupError("Arco OS failed to start.", detail);
+      await showStartupError("Kosmos failed to start.", detail);
       app.quit();
     }
   });

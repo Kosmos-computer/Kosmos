@@ -34,7 +34,7 @@ function UpdateModalBody({
           <div>
             <h2 className="arco-update-modal__title">Update ready</h2>
             <p className="arco-update-modal__subtitle">
-              Arco OS {version ?? "update"} is downloaded and ready to install.
+              Kosmos {version ?? "update"} is downloaded and ready to install.
             </p>
           </div>
         </header>
@@ -72,8 +72,8 @@ function UpdateModalBody({
             <h2 className="arco-update-modal__title">Downloading update</h2>
             <p className="arco-update-modal__subtitle">
               {version
-                ? `Arco OS ${version} will install after download (${currentVersion} → ${version}).`
-                : "Fetching the latest Arco OS release."}
+                ? `Kosmos ${version} will install after download (${currentVersion} → ${version}).`
+                : "Fetching the latest Kosmos release."}
             </p>
           </div>
         </header>

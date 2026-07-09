@@ -19,14 +19,14 @@
     "release:should-ship": "node scripts/should-release-desktop.mjs",
     "release:publish": "node scripts/publish-release.mjs",
     "verify": "node scripts/verify-packaging.mjs --staged --smoke",
-    "verify:app": "node scripts/verify-packaging.mjs --app \"release/mac-arm64/Arco OS.app\" --smoke --skip-build-check",
+    "verify:app": "node scripts/verify-packaging.mjs --app \"release/mac-arm64/Kosmos.app\" --smoke --skip-build-check",
     "setup:local-models": "node scripts/setup-local-models.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "build": {
     "electronVersion": "35.7.5",
     "appId": "com.arco.os",
-    "productName": "Arco OS",
+    "productName": "Kosmos",
     "directories": {
       "output": "release",
       "buildResources": "build"

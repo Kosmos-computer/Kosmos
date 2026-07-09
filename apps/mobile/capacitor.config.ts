@@ -1,12 +1,13 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 /**
- * Capacitor loads the shared Arco Vite build from ../../dist.
+ * Capacitor loads the shared Kosmos Vite build from ../../dist.
+ * (UI primitives still use the Arco design-system tokens/classes.)
  *
  * Thin client (bundled): UI in APK, user picks remote server at first run.
  *   npm run mobile:bundle
  *
- * Local sidecar (embedded Node): full Arco backend on device, WebView → localhost:4600.
+ * Local sidecar (embedded Node): full Kosmos backend on device, WebView → localhost:4600.
  *   MOBILE_LOCAL=1 npm run mobile:local:bundle
  *
  * Dev proxy: CAP_SERVER_URL=http://10.0.2.2:4610 npm run mobile:sync:dev
@@ -16,8 +17,8 @@ const isLocalSidecar = process.env.MOBILE_LOCAL === "1";
 
 /** Launcher labels — must stay in sync with scripts/setup-mobile-android.mjs */
 export const MOBILE_APP_FLAVOR = isLocalSidecar
-  ? { appId: "com.arco.os.mobile.local", appName: "Arco Local" }
-  : { appId: "com.arco.os.mobile", appName: "Arco Connect" };
+  ? { appId: "com.arco.os.mobile.local", appName: "Kosmos Local" }
+  : { appId: "com.arco.os.mobile", appName: "Kosmos Connect" };
 
 const config: CapacitorConfig = {
   appId: MOBILE_APP_FLAVOR.appId,

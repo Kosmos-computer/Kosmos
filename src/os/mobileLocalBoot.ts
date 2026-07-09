@@ -37,7 +37,7 @@ async function pollLocalServer(maxMs = 120_000): Promise<string> {
     }
     await new Promise((r) => setTimeout(r, 500));
   }
-  throw new Error("Arco local server did not start in time");
+  throw new Error("Kosmos local server did not start in time");
 }
 
 /** Wait for embedded Node backend, then load the full shell from localhost:4600. */
@@ -50,7 +50,7 @@ export async function bootMobileLocalShell(): Promise<void> {
     return;
   }
 
-  showBootStatus("Starting Arco on this device…", "Embedded server is booting (first launch may take a minute).");
+  showBootStatus("Starting Kosmos on this device…", "Embedded server is booting (first launch may take a minute).");
 
   const targetUrl = "http://127.0.0.1:4600";
 
@@ -62,8 +62,8 @@ export async function bootMobileLocalShell(): Promise<void> {
       const message = err instanceof Error ? err.message : String(err);
       if (message.includes("not implemented") || message.includes("UNIMPLEMENTED")) {
         showBootStatus(
-          "Arco Local backend unavailable",
-          "Install the Arco Local APK (not Arco Connect). Rebuild with npm run mobile:local:bundle.",
+          "Kosmos Local backend unavailable",
+          "Install the Kosmos Local APK (not Kosmos Connect). Rebuild with npm run mobile:local:bundle.",
         );
         return;
       }
@@ -100,7 +100,7 @@ export async function bootMobileLocalShell(): Promise<void> {
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    showBootStatus("Could not start local Arco server", message);
+    showBootStatus("Could not start local Kosmos server", message);
     throw err;
   }
 }

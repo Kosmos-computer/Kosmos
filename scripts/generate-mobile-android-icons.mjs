@@ -1,157 +1,56 @@
 #!/usr/bin/env node
 /**
- * Generate Android launcher + splash assets from the shared Arco desktop icon.
+ * Generate Android + iOS launcher icons for Kosmos Connect and Kosmos Local.
  *
- * Adaptive icons (Chrome OS / Android 8+) mask the foreground into a circle.
- * The foreground uses only the white mark, scaled to the 66dp safe zone — not
- * the full 1024 desktop icon which fills the canvas edge-to-edge.
+ * Connect: white mark on black tile.
+ * Local:   black mark on white tile.
+ *
+ * Android flavors read from src/connect/res and src/local/res.
+ * iOS assets are written when apps/mobile/ios exists (gitignored, created by cap sync).
  */
-import { execSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  DENSITIES,
+  MOBILE_ICON_VARIANTS,
+  SPLASH,
+  adaptiveForegroundSvg,
+  fullIconSvg,
+  launcherSvg,
+  rasterizeSvg,
+  resizePng,
+} from "./mobile-icon-lib.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const desktopIconPng = path.join(root, "apps/desktop/build/icon.png");
-const desktopIconSvg = path.join(root, "apps/desktop/build/icon.svg");
-const resRoot = path.join(root, "apps/mobile/android/app/src/main/res");
-const tmpDir = path.join(os.tmpdir(), "arco-mobile-icons");
+const androidRoot = path.join(root, "apps/mobile/android/app/src");
+const iosIconDir = path.join(
+  root,
+  "apps/mobile/ios/App/App/Assets.xcassets/AppIcon.appiconset",
+);
+const iosSplashDir = path.join(
+  root,
+  "apps/mobile/ios/App/App/Assets.xcassets/Splash.imageset",
+);
+const iosInfoPlist = path.join(root, "apps/mobile/ios/App/App/Info.plist");
+const tmpDir = path.join(os.tmpdir(), "kosmos-mobile-icons");
 
-// Keep in sync with apps/desktop/scripts/generate-icon.mjs
-const CELL = 15;
-const LOGO_CELLS = [
-  [0, 0],
-  [3, 0],
-  [6, 0],
-  [1, 1],
-  [3, 1],
-  [5, 1],
-  [0, 2],
-  [2, 2],
-  [4, 2],
-  [6, 2],
-  [1, 3],
-  [3, 3],
-  [5, 3],
-  [0, 4],
-  [3, 4],
-  [6, 4],
-];
-const MARK_VIEWBOX = { width: 105, height: 75 };
-
-/** Mark scale inside the 108dp adaptive foreground (66dp safe zone ≈ 61%). */
-const ADAPTIVE_MARK_SCALE = 0.54;
-
-/** Full rounded icon scale inside 108dp canvas for legacy launcher PNGs. */
-const LAUNCHER_ICON_SCALE = 0.68;
-
-const DENSITIES = {
-  "mipmap-mdpi": { launcher: 48, foreground: 108 },
-  "mipmap-hdpi": { launcher: 72, foreground: 162 },
-  "mipmap-xhdpi": { launcher: 96, foreground: 216 },
-  "mipmap-xxhdpi": { launcher: 144, foreground: 324 },
-  "mipmap-xxxhdpi": { launcher: 192, foreground: 432 },
-};
-
-const SPLASH = {
-  "drawable-port-mdpi": 320,
-  "drawable-port-hdpi": 480,
-  "drawable-port-xhdpi": 720,
-  "drawable-port-xxhdpi": 1080,
-  "drawable-port-xxxhdpi": 1440,
-  "drawable-land-mdpi": 320,
-  "drawable-land-hdpi": 480,
-  "drawable-land-xhdpi": 720,
-  "drawable-land-xxhdpi": 1080,
-  "drawable-land-xxxhdpi": 1440,
-};
-
-function markRects() {
-  return LOGO_CELLS.map(
-    ([col, row]) =>
-      `<rect x="${col * CELL}" y="${row * CELL}" width="${CELL}" height="${CELL}"/>`,
-  ).join("\n      ");
-}
-
-function markTransform(scale) {
-  const ox = -MARK_VIEWBOX.width / 2;
-  const oy = -MARK_VIEWBOX.height / 2;
-  return `scale(${scale}) translate(${ox} ${oy})`;
-}
-
-/** Transparent foreground layer — mark only, for adaptive icon circle mask. */
-function adaptiveForegroundSvg() {
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="108" height="108" viewBox="0 0 108 108">
-  <g transform="translate(54 54)">
-    <g transform="${markTransform(ADAPTIVE_MARK_SCALE)}" fill="#ffffff">
-      ${markRects()}
-    </g>
-  </g>
-</svg>
-`;
-}
-
-/** Flat launcher icon — black rounded tile + mark, padded for circular masks. */
-function launcherSvg() {
-  const tile = 108 * LAUNCHER_ICON_SCALE;
-  const radius = tile * 0.225;
-  const offset = (108 - tile) / 2;
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="108" height="108" viewBox="0 0 108 108">
-  <rect x="${offset}" y="${offset}" width="${tile}" height="${tile}" rx="${radius}" ry="${radius}" fill="#000000"/>
-  <g transform="translate(54 54)">
-    <g transform="${markTransform(ADAPTIVE_MARK_SCALE)}" fill="#ffffff">
-      ${markRects()}
-    </g>
-  </g>
-</svg>
-`;
-}
-
-function ensureSourceIcon() {
-  if (fs.existsSync(desktopIconPng)) return desktopIconPng;
-  if (fs.existsSync(desktopIconSvg)) {
-    execSync(`rsvg-convert -w 1024 -h 1024 "${desktopIconSvg}" -o "${desktopIconPng}"`, {
-      stdio: "inherit",
-    });
-    return desktopIconPng;
-  }
-  const generator = path.join(root, "apps/desktop/scripts/generate-icon.mjs");
-  if (fs.existsSync(generator)) {
-    execSync(`node "${generator}"`, { stdio: "inherit", cwd: root });
-    if (fs.existsSync(desktopIconPng)) return desktopIconPng;
-  }
-  throw new Error("Arco icon not found. Run: node apps/desktop/scripts/generate-icon.mjs");
-}
-
-function rasterizeSvg(svgPath, size, dest) {
-  fs.mkdirSync(path.dirname(dest), { recursive: true });
-  execSync(`rsvg-convert -w ${size} -h ${size} "${svgPath}" -o "${dest}"`, { stdio: "pipe" });
-}
-
-function resizePng(source, size, dest) {
-  fs.mkdirSync(path.dirname(dest), { recursive: true });
-  if (process.platform === "darwin") {
-    execSync(`sips -z ${size} ${size} "${source}" --out "${dest}"`, { stdio: "pipe" });
-    return;
-  }
-  execSync(`convert "${source}" -resize ${size}x${size}! "${dest}"`, { stdio: "pipe" });
-}
-
-function writeBackgroundColor() {
+function writeBackgroundColor(resRoot, variant) {
+  const { tileBg } = MOBILE_ICON_VARIANTS[variant];
   const colorPath = path.join(resRoot, "values/ic_launcher_background.xml");
+  fs.mkdirSync(path.dirname(colorPath), { recursive: true });
   fs.writeFileSync(
     colorPath,
     `<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#000000</color>
+    <color name="ic_launcher_background">${tileBg}</color>
 </resources>
 `,
   );
 
   const drawableBg = path.join(resRoot, "drawable/ic_launcher_background.xml");
+  fs.mkdirSync(path.dirname(drawableBg), { recursive: true });
   fs.writeFileSync(
     drawableBg,
     `<?xml version="1.0" encoding="utf-8"?>
@@ -160,41 +59,99 @@ function writeBackgroundColor() {
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path android:fillColor="#000000" android:pathData="M0,0h108v108h-108z" />
+    <path android:fillColor="${tileBg}" android:pathData="M0,0h108v108h-108z" />
 </vector>
 `,
   );
 }
 
+function generateAndroidVariant(variant, flavorDir) {
+  const resRoot = path.join(androidRoot, flavorDir, "res");
+  const variantTmp = path.join(tmpDir, variant);
+  fs.mkdirSync(variantTmp, { recursive: true });
+
+  const foregroundSvgPath = path.join(variantTmp, "adaptive-foreground.svg");
+  const launcherSvgPath = path.join(variantTmp, "launcher.svg");
+  const fullSvgPath = path.join(variantTmp, "full.svg");
+  fs.writeFileSync(foregroundSvgPath, adaptiveForegroundSvg(variant));
+  fs.writeFileSync(launcherSvgPath, launcherSvg(variant));
+  fs.writeFileSync(fullSvgPath, fullIconSvg(variant));
+  writeBackgroundColor(resRoot, variant);
+
+  for (const [folder, { launcher, foreground }] of Object.entries(DENSITIES)) {
+    const dir = path.join(resRoot, folder);
+    fs.mkdirSync(dir, { recursive: true });
+    const launcherPath = path.join(dir, "ic_launcher.png");
+    const roundPath = path.join(dir, "ic_launcher_round.png");
+    const foregroundPath = path.join(dir, "ic_launcher_foreground.png");
+
+    rasterizeSvg(launcherSvgPath, launcher, launcherPath);
+    fs.copyFileSync(launcherPath, roundPath);
+    rasterizeSvg(foregroundSvgPath, foreground, foregroundPath);
+    console.log(`[mobile:icons] ${flavorDir}/${folder} → ${launcher}px (${variant})`);
+  }
+
+  const splashSource = path.join(variantTmp, "full-1024.png");
+  rasterizeSvg(fullSvgPath, 1024, splashSource);
+
+  const splashDir = path.join(resRoot, "drawable");
+  fs.mkdirSync(splashDir, { recursive: true });
+  resizePng(splashSource, 512, path.join(splashDir, "splash.png"));
+
+  for (const [folder, width] of Object.entries(SPLASH)) {
+    const dir = path.join(resRoot, folder);
+    fs.mkdirSync(dir, { recursive: true });
+    resizePng(splashSource, width, path.join(dir, "splash.png"));
+  }
+}
+
+function generateIosVariant(variant) {
+  if (!fs.existsSync(path.dirname(iosIconDir))) {
+    console.log("[mobile:icons] iOS project not found — skip (run cap sync ios first)");
+    return;
+  }
+
+  const variantTmp = path.join(tmpDir, `${variant}-ios`);
+  fs.mkdirSync(variantTmp, { recursive: true });
+  const fullSvgPath = path.join(variantTmp, "full.svg");
+  fs.writeFileSync(fullSvgPath, fullIconSvg(variant));
+  const iconPng = path.join(variantTmp, "icon-1024.png");
+  rasterizeSvg(fullSvgPath, 1024, iconPng);
+
+  fs.mkdirSync(iosIconDir, { recursive: true });
+  fs.copyFileSync(iconPng, path.join(iosIconDir, "AppIcon-512@2x.png"));
+  console.log(`[mobile:icons] iOS AppIcon → ${variant}`);
+
+  if (fs.existsSync(iosSplashDir)) {
+    const splashNames = ["splash-2732x2732.png", "splash-2732x2732-1.png", "splash-2732x2732-2.png"];
+    const splashPng = path.join(variantTmp, "splash-2732.png");
+    rasterizeSvg(fullSvgPath, 2732, splashPng);
+    for (const name of splashNames) {
+      fs.copyFileSync(splashPng, path.join(iosSplashDir, name));
+    }
+    console.log("[mobile:icons] iOS Splash.imageset updated");
+  }
+
+  if (fs.existsSync(iosInfoPlist)) {
+    const displayName = MOBILE_ICON_VARIANTS[variant].label;
+    let plist = fs.readFileSync(iosInfoPlist, "utf8");
+    plist = plist.replace(
+      /<key>CFBundleDisplayName<\/key>\s*<string>[^<]*<\/string>/,
+      `<key>CFBundleDisplayName</key>\n        <string>${displayName}</string>`,
+    );
+    fs.writeFileSync(iosInfoPlist, plist);
+    console.log(`[mobile:icons] iOS CFBundleDisplayName → ${displayName}`);
+  }
+}
+
 fs.mkdirSync(tmpDir, { recursive: true });
-const foregroundSvgPath = path.join(tmpDir, "adaptive-foreground.svg");
-const launcherSvgPath = path.join(tmpDir, "launcher.svg");
-fs.writeFileSync(foregroundSvgPath, adaptiveForegroundSvg());
-fs.writeFileSync(launcherSvgPath, launcherSvg());
-writeBackgroundColor();
 
-for (const [folder, { launcher, foreground }] of Object.entries(DENSITIES)) {
-  const dir = path.join(resRoot, folder);
-  fs.mkdirSync(dir, { recursive: true });
-  const launcherPath = path.join(dir, "ic_launcher.png");
-  const roundPath = path.join(dir, "ic_launcher_round.png");
-  const foregroundPath = path.join(dir, "ic_launcher_foreground.png");
+// Flavor-specific Android assets; main mirrors Connect for non-flavored builds.
+generateAndroidVariant("connect", "connect");
+generateAndroidVariant("local", "local");
+generateAndroidVariant("connect", "main");
 
-  rasterizeSvg(launcherSvgPath, launcher, launcherPath);
-  fs.copyFileSync(launcherPath, roundPath);
-  rasterizeSvg(foregroundSvgPath, foreground, foregroundPath);
-  console.log(`[mobile:icons] ${folder} → launcher ${launcher}px, foreground ${foreground}px`);
-}
+// iOS is thin-client only today — Connect branding.
+generateIosVariant("connect");
 
-const splashSource = ensureSourceIcon();
-const splashDir = path.join(resRoot, "drawable");
-fs.mkdirSync(splashDir, { recursive: true });
-resizePng(splashSource, 512, path.join(splashDir, "splash.png"));
-
-for (const [folder, width] of Object.entries(SPLASH)) {
-  const dir = path.join(resRoot, folder);
-  fs.mkdirSync(dir, { recursive: true });
-  resizePng(splashSource, width, path.join(dir, "splash.png"));
-}
-
-console.log("[mobile:icons] Done — adaptive foreground uses safe-zone mark scale");
+console.log("[mobile:icons] Done — Connect (dark tile), Local (light tile)");

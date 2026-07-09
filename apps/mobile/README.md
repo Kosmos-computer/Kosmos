@@ -1,12 +1,12 @@
-# Arco OS — Capacitor mobile shell
+# Kosmos — Capacitor mobile shell
 
-Android/iOS WebView wrap around the shared Arco Vite UI (`MobileShell`).
+Android/iOS WebView wrap around the shared Kosmos Vite UI (`MobileShell`).
 
 | Doc | Contents |
 |-----|----------|
 | [`docs/mobile-sideload.md`](../../docs/mobile-sideload.md) | All install paths (USB, ADB, PWA, emulator) |
 | [`docs/mobile-chromebook-local-backend.md`](../../docs/mobile-chromebook-local-backend.md) | Cloud / Tailscale / Linux-on-Chromebook architecture |
-| [`docs/mobile-local-android.md`](../../docs/mobile-local-android.md) | **Embedded Node** — full Arco on Android (prototype) |
+| [`docs/mobile-local-android.md`](../../docs/mobile-local-android.md) | **Embedded Node** — full Kosmos on Android (prototype) |
 
 ---
 
@@ -14,8 +14,8 @@ Android/iOS WebView wrap around the shared Arco Vite UI (`MobileShell`).
 
 | Mode | Build | Server | Switch URL without reinstall? |
 |------|-------|--------|------------------------------|
-| **Thin client (bundled)** | `npm run mobile:bundle` | User enters URL at first run | **Arco Connect** |
-| **Local embedded Node** | `npm run mobile:local:bundle` | Sidecar on device (`:4600`) | **Arco Local** |
+| **Thin client (bundled)** | `npm run mobile:bundle` | User enters URL at first run | **Kosmos Connect** |
+| **Local embedded Node** | `npm run mobile:local:bundle` | Sidecar on device (`:4600`) | **Kosmos Local** |
 | **Dev sideload** | `MOBILE_DEV=1` + `CAP_SERVER_URL=…` | Mac Vite `:4610` + Mac `data/` | No — rebuild/resync |
 
 Bundled thin-client APK ships the UI inside the app (`VITE_ARCO_MOBILE_BUNDLED=1`). **No default server host** — you type Coolify domain, Tailscale URL, LAN IP, etc. at first run.
@@ -56,7 +56,7 @@ export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
 
 ## Server profiles (bundled APK)
 
-1. **First run** — Connect to Arco modal: enter server URL, optional label, **Test & connect**.
+1. **First run** — Connect to Kosmos modal: enter server URL, optional label, **Test & connect**.
 2. **Find on this network** — detects your Wi‑Fi subnet, scans LAN, and (on Chromebook) the Linux bridge (`http://100.115.92.2:4600`).
 3. **Settings → Server** — add/switch/remove profiles; switching reloads the app (separate login per server).
 

@@ -5,8 +5,8 @@
  *   npm run mobile:install:both
  *
  * Installs:
- *   • Arco Connect  (com.arco.os.mobile)       — thin client
- *   • Arco Local    (com.arco.os.mobile.local) — embedded Node backend
+ *   • Kosmos Connect  (com.arco.os.mobile)       — thin client
+ *   • Kosmos Local    (com.arco.os.mobile.local) — embedded Node backend
  */
 import { execSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
@@ -36,6 +36,12 @@ if (authorized.length === 0) {
   process.exit(1);
 }
 
+/** Prefer ANDROID_SERIAL, else the first authorized device (skip unauthorized siblings). */
+const serial =
+  process.env.ANDROID_SERIAL?.trim() ||
+  authorized[0].split(/\s+/)[0];
+const adbTarget = ["-s", serial];
+
 if (!process.env.SKIP_BUILD) {
   // Build Local first, then Connect last so the thin-client UI is never overwritten
   // by mobile.local env before assembleConnectDebug runs.
@@ -44,15 +50,15 @@ if (!process.env.SKIP_BUILD) {
 }
 
 for (const [label, apkPath] of [
-  ["Arco Connect", MOBILE_APK.connect],
-  ["Arco Local", MOBILE_APK.local],
+  ["Kosmos Connect", MOBILE_APK.connect],
+  ["Kosmos Local", MOBILE_APK.local],
 ]) {
   if (!fs.existsSync(apkPath)) {
     console.error(`[mobile:install:both] Missing ${label} APK: ${apkPath}`);
     process.exit(1);
   }
   console.log(`\n[mobile:install:both] Installing ${label}`);
-  const install = adb(["install", "-r", apkPath]);
+  const install = adb([...adbTarget, "install", "-r", apkPath]);
   process.stdout.write(install.stdout ?? "");
   process.stderr.write(install.stderr ?? "");
   if (install.status !== 0) {
@@ -61,9 +67,9 @@ for (const [label, apkPath] of [
 }
 
 console.log(`
-✓ Both apps installed on ${authorized[0].split("\t")[0]}.
+✓ Both apps installed on ${serial}.
 
 Look for two launcher icons:
-  • Arco Connect — remote server client
-  • Arco Local   — full stack on device
+  • Kosmos Connect — remote server client
+  • Kosmos Local   — full stack on device
 `);

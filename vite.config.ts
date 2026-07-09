@@ -47,5 +47,9 @@ export default defineConfig({
   build: {
     outDir: "dist",
     chunkSizeWarningLimit: 2000,
+    rollupOptions: {
+      // Mobile-only; not installed in the server/Docker image.
+      external: ["capacitor-nodejs"],
+    },
   },
 });

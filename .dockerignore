@@ -1,15 +1,24 @@
 node_modules
-dist
+# dist is included for deploy/fly/Dockerfile.runtime (prebuilt on host).
 data
 .env
 .git
 .github
+.claude
 .DS_Store
 *.log
+*.apk
+app-local-debug.apk
+reference
 apps/desktop/dist
 apps/desktop/release
+apps/mobile
 model-manager/src-tauri/target
 model-manager/src-tauri/gen
 voice-server/.venv
 __pycache__
 docs/saas-plan.md
+public/downloads
+public/**/*.mp3
+public/**/*.wav
+public/**/*.zip

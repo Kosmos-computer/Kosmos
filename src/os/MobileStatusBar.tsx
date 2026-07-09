@@ -41,7 +41,7 @@ export function MobileStatusBar({ active, onBack }: MobileStatusBarProps) {
     );
   }, [canWriteSettings, canManageUsers]);
 
-  const title = active ? resolveWindowTitle(active) : "Arco";
+  const title = active ? resolveWindowTitle(active) : "Kosmos";
 
   return (
     <header className="arco-mobile-statusbar">

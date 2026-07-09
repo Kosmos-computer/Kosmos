@@ -13,7 +13,7 @@ apps:
 > Lineage: this plan folds in the original concept docs from the UI Experiments
 > repo — `DESIGN-SYSTEM-SPEC.md` (trust tiers §10.7, logic ladder D9, security
 > D10, portability §10.8) and `Project-planning.md` (entity store, one agent
-> runtime). Arco-Prototype-2 is the fresh build of that thinking; what carries
+> runtime). Kosmos is the fresh build of that thinking; what carries
 > over are the architecture decisions, not the OpenClaw-era mechanics.
 
 ## Design principles

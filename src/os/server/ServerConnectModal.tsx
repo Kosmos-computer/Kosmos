@@ -90,7 +90,7 @@ export function ServerConnectModal({ onConnected }: ServerConnectModalProps) {
           <div className="arco-server-connect__header">
             <Server size={22} aria-hidden />
             <div>
-              <h1>Connect to Arco</h1>
+              <h1>Connect to Kosmos</h1>
               <p>Enter your server address. Each server has its own account and data.</p>
             </div>
           </div>
@@ -160,7 +160,7 @@ export function ServerConnectModal({ onConnected }: ServerConnectModalProps) {
           <p className="arco-server-connect__footnote">
             Examples: Coolify host, Tailscale URL (<code>https://macbook.tailnet.ts.net:4600</code>), or LAN IP on
             the same Wi‑Fi (<code>http://10.0.0.12:4600</code>). After connecting, sign in or complete setup on that
-            server. On Chromebook, run Arco in Linux first, then scan for the local backend.
+            server. On Chromebook, run Kosmos in Linux first, then scan for the local backend.
           </p>
         </div>
       </div>

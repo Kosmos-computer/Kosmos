@@ -37,8 +37,10 @@ if (authorized.length === 0) {
 }
 
 if (!process.env.SKIP_BUILD) {
-  run("npm run mobile:bundle");
+  // Build Local first, then Connect last so the thin-client UI is never overwritten
+  // by mobile.local env before assembleConnectDebug runs.
   run("npm run mobile:local:bundle");
+  run("npm run mobile:bundle");
 }
 
 for (const [label, apkPath] of [

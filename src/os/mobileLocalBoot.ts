@@ -14,14 +14,26 @@ function showBootStatus(message: string, detail?: string) {
   `;
 }
 
-async function pollLocalServer(url: string, maxMs = 120_000): Promise<void> {
+async function isLocalServerReady(url: string): Promise<boolean> {
+  try {
+    const [apiRes, shellRes] = await Promise.all([
+      fetch(`${url}/api/auth/status`, { credentials: "include" }),
+      fetch(`${url}/`, { credentials: "include" }),
+    ]);
+    if (!apiRes.ok || !shellRes.ok) return false;
+    const contentType = shellRes.headers.get("content-type") ?? "";
+    return contentType.includes("text/html");
+  } catch {
+    return false;
+  }
+}
+
+async function pollLocalServer(maxMs = 120_000): Promise<string> {
   const started = Date.now();
   while (Date.now() - started < maxMs) {
-    try {
-      const res = await fetch(`${url}/api/auth/status`, { credentials: "include" });
-      if (res.ok) return;
-    } catch {
-      // sidecar still booting
+    for (let port = 4600; port < 4610; port++) {
+      const url = `http://127.0.0.1:${port}`;
+      if (await isLocalServerReady(url)) return url;
     }
     await new Promise((r) => setTimeout(r, 500));
   }
@@ -33,7 +45,8 @@ export async function bootMobileLocalShell(): Promise<void> {
   if (!isMobileLocalShell()) return;
 
   const { hostname, port } = window.location;
-  if (hostname === "127.0.0.1" && port === "4600") {
+  // Already served by the embedded sidecar (may use 4601+ if 4600 is stale).
+  if (hostname === "127.0.0.1" && /^460\d$/.test(port)) {
     return;
   }
 
@@ -42,7 +55,20 @@ export async function bootMobileLocalShell(): Promise<void> {
   const targetUrl = "http://127.0.0.1:4600";
 
   try {
-    const { NodeJS } = await import(/* @vite-ignore */ "capacitor-nodejs");
+    let NodeJS: typeof import("capacitor-nodejs").NodeJS;
+    try {
+      ({ NodeJS } = await import(/* @vite-ignore */ "capacitor-nodejs"));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (message.includes("not implemented") || message.includes("UNIMPLEMENTED")) {
+        showBootStatus(
+          "Arco Local backend unavailable",
+          "Install the Arco Local APK (not Arco Connect). Rebuild with npm run mobile:local:bundle.",
+        );
+        return;
+      }
+      throw err;
+    }
 
     await new Promise<void>((resolve, reject) => {
       const timeout = window.setTimeout(() => {
@@ -62,10 +88,10 @@ export async function bootMobileLocalShell(): Promise<void> {
         });
       });
 
-      void pollLocalServer(targetUrl)
-        .then(() => {
+      void pollLocalServer()
+        .then((url) => {
           window.clearTimeout(timeout);
-          window.location.replace(targetUrl);
+          window.location.replace(url);
           resolve();
         })
         .catch(() => {

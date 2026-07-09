@@ -19,6 +19,9 @@ const sqliteVersion =
     "better-sqlite3"
   ] ?? "^12.0.0";
 
+const SQLITE_ANDROID_PREBUILD_URL =
+  "https://github.com/digidem/better-sqlite3-nodejs-mobile/releases/download/12.10.0/better-sqlite3-12.10.0-node-108-android-arm64.tar.gz";
+
 function copyTree(from, to, filter) {
   fs.cpSync(from, to, {
     recursive: true,
@@ -83,6 +86,12 @@ copyTree(generatedDir, path.join(stageRoot, "server/generated"));
 console.log("  • generated (esbuild bundle __dirname compat)");
 copyTree(generatedDir, path.join(stageRoot, "generated"));
 
+const seedsDir = path.join(repoRoot, "server/seeds");
+if (fs.existsSync(seedsDir)) {
+  console.log("  • server/seeds");
+  copyTree(seedsDir, path.join(stageRoot, "server/seeds"));
+}
+
 console.log("  • packages/app-sdk");
 fs.mkdirSync(path.join(stageRoot, "packages/app-sdk"), { recursive: true });
 fs.copyFileSync(
@@ -110,6 +119,9 @@ await esbuild.build({
   packages: "bundle",
   alias: {
     "@cursor/sdk": path.join(repoRoot, "scripts/mobile-stubs/cursor-sdk.mjs"),
+    "cross-spawn": path.join(repoRoot, "scripts/mobile-stubs/cross-spawn.mjs"),
+    "node:child_process": path.join(repoRoot, "scripts/mobile-stubs/child-process.mjs"),
+    child_process: path.join(repoRoot, "scripts/mobile-stubs/child-process.mjs"),
   },
   logLevel: "info",
 });
@@ -146,21 +158,40 @@ fs.writeFileSync(
 );
 run("npm", ["install", "--omit=dev", "--ignore-scripts"], stageRoot);
 
-const nodeMobileHeaders = path.join(
-  repoRoot,
-  "node_modules/capacitor-nodejs/android/libnode",
+const sqliteNativeDir = path.join(
+  stageRoot,
+  "node_modules/better-sqlite3/build/Release",
 );
+const sqliteNativePath = path.join(sqliteNativeDir, "better_sqlite3.node");
 const ndk = process.env.ANDROID_NDK_HOME ?? process.env.NDK_HOME ?? defaultNdkHome();
 
-if (ndk && fs.existsSync(nodeMobileHeaders)) {
-  console.log("  • node-gyp rebuild better-sqlite3 (android arm64, Node 18.20.4)");
-  run("npm", ["rebuild", "better-sqlite3", "--build-from-source"], stageRoot, {
-    npm_config_nodedir: nodeMobileHeaders,
-    npm_config_arch: "arm64",
-    npm_config_platform: "android",
-    ANDROID_NDK_HOME: ndk,
-    GYP_DEFINES: `android_ndk_path='${ndk}'`,
+if (ndk) {
+  console.log("  • better-sqlite3 prebuild (android arm64, Node 18 ABI 108)");
+  fs.mkdirSync(sqliteNativeDir, { recursive: true });
+  const archive = path.join(stageRoot, ".better-sqlite3-android-arm64.tar.gz");
+  const curl = spawnSync("curl", ["-fsL", SQLITE_ANDROID_PREBUILD_URL, "-o", archive], {
+    stdio: "inherit",
   });
+  if (curl.status !== 0) {
+    console.error("[mobile:local:stage] failed to download better-sqlite3 android prebuild");
+    process.exit(curl.status ?? 1);
+  }
+  const tar = spawnSync("tar", ["-xzf", archive, "-C", sqliteNativeDir, "--strip-components=1"], {
+    stdio: "inherit",
+  });
+  fs.rmSync(archive, { force: true });
+  if (tar.status !== 0 || !fs.existsSync(sqliteNativePath)) {
+    console.error("[mobile:local:stage] failed to extract better-sqlite3 android prebuild");
+    process.exit(tar.status ?? 1);
+  }
+  const magic = fs.readFileSync(sqliteNativePath).subarray(0, 4).toString("hex");
+  if (magic !== "7f454c46") {
+    console.error(
+      `[mobile:local:stage] better-sqlite3 prebuild is not ELF (magic ${magic})`,
+    );
+    process.exit(1);
+  }
+  console.log("  • better-sqlite3 native addon: Android ELF arm64");
 } else {
   console.warn(
     "[mobile:local:stage] ANDROID_NDK_HOME not set — host rebuild only (won't run on Razr).",

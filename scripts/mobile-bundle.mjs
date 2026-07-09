@@ -29,6 +29,23 @@ run("npm run build:mobile");
 run("npm run mobile:icons");
 run("npm run mobile:sync");
 
+const distAssets = path.join(root, "dist/assets");
+const mainJs = fs
+  .readdirSync(distAssets)
+  .find((f) => /^index-.*\.js$/.test(f) && f !== "index-DXoDgWuS.js" && !f.startsWith("index-m"));
+if (mainJs) {
+  const bundle = fs.readFileSync(path.join(distAssets, mainJs), "utf8");
+  if (/function \w+\(\)\{const \w+=\w+\(\);return!\(\w+==="ios"\|\|\w+==="web"\)\}/.test(bundle)) {
+    console.error(
+      "[mobile:bundle] Connect build has embedded-local boot enabled (wrong env).",
+    );
+    console.error(
+      "[mobile:bundle] Remove .env.mobile.local or rebuild with: npm run build:mobile",
+    );
+    process.exit(1);
+  }
+}
+
 const capConfigPath = path.join(androidDir, "app/src/main/assets/capacitor.config.json");
 if (fs.existsSync(capConfigPath)) {
   const capConfig = JSON.parse(fs.readFileSync(capConfigPath, "utf8"));

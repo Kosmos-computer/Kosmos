@@ -28,15 +28,19 @@ export function isCapacitorDevProxy(): boolean {
 
 /** Full Arco backend embedded on device (nodejs-mobile sidecar, Android only). */
 export function isMobileLocalShell(): boolean {
-  const localBuild = import.meta.env.VITE_ARCO_MOBILE_LOCAL === "1";
   const platform = capacitorPlatform();
 
   if (platform === "ios" || platform === "web") return false;
-  if (localBuild) return true;
+
+  // Thin-client APK must never boot the embedded backend — even when a mis-synced
+  // Capacitor sync inlined VITE_ARCO_MOBILE_LOCAL into the Connect bundle.
+  if (import.meta.env.VITE_ARCO_MOBILE_BUNDLED === "1") return false;
+
+  if (import.meta.env.VITE_ARCO_MOBILE_LOCAL === "1") return true;
 
   if (typeof window === "undefined") return false;
   const { hostname, port } = window.location;
-  return hostname === "127.0.0.1" && port === "4600" && platform === "android";
+  return hostname === "127.0.0.1" && /^460\d$/.test(port) && platform === "android";
 }
 
 export function isMobileBundledShell(): boolean {

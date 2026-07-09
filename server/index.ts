@@ -22,7 +22,7 @@ import { RESPONSE_ALREADY_SENT } from "@hono/node-server/utils/response";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import fs from "node:fs/promises";
-import { createReadStream, type ReadStream } from "node:fs";
+import { createReadStream, existsSync, type ReadStream } from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import type {
@@ -2541,14 +2541,25 @@ app.use(
   }),
 );
 
-// ── Static shell (production) ────────────────────────────────────────────────
+// ── Static shell (production + embedded mobile sidecar) ─────────────────────
 
-if (process.env.NODE_ENV === "production") {
-  app.use("/*", serveStatic({ root: "./dist" }));
-  app.get("*", serveStatic({ root: "./dist", path: "index.html" }));
+const shellDistRoot = path.resolve(process.cwd(), "dist");
+const serveProductionShell =
+  process.env.NODE_ENV === "production" || process.env.ARCO_MOBILE_LOCAL === "1";
+
+if (serveProductionShell) {
+  if (!existsSync(shellDistRoot)) {
+    console.error(`[arco] shell dist not found at ${shellDistRoot}`);
+  }
+  app.use("/assets/*", serveStatic({ root: shellDistRoot }));
+  app.use("/locales/*", serveStatic({ root: shellDistRoot }));
+  app.get("/mobile-install.html", serveStatic({ root: shellDistRoot }));
+  app.get("/", serveStatic({ root: shellDistRoot, path: "index.html" }));
+  app.get("*", serveStatic({ root: shellDistRoot, path: "index.html" }));
 }
 
 const port = Number(process.env.PORT ?? 4600);
+const listenHost = process.env.ARCO_MOBILE_LOCAL === "1" ? "127.0.0.1" : undefined;
 seedMcpPresets();
 startScheduler();
 startSelfHeal();
@@ -2559,7 +2570,8 @@ void mcpSupervisor.start();
 // failures per channel.
 void channelGateway.start();
 startTranscriptionSupervisor();
-serve({ fetch: app.fetch, port }, () => {
-  console.log(`[arco] server listening on http://localhost:${port}`);
+serve({ fetch: app.fetch, port, hostname: listenHost }, () => {
+  const host = listenHost ?? "localhost";
+  console.log(`[arco] server listening on http://${host}:${port}`);
   console.log(`[arco] data dir: ${dataDirs.root}`);
 });

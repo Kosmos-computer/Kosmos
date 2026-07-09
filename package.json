@@ -42,7 +42,7 @@
     "tauri:dev:all": "concurrently -n server,web,tauri -c yellow,cyan,green \"npm run dev:server\" \"npm run dev:web\" \"npm run tauri:dev\"",
     "tauri:build": "npm run build && npm run build -w @arco/tauri",
     "build:mobile": "npm run make-i18n && npm run build:apps && vite build --mode mobile",
-    "build:mobile:local": "npm run make-i18n && npm run build:apps && vite build --mode mobile.local",
+    "build:mobile:local": "npm run make-i18n && npm run build:apps && VITE_ARCO_MOBILE_LOCAL=1 VITE_ARCO_MOBILE_BUNDLED=0 vite build --mode mobile",
     "mobile:setup": "npm run build:mobile && npm run cap -w @arco/mobile add android && node scripts/setup-mobile-android.mjs",
     "mobile:icons": "node scripts/generate-mobile-android-icons.mjs",
     "mobile:sync": "npm run cap -w @arco/mobile sync android && node scripts/setup-mobile-android.mjs",

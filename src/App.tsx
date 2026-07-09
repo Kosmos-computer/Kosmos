@@ -5,6 +5,7 @@
 import { useTranslation } from "react-i18next";
 import { BrowserRouter } from "react-router-dom";
 import { AuthGate } from "./os/auth/AuthGate";
+import { ServerConnectGate } from "./os/server/ServerConnectGate";
 import { ElectronShell } from "./os/ElectronShell";
 import { EmbedAppShell, readEmbedLaunch } from "./os/EmbedAppShell";
 import { StandaloneAppWindow } from "./os/StandaloneAppWindow";
@@ -12,6 +13,7 @@ import { ShellRoutes } from "./os/ShellRoutes";
 import { getStandaloneWindowKey } from "./os/nativeAppWindows";
 import { I18nLocaleSync } from "./i18n/I18nLocaleSync";
 import { useShellProfile } from "./os/useShellProfile";
+import { MobileInstallBanner } from "./os/MobileInstallBanner";
 
 export default function App() {
   const { i18n } = useTranslation();
@@ -41,11 +43,14 @@ export default function App() {
   return (
     <ElectronShell key={i18n.language}>
       <I18nLocaleSync />
-      <AuthGate>
-        <BrowserRouter>
-          <ShellRoutes isMobile={isMobile} />
-        </BrowserRouter>
-      </AuthGate>
+      <ServerConnectGate>
+        <AuthGate>
+          <BrowserRouter>
+            <ShellRoutes isMobile={isMobile} />
+          </BrowserRouter>
+          <MobileInstallBanner floating />
+        </AuthGate>
+      </ServerConnectGate>
     </ElectronShell>
   );
 }

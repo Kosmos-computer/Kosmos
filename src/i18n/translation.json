@@ -10037,6 +10037,13 @@
     "ja": "Conversation actions",
     "zh-CN": "Conversation actions"
   },
+  "APPS$STUDIO_SAVE_CONVERSATION": {
+    "en": "Save conversation",
+    "es": "Save conversation",
+    "de": "Save conversation",
+    "ja": "Save conversation",
+    "zh-CN": "Save conversation"
+  },
   "APPS$STUDIO_HIDE_CONVERSATIONS": {
     "en": "Hide conversations",
     "es": "Hide conversations",

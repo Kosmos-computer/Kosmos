@@ -167,11 +167,12 @@ export class AutoUpdateService {
   }
 
   getState(): DesktopUpdateState {
+    this.reconcilePreferences();
     return this.buildState();
   }
 
   async checkForUpdates(options?: { clearSnooze?: boolean }): Promise<DesktopUpdateState> {
-    if (!isEnabled()) return this.buildState();
+    if (!isEnabled()) return this.getState();
     if (options?.clearSnooze && this.pending?.version) {
       clearSnooze(this.pending.version);
     }
@@ -184,30 +185,37 @@ export class AutoUpdateService {
       this.error = message;
       this.broadcast();
     }
-    return this.buildState();
+    return this.getState();
   }
 
-  installUpdate(): void {
-    if (!isEnabled() || !this.pending?.downloaded) return;
+  installUpdate(): DesktopUpdateState {
+    if (!isEnabled()) return this.getState();
+    if (!this.pending?.downloaded) {
+      console.warn("[arco-desktop] installUpdate ignored — no downloaded update in memory");
+      return this.getState();
+    }
     autoUpdater.quitAndInstall(false, true);
+    return this.getState();
   }
 
-  remindLaterUpdate(version?: string): void {
+  remindLaterUpdate(version?: string): DesktopUpdateState {
     const target = version ?? this.pending?.version;
-    if (!target) return;
+    if (!target) return this.getState();
     snoozeVersion(target, Date.now() + SNOOZE_DURATION_MS);
     this.activeStatus = "idle";
     this.broadcast();
+    return this.getState();
   }
 
-  skipUpdate(version?: string): void {
+  skipUpdate(version?: string): DesktopUpdateState {
     const target = version ?? this.pending?.version;
-    if (!target) return;
+    if (!target) return this.getState();
     skipVersion(target);
     if (this.pending?.version === target) this.pending = null;
     this.activeStatus = "idle";
     this.error = undefined;
     this.broadcast();
+    return this.getState();
   }
 
   private shouldShowModal(version: string): boolean {
@@ -216,9 +224,30 @@ export class AutoUpdateService {
 
   private refreshAfterSnooze(): void {
     if (!this.pending?.version) return;
+    if (isVersionSkipped(this.pending.version)) {
+      this.pending = null;
+      this.activeStatus = "idle";
+      this.broadcast();
+      return;
+    }
     if (!isVersionSnoozed(this.pending.version)) {
       this.activeStatus = this.pending.downloaded ? "ready" : this.activeStatus;
       this.broadcast();
+    }
+  }
+
+  /** Drop in-memory pending state when user preferences hide the update. */
+  private reconcilePreferences(): void {
+    const version = this.pending?.version;
+    if (!version) return;
+    if (isVersionSkipped(version)) {
+      this.pending = null;
+      this.activeStatus = "idle";
+      this.error = undefined;
+      return;
+    }
+    if (isVersionSnoozed(version)) {
+      this.activeStatus = "idle";
     }
   }
 
@@ -260,6 +289,7 @@ export class AutoUpdateService {
   }
 
   private broadcast(): void {
+    this.reconcilePreferences();
     const state = this.buildState();
     for (const win of this.getWindows()) {
       if (win.isDestroyed()) continue;

@@ -6,6 +6,7 @@ import {
   Brain,
   CreditCard,
   Globe,
+  HardDrive,
   Image,
   Keyboard,
   Languages,
@@ -29,6 +30,7 @@ import {
   Gift,
 } from "lucide-react";
 import i18n from "../../i18n";
+import { mobileShellNeedsServerProfile } from "../../os/server/mobileShellMode";
 import { I18nKey } from "../../i18n/declaration";
 import { SETTINGS_STUB_NAV_GROUPS } from "./settingsStubMock";
 import type { StubSettingsSectionId } from "./settingsStubTypes";
@@ -48,6 +50,7 @@ export type SettingsSectionId =
   | "permissions"
   | "providers"
   | "external"
+  | "server"
   | "usage"
   | "password"
   | "users";
@@ -62,6 +65,8 @@ export interface SettingsNavItem {
   requiresWrite?: boolean;
   /** Hide unless the user can manage users. */
   requiresUsersManage?: boolean;
+  /** Show only on bundled mobile shell (server profiles). */
+  requiresMobileServer?: boolean;
 }
 
 export interface SettingsNavGroup {
@@ -136,6 +141,7 @@ export function buildSettingsNavGroups(): SettingsNavGroup[] {
       id: "platform",
       title: i18n.t(I18nKey.SETTINGS$SECTION_PLATFORM),
       items: [
+        { id: "server", label: "Server", icon: HardDrive, requiresMobileServer: true },
         { id: "apps", label: i18n.t(I18nKey.SETTINGS$SECTION_APPS), icon: AppWindow },
         { id: "tools", label: i18n.t(I18nKey.SETTINGS$SECTION_TOOLS), icon: Wrench },
         { id: "mcp", label: i18n.t(I18nKey.SETTINGS$SECTION_MCP), icon: Server },
@@ -199,6 +205,7 @@ export function visibleSettingsNavGroups(options: {
   return groups.map((group) => ({
     ...group,
     items: group.items.filter((item) => {
+      if (item.requiresMobileServer && !mobileShellNeedsServerProfile()) return false;
       if (item.requiresWrite && !options.canWriteSettings) return false;
       if (item.requiresUsersManage && !options.canManageUsers) return false;
       return true;

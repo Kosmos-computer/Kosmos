@@ -301,6 +301,8 @@ export function StudioApp() {
                 <StudioConversationHeader
                   sessionId={chat.sessionId}
                   title={activeSessionTitle}
+                  feedItems={chat.items}
+                  activity={sessionActivity}
                   onRename={
                     chat.sessionId
                       ? (title) => chat.renameSession(chat.sessionId!, title)

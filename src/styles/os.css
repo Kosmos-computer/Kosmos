@@ -1247,6 +1247,11 @@
   white-space: nowrap;
 }
 
+.arco-window__title-version {
+  font-weight: 500;
+  color: var(--arco-text-tertiary);
+}
+
 .arco-window__titlebar--style-traffic.arco-window__titlebar--align-left .arco-window__title {
   /* Balance the traffic dots so the title optically centers */
   margin-right: 50px;

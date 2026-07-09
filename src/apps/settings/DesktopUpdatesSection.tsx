@@ -3,7 +3,7 @@
  */
 import { useState } from "react";
 import { Button } from "../../components/ui/Button";
-import { useDesktopUpdate, useDesktopUpdateActions } from "../../os/useDesktopUpdate";
+import { useDesktopUpdateController } from "../../os/useDesktopUpdate";
 import {
   canInstallUpdate,
   hasPendingUpdate,
@@ -58,8 +58,7 @@ function statusMessage(state: DesktopUpdateState | null): string {
 }
 
 export function DesktopUpdatesSection() {
-  const state = useDesktopUpdate();
-  const { checkForUpdates, installUpdate, remindLaterUpdate, skipUpdate } = useDesktopUpdateActions();
+  const { state, checkForUpdates, installUpdate, remindLaterUpdate, skipUpdate } = useDesktopUpdateController();
   const [checking, setChecking] = useState(false);
 
   const handleCheck = async () => {

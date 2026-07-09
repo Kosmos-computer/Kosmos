@@ -4,6 +4,7 @@
  * - Allow cleartext HTTP to host dev server (10.0.2.2 / LAN IP)
  * - networkSecurityConfig for emulator dev
  */
+import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -43,4 +44,55 @@ if (!manifest.includes("networkSecurityConfig")) {
   console.log("[mobile:patch] Patched AndroidManifest for cleartext dev traffic");
 } else {
   console.log("[mobile:patch] AndroidManifest already patched");
+}
+
+const mainActivityPath = path.join(
+  androidRoot,
+  "app/src/main/java/com/arco/os/mobile/MainActivity.java",
+);
+const mainActivitySource = `package com.arco.os.mobile;
+
+import android.content.pm.ApplicationInfo;
+import android.net.http.SslError;
+import android.webkit.SslErrorHandler;
+import android.webkit.WebView;
+import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.BridgeWebViewClient;
+
+/** Debug builds trust the Vite dev server's self-signed HTTPS cert. */
+public class MainActivity extends BridgeActivity {
+
+  @Override
+  public void onStart() {
+    super.onStart();
+    if (this.bridge == null || !isDebuggable()) {
+      return;
+    }
+
+    WebView webView = this.bridge.getWebView();
+    webView.setWebViewClient(
+        new BridgeWebViewClient(this.bridge) {
+          @Override
+          public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+            handler.proceed();
+          }
+        });
+  }
+
+  private boolean isDebuggable() {
+    return (getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
+  }
+}
+`;
+
+fs.mkdirSync(path.dirname(mainActivityPath), { recursive: true });
+const existing = fs.existsSync(mainActivityPath) ? fs.readFileSync(mainActivityPath, "utf8") : "";
+if (!existing.includes("onReceivedSslError")) {
+  fs.writeFileSync(mainActivityPath, mainActivitySource);
+  console.log("[mobile:patch] Patched MainActivity for dev HTTPS (self-signed cert)");
+}
+
+const iconsScript = path.join(root, "scripts/generate-mobile-android-icons.mjs");
+if (fs.existsSync(iconsScript)) {
+  execSync(`node "${iconsScript}"`, { stdio: "inherit", cwd: root });
 }

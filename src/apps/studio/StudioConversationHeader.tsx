@@ -1,17 +1,22 @@
 import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 /**
  * Conversation top bar — title plus overflow menu (agent-canvas ConversationName).
  * Rename is inline (menu item or double-click); other actions use the shared Menu.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Download, MoreVertical, Pencil, SquarePen, Trash2 } from "lucide-react";
+import type { ChatItem } from "../chat/useChat";
 import { Menu, type MenuItem } from "../../components/Menu";
-import { api } from "../../lib/api";
+import { saveConversation } from "./conversationExport";
+import type { SessionActivity } from "./studioStore";
 
 export interface StudioConversationHeaderProps {
   sessionId?: string;
   title: string;
+  feedItems?: ChatItem[];
+  activity?: SessionActivity | null;
   onRename?: (title: string) => void | Promise<void>;
   onNewChat: () => void;
   onDelete?: () => void | Promise<void>;
@@ -20,6 +25,8 @@ export interface StudioConversationHeaderProps {
 export function StudioConversationHeader({
   sessionId,
   title,
+  feedItems,
+  activity,
   onRename,
   onNewChat,
   onDelete,
@@ -58,23 +65,16 @@ export function StudioConversationHeader({
     }
   }, [displayTitle, onDelete]);
 
-  const handleExport = useCallback(() => {
+  const handleSave = useCallback(() => {
     if (!sessionId) return;
     void (async () => {
       try {
-        const session = await api.getSession(sessionId);
-        const blob = new Blob([JSON.stringify(session, null, 2)], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const anchor = document.createElement("a");
-        anchor.href = url;
-        anchor.download = `${displayTitle.replace(/[^\w.-]+/g, "-").slice(0, 60) || sessionId}.json`;
-        anchor.click();
-        URL.revokeObjectURL(url);
+        await saveConversation(sessionId, displayTitle, { feed: feedItems, activity });
       } catch {
-        // Export failed — leave the thread as-is.
+        // Save failed — leave the thread as-is.
       }
     })();
-  }, [displayTitle, sessionId]);
+  }, [activity, displayTitle, feedItems, sessionId]);
 
   const menuItems: MenuItem[] = [
     ...(onRename
@@ -90,10 +90,10 @@ export function StudioConversationHeader({
     ...(sessionId
       ? [
           {
-            id: "export",
-            label: "Export conversation",
+            id: "save",
+            label: <T k={I18nKey.APPS$STUDIO_SAVE_CONVERSATION} />,
             icon: Download,
-            onSelect: handleExport,
+            onSelect: handleSave,
           } satisfies MenuItem,
         ]
       : []),

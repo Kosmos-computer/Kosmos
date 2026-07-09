@@ -43,3 +43,10 @@ export function hasPendingUpdate(state: DesktopUpdateState | null | undefined): 
 export function canInstallUpdate(state: DesktopUpdateState | null | undefined): boolean {
   return Boolean(state?.version && (state.downloaded === true || state.status === "ready"));
 }
+
+/** Whether the blocking update modal should be shown in the desktop shell. */
+export function shouldShowUpdateModal(state: DesktopUpdateState | null | undefined): boolean {
+  if (!state) return false;
+  if (state.suppressed === "skip" || state.suppressed === "snooze") return false;
+  return state.status === "ready" || state.status === "downloading" || state.status === "available";
+}

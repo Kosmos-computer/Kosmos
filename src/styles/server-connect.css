@@ -1,0 +1,111 @@
+
+/* ── Mobile server connect (first run + settings) ─────────────────────────── */
+
+.arco-server-connect__card {
+  max-width: 28rem;
+}
+
+.arco-server-connect__header {
+  display: flex;
+  gap: var(--arco-space-m);
+  align-items: flex-start;
+  margin-bottom: var(--arco-space-l);
+}
+
+.arco-server-connect__header h1 {
+  margin: 0 0 var(--arco-space-xs);
+  font-size: var(--arco-text-lg);
+}
+
+.arco-server-connect__header p {
+  margin: 0;
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-secondary);
+  line-height: 1.45;
+}
+
+.arco-server-connect__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-m);
+}
+
+.arco-server-connect__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-xs);
+  font-size: var(--arco-text-sm);
+  font-weight: 500;
+}
+
+.arco-server-connect__primary {
+  width: 100%;
+  justify-content: center;
+}
+
+.arco-server-connect__scan {
+  margin-top: var(--arco-space-m);
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-s);
+}
+
+.arco-server-connect__hint,
+.arco-server-connect__footnote {
+  margin: 0;
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+  line-height: 1.5;
+}
+
+.arco-server-connect__error {
+  margin: 0;
+  font-size: var(--arco-text-sm);
+  color: var(--arco-danger);
+}
+
+.arco-server-connect__list {
+  list-style: none;
+  margin: var(--arco-space-m) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-xs);
+}
+
+.arco-server-connect__hit {
+  width: 100%;
+  text-align: left;
+  padding: var(--arco-space-m);
+  border-radius: var(--arco-radius-m);
+  border: 1px solid var(--arco-border);
+  background: var(--arco-bg-hover);
+  color: inherit;
+  cursor: pointer;
+  display: grid;
+  gap: 2px;
+}
+
+.arco-server-connect__hit strong {
+  font-size: var(--arco-text-sm);
+}
+
+.arco-server-connect__hit span {
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+  word-break: break-all;
+}
+
+.arco-server-connect__hit:hover {
+  border-color: var(--arco-accent);
+}
+
+.arco-spin {
+  animation: arco-spin 0.8s linear infinite;
+}
+
+@keyframes arco-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

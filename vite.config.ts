@@ -1,9 +1,13 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import basicSsl from "@vitejs/plugin-basic-ssl";
 import { fileURLToPath } from "node:url";
 
+const lan = process.env.ARCO_LAN === "1";
+const https = process.env.ARCO_HTTPS === "1";
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), ...(https ? [basicSsl()] : [])],
   resolve: {
     alias: {
       "@shared": fileURLToPath(new URL("./shared", import.meta.url)),
@@ -17,8 +21,10 @@ export default defineConfig({
     },
   },
   server: {
-    host: "127.0.0.1",
+    host: lan ? "0.0.0.0" : "127.0.0.1",
     port: 4610,
+    strictPort: true,
+    https,
     proxy: {
       "/api": {
         target: "http://localhost:4600",

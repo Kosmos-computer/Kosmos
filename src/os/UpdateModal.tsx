@@ -3,8 +3,8 @@
  */
 import { Download, RefreshCw } from "lucide-react";
 import { Button } from "../components/ui/Button";
-import type { DesktopUpdateState } from "@shared/desktopUpdate";
-import { useDesktopUpdate, useDesktopUpdateActions } from "./useDesktopUpdate";
+import { shouldShowUpdateModal, type DesktopUpdateState } from "@shared/desktopUpdate";
+import { useDesktopUpdateController } from "./useDesktopUpdate";
 
 function formatProgress(progress?: number): string {
   if (progress == null || Number.isNaN(progress)) return "";
@@ -106,15 +106,11 @@ function UpdateModalBody({
 }
 
 export function UpdateModal() {
-  const state = useDesktopUpdate();
-  const { installUpdate, remindLaterUpdate, skipUpdate } = useDesktopUpdateActions();
+  const { state, installUpdate, remindLaterUpdate, skipUpdate } = useDesktopUpdateController();
 
-  if (!state) return null;
+  if (!shouldShowUpdateModal(state)) return null;
 
-  const visible = state.status === "ready" || state.status === "downloading" || state.status === "available";
-  if (!visible) return null;
-
-  const version = state.version;
+  const version = state!.version;
 
   return (
     <div className="arco-update-modal__backdrop" role="presentation">
@@ -125,7 +121,7 @@ export function UpdateModal() {
         aria-labelledby="arco-update-modal-title"
       >
         <UpdateModalBody
-          state={state}
+          state={state!}
           onInstall={() => void installUpdate()}
           onRemindLater={() => void remindLaterUpdate(version)}
           onSkip={() => void skipUpdate(version)}

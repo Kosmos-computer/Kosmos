@@ -41,6 +41,7 @@ import "./styles/kamiji.css";
 import "./styles/generator.css";
 import "./styles/imagegen.css";
 import "./styles/auth.css";
+import "./styles/server-connect.css";
 import "./styles/os.css";
 import "./styles/command-palette.css";
 import "./styles/bento.css";

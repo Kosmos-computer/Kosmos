@@ -14,7 +14,7 @@ export { createWebBridge } from "./webBridge";
 export { createCapacitorBridge, isCapacitorRuntimeSync } from "./capacitorBridge";
 export { createElectronBridge } from "./electronBridge";
 export { createTauriBridge, isTauriRuntimeSync } from "./tauriBridge";
-export { installApiBaseInterceptor } from "./apiInterceptor";
+export { installApiBaseInterceptor, setApiBaseInterceptor, getApiBaseInterceptor } from "./apiInterceptor";
 
 import { createCapacitorBridge, isCapacitorRuntimeSync } from "./capacitorBridge";
 import { createElectronBridge } from "./electronBridge";

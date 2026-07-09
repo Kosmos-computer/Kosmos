@@ -332,7 +332,8 @@
 }
 
 .arco-sidenav__itempin,
-.arco-sidenav__itemdelete {
+.arco-sidenav__itemdelete,
+.arco-sidenav__itemmenu {
   display: inline-flex;
   padding: 6px;
   border-radius: var(--arco-radius-s);
@@ -349,14 +350,19 @@
 }
 .arco-sidenav__item:hover .arco-sidenav__itempin,
 .arco-sidenav__item:hover .arco-sidenav__itemdelete,
+.arco-sidenav__item:hover .arco-sidenav__itemmenu,
 .arco-sidenav__itempin:focus-visible,
 .arco-sidenav__itemdelete:focus-visible,
+.arco-sidenav__itemmenu:focus-visible,
 .arco-sidenav__itempin--active {
   opacity: 1;
   pointer-events: auto;
 }
 .arco-sidenav__itemdelete:hover {
   color: var(--arco-danger);
+}
+.arco-sidenav__itemmenu:hover {
+  color: var(--arco-text-secondary);
 }
 .arco-sidenav__itempin:hover,
 .arco-sidenav__itempin--active {

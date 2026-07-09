@@ -34,6 +34,7 @@ import type {
 } from "../shared/types.js";
 import { requireAuth, requireCap, currentUser, type AuthEnv } from "./auth/middleware.js";
 import { authRoutes } from "./auth/routes.js";
+import { mobileShellCors } from "./cors.js";
 import { runAgentTurn } from "./agent/loop.js";
 import { runAcpTurn, stopAllAcpRuns } from "./acp/acpAgent.js";
 import { runCursorTurn, stopAllCursorRuns } from "./cursor/cursorAgent.js";
@@ -214,6 +215,8 @@ skillStore.ensureGeneratedSeed(
 );
 
 const app = new Hono<AuthEnv>();
+
+app.use("*", mobileShellCors);
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 //

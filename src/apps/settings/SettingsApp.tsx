@@ -20,7 +20,8 @@ import {
   WINDOW_CONTROL_STYLE_OPTIONS,
 } from "../../os/themeTokens";
 import { isArcoDesktop } from "../../lib/desktopBridge";
-import { DesktopUpdatesSection } from "./DesktopUpdatesSection";
+import { ServerProfilesSection } from "./ServerProfilesSection";
+import { mobileShellNeedsServerProfile } from "../../os/server/mobileShellMode";
 import { PasswordSection } from "./PasswordSection";
 import { UsersSection } from "./UsersSection";
 import { AppsSection } from "./AppsSection";
@@ -725,6 +726,7 @@ export function SettingsApp() {
           )}
 
           {activeSection === "apps" && <AppsSection />}
+          {activeSection === "server" && mobileShellNeedsServerProfile() && <ServerProfilesSection />}
           {activeSection === "tools" && <ToolsSection />}
           {activeSection === "mcp" && <McpServersSection />}
           {activeSection === "skills" && <SkillsSection />}

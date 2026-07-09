@@ -18,6 +18,7 @@ export function ElectronTitleBar({ windowKey }: { windowKey?: string }) {
   const mac = desktop.platform === "darwin";
   const controlStyle: WindowControlStyle = mac ? "traffic" : "glyph";
   const align: WindowControlAlign = mac ? "left" : "right";
+  const showVersion = title === "Arco OS";
 
   return (
     <header
@@ -29,7 +30,16 @@ export function ElectronTitleBar({ windowKey }: { windowKey?: string }) {
       ].join(" ")}
     >
       {/* Title first: glyph-right relies on margin-left auto, glyph-left on order -1. */}
-      <span className="arco-window__title">{title}</span>
+      <span className="arco-window__title">
+        {showVersion ? (
+          <>
+            Arco OS
+            <span className="arco-window__title-version"> · {desktop.version}</span>
+          </>
+        ) : (
+          title
+        )}
+      </span>
       <WindowControls
         controlStyle={controlStyle}
         onClose={() => void desktop.closeWindow()}

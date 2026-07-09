@@ -46,32 +46,32 @@ VITE_ARCO_SHELL_PROFILE=mobile npm run tauri:dev:all
 
 ## Remote backend (mobile install prototype)
 
-Point the shell at a hosted Arco server instead of localhost:
+**Bundled Capacitor APK (preferred):** `npm run mobile:bundle` — user enters server URL at first run; switch in **Settings → Server**. See `docs/mobile-sideload.md` § I.
+
+**Build-time / Tauri runtime URL:**
 
 ```bash
-# Build with remote API
 VITE_ARCO_API_URL=https://your-arco-server.example npm run build
-
-# Or at runtime via Tauri env
 ARCO_API_URL=https://your-arco-server.example npm run tauri:dev
 ```
 
-Relative `/api/*`, `/apps/*`, and `/app-sdk.js` requests are prefixed with `apiBase`.
+**Dev sideload:** `CAP_SERVER_URL=http://YOUR_LAN_IP:4610 npm run mobile:sync` (Mac Vite proxy).
+
+Relative `/api/*`, `/apps/*`, and `/app-sdk.js` requests are prefixed with `apiBase` when using bundled + server profiles.
 
 ## Android / iOS (Capacitor — recommended for mobile wrap)
 
-**Best path for Android:** `apps/mobile` Capacitor shell — loads shared `dist/`, forces `MobileShell`, dev server on emulator via `10.0.2.2:4610`.
+**Best path for Android:** `apps/mobile` — bundled APK or dev sideload.
 
 ```bash
 npm install --ignore-scripts
 npm run mobile:setup          # first time — builds + adds android/
-npm run dev                   # terminal 1
+npm run mobile:bundle         # UI in APK; server URL at first run
+npm run dev                   # terminal 1 (dev)
 npm run mobile:dev:android    # terminal 2 — sync + open Android Studio
 ```
 
-Physical device: `CAP_SERVER_URL=http://YOUR_LAN_IP:4610 npm run mobile:sync`
-
-See `apps/mobile/README.md`.
+See `apps/mobile/README.md` and `docs/mobile-chromebook-local-backend.md`.
 
 ## Android / iOS (Tauri — alternative)
 

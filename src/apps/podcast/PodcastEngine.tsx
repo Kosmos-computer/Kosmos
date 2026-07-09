@@ -5,6 +5,10 @@ import { useEffect, useRef } from "react";
 import { formatPodcastTime } from "./podcastCatalog";
 import { registerPodcastSeekHandler, usePodcastStore } from "./podcastStore";
 
+function shouldBePlaying(): boolean {
+  return usePodcastStore.getState().playing;
+}
+
 export function PodcastEngine() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const init = usePodcastStore((s) => s.init);
@@ -32,6 +36,7 @@ export function PodcastEngine() {
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !streamSrc) return;
+    audio.pause();
     audio.currentTime = 0;
     audio.load();
   }, [streamSrc, episodeId]);
@@ -45,16 +50,25 @@ export function PodcastEngine() {
       return;
     }
 
-    const start = () => {
-      void audio.play().catch(() => stopPlayback());
+    const tryPlay = () => {
+      if (!shouldBePlaying()) return;
+      const playPromise = audio.play();
+      if (playPromise === undefined) return;
+      void playPromise
+        .then(() => {
+          if (!shouldBePlaying()) audio.pause();
+        })
+        .catch(() => stopPlayback());
     };
 
     if (audio.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
-      start();
-    } else {
-      audio.addEventListener("canplay", start, { once: true });
-      return () => audio.removeEventListener("canplay", start);
+      tryPlay();
+      return;
     }
+
+    const onCanPlay = () => tryPlay();
+    audio.addEventListener("canplay", onCanPlay, { once: true });
+    return () => audio.removeEventListener("canplay", onCanPlay);
   }, [playing, streamSrc, episodeId, stopPlayback]);
 
   useEffect(() => {
@@ -89,5 +103,5 @@ export function PodcastEngine() {
 
   if (!streamSrc) return null;
 
-  return <audio ref={audioRef} src={streamSrc} preload="metadata" aria-hidden="true" />;
+  return <audio ref={audioRef} src={streamSrc} preload={playing ? "auto" : "metadata"} aria-hidden="true" />;
 }

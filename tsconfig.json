@@ -16,8 +16,9 @@
     "noEmit": true,
     "types": ["vite/client"],
     "paths": {
-      "@shared/*": ["./shared/*"]
+      "@shared/*": ["./shared/*"],
+      "@arco/platform-bridge": ["./packages/platform-bridge/src/index.ts"]
     }
   },
-  "include": ["src", "shared"]
+  "include": ["src", "shared", "packages/platform-bridge/src"]
 }

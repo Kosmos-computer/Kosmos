@@ -7,6 +7,9 @@ export default defineConfig({
   resolve: {
     alias: {
       "@shared": fileURLToPath(new URL("./shared", import.meta.url)),
+      "@arco/platform-bridge": fileURLToPath(
+        new URL("./packages/platform-bridge/src/index.ts", import.meta.url),
+      ),
       "@arco/editor-kit/styles.css": fileURLToPath(
         new URL("./packages/editor-kit/src/editor.css", import.meta.url),
       ),

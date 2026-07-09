@@ -7,10 +7,11 @@ import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { MOBILE_APK, MOBILE_DOWNLOAD } from "./mobile-apk-paths.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const androidDir = path.join(root, "apps/mobile/android");
-const apkPath = path.join(androidDir, "app/build/outputs/apk/debug/app-debug.apk");
+const apkPath = MOBILE_APK.connect;
 const gradlew = path.join(androidDir, process.platform === "win32" ? "gradlew.bat" : "gradlew");
 const javaHome =
   process.env.JAVA_HOME ??
@@ -39,7 +40,7 @@ if (fs.existsSync(capConfigPath)) {
   }
 }
 
-run(`"${gradlew}" assembleDebug`, {
+run(`"${gradlew}" assembleConnectDebug`, {
   cwd: androidDir,
   env: { ...process.env, JAVA_HOME: javaHome },
 });
@@ -50,7 +51,7 @@ if (!fs.existsSync(apkPath)) {
 }
 
 fs.mkdirSync(downloadsDir, { recursive: true });
-const dest = path.join(downloadsDir, "arco-os-mobile-bundled.apk");
+const dest = MOBILE_DOWNLOAD.connect;
 fs.copyFileSync(apkPath, dest);
 console.log(`
 ✓ Bundled APK ready: ${dest}

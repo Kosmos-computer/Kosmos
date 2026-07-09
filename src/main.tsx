@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import { bootstrapPlatformShell } from "./os/bootstrapPlatformShell";
+import { bootMobileLocalShell } from "./os/mobileLocalBoot";
 import { waitForI18n } from "./i18n";
 
 // OpenUI component library styles (generated apps + inline chat UI).
@@ -58,6 +59,7 @@ import "./styles/adaptive.css";
 import "./styles/richmarkdown.css";
 
 async function bootstrap() {
+  await bootMobileLocalShell();
   await bootstrapPlatformShell();
   await waitForI18n();
   createRoot(document.getElementById("root")!).render(

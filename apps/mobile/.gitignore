@@ -11,6 +11,9 @@ android/app/src/main/assets/public/
 android/app/src/main/assets/capacitor.config.json
 android/app/src/main/assets/capacitor.plugins.json
 
+# Embedded backend staging (copied to dist/nodejs at build)
+pack-staging/
+
 # iOS (future)
 ios/
 .capacitor/

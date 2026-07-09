@@ -3,20 +3,25 @@ import type { CapacitorConfig } from "@capacitor/cli";
 /**
  * Capacitor loads the shared Arco Vite build from ../../dist.
  *
- * Dev on emulator (backend + Vite on host):
- *   CAP_SERVER_URL=http://10.0.2.2:4610 npm run mobile:sync
+ * Thin client (bundled): UI in APK, user picks remote server at first run.
+ *   npm run mobile:bundle
  *
- * Dev on physical device (replace with your LAN IP):
- *   CAP_SERVER_URL=http://192.168.1.42:4610 npm run mobile:sync
+ * Local sidecar (embedded Node): full Arco backend on device, WebView → localhost:4600.
+ *   MOBILE_LOCAL=1 npm run mobile:local:bundle
  *
- * Production/static bundle with remote API — build with:
- *   VITE_ARCO_SHELL_PROFILE=mobile VITE_ARCO_API_URL=https://your-server npm run build:mobile
+ * Dev proxy: CAP_SERVER_URL=http://10.0.2.2:4610 npm run mobile:sync:dev
  */
 const devServerUrl = process.env.CAP_SERVER_URL?.trim() || undefined;
+const isLocalSidecar = process.env.MOBILE_LOCAL === "1";
+
+/** Launcher labels — must stay in sync with scripts/setup-mobile-android.mjs */
+export const MOBILE_APP_FLAVOR = isLocalSidecar
+  ? { appId: "com.arco.os.mobile.local", appName: "Arco Local" }
+  : { appId: "com.arco.os.mobile", appName: "Arco Connect" };
 
 const config: CapacitorConfig = {
-  appId: "com.arco.os.mobile",
-  appName: "Arco OS",
+  appId: MOBILE_APP_FLAVOR.appId,
+  appName: MOBILE_APP_FLAVOR.appName,
   webDir: "../../dist",
   server: devServerUrl
     ? {
@@ -31,6 +36,14 @@ const config: CapacitorConfig = {
   android: {
     allowMixedContent: true,
   },
+  plugins: isLocalSidecar
+    ? {
+        CapacitorNodeJS: {
+          nodeDir: "nodejs",
+          startMode: "auto",
+        },
+      }
+    : undefined,
 };
 
 export default config;

@@ -9,10 +9,11 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { MOBILE_APK } from "./mobile-apk-paths.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const androidDir = path.join(root, "apps/mobile/android");
-const apkPath = path.join(androidDir, "app/build/outputs/apk/debug/app-debug.apk");
+const apkPath = MOBILE_APK.connect;
 const gradlew = path.join(androidDir, process.platform === "win32" ? "gradlew.bat" : "gradlew");
 const javaHome =
   process.env.JAVA_HOME ??

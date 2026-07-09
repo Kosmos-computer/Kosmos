@@ -23,10 +23,11 @@ import https from "node:https";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { MOBILE_APK } from "./mobile-apk-paths.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const androidDir = path.join(root, "apps/mobile/android");
-const apkPath = path.join(androidDir, "app/build/outputs/apk/debug/app-debug.apk");
+const apkPath = MOBILE_APK.connect;
 const gradlew = path.join(androidDir, process.platform === "win32" ? "gradlew.bat" : "gradlew");
 const javaHome =
   process.env.JAVA_HOME ??
@@ -156,7 +157,7 @@ if (bundled) {
       console.error("[mobile:install] gradlew missing — run npm run mobile:setup first");
       process.exit(1);
     }
-    run(`"${gradlew}" assembleDebug`, {
+    run(`"${gradlew}" assembleConnectDebug`, {
       cwd: androidDir,
       env: { ...process.env, JAVA_HOME: javaHome },
     });
@@ -180,9 +181,11 @@ console.log(bundled
   ? `
 ✓ Bundled Arco OS installed on device.
 
-Open the app → enter your server URL (cloud, Tailscale, or LAN).
+Open **Arco Connect** on the phone → enter your server URL (cloud, Tailscale, or LAN).
 Use "Find on this network" on the same Wi‑Fi, then sign in.
 Switch servers later in Settings → Server.
+
+Launcher name on device: Arco Connect
 `
   : `
 ✓ Arco OS installed on device (dev mode).

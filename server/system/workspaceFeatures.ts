@@ -25,6 +25,7 @@ async function nativeFolderPickerAvailable(): Promise<boolean> {
 
 function isHostedRuntime(): boolean {
   if (process.env.ARCO_HOSTED === "1") return true;
+  if (process.env.ARCO_MOBILE_LOCAL === "1") return true;
   if (fs.existsSync("/.dockerenv")) return true;
   // Linux servers (Coolify, VPS) cannot open the user's local Finder.
   return process.platform === "linux";

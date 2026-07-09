@@ -66,7 +66,7 @@ Arco is one codebase with several **shells** (wrappers). The backend and apps li
 | --- | --- | --- | --- |
 | **Browser** | Vite dev / production build | Local or hosted | Development, any device with Chrome |
 | **macOS / Windows / Linux** | Electron (`apps/desktop`) | Embedded Node | Primary desktop app |
-| **Android phone** | Capacitor (`apps/mobile`) | User-chosen server (bundled APK) or dev Mac | Sideload APK |
+| **Android phone** | Capacitor (`apps/mobile`) | Thin client: user-chosen server; **Local APK**: embedded Node sidecar | Sideload APK |
 | **Chromebook** | Bundled APK, PWA, or dev sideload | Coolify / Tailscale Mac / LAN / Linux on device | No Play Store needed |
 | **SteamOS** | [kosmos-steamos](../kosmos-steamos) (sibling repo) | Arco Hono server | Steam Deck / Steam Machine desktop mode |
 | **iOS** | Capacitor (scaffold) | Hosted API | Not packaged yet |
@@ -146,6 +146,17 @@ CHROMEBOOK_IP=10.0.0.47 npm run mobile:chromebook:install   # Wi‑Fi ADB to Chr
 **First run on device:** Connect to Arco → enter server URL (e.g. `https://your-coolify-domain`, `https://macbook.tailnet.ts.net:4600`, `http://10.0.0.12:4600`) → optional **Find on this network** (detects your Wi‑Fi subnet on Android and Chromebook) → sign in or complete setup wizard on that server.
 
 **Hosted server:** deploy with `ARCO_SECURE_COOKIES=1` and CORS enabled (included in `server/cors.ts`). See [`deploy/coolify/README.md`](deploy/coolify/README.md).
+
+#### Local embedded backend (Android prototype)
+
+Full Arco on device — nodejs-mobile sidecar + same UI. **Not** the thin client; no server URL entry.
+
+```bash
+export ANDROID_NDK_HOME=…   # recommended for Razr (arm64 sqlite rebuild)
+npm run mobile:local:install
+```
+
+See [`docs/mobile-local-android.md`](docs/mobile-local-android.md).
 
 #### Dev sideload (Mac Vite + shared backend)
 
@@ -342,6 +353,8 @@ for engine swapping.
 | `npm run mobile:bundle` | Bundled APK — UI in app, server URL chosen at first run |
 | `npm run mobile:install` | USB phone (bundled): build + install; server profiles at first run |
 | `npm run mobile:install:dev` | USB phone (dev): build + `adb reverse` + install against Mac Vite |
+| `npm run mobile:local:bundle` | Local APK — embedded Node backend on device |
+| `npm run mobile:local:install` | USB install local APK (Razr prototype) |
 | `npm run mobile:chromebook:install` | Install on Chromebook over Wi‑Fi ADB (`CHROMEBOOK_IP=…`; bundled by default) |
 | `npm run mobile:apk` | Dev APK + copy to `public/downloads/` (loads from Mac Vite when synced) |
 | `npm run mobile:icons` | Regenerate Android launcher icons from desktop brand mark |

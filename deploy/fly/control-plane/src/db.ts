@@ -58,6 +58,18 @@ export class Store {
       | undefined;
   }
 
+  getByEmail(email: string): OrderRow | undefined {
+    const normalized = email.trim().toLowerCase();
+    return this.db
+      .prepare(
+        `SELECT * FROM orders
+         WHERE lower(customer_email) = ?
+         ORDER BY updated_at DESC
+         LIMIT 1`,
+      )
+      .get(normalized) as OrderRow | undefined;
+  }
+
   createOrder(input: {
     id: string;
     tenantName: string;

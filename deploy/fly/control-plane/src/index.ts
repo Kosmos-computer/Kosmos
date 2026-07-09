@@ -10,6 +10,10 @@ import {
   validateTenantName,
 } from "./stripe-handlers.js";
 
+function tenantUrlForName(config: { tenantPrefix: string }, tenantName: string): string {
+  return `https://${config.tenantPrefix}-${tenantName.trim().toLowerCase()}.fly.dev`;
+}
+
 const config = loadConfig();
 const store = new Store(config.dataDir);
 const stripe = new Stripe(config.stripeSecretKey);
@@ -59,6 +63,7 @@ app.get("/", (c) => {
       <input id="email" name="email" type="email" placeholder="you@example.com" required />
       <button type="submit">Continue to checkout</button>
     </form>
+    <p class="hint" style="margin-top:1.5rem">Already have an instance? <a href="/signin">Sign in</a></p>
     <script>
       const input = document.getElementById('tenantName');
       const preview = document.getElementById('preview');
@@ -86,6 +91,55 @@ app.post("/checkout", async (c) => {
     const message = err instanceof Error ? err.message : String(err);
     return c.html(layout("Checkout error", `<p class="error">${message}</p><p><a href="/">Back</a></p>`), 400);
   }
+});
+
+app.get("/signup", (c) => c.redirect("/", 302));
+
+app.get("/signin", (c) => {
+  const error = c.req.query("error");
+  const body = `
+    <h1>Sign in to your instance</h1>
+    <p>Open the Arco instance you provisioned at checkout. Use the email from signup or your instance name.</p>
+    ${error ? `<p class="error">${error}</p>` : ""}
+    <form method="post" action="/signin">
+      <label for="email">Email used at checkout</label>
+      <input id="email" name="email" type="email" placeholder="you@example.com" />
+      <p class="hint" style="text-align:center;margin:1rem 0">— or —</p>
+      <label for="tenantName">Instance name</label>
+      <input id="tenantName" name="tenantName" placeholder="acme" pattern="[a-z0-9][a-z0-9-]{1,28}[a-z0-9]" />
+      <div class="hint">Opens <code>arco-<span id="preview">name</span>.fly.dev</code></div>
+      <button type="submit">Open my instance</button>
+    </form>
+    <p class="hint" style="margin-top:1.5rem">Need a new instance? <a href="/">Get started</a></p>
+    <script>
+      const input = document.getElementById('tenantName');
+      const preview = document.getElementById('preview');
+      input.addEventListener('input', () => { preview.textContent = input.value.trim().toLowerCase() || 'name'; });
+    </script>`;
+  return c.html(layout("Arco — Sign in", body));
+});
+
+app.post("/signin", async (c) => {
+  const form = await c.req.parseBody();
+  const email = String(form.email ?? "").trim();
+  const tenantName = String(form.tenantName ?? "").trim().toLowerCase();
+
+  if (email) {
+    const order = store.getByEmail(email);
+    if (order?.tenant_url) return c.redirect(order.tenant_url, 302);
+    if (order?.tenant_name) return c.redirect(tenantUrlForName(config, order.tenant_name), 302);
+    return c.redirect("/signin?error=No+instance+found+for+that+email.+Try+your+instance+name.", 302);
+  }
+
+  if (tenantName) {
+    const validationError = validateTenantName(tenantName);
+    if (validationError) {
+      return c.redirect(`/signin?error=${encodeURIComponent(validationError)}`, 302);
+    }
+    return c.redirect(tenantUrlForName(config, tenantName), 302);
+  }
+
+  return c.redirect("/signin?error=Enter+your+email+or+instance+name.", 302);
 });
 
 app.get("/success", async (c) => {

@@ -4,6 +4,8 @@ The usage-based stack from the SaaS plan: one Firecracker microVM + volume per
 tenant (auto-stop when idle), a LiteLLM credits gateway routing to serverless
 per-token inference (OpenRouter), budget-capped virtual keys per tenant.
 
+**Full architecture, live apps, secrets, and gaps:** see [SAAS.md](SAAS.md).
+
 ```
 customer ──► https://arco-<name>.fly.dev          (tenant microVM, /data volume)
                     │  LLM_BASE_URL + virtual key

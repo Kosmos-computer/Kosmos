@@ -4,6 +4,7 @@ import type { PlatformConfig } from "./types";
 const PREFIXED = ["/api/", "/apps/", "/app-sdk.js"];
 
 let activeApiBase: string | null = null;
+let bearerToken: string | null = null;
 let nativeFetch: typeof fetch | null = null;
 
 function shouldPrefix(url: string): boolean {
@@ -20,9 +21,13 @@ function prefixUrl(path: string): string {
 function patchedFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const fetchImpl = nativeFetch ?? window.fetch.bind(window);
   const creds = init?.credentials ?? "include";
+  const headers = new Headers(init?.headers);
+  if (bearerToken && !headers.has("Authorization")) {
+    headers.set("Authorization", `Bearer ${bearerToken}`);
+  }
 
   if (typeof input === "string" && shouldPrefix(input)) {
-    return fetchImpl(prefixUrl(input), { ...init, credentials: creds });
+    return fetchImpl(prefixUrl(input), { ...init, credentials: creds, headers });
   }
   if (input instanceof Request) {
     const url = input.url;
@@ -30,10 +35,10 @@ function patchedFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Res
       ? url.slice(window.location.origin.length)
       : url;
     if (shouldPrefix(path)) {
-      return fetchImpl(prefixUrl(path), { ...init, credentials: creds });
+      return fetchImpl(prefixUrl(path), { ...init, credentials: creds, headers });
     }
   }
-  return fetchImpl(input, init);
+  return fetchImpl(input, { ...init, credentials: creds, headers });
 }
 
 /** Prefix relative API/app paths when running against a remote backend (mobile / Tauri). */
@@ -52,6 +57,19 @@ export function setApiBaseInterceptor(base: string | null): void {
     window.fetch = patchedFetch;
   }
   activeApiBase = base?.replace(/\/$/, "") ?? null;
+}
+
+/** Bearer token for cross-origin mobile shells where cookies are not sent. */
+export function setBearerTokenInterceptor(token: string | null): void {
+  if (!nativeFetch) {
+    nativeFetch = window.fetch.bind(window);
+    window.fetch = patchedFetch;
+  }
+  bearerToken = token?.trim() || null;
+}
+
+export function getBearerTokenInterceptor(): string | null {
+  return bearerToken;
 }
 
 export function getApiBaseInterceptor(): string | null {

@@ -55,6 +55,7 @@ const mainActivitySource = `package com.arco.os.mobile;
 import android.content.pm.ApplicationInfo;
 import android.net.http.SslError;
 import android.webkit.SslErrorHandler;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.BridgeWebViewClient;
@@ -70,6 +71,7 @@ public class MainActivity extends BridgeActivity {
     }
 
     WebView webView = this.bridge.getWebView();
+    webView.getSettings().setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
     webView.setWebViewClient(
         new BridgeWebViewClient(this.bridge) {
           @Override
@@ -90,6 +92,21 @@ const existing = fs.existsSync(mainActivityPath) ? fs.readFileSync(mainActivityP
 if (!existing.includes("onReceivedSslError")) {
   fs.writeFileSync(mainActivityPath, mainActivitySource);
   console.log("[mobile:patch] Patched MainActivity for dev HTTPS (self-signed cert)");
+} else if (!existing.includes("MIXED_CONTENT_ALWAYS_ALLOW")) {
+  const withMixed = existing.replace(
+    "WebView webView = this.bridge.getWebView();",
+    "WebView webView = this.bridge.getWebView();\n    webView.getSettings().setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);",
+  );
+  if (!withMixed.includes("import android.webkit.WebSettings;")) {
+    const withImport = withMixed.replace(
+      "import android.webkit.WebView;",
+      "import android.webkit.WebSettings;\nimport android.webkit.WebView;",
+    );
+    fs.writeFileSync(mainActivityPath, withImport);
+  } else {
+    fs.writeFileSync(mainActivityPath, withMixed);
+  }
+  console.log("[mobile:patch] Patched MainActivity for mixed-content LAN APIs");
 }
 
 const iconsScript = path.join(root, "scripts/generate-mobile-android-icons.mjs");

@@ -14,7 +14,7 @@
  */
 import { Hono, type Context } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
-import type { AuthStatus, Role, Settings } from "../../shared/types.js";
+import type { AuthStatus, AuthSessionResponse, Role, Settings } from "../../shared/types.js";
 import { saveSettings } from "../env.js";
 import { AUTH_COOKIE, type AuthEnv } from "./middleware.js";
 import { authSessionStore } from "./sessionStore.js";
@@ -66,10 +66,33 @@ const COOKIE_OPTS = {
 export const authRoutes = new Hono<AuthEnv>();
 
 /** Resolve the caller's session directly — these routes run before requireAuth populates context. */
+function bearerToken(c: Context<AuthEnv>): string | undefined {
+  const auth = c.req.header("authorization") ?? "";
+  const match = auth.match(/^Bearer\s+(.+)$/i);
+  return match?.[1]?.trim() || undefined;
+}
+
 function resolveSession(c: Context<AuthEnv>) {
-  const token = getCookie(c, AUTH_COOKIE);
+  const token = getCookie(c, AUTH_COOKIE) ?? bearerToken(c);
   const session = token ? authSessionStore.get(token) : null;
   return { token, session, user: session ? userStore.getAuthUser(session.userId) : null };
+}
+
+/** Cross-origin shells (Capacitor localhost → LAN server) cannot rely on cookies. */
+function isCrossOriginAuth(c: Context<AuthEnv>): boolean {
+  const origin = c.req.header("origin");
+  if (!origin) return false;
+  try {
+    return new URL(origin).host !== (c.req.header("host") ?? "");
+  } catch {
+    return false;
+  }
+}
+
+function sessionResponse(c: Context<AuthEnv>, user: AuthUser, token: string): AuthSessionResponse {
+  const body: AuthSessionResponse = { user };
+  if (isCrossOriginAuth(c)) body.sessionToken = token;
+  return body;
 }
 
 authRoutes.get("/status", (c) => {
@@ -106,8 +129,9 @@ authRoutes.post("/setup", async (c) => {
       if (patch.apiKey && patch.apiKey.startsWith("••••")) delete patch.apiKey;
       saveSettings(patch);
     }
-    setCookie(c, AUTH_COOKIE, authSessionStore.create(user.id), COOKIE_OPTS);
-    return c.json({ user });
+    const token = authSessionStore.create(user.id);
+    setCookie(c, AUTH_COOKIE, token, COOKIE_OPTS);
+    return c.json(sessionResponse(c, user, token));
   } catch (err) {
     return c.json({ error: err instanceof Error ? err.message : "Setup failed" }, 400);
   }
@@ -126,8 +150,9 @@ authRoutes.post("/login", async (c) => {
     return c.json({ error: "Invalid username or password" }, 401);
   }
   attempts.delete(username);
-  setCookie(c, AUTH_COOKIE, authSessionStore.create(user.id), COOKIE_OPTS);
-  return c.json({ user });
+  const token = authSessionStore.create(user.id);
+  setCookie(c, AUTH_COOKIE, token, COOKIE_OPTS);
+  return c.json(sessionResponse(c, user, token));
 });
 
 authRoutes.post("/logout", (c) => {
@@ -157,7 +182,7 @@ authRoutes.post("/unlock", async (c) => {
   }
   attempts.delete(user.username);
   authSessionStore.setLocked(token, false);
-  return c.json({ user });
+  return c.json(sessionResponse(c, user, token));
 });
 
 /**

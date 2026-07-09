@@ -10688,6 +10688,20 @@
     "ja": "Filter open apps",
     "zh-CN": "Filter open apps"
   },
+  "OS_MOBILESHELL_SWIPE_STATUS_BAR": {
+    "en": "Swipe down for status bar",
+    "es": "Swipe down for status bar",
+    "de": "Swipe down for status bar",
+    "ja": "Swipe down for status bar",
+    "zh-CN": "Swipe down for status bar"
+  },
+  "OS_MOBILESHELL_SWIPE_DOCK": {
+    "en": "Swipe up for open apps",
+    "es": "Swipe up for open apps",
+    "de": "Swipe up for open apps",
+    "ja": "Swipe up for open apps",
+    "zh-CN": "Swipe up for open apps"
+  },
   "OS_WINDOWCONTROLS_MINIMIZE_WINDOW": {
     "en": "Minimize window",
     "es": "Minimizar ventana",

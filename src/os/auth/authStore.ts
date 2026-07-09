@@ -12,7 +12,13 @@
  */
 import { create } from "zustand";
 import type { AuthUser, Capability, Settings } from "@shared/types";
+import { setBearerTokenInterceptor } from "@arco/platform-bridge";
 import { api, type AuthFailureCode } from "../../lib/api";
+import { getActiveServerUrl } from "../server/serverProfileStore";
+import {
+  clearMobileSessionToken,
+  setMobileSessionToken,
+} from "../server/mobileSessionStore";
 
 export type AuthPhase = "booting" | "setup" | "login" | "locked" | "ready";
 
@@ -52,6 +58,19 @@ function readableError(err: unknown): string {
   return raw;
 }
 
+function persistMobileSession(token?: string): void {
+  if (!token) return;
+  const serverUrl = getActiveServerUrl();
+  if (!serverUrl) return;
+  setMobileSessionToken(serverUrl, token);
+  setBearerTokenInterceptor(token);
+}
+
+function clearMobileSession(): void {
+  clearMobileSessionToken();
+  setBearerTokenInterceptor(null);
+}
+
 export const useAuthStore = create<AuthStore>((set) => ({
   phase: "booting",
   user: null,
@@ -72,7 +91,8 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
   setup: async (data) => {
     try {
-      const { user } = await api.authSetup(data);
+      const { user, sessionToken } = await api.authSetup(data);
+      persistMobileSession(sessionToken);
       set({ phase: "ready", user, error: null });
     } catch (err) {
       set({ error: readableError(err) });
@@ -81,7 +101,8 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
   login: async (username, password) => {
     try {
-      const { user } = await api.authLogin(username, password);
+      const { user, sessionToken } = await api.authLogin(username, password);
+      persistMobileSession(sessionToken);
       set({ phase: "ready", user, error: null });
     } catch (err) {
       set({ error: readableError(err) });
@@ -90,7 +111,8 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
   unlock: async (password) => {
     try {
-      const { user } = await api.authUnlock(password);
+      const { user, sessionToken } = await api.authUnlock(password);
+      persistMobileSession(sessionToken);
       set({ phase: "ready", user, error: null });
     } catch (err) {
       set({ error: readableError(err) });
@@ -106,6 +128,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
   logout: async () => {
     await api.authLogout().catch(() => {});
+    clearMobileSession();
     set({ phase: "login", user: null, error: null });
   },
 

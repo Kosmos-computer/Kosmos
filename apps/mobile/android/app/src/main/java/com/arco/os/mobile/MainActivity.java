@@ -3,6 +3,7 @@ package com.arco.os.mobile;
 import android.content.pm.ApplicationInfo;
 import android.net.http.SslError;
 import android.webkit.SslErrorHandler;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.BridgeWebViewClient;
@@ -21,6 +22,7 @@ public class MainActivity extends BridgeActivity {
     }
 
     WebView webView = this.bridge.getWebView();
+    webView.getSettings().setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
     webView.setWebViewClient(
         new BridgeWebViewClient(this.bridge) {
           @Override

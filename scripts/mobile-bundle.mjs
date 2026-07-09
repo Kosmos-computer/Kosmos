@@ -25,7 +25,19 @@ function run(cmd, opts = {}) {
 console.log("[mobile:bundle] Building bundled mobile UI (server profile at first run)…");
 run("npm run build:mobile");
 run("npm run mobile:icons");
-run("CAP_SERVER_URL= npm run mobile:sync");
+run("npm run mobile:sync");
+
+const capConfigPath = path.join(androidDir, "app/src/main/assets/capacitor.config.json");
+if (fs.existsSync(capConfigPath)) {
+  const capConfig = JSON.parse(fs.readFileSync(capConfigPath, "utf8"));
+  if (capConfig.server?.url) {
+    console.error(
+      `[mobile:bundle] Bundled APK must load from packaged assets, not ${capConfig.server.url}.`,
+    );
+    console.error("[mobile:bundle] Use npm run mobile:sync (not mobile:sync:dev) without CAP_SERVER_URL.");
+    process.exit(1);
+  }
+}
 
 run(`"${gradlew}" assembleDebug`, {
   cwd: androidDir,

@@ -3,6 +3,7 @@
  * Each profile points at a separate Arco instance with its own users and data.
  */
 import type { DiscoveredServer, ServerProfile, ServerProfileKind, ServerProfileSnapshot } from "./serverProfileTypes";
+import { detectDeviceWifiSubnet, isChromeOsDevice } from "./deviceNetwork";
 
 const STORAGE_KEY = "arco.serverProfiles.v1";
 
@@ -182,41 +183,58 @@ async function probeOrigin(origin: string, source: DiscoveredServer["source"], l
   } satisfies DiscoveredServer;
 }
 
+function addSubnetScanCandidates(
+  candidates: { origin: string; source: DiscoveredServer["source"]; label: string }[],
+  subnet: string,
+) {
+  for (let host = 1; host <= 64; host++) {
+    candidates.push({
+      origin: `http://${subnet}.${host}:4600`,
+      source: "scan",
+      label: `${subnet}.${host}`,
+    });
+  }
+}
+
 /** Best-effort LAN / Tailscale / Chromebook Linux discovery. */
 export async function discoverNearbyServers(onProgress?: (msg: string) => void): Promise<DiscoveredServer[]> {
   const snap = readSnapshot();
   const found = new Map<string, DiscoveredServer>();
   const candidates: { origin: string; source: DiscoveredServer["source"]; label: string }[] = [];
+  const seenOrigins = new Set<string>();
+
+  const pushCandidate = (origin: string, source: DiscoveredServer["source"], label: string) => {
+    const key = origin.toLowerCase();
+    if (seenOrigins.has(key)) return;
+    seenOrigins.add(key);
+    candidates.push({ origin, source, label });
+  };
 
   for (const profile of snap.profiles) {
-    candidates.push({ origin: profile.url, source: "scan", label: profile.name });
+    pushCandidate(profile.url, "scan", profile.name);
   }
 
   // Chrome OS Linux VM bridge (Android app → Linux backend on same Chromebook)
-  candidates.push({
-    origin: "http://100.115.92.2:4600",
-    source: "linux-bridge",
-    label: "This Chromebook (Linux)",
-  });
+  if (isChromeOsDevice()) {
+    pushCandidate("http://100.115.92.2:4600", "linux-bridge", "This Chromebook (Linux)");
+  }
 
-  if (snap.scanSubnet) {
-    onProgress?.(`Scanning ${snap.scanSubnet}.x…`);
-    for (let host = 1; host <= 64; host++) {
-      candidates.push({
-        origin: `http://${snap.scanSubnet}.${host}:4600`,
-        source: "scan",
-        label: `${snap.scanSubnet}.${host}`,
-      });
-    }
+  onProgress?.("Detecting Wi‑Fi network…");
+  const deviceSubnet = await detectDeviceWifiSubnet();
+  const scanSubnet = snap.scanSubnet ?? deviceSubnet;
+
+  if (deviceSubnet && !snap.scanSubnet) {
+    writeSnapshot({ ...snap, scanSubnet: deviceSubnet });
+  }
+
+  if (scanSubnet) {
+    onProgress?.(`Scanning ${scanSubnet}.x…`);
+    addSubnetScanCandidates(candidates, scanSubnet);
   } else {
     onProgress?.("Scanning common home networks…");
     for (const subnet of ["10.0.0", "192.168.1", "192.168.0"]) {
       for (const host of [1, 2, 10, 12, 20, 47, 100]) {
-        candidates.push({
-          origin: `http://${subnet}.${host}:4600`,
-          source: "scan",
-          label: `${subnet}.${host}`,
-        });
+        pushCandidate(`http://${subnet}.${host}:4600`, "scan", `${subnet}.${host}`);
       }
     }
   }

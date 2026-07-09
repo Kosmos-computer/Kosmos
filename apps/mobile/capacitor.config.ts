@@ -25,7 +25,8 @@ const config: CapacitorConfig = {
         androidScheme: devServerUrl.startsWith("https://") ? "https" : "http",
       }
     : {
-        androidScheme: "https",
+        // http://localhost so WebView can reach LAN http:// backends (no mixed-content block).
+        androidScheme: "http",
       },
   android: {
     allowMixedContent: true,

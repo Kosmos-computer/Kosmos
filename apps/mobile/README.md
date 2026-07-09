@@ -28,12 +28,15 @@ Bundled APK ships the UI inside the app (`VITE_ARCO_MOBILE_BUNDLED=1`). **No def
 | **Bundled APK** (production-like) | `npm run mobile:bundle` |
 | Install on Chromebook (Wi‑Fi ADB) | `CHROMEBOOK_IP=… npm run mobile:chromebook:install` |
 | Dev Chromebook sideload | `MOBILE_DEV=1 CAP_SERVER_URL=https://MAC:4610 CHROMEBOOK_IP=… npm run mobile:chromebook:install` |
-| Android phone USB dev | `npm run dev` + `npm run mobile:install` |
+| Android phone USB bundled | `npm run mobile:install` |
+| Android phone USB dev | `npm run dev` + `npm run mobile:install:dev` |
 | Chromebook PWA (no APK) | `npm run dev:chromebook` → open `https://MAC:4610` in Chrome |
 | Dev APK download page | `npm run dev:chromebook` → `/mobile-install.html` |
 | Dev APK file only | `npm run mobile:apk` |
 | Regenerate launcher icons | `npm run mobile:icons` |
 | Emulator | `npm run dev` + `npm run mobile:dev:android` |
+
+USB first-time setup (Developer options, USB debugging): [`docs/mobile-sideload.md` § Enable Developer options](../../docs/mobile-sideload.md#enable-developer-options-on-android-phones).
 
 ### Prerequisites (build machine)
 
@@ -49,7 +52,7 @@ export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
 ## Server profiles (bundled APK)
 
 1. **First run** — Connect to Arco modal: enter server URL, optional label, **Test & connect**.
-2. **Find on this network** — scans LAN subnets, common home IPs, and Chromebook Linux bridge (`http://100.115.92.2:4600`).
+2. **Find on this network** — detects your Wi‑Fi subnet, scans LAN, and (on Chromebook) the Linux bridge (`http://100.115.92.2:4600`).
 3. **Settings → Server** — add/switch/remove profiles; switching reloads the app (separate login per server).
 
 **Example server URLs:**

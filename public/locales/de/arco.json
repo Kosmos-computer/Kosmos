@@ -1526,6 +1526,8 @@
   "OS_MOBILESHELL_BACK_TO_HOME": "Back to home",
   "OS_MOBILESHELL_OPEN_SURFACES": "Open surfaces",
   "OS_MOBILESHELL_FILTER_OPEN_APPS": "Filter open apps",
+  "OS_MOBILESHELL_SWIPE_STATUS_BAR": "Swipe down for status bar",
+  "OS_MOBILESHELL_SWIPE_DOCK": "Swipe up for open apps",
   "OS_WINDOWCONTROLS_MINIMIZE_WINDOW": "Fenster minimieren",
   "OS_WINDOWCONTROLS_MAXIMIZE_WINDOW": "Fenster maximieren",
   "OS_WINDOWCONTROLS_CLOSE_WINDOW": "Fenster schließen",

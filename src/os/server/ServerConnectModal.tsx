@@ -101,7 +101,7 @@ export function ServerConnectModal({ onConnected }: ServerConnectModalProps) {
               <Input
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                placeholder="https://your-server.example"
+                placeholder="https://your-server.example or http://10.0.0.12:4600"
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck={false}
@@ -158,8 +158,9 @@ export function ServerConnectModal({ onConnected }: ServerConnectModalProps) {
           )}
 
           <p className="arco-server-connect__footnote">
-            Examples: Coolify host, Tailscale URL (<code>https://macbook.tailnet.ts.net:4600</code>), or LAN IP when
-            on the same Wi‑Fi. For Chromebook Linux backend, run Arco in Linux first, then scan.
+            Examples: Coolify host, Tailscale URL (<code>https://macbook.tailnet.ts.net:4600</code>), or LAN IP on
+            the same Wi‑Fi (<code>http://10.0.0.12:4600</code>). After connecting, sign in or complete setup on that
+            server. On Chromebook, run Arco in Linux first, then scan for the local backend.
           </p>
         </div>
       </div>

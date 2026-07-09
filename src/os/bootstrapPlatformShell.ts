@@ -6,8 +6,10 @@ import {
   getPlatformBridge,
   installApiBaseInterceptor,
   resolvePlatformBridge,
+  setBearerTokenInterceptor,
 } from "@arco/platform-bridge";
 import { getActiveServerUrl, hasActiveServerProfile } from "./server/serverProfileStore";
+import { getMobileSessionToken } from "./server/mobileSessionStore";
 import { mobileShellNeedsServerProfile } from "./server/mobileShellMode";
 
 export async function bootstrapPlatformShell(): Promise<void> {
@@ -26,6 +28,7 @@ export async function bootstrapPlatformShell(): Promise<void> {
   const { config } = bridge;
 
   installApiBaseInterceptor(config);
+  setBearerTokenInterceptor(getMobileSessionToken(profileUrl));
 
   const root = document.documentElement;
   root.dataset.platform = config.os;

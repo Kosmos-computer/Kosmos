@@ -577,6 +577,12 @@ export interface AuthStatus {
   user?: AuthUser;
 }
 
+/** Auth endpoints may include a bearer token for cross-origin mobile shells. */
+export interface AuthSessionResponse {
+  user: AuthUser;
+  sessionToken?: string;
+}
+
 /** One row in the install-status checklist shown during first-run setup. */
 export interface InstallCheck {
   id: string;

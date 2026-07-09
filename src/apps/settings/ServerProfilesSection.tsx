@@ -126,7 +126,7 @@ export function ServerProfilesSection() {
             <Input
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://your-server.example"
+              placeholder="https://your-server.example or http://10.0.0.12:4600"
               autoCapitalize="none"
               spellCheck={false}
             />

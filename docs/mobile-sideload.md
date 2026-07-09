@@ -69,7 +69,7 @@ Example: `10.0.0.12`. Use this as `YOUR_MAC_IP` below.
 | Chromebook, sideload APK | ADB from Mac (bundled default) | [F](#f-chromebook-adb-from-mac-over-wi‑fi) |
 | Chromebook, download in browser | HTTPS download page (ZIP) | [E](#e-chromebook-download-apkzip-in-browser) |
 | Chromebook, local backend | Linux in Crostini + bundled APK | [mobile-chromebook-local-backend.md](mobile-chromebook-local-backend.md) |
-| Android phone, USB cable | `npm run mobile:install` (dev) | [B](#b-android-phone-usb) |
+| Android phone, USB cable | `npm run mobile:install` (bundled) or `mobile:install:dev` | [B](#b-android-phone-usb) |
 | Android phone, bundled APK | `npm run mobile:bundle` + transfer APK | [I](#i-bundled-apk--server-profiles) |
 | Android emulator on Mac | Android Studio / emulator | [D](#d-android-emulator) |
 | Dev against Mac Vite | `MOBILE_DEV=1` sideload | [J](#j-dev-sideload-mac-vite) |
@@ -96,26 +96,96 @@ Arco runs like a native app. Keep `dev:chromebook` running on the Mac.
 
 ---
 
+## Enable Developer options on Android (phones)
+
+**Best for:** first-time USB sideload when **Developer options** is not visible in Settings.
+
+Developer options is hidden until you unlock it. Steps below work on stock Android and Motorola (e.g. Razr 2024); other OEMs use the same **Build number** tap.
+
+### 1. Unlock Developer options
+
+1. Open **Settings**
+2. Scroll down and tap **About phone**
+3. Find **Build number** (near the bottom)
+4. Tap **Build number** **7 times** quickly
+5. Enter your PIN/pattern if prompted
+6. Confirm the toast: **You are now a developer!**
+
+**Can’t find Build number?** Use the search bar at the top of Settings and type `build number`.
+
+### 2. Open Developer options
+
+Go back to **Settings**, then either:
+
+- Search for `developer`, or
+- **System → Developer options**
+
+On some phones (including Motorola): **Settings → System → Advanced → Developer options**.
+
+### 3. Enable USB debugging
+
+Inside **Developer options**:
+
+1. Turn **Developer options** ON (toggle at the top)
+2. Scroll to **USB debugging** → turn it ON
+3. Tap **Allow** on the confirmation dialog
+
+### 4. Set USB mode (Mac must see the phone in `adb`)
+
+1. Connect the phone to your Mac with a data-capable USB cable
+2. Pull down the notification shade
+3. Tap the **USB** / **Charging this device via USB** notification
+4. Choose **File transfer** (or **Transfer files**) — not **Charging only**
+5. When **Allow USB debugging?** appears → tap **Allow** (optional: **Always allow from this computer**)
+
+Verify on Mac:
+
+```bash
+adb devices
+# should show your phone as "device" (not empty, not "unauthorized")
+```
+
+| `adb devices` | Action |
+|---------------|--------|
+| empty list | Enable USB debugging; set USB to File transfer; try another cable/port |
+| `unauthorized` | Unlock phone; accept **Allow USB debugging** prompt |
+| `device` | Ready — run `npm run mobile:install` |
+
+---
+
 ## B. Android phone — USB
 
-**Best for:** personal phone, fastest dev loop.
+**Best for:** personal phone — bundled APK with server profiles (same as Chromebook), or dev sideload against Mac Vite.
 
-1. Phone: **Settings → Developer options → USB debugging** ON
+### Bundled (recommended)
+
+1. Phone: **USB debugging** ON (see [Enable Developer options](#enable-developer-options-on-android-phones))
 2. Connect USB → accept **Allow USB debugging**
 3. On Mac:
    ```bash
-   npm run dev              # terminal 1
-   npm run mobile:install   # terminal 2
+   npm run mobile:install
    ```
-4. Open **Arco OS** on the phone
+4. Open **Arco OS** → **Connect to Arco** → enter server URL or **Find on this network**, then sign in.
 
-`mobile:install` uses **`adb reverse`** — the phone hits `127.0.0.1:4610` on your Mac through the cable (no LAN IP needed).
+Switch servers later in **Settings → Server** without reinstalling.
+
+### Dev sideload (Mac Vite)
+
+1. Phone: USB debugging ON, connect USB
+2. On Mac:
+   ```bash
+   npm run dev              # terminal 1
+   npm run mobile:install:dev   # terminal 2
+   ```
+3. Open **Arco OS** on the phone
+
+`mobile:install:dev` uses **`adb reverse`** — the phone hits `127.0.0.1:4610` on your Mac through the cable (no LAN IP needed). No server profile UI in this mode.
 
 Reinstall after changes:
 
 ```bash
-npm run mobile:install
-# faster: SKIP_BUILD=1 npm run mobile:install
+npm run mobile:install:dev
+# faster: SKIP_BUILD=1 MOBILE_DEV=1 npm run mobile:install
 ```
 
 ---
@@ -265,7 +335,7 @@ Install via ADB, Chromebook Wi‑Fi install, or file transfer.
 1. Open **Arco OS** — **Connect to Arco** screen (no pre-filled URL).
 2. Enter server root URL, e.g. `https://your-coolify-domain`, `https://macbook.tailnet.ts.net:4600`, `http://10.0.0.12:4600`.
 3. Optional label → **Test & connect**.
-4. Or tap **Find on this network** to scan LAN + Chromebook Linux bridge.
+4. Or tap **Find on this network** to scan your Wi‑Fi subnet, LAN, and (on Chromebook) the Linux bridge.
 5. Complete login or setup wizard **on that server** (each server has its own data).
 
 ### Switch servers later
@@ -316,7 +386,8 @@ npm run mobile:apk
 |---------|----------------|
 | `npm run mobile:setup` | First-time Capacitor + `android/` project |
 | `npm run mobile:bundle` | **Bundled APK** — UI in app, server at first run |
-| `npm run mobile:install` | USB phone (dev): build + `adb reverse` + install |
+| `npm run mobile:install` | USB phone (bundled): build + install + server profiles at first run |
+| `npm run mobile:install:dev` | USB phone (dev): build + `adb reverse` + install |
 | `npm run mobile:chromebook:install` | Chromebook Wi‑Fi ADB (bundled by default) |
 | `npm run mobile:apk` | Dev APK → `public/downloads/` (Vite URL when synced) |
 | `npm run mobile:icons` | Regenerate launcher icons (adaptive safe zone) |
@@ -328,8 +399,8 @@ npm run mobile:apk
 
 | Variable | Example | Purpose |
 |----------|---------|---------|
-| `MOBILE_DEV` | `1` | Chromebook install loads from Mac Vite (not bundled) |
-| `MOBILE_BUNDLED` | `1` | Force bundled build in chromebook install |
+| `MOBILE_DEV` | `1` | Phone/Chromebook install loads from Mac Vite (not bundled) |
+| `MOBILE_BUNDLED` | `1` | Force bundled build in install scripts |
 | `CAP_SERVER_URL` | `https://10.0.0.12:4610` | Dev: WebView entry URL at `mobile:sync` |
 | `CHROMEBOOK_IP` | `10.0.0.47` | Wi‑Fi ADB target for `mobile:chromebook:install` |
 | `VITE_ARCO_MOBILE_BUNDLED` | `1` | In `.env.mobile` — first-run server picker |
@@ -346,10 +417,12 @@ npm run mobile:apk
 | **No certificate warning** | Close old tabs; open fresh `https://YOUR_MAC_IP:4610/mobile-install.html` |
 | **Developer Mode required** (tap APK in Files) | Don’t use Files tap — use [F](#f-chromebook-adb-from-mac-over-wi‑fi) or [A](#a-chromebook-browser--pwa-no-apk) |
 | **`adb not found`** | `brew install android-platform-tools` |
+| **`adb devices` empty** (phone plugged in) | [Enable Developer options](#enable-developer-options-on-android-phones) — USB debugging + **File transfer** mode |
 | **`unauthorized`** | Accept RSA prompt on device |
 | **`Connection refused` :5555** | Enable ADB debugging; same Wi‑Fi; retry after reboot |
 | **Gradle Java error** | `export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home` |
 | **Blank app after install (dev HTTPS)** | Use bundled APK, or `MOBILE_DEV=1` + running `dev:chromebook`, or `dev:mobile` + HTTP |
+| **Webpage not available** (USB dev) | Mac Vite must match APK URL: `npm run dev` → `http://127.0.0.1:4610`; `npm run dev:chromebook` → `https://127.0.0.1:4610`. Re-run `npm run mobile:install` (auto-detects) or set `CAP_SERVER_URL` |
 | **No setup wizard on “fresh” APK** | Dev sideload uses Mac `data/` — use bundled APK + empty server, or clear server data |
 | **Can't connect to server** | Test URL in browser; redeploy server with CORS; HTTPS needs `ARCO_SECURE_COOKIES=1` |
 | **Wrong launcher icon (circle)** | `npm run mobile:icons` then rebuild APK |

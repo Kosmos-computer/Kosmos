@@ -135,7 +135,7 @@ On Chromebook APK:
 | `npm run mobile:bundle` | Done |
 | Chromebook Linux install script | Planned |
 | In-app local backend wizard | Planned |
-| `@capacitor/network` for smarter subnet scan | Planned |
+| `@capacitor/network` for smarter subnet scan | Partial — WebRTC subnet detect in bundled shell |
 | mDNS / Bonjour discovery | Planned |
 
 ---

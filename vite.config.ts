@@ -5,6 +5,8 @@ import { fileURLToPath } from "node:url";
 
 const lan = process.env.ARCO_LAN === "1";
 const https = process.env.ARCO_HTTPS === "1";
+const apiPort = Number(process.env.PORT ?? 4600);
+const apiOrigin = `http://localhost:${apiPort}`;
 
 export default defineConfig({
   plugins: [react(), ...(https ? [basicSsl()] : [])],
@@ -27,16 +29,16 @@ export default defineConfig({
     https,
     proxy: {
       "/api": {
-        target: "http://localhost:4600",
+        target: apiOrigin,
         changeOrigin: true,
       },
       // Installed-app bundles + the app SDK are served by the Arco server.
       "/apps": {
-        target: "http://localhost:4600",
+        target: apiOrigin,
         changeOrigin: true,
       },
       "/app-sdk.js": {
-        target: "http://localhost:4600",
+        target: apiOrigin,
         changeOrigin: true,
       },
     },

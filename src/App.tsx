@@ -13,8 +13,6 @@ import { ShellRoutes } from "./os/ShellRoutes";
 import { getStandaloneWindowKey } from "./os/nativeAppWindows";
 import { I18nLocaleSync } from "./i18n/I18nLocaleSync";
 import { useShellProfile } from "./os/useShellProfile";
-import { MobileInstallBanner } from "./os/MobileInstallBanner";
-
 export default function App() {
   const { i18n } = useTranslation();
   const standaloneKey = getStandaloneWindowKey();
@@ -48,7 +46,6 @@ export default function App() {
           <BrowserRouter>
             <ShellRoutes isMobile={isMobile} />
           </BrowserRouter>
-          <MobileInstallBanner floating />
         </AuthGate>
       </ServerConnectGate>
     </ElectronShell>

@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import {
-  pickRandomGeometricPatternIndex,
   pickRandomMaskIndex,
-  SPRITE_GEOMETRIC_PATTERNS,
+  pickRandomWorkingGeometricPatternIndex,
+  SPRITE_WORKING_GEOMETRIC_PATTERNS,
 } from "./patterns/geometric";
 import type { SpriteMarkMask, SpriteMarkPlayback } from "./types";
 
@@ -20,17 +20,17 @@ function playbackKey(playback: SpriteMarkPlayback): string {
 }
 
 export function useSpriteMarkPlayer(playback: SpriteMarkPlayback) {
-  const [mask, setMask] = useState<SpriteMarkMask>(() => SPRITE_GEOMETRIC_PATTERNS[0]);
+  const [mask, setMask] = useState<SpriteMarkMask>(() => SPRITE_WORKING_GEOMETRIC_PATTERNS[0]);
   const key = playbackKey(playback);
 
   useEffect(() => {
     if (playback.kind === "random-geometric") {
-      let frame = pickRandomGeometricPatternIndex();
-      setMask(SPRITE_GEOMETRIC_PATTERNS[frame]);
+      let frame = pickRandomWorkingGeometricPatternIndex();
+      setMask(SPRITE_WORKING_GEOMETRIC_PATTERNS[frame]);
 
       const timer = window.setInterval(() => {
-        frame = pickRandomGeometricPatternIndex(frame);
-        setMask(SPRITE_GEOMETRIC_PATTERNS[frame]);
+        frame = pickRandomWorkingGeometricPatternIndex(frame);
+        setMask(SPRITE_WORKING_GEOMETRIC_PATTERNS[frame]);
       }, playback.frameMs);
 
       return () => window.clearInterval(timer);

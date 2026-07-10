@@ -58,7 +58,7 @@ app.get("/", (c) => {
     <form method="post" action="/checkout">
       <label for="tenantName">Instance name</label>
       <input id="tenantName" name="tenantName" placeholder="acme" required pattern="[a-z0-9][a-z0-9-]{1,28}[a-z0-9]" />
-      <div class="hint">Your URL: <code>arco-<span id="preview">name</span>.fly.dev</code></div>
+      <div class="hint">Your URL: <code>${config.tenantPrefix}-<span id="preview">name</span>.fly.dev</code></div>
       <label for="email">Email</label>
       <input id="email" name="email" type="email" placeholder="you@example.com" required />
       <button type="submit">Continue to checkout</button>
@@ -107,7 +107,7 @@ app.get("/signin", (c) => {
       <p class="hint" style="text-align:center;margin:1rem 0">— or —</p>
       <label for="tenantName">Instance name</label>
       <input id="tenantName" name="tenantName" placeholder="acme" pattern="[a-z0-9][a-z0-9-]{1,28}[a-z0-9]" />
-      <div class="hint">Opens <code>arco-<span id="preview">name</span>.fly.dev</code></div>
+      <div class="hint">Opens <code>${config.tenantPrefix}-<span id="preview">name</span>.fly.dev</code></div>
       <button type="submit">Open my instance</button>
     </form>
     <p class="hint" style="margin-top:1.5rem">Need a new instance? <a href="/">Get started</a></p>

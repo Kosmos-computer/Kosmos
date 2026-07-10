@@ -37,6 +37,7 @@ import { ProvidersSection } from "./ProvidersSection";
 import { SkillsSection } from "./SkillsSection";
 import { MemorySection } from "./MemorySection";
 import { UsageSection } from "./UsageSection";
+import { PlatformDownloadsSection } from "./PlatformDownloadsSection";
 import { ToolsSection } from "./ToolsSection";
 import { WALLPAPER_GROUPS, type WallpaperId } from "../../os/wallpaper/wallpapers";
 import { AUTH_WALLPAPER_GROUPS, type AuthWallpaperId } from "../../os/wallpaper/authWallpapers";
@@ -737,6 +738,7 @@ export function SettingsApp() {
           {activeSection === "providers" && <ProvidersSection />}
           {activeSection === "external" && <ExternalAccessSection />}
           {activeSection === "usage" && <UsageSection />}
+          {activeSection === "downloads" && <PlatformDownloadsSection />}
           {activeSection === "password" && <PasswordSection />}
           {activeSection === "users" && canManageUsers && <UsersSection />}
         </div>

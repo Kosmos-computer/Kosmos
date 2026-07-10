@@ -206,6 +206,13 @@ export const SPRITE_GEOMETRIC_PATTERN_ENTRIES: readonly SpriteMarkPattern[] =
     asPattern(`geometric.${index}`, `geometric ${index}`, mask),
   );
 
+/**
+ * Conversation / working random pool — geometric patterns without equalizer bars
+ * (lab indices geometric 67–72), which are reserved for the "thinking" sequence.
+ */
+export const SPRITE_WORKING_GEOMETRIC_PATTERNS: readonly SpriteMarkMask[] =
+  SPRITE_MARK_BOOT_PATTERNS;
+
 /** Pick a random index, avoiding an immediate repeat when possible. */
 export function pickRandomMaskIndex(poolSize: number, previousIndex?: number): number {
   if (poolSize <= 1) return 0;
@@ -220,6 +227,10 @@ export function pickRandomMaskIndex(poolSize: number, previousIndex?: number): n
 
 export function pickRandomGeometricPatternIndex(previousIndex?: number): number {
   return pickRandomMaskIndex(SPRITE_GEOMETRIC_PATTERNS.length, previousIndex);
+}
+
+export function pickRandomWorkingGeometricPatternIndex(previousIndex?: number): number {
+  return pickRandomMaskIndex(SPRITE_WORKING_GEOMETRIC_PATTERNS.length, previousIndex);
 }
 
 export function pickRandomBootPatternIndex(previousIndex?: number): number {

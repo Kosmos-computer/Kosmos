@@ -46,9 +46,9 @@ function usageExit(message?: string): never {
   --model <name>       gateway model for LLM_MODEL        (default qwen3-30b)
   --region <code>      Fly region                         (default iad)
   --org <slug>         Fly org                            (default personal)
-  --prefix <str>       app-name prefix                    (default arco)
-  --image <ref>        tenant image                       (default registry.fly.io/arco-template:demo)
-  --gateway <url>      credits gateway base URL           (default https://arco-gateway.fly.dev)
+  --prefix <str>       app-name prefix                    (default kosmos)
+  --image <ref>        tenant image                       (default registry.fly.io/kosmos-template:demo)
+  --gateway <url>      credits gateway base URL           (default https://kosmos-gateway.fly.dev)
   --volume-gb <n>      /data volume size                  (default 1)
   --quota-mb <n>       ARCO_WORKSPACE_QUOTA_MB            (default 512)`,
   );
@@ -63,9 +63,9 @@ function parseArgs(argv: string[]): Options {
     model: "qwen3-30b",
     region: "iad",
     org: "personal",
-    prefix: "arco",
-    image: "registry.fly.io/arco-template:demo",
-    gateway: "https://arco-gateway.fly.dev",
+    prefix: "kosmos",
+    image: "registry.fly.io/kosmos-template:demo",
+    gateway: "https://kosmos-gateway.fly.dev",
     volumeGb: 1,
     quotaMb: 512,
   };

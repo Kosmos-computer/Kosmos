@@ -129,13 +129,17 @@ export function AgentActionBlock({
         type="button"
         className="arco-agent-action__header"
         aria-expanded={open}
+        aria-label={command ? `${title}: ${command}` : title}
         onClick={() => setOpen((prev) => !prev)}
       >
         <span className="arco-agent-action__icon" aria-hidden="true">
           <Icon size={14} />
         </span>
-        <span className="arco-agent-action__title">{title}</span>
-        {command ? <code className="arco-agent-action__command">{command}</code> : null}
+        {command ? (
+          <code className="arco-agent-action__command">{command}</code>
+        ) : (
+          <span className="arco-agent-action__title">{title}</span>
+        )}
         <ChevronRight
           size={13}
           className={[

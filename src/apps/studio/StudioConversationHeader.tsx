@@ -161,7 +161,7 @@ export function StudioConversationHeader({
               className="arco-btn arco-btn--icon arco-studio__convmenu"
               aria-label={i18n.t(I18nKey.APPS$STUDIO_CONVERSATION_ACTIONS)}
             >
-              <MoreVertical size={14} />
+              <MoreVertical size={12} />
             </button>
           }
         />

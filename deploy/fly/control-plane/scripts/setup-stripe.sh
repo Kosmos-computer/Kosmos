@@ -33,6 +33,6 @@ fi
 
 echo "STRIPE_PRICE_ID=$PRICE_ID"
 echo ""
-echo "Next: register webhook at https://arco-control-plane.fly.dev/webhooks/stripe"
+echo "Next: register webhook at https://kosmos-control-plane.fly.dev/webhooks/stripe"
 echo "Events: checkout.session.completed, customer.subscription.deleted, invoice.payment_failed"
-echo "Then: fly secrets set --app arco-control-plane STRIPE_PRICE_ID=$PRICE_ID STRIPE_WEBHOOK_SECRET=whsec_..."
+echo "Then: fly secrets set --app kosmos-control-plane STRIPE_PRICE_ID=$PRICE_ID STRIPE_WEBHOOK_SECRET=whsec_..."

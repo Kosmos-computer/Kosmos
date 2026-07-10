@@ -62,13 +62,13 @@ async function gatewayPost(config: Config, route: string, body: unknown): Promis
 
 export async function provisionTenant(config: Config, tenantName: string): Promise<ProvisionResult> {
   const app = `${config.tenantPrefix}-${tenantName}`;
-  const workDir = fs.mkdtempSync(path.join(os.tmpdir(), "arco-provision-"));
+  const workDir = fs.mkdtempSync(path.join(os.tmpdir(), "kosmos-provision-"));
   const tomlPath = path.join(workDir, `${app}.toml`);
 
   const keyRes = await gatewayPost(config, "/key/generate", {
     key_alias: app,
     max_budget: config.tenantBudgetUsd,
-    metadata: { tenant: tenantName, provisionedBy: "arco-control-plane" },
+    metadata: { tenant: tenantName, provisionedBy: "kosmos-control-plane" },
   });
   if (!keyRes.ok) {
     throw new Error(`/key/generate failed: ${keyRes.status} ${await keyRes.text()}`);

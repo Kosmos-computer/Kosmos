@@ -1,7 +1,7 @@
-# Arco control plane — Stripe checkout + automated tenant provisioning.
+# Kosmos control plane — Stripe checkout + automated tenant provisioning.
 # Deploy from this directory: fly deploy
 
-app = "arco-control-plane"
+app = "kosmos-control-plane"
 primary_region = "iad"
 
 [build]
@@ -10,9 +10,9 @@ primary_region = "iad"
 [env]
   PORT = "4700"
   DATA_DIR = "/data"
-  GATEWAY_URL = "https://arco-gateway.fly.dev"
-  TENANT_IMAGE = "registry.fly.io/arco-template:demo"
-  TENANT_PREFIX = "arco"
+  GATEWAY_URL = "https://kosmos-gateway.fly.dev"
+  TENANT_IMAGE = "registry.fly.io/kosmos-template:demo"
+  TENANT_PREFIX = "kosmos"
   TENANT_ORG = "personal"
   TENANT_REGION = "iad"
   TENANT_BUDGET_USD = "5"

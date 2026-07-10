@@ -8,8 +8,10 @@ export * from "./player";
 export {
   SPRITE_GEOMETRIC_PATTERNS,
   SPRITE_MARK_BOOT_PATTERNS,
+  SPRITE_WORKING_GEOMETRIC_PATTERNS,
   pickRandomBootPatternIndex,
   pickRandomGeometricPatternIndex,
+  pickRandomWorkingGeometricPatternIndex,
   pickRandomMaskIndex,
   spriteMarkBootGeometricStrings,
   spriteMarkBootPool,

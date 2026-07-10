@@ -1,5 +1,5 @@
 {
-  "name": "arco-control-plane",
+  "name": "kosmos-control-plane",
   "private": true,
   "type": "module",
   "scripts": {

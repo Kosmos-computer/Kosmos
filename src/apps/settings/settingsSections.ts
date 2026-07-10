@@ -5,6 +5,7 @@ import {
   Bot,
   Brain,
   CreditCard,
+  Download,
   Globe,
   HardDrive,
   Image,
@@ -52,6 +53,7 @@ export type SettingsSectionId =
   | "external"
   | "server"
   | "usage"
+  | "downloads"
   | "password"
   | "users";
 
@@ -142,6 +144,7 @@ export function buildSettingsNavGroups(): SettingsNavGroup[] {
       title: i18n.t(I18nKey.SETTINGS$SECTION_PLATFORM),
       items: [
         { id: "server", label: "Server", icon: HardDrive, requiresMobileServer: true },
+        { id: "downloads", label: "Downloads", icon: Download },
         { id: "apps", label: i18n.t(I18nKey.SETTINGS$SECTION_APPS), icon: AppWindow },
         { id: "tools", label: i18n.t(I18nKey.SETTINGS$SECTION_TOOLS), icon: Wrench },
         { id: "mcp", label: i18n.t(I18nKey.SETTINGS$SECTION_MCP), icon: Server },

@@ -1,10 +1,10 @@
-# Arco credits gateway (LiteLLM Proxy) on Fly.io.
+# Kosmos credits gateway (LiteLLM Proxy) on Fly.io.
 # Deploy from this directory: fly deploy
 #
-# Fly app names are global — if "arco-gateway" is taken, rename here and pass
+# Fly app names are global — if "kosmos-gateway" is taken, rename here and pass
 # --gateway to scripts/provision-tenant.ts.
 
-app = "arco-gateway"
+app = "kosmos-gateway"
 primary_region = "iad"
 
 [build]

@@ -1,7 +1,7 @@
-# Arco hosted SaaS — current setup
+# Kosmos hosted SaaS — current setup
 
 Operational reference for the usage-based Fly.io stack: credits gateway, Stripe
-control plane, and per-customer Arco instances. This lives in the deploy tree
+control plane, and per-customer Kosmos instances. This lives in the deploy tree
 (not the in-app Docs application under `apps/docs/`).
 
 For step-by-step first deploy, see [README.md](README.md). For product/strategy
@@ -14,7 +14,7 @@ notes, see the private `docs/saas-plan.md` (gitignored).
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  Signup / billing                                                       │
-│  https://arco-control-plane.fly.dev                                     │
+│  https://kosmos-control-plane.fly.dev                                     │
 │    POST /checkout → Stripe Checkout ($25/mo test subscription)          │
 │    POST /webhooks/stripe → provision tenant on payment                  │
 │    GET  /success?session_id=… → poll provisioning status                │
@@ -23,7 +23,7 @@ notes, see the private `docs/saas-plan.md` (gitignored).
                                 ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  Tenant instance (one Fly app + 1GB volume per customer)                │
-│  https://arco-<name>.fly.dev                                            │
+│  https://kosmos-<name>.fly.dev                                            │
 │    Arco Node server, SQLite + files on /data                            │
 │    LLM_* env → credits gateway                                          │
 │    auto_stop when idle, cold-start on next request                      │
@@ -32,7 +32,7 @@ notes, see the private `docs/saas-plan.md` (gitignored).
                                 ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  Credits gateway (LiteLLM Proxy, always on)                             │
-│  https://arco-gateway.fly.dev                                           │
+│  https://kosmos-gateway.fly.dev                                           │
 │    /key/generate, /key/delete, /key/info (master key)                   │
 │    /v1/chat/completions (tenant virtual keys)                           │
 │    Postgres: virtual keys, spend, budgets                               │
@@ -51,18 +51,18 @@ commands with server authority — no shared multi-tenancy in a single process.
 
 | App | Role | URL |
 | --- | --- | --- |
-| `arco-gateway` | LiteLLM credits proxy | https://arco-gateway.fly.dev |
-| `arco-control-plane` | Stripe signup + auto-provision | https://arco-control-plane.fly.dev |
-| `arco-template` | Image registry only (not serving HTTP) | — |
-| `arco-<name>` | Customer instance | https://arco-<name>.fly.dev |
+| `kosmos-gateway` | LiteLLM credits proxy | https://kosmos-gateway.fly.dev |
+| `kosmos-control-plane` | Stripe signup + auto-provision | https://kosmos-control-plane.fly.dev |
+| `kosmos-template` | Image registry only (not serving HTTP) | — |
+| `kosmos-<name>` | Customer instance | https://kosmos-<name>.fly.dev |
 
 Optional/supporting:
 
 | App | Role |
 | --- | --- |
-| `arco-litellm-db` | Fly Postgres for LiteLLM (if used instead of Neon) |
+| `kosmos-litellm-db` | Fly Postgres for LiteLLM (if used instead of Neon) |
 
-Example tenants provisioned during testing: `arco-demo` (manual CLI), `arco-test`
+Example tenants provisioned during testing: `kosmos-demo` (manual CLI), `kosmos-test`
 (Stripe checkout).
 
 ---
@@ -74,7 +74,7 @@ Example tenants provisioned during testing: `arco-demo` (manual CLI), `arco-test
 | [gateway/](gateway/) | LiteLLM Docker image + `config.yaml` + `fly.toml` |
 | [control-plane/](control-plane/) | Hono app: checkout, webhooks, SQLite orders, flyctl provision |
 | [tenant/fly.toml.tmpl](tenant/fly.toml.tmpl) | Per-tenant Fly config template |
-| [template.fly.toml](template.fly.toml) | Build/push shared tenant image (`arco-template:demo`) |
+| [template.fly.toml](template.fly.toml) | Build/push shared tenant image (`kosmos-template:demo`) |
 | [Dockerfile.runtime](Dockerfile.runtime) | Tenant image: prebuilt `dist/`, no in-Docker Vite build |
 | [../../scripts/provision-tenant.ts](../../scripts/provision-tenant.ts) | CLI provision/destroy (same steps as control plane) |
 | [tenants/](tenants/) | Gitignored records (`<app>.json`, `<app>.toml`) — contain virtual keys |
@@ -86,13 +86,13 @@ Example tenants provisioned during testing: `arco-demo` (manual CLI), `arco-test
 
 ### 1. Self-serve (Stripe)
 
-1. Customer opens https://arco-control-plane.fly.dev
+1. Customer opens https://kosmos-control-plane.fly.dev
 2. Enters instance name + email → Stripe Checkout
 3. On payment:
    - Stripe redirects to `/success?session_id=…`
    - Webhook `checkout.session.completed` fires (backup: success page also kicks off provision)
 4. Control plane mints LiteLLM key, creates Fly app/volume/secrets, deploys template image
-5. Customer opens `https://arco-<name>.fly.dev` → Arco first-run owner setup
+5. Customer opens `https://kosmos-<name>.fly.dev` → Kosmos first-run owner setup
 
 **Test card:** `4242 4242 4242 4242`, any future expiry, any CVC.
 
@@ -101,7 +101,7 @@ Example tenants provisioned during testing: `arco-demo` (manual CLI), `arco-test
 ```bash
 source deploy/fly/.deploy-secrets.local   # LITELLM_MASTER_KEY
 npx tsx scripts/provision-tenant.ts acme --budget 5
-# → https://arco-acme.fly.dev
+# → https://kosmos-acme.fly.dev
 ```
 
 Teardown:
@@ -119,7 +119,7 @@ Set automatically on each tenant Fly app:
 | Secret / env | Value |
 | --- | --- |
 | `LLM_PROVIDER` | `custom` |
-| `LLM_BASE_URL` | `https://arco-gateway.fly.dev/v1` |
+| `LLM_BASE_URL` | `https://kosmos-gateway.fly.dev/v1` |
 | `LLM_API_KEY` | LiteLLM virtual key (per tenant) |
 | `LLM_MODEL` | `qwen3-30b` (default) |
 | `ARCO_SECURE_COOKIES` | `1` |
@@ -136,7 +136,7 @@ Inside Arco: **Settings → Usage & credits** reads `/api/usage` → gateway
 Store operator secrets in `deploy/fly/.deploy-secrets.local` (gitignored).
 Never commit API keys or the LiteLLM master key.
 
-### Credits gateway (`arco-gateway`)
+### Credits gateway (`kosmos-gateway`)
 
 | Variable | Purpose |
 | --- | --- |
@@ -146,18 +146,18 @@ Never commit API keys or the LiteLLM master key.
 
 Generate master key: `sk-master-$(openssl rand -hex 16)`
 
-### Control plane (`arco-control-plane`)
+### Control plane (`kosmos-control-plane`)
 
 Set via `fly secrets set`:
 
 | Variable | Purpose |
 | --- | --- |
-| `PUBLIC_URL` | `https://arco-control-plane.fly.dev` |
+| `PUBLIC_URL` | `https://kosmos-control-plane.fly.dev` |
 | `STRIPE_SECRET_KEY` | Stripe test/live secret key |
 | `STRIPE_WEBHOOK_SECRET` | From Stripe webhook endpoint |
 | `STRIPE_PRICE_ID` | Subscription price (e.g. `price_…`) |
 | `LITELLM_MASTER_KEY` | Same as gateway master key |
-| `FLY_API_TOKEN` | Org token: `fly tokens create org personal -n arco-control-plane` |
+| `FLY_API_TOKEN` | Org token: `fly tokens create org personal -n kosmos-control-plane` |
 
 Optional overrides (defaults in [control-plane/fly.toml](control-plane/fly.toml)):
 `GATEWAY_URL`, `TENANT_IMAGE`, `TENANT_BUDGET_USD`, `TENANT_MODEL`, etc.
@@ -171,7 +171,7 @@ STRIPE_SECRET_KEY=sk_test_... ./scripts/setup-stripe.sh
 
 Register webhook in Stripe Dashboard:
 
-- **URL:** `https://arco-control-plane.fly.dev/webhooks/stripe`
+- **URL:** `https://kosmos-control-plane.fly.dev/webhooks/stripe`
 - **Events:** `checkout.session.completed`, `customer.subscription.deleted`, `invoice.payment_failed`
 
 Then set `STRIPE_WEBHOOK_SECRET` and `STRIPE_PRICE_ID` on the Fly app.
@@ -193,8 +193,8 @@ fly auth docker
 # Build and push runtime image (includes dist/)
 docker build --platform linux/amd64 \
   -f deploy/fly/Dockerfile.runtime \
-  -t registry.fly.io/arco-template:demo .
-docker push registry.fly.io/arco-template:demo
+  -t registry.fly.io/kosmos-template:demo .
+docker push registry.fly.io/kosmos-template:demo
 ```
 
 **Why `Dockerfile.runtime`:** remote Fly builds OOM on Vite; cross-compiling
@@ -226,7 +226,7 @@ the release (or destroy/reprovision).
 ### Gateway
 
 ```bash
-curl -s https://arco-gateway.fly.dev/health/liveliness
+curl -s https://kosmos-gateway.fly.dev/health/liveliness
 # LiteLLM key + completion smoke test — see README.md §1
 ```
 
@@ -235,17 +235,17 @@ curl -s https://arco-gateway.fly.dev/health/liveliness
 ```bash
 export LITELLM_MASTER_KEY=sk-master-...
 npx tsx scripts/provision-tenant.ts demo2 --budget 5
-open https://arco-demo2.fly.dev
+open https://kosmos-demo2.fly.dev
 ```
 
 1. Create owner account (first signup)
 2. Chat with agent
 3. Settings → Usage & credits shows spend
-4. `fly machine list -a arco-demo2` — machine stops when idle
+4. `fly machine list -a kosmos-demo2` — machine stops when idle
 
 ### Stripe tenant
 
-1. https://arco-control-plane.fly.dev — new instance name
+1. https://kosmos-control-plane.fly.dev — new instance name
 2. Complete Stripe test checkout
 3. Land on `/success?session_id=…` — wait for "Your instance is ready"
 4. Open tenant URL, first-run setup
@@ -289,7 +289,7 @@ control plane, gateway, and tenant instances.
 
 | Symptom | Likely cause | Fix |
 | --- | --- | --- |
-| Control plane 502 | App crash (check `fly logs -a arco-control-plane`) | Redeploy; ensure `tsx` is a production dependency |
+| Control plane 502 | App crash (check `fly logs -a kosmos-control-plane`) | Redeploy; ensure `tsx` is a production dependency |
 | Paid but no redirect | Stripe redirect while app was down | Open `/success?session_id=cs_test_…` manually |
 | Order stuck on `pending` | Webhook not delivered | Check Stripe webhook logs; success page triggers backup provision |
 | `Key with alias already exists` | Stale LiteLLM key after failed provision | `POST /key/delete` with master key, or delete in LiteLLM |

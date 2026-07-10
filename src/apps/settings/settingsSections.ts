@@ -27,10 +27,12 @@ import {
   Video,
   Wallet,
   Wrench,
+  Cloud,
   Code,
   Gift,
 } from "lucide-react";
 import i18n from "../../i18n";
+import { isArcoDesktop } from "../../lib/desktopBridge";
 import { mobileShellNeedsServerProfile } from "../../os/server/mobileShellMode";
 import { I18nKey } from "../../i18n/declaration";
 import { SETTINGS_STUB_NAV_GROUPS } from "./settingsStubMock";
@@ -53,6 +55,7 @@ export type SettingsSectionId =
   | "external"
   | "server"
   | "usage"
+  | "kosmos-cloud"
   | "downloads"
   | "password"
   | "users";
@@ -69,6 +72,8 @@ export interface SettingsNavItem {
   requiresUsersManage?: boolean;
   /** Show only on bundled mobile shell (server profiles). */
   requiresMobileServer?: boolean;
+  /** Show only on desktop (Electron/Tauri). */
+  requiresDesktop?: boolean;
 }
 
 export interface SettingsNavGroup {
@@ -123,7 +128,11 @@ export const STUB_SETTINGS_SECTION_IDS = new Set<SettingsSectionId>(
   ),
 );
 
+/** Billing nav items render real subscription UI instead of the stub pane. */
+export const BILLING_SETTINGS_SECTION_IDS = new Set<SettingsSectionId>(["subscriptions", "billing"]);
+
 export function isStubSettingsSection(sectionId: SettingsSectionId): sectionId is StubSettingsSectionId {
+  if (BILLING_SETTINGS_SECTION_IDS.has(sectionId)) return false;
   return STUB_SETTINGS_SECTION_IDS.has(sectionId);
 }
 
@@ -143,6 +152,7 @@ export function buildSettingsNavGroups(): SettingsNavGroup[] {
       id: "platform",
       title: i18n.t(I18nKey.SETTINGS$SECTION_PLATFORM),
       items: [
+        { id: "kosmos-cloud", label: "Kosmos Cloud", icon: Cloud, requiresDesktop: true },
         { id: "server", label: "Server", icon: HardDrive, requiresMobileServer: true },
         { id: "downloads", label: "Downloads", icon: Download },
         { id: "apps", label: i18n.t(I18nKey.SETTINGS$SECTION_APPS), icon: AppWindow },
@@ -208,6 +218,7 @@ export function visibleSettingsNavGroups(options: {
   return groups.map((group) => ({
     ...group,
     items: group.items.filter((item) => {
+      if (item.requiresDesktop && !isArcoDesktop()) return false;
       if (item.requiresMobileServer && !mobileShellNeedsServerProfile()) return false;
       if (item.requiresWrite && !options.canWriteSettings) return false;
       if (item.requiresUsersManage && !options.canManageUsers) return false;

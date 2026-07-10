@@ -35,6 +35,11 @@ interface Options {
   gateway: string;
   volumeGb: number;
   quotaMb: number;
+  billingManaged: boolean;
+  controlPlaneUrl: string;
+  billingToken: string;
+  paymentLinkUrl: string;
+  portalLoginUrl: string;
 }
 
 function usageExit(message?: string): never {
@@ -50,7 +55,12 @@ function usageExit(message?: string): never {
   --image <ref>        tenant image                       (default registry.fly.io/kosmos-template:demo)
   --gateway <url>      credits gateway base URL           (default https://kosmos-gateway.fly.dev)
   --volume-gb <n>      /data volume size                  (default 1)
-  --quota-mb <n>       ARCO_WORKSPACE_QUOTA_MB            (default 512)`,
+  --quota-mb <n>       ARCO_WORKSPACE_QUOTA_MB            (default 512)
+  --billing-managed    set KOSMOS_BILLING_MANAGED=1 on tenant
+  --control-plane <url> KOSMOS_CONTROL_PLANE_URL (with --billing-managed)
+  --billing-token <tok> KOSMOS_TENANT_BILLING_TOKEN (minted by control plane)
+  --payment-link <url>  KOSMOS_PAYMENT_LINK_URL (optional)
+  --portal-login <url>  KOSMOS_PORTAL_LOGIN_URL (optional)`,
   );
   process.exit(1);
 }
@@ -68,6 +78,11 @@ function parseArgs(argv: string[]): Options {
     gateway: "https://kosmos-gateway.fly.dev",
     volumeGb: 1,
     quotaMb: 512,
+    billingManaged: false,
+    controlPlaneUrl: "https://kosmos-control-plane.fly.dev",
+    billingToken: "",
+    paymentLinkUrl: "",
+    portalLoginUrl: "",
   };
   const positional: string[] = [];
   for (let i = 0; i < argv.length; i++) {
@@ -87,6 +102,11 @@ function parseArgs(argv: string[]): Options {
     else if (arg === "--gateway") opts.gateway = next().replace(/\/+$/, "");
     else if (arg === "--volume-gb") opts.volumeGb = Number(next());
     else if (arg === "--quota-mb") opts.quotaMb = Number(next());
+    else if (arg === "--billing-managed") opts.billingManaged = true;
+    else if (arg === "--control-plane") opts.controlPlaneUrl = next().replace(/\/+$/, "");
+    else if (arg === "--billing-token") opts.billingToken = next();
+    else if (arg === "--payment-link") opts.paymentLinkUrl = next();
+    else if (arg === "--portal-login") opts.portalLoginUrl = next();
     else if (arg.startsWith("--")) usageExit(`unknown option ${arg}`);
     else positional.push(arg);
   }
@@ -175,15 +195,22 @@ async function provision(opts: Options): Promise<void> {
   ]);
 
   console.log("\n[4/5] Staging secrets");
-  fly([
-    "secrets", "set", "--app", app, "--stage",
+  const secrets = [
     "LLM_PROVIDER=custom",
     `LLM_BASE_URL=${opts.gateway}/v1`,
     `LLM_API_KEY=${virtualKey}`,
     `LLM_MODEL=${opts.model}`,
     "ARCO_SECURE_COOKIES=1",
     `ARCO_WORKSPACE_QUOTA_MB=${opts.quotaMb}`,
-  ]);
+  ];
+  if (opts.billingManaged) {
+    secrets.push("KOSMOS_BILLING_MANAGED=1", `KOSMOS_TENANT_APP=${app}`);
+    secrets.push(`KOSMOS_CONTROL_PLANE_URL=${opts.controlPlaneUrl}`);
+    if (opts.billingToken) secrets.push(`KOSMOS_TENANT_BILLING_TOKEN=${opts.billingToken}`);
+    if (opts.paymentLinkUrl) secrets.push(`KOSMOS_PAYMENT_LINK_URL=${opts.paymentLinkUrl}`);
+    if (opts.portalLoginUrl) secrets.push(`KOSMOS_PORTAL_LOGIN_URL=${opts.portalLoginUrl}`);
+  }
+  fly(["secrets", "set", "--app", app, "--stage", ...secrets]);
 
   console.log(`\n[5/5] Deploying ${opts.image}`);
   fs.mkdirSync(TENANTS_DIR, { recursive: true });

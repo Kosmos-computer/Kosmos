@@ -43,6 +43,7 @@ import type {
   ImageGenStyle,
   Settings,
   UsageResponse,
+  BillingStatus,
   CursorConnectionStatus,
   CursorModelInfo,
   AgentBackend,
@@ -863,6 +864,12 @@ export const api = {
   getSettings: () => fetch("/api/settings").then((r) => json<Settings>(r)),
   getUsage: (refresh = false) =>
     fetch(`/api/usage${refresh ? "?refresh=1" : ""}`).then((r) => json<UsageResponse>(r)),
+  getBillingStatus: (refresh = false) =>
+    fetch(`/api/billing/status${refresh ? "?refresh=1" : ""}`).then((r) => json<BillingStatus>(r)),
+  openBillingPortal: () =>
+    fetch("/api/billing/portal", { method: "POST" }).then((r) =>
+      json<{ url: string }>(r),
+    ),
   saveSettings: (patch: Partial<Settings>) =>
     fetch("/api/settings", {
       method: "PUT",

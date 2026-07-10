@@ -11,10 +11,12 @@ import {
 import { getActiveServerUrl, hasActiveServerProfile } from "./server/serverProfileStore";
 import { getMobileSessionToken } from "./server/mobileSessionStore";
 import { mobileShellNeedsServerProfile } from "./server/mobileShellMode";
+import { desktopUsesCloudProfile, shellUsesRemoteApiBase } from "./server/cloudShellMode";
 
 export async function bootstrapPlatformShell(): Promise<void> {
   const needsProfile = mobileShellNeedsServerProfile();
-  const profileUrl = needsProfile ? getActiveServerUrl() : null;
+  const usesRemote = shellUsesRemoteApiBase();
+  const profileUrl = usesRemote ? getActiveServerUrl() : null;
 
   if (profileUrl) {
     window.__ARCO_PLATFORM__ = {
@@ -49,5 +51,10 @@ export async function bootstrapPlatformShell(): Promise<void> {
     if (needsProfile && !hasActiveServerProfile()) {
       root.classList.add("arco-mobile-needs-server");
     }
+  }
+
+  if (config.kind === "desktop" && desktopUsesCloudProfile() && profileUrl) {
+    root.classList.add("arco-desktop-cloud");
+    root.dataset.cloud = profileUrl;
   }
 }

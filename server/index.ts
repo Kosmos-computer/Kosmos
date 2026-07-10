@@ -143,6 +143,7 @@ import {
 import { transcriptionRoutes } from "./routes/transcription.js";
 import { shareRoutes } from "./routes/shareRoutes.js";
 import { usageRoutes } from "./routes/usage.js";
+import { billingRoutes } from "./routes/billing.js";
 import { startTranscriptionSupervisor } from "./transcription/supervisor.js";
 import { listRemoteVideos, listRemotePodcastEpisodes } from "./services/mediaRemoteService.js";
 import type { FileCreateInput } from "../shared/capabilities/files.js";
@@ -245,6 +246,7 @@ app.route("/api/transcription", transcriptionRoutes);
 // ── Model registry (docs/model-hub-plan.md) ──────────────────────────────────
 app.route("/api/models", modelRoutes);
 app.route("/api/usage", usageRoutes);
+app.route("/api/billing", billingRoutes);
 
 // ── Chat ─────────────────────────────────────────────────────────────────────
 

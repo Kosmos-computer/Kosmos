@@ -4,7 +4,7 @@
  * requests (SameSite=Lax), so we persist the session bearer token per server.
  */
 import { getActiveServerUrl } from "./serverProfileStore";
-import { isMobileBundledShell } from "./mobileShellMode";
+import { usesRemoteSessionStore } from "./cloudShellMode";
 
 const STORAGE_KEY = "arco.mobileSession.v1";
 
@@ -27,21 +27,21 @@ function writeMap(map: SessionMap): void {
 }
 
 export function getMobileSessionToken(serverUrl?: string | null): string | null {
-  if (!isMobileBundledShell()) return null;
+  if (!usesRemoteSessionStore()) return null;
   const url = serverUrl ?? getActiveServerUrl();
   if (!url) return null;
   return readMap()[url] ?? null;
 }
 
 export function setMobileSessionToken(serverUrl: string, token: string): void {
-  if (!isMobileBundledShell()) return;
+  if (!usesRemoteSessionStore()) return;
   const map = readMap();
   map[serverUrl.replace(/\/$/, "")] = token;
   writeMap(map);
 }
 
 export function clearMobileSessionToken(serverUrl?: string | null): void {
-  if (!isMobileBundledShell()) return;
+  if (!usesRemoteSessionStore()) return;
   const url = (serverUrl ?? getActiveServerUrl())?.replace(/\/$/, "");
   if (!url) return;
   const map = readMap();

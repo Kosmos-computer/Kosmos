@@ -37,6 +37,8 @@ import { ProvidersSection } from "./ProvidersSection";
 import { SkillsSection } from "./SkillsSection";
 import { MemorySection } from "./MemorySection";
 import { UsageSection } from "./UsageSection";
+import { BillingSection } from "./BillingSection";
+import { KosmosCloudSection } from "./KosmosCloudSection";
 import { PlatformDownloadsSection } from "./PlatformDownloadsSection";
 import { ToolsSection } from "./ToolsSection";
 import { WALLPAPER_GROUPS, type WallpaperId } from "../../os/wallpaper/wallpapers";
@@ -738,6 +740,8 @@ export function SettingsApp() {
           {activeSection === "providers" && <ProvidersSection />}
           {activeSection === "external" && <ExternalAccessSection />}
           {activeSection === "usage" && <UsageSection />}
+          {(activeSection === "subscriptions" || activeSection === "billing") && <BillingSection />}
+          {activeSection === "kosmos-cloud" && isArcoDesktop() && <KosmosCloudSection />}
           {activeSection === "downloads" && <PlatformDownloadsSection />}
           {activeSection === "password" && <PasswordSection />}
           {activeSection === "users" && canManageUsers && <UsersSection />}

@@ -60,8 +60,8 @@ export function BillingSection() {
     }
   };
 
-  const openPaymentLink = () => {
-    const url = billing?.paymentLinkUrl ?? deployment.paymentLinkUrl;
+  const openSignup = () => {
+    const url = billing?.signupUrl ?? deployment.signupUrl;
     if (url) window.open(url, "_blank", "noopener,noreferrer");
   };
 
@@ -85,7 +85,7 @@ export function BillingSection() {
                   then connect from Settings → Kosmos Cloud on desktop.
                 </SettingsAlert>
                 <div>
-                  <Button onClick={openPaymentLink}>Create cloud account</Button>
+                  <Button onClick={openSignup}>Create cloud account</Button>
                 </div>
               </SettingsPanelBody>
             </SettingsPanel>

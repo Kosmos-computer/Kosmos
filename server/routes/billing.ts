@@ -21,6 +21,7 @@ function localBillingStatus(hosted: boolean): BillingStatus {
     cancelAtPeriodEnd: false,
     currentPeriodEnd: null,
     controlPlaneUrl: kosmos.controlPlaneUrl,
+    signupUrl: kosmos.signupUrl,
     paymentLinkUrl: kosmos.paymentLinkUrl,
     portalLoginUrl: kosmos.portalLoginUrl,
   };

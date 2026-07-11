@@ -630,6 +630,8 @@ export interface KosmosDeployment {
   tenantApp: string | null;
   tenantUrl: string | null;
   controlPlaneUrl: string | null;
+  /** Pre-checkout signup gate (terms + age verification) on the control plane. */
+  signupUrl: string;
   paymentLinkUrl: string;
   portalLoginUrl: string;
   /** Tenant can reach control-plane billing API. */
@@ -649,6 +651,7 @@ export interface BillingStatus {
   cancelAtPeriodEnd: boolean;
   currentPeriodEnd: string | null;
   controlPlaneUrl: string | null;
+  signupUrl: string | null;
   paymentLinkUrl: string | null;
   portalLoginUrl: string | null;
 }

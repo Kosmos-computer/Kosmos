@@ -188,7 +188,7 @@ export function KosmosCloudSection() {
                 <Button
                   variant="ghost"
                   onClick={() =>
-                    window.open(deployment.paymentLinkUrl, "_blank", "noopener,noreferrer")
+                    window.open(deployment.signupUrl, "_blank", "noopener,noreferrer")
                   }
                 >
                   Create cloud account

@@ -7,14 +7,16 @@ import { T } from "../../i18n/T";
  * on each group to start a chat in that folder/repo.
  */
 import { useEffect, useMemo, useState } from "react";
-import { Calendar, LayoutGrid, Layers, PanelLeft, Pin, Plus, Search, Trash2 } from "lucide-react";
+import { Calendar, Download, LayoutGrid, Layers, MoreVertical, PanelLeft, Pin, Plus, Search, Trash2 } from "lucide-react";
 import type { Project, SessionSummary } from "@shared/types";
 import { useAuthStore } from "../../os/auth/authStore";
 import { useWindowStore } from "../../os/windowStore";
 import { systemAppTitle } from "../../os/systemAppTitles";
+import { Menu, type MenuItem } from "../../components/Menu";
 import { StudioConversationGroups } from "./StudioConversationGroups";
 import { StudioSidebarFilterMenu } from "./StudioSidebarFilterMenu";
 import { StudioLogoMark } from "../../components/StudioLogoMark";
+import { saveConversation } from "./conversationExport";
 import {
   applyGroupOrder,
   excludePinnedSessions,
@@ -288,6 +290,49 @@ function SessionRow({
   onDelete: (id: string) => void;
   onTogglePin?: () => void;
 }) {
+  const handleSave = () => {
+    void (async () => {
+      try {
+        await saveConversation(session.id, session.title);
+      } catch {
+        // Save failed — leave the list as-is.
+      }
+    })();
+  };
+
+  const handleDelete = () => {
+    if (window.confirm(`Delete “${session.title}”? This cannot be undone.`)) {
+      onDelete(session.id);
+    }
+  };
+
+  const menuItems: MenuItem[] = [
+    ...(onTogglePin
+      ? [
+          {
+            id: "pin",
+            label: pinned ? "Unpin" : "Pin",
+            icon: Pin,
+            onSelect: onTogglePin,
+          } satisfies MenuItem,
+        ]
+      : []),
+    {
+      id: "save",
+      label: <T k={I18nKey.APPS$STUDIO_SAVE_CONVERSATION} />,
+      icon: Download,
+      onSelect: handleSave,
+    },
+    {
+      id: "delete",
+      label: "Delete conversation",
+      icon: Trash2,
+      separatorAbove: true,
+      danger: true,
+      onSelect: handleDelete,
+    },
+  ];
+
   return (
     <div
       className={[
@@ -311,31 +356,22 @@ function SessionRow({
         <span className="arco-sidenav__itemtime">{relativeTime(session.updatedAt)}</span>
       </button>
       <div className="arco-sidenav__itemactions">
-        {onTogglePin && (
-          <button
-            type="button"
-            className={`arco-sidenav__itempin ${pinned ? "arco-sidenav__itempin--active" : ""}`}
-            aria-pressed={pinned}
-            aria-label={pinned ? `Unpin ${session.title}` : `Pin ${session.title}`}
-            onClick={(event) => {
-              event.stopPropagation();
-              onTogglePin();
-            }}
-          >
-            <Pin size={12} fill={pinned ? "currentColor" : "none"} />
-          </button>
-        )}
-        <button
-          type="button"
-          className="arco-sidenav__itemdelete"
-          aria-label={`Delete session ${session.title}`}
-          onClick={(event) => {
-            event.stopPropagation();
-            onDelete(session.id);
-          }}
-        >
-          <Trash2 size={12} />
-        </button>
+        <Menu
+          side="bottom"
+          align="end"
+          aria-label={i18n.t(I18nKey.APPS$STUDIO_CONVERSATION_ACTIONS)}
+          items={menuItems}
+          trigger={
+            <button
+              type="button"
+              className="arco-sidenav__itemmenu"
+              aria-label={i18n.t(I18nKey.APPS$STUDIO_CONVERSATION_ACTIONS)}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <MoreVertical size={12} />
+            </button>
+          }
+        />
       </div>
     </div>
   );

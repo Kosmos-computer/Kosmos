@@ -10,6 +10,7 @@ import { promisify } from "node:util";
 import type { WorkspaceFeatures } from "../../shared/types.js";
 import { dataDirs } from "../env.js";
 import { isGitHubOAuthConfigured } from "../github/githubOAuth.js";
+import { getKosmosDeployment } from "./kosmosDeployment.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -23,8 +24,9 @@ async function nativeFolderPickerAvailable(): Promise<boolean> {
   }
 }
 
-function isHostedRuntime(): boolean {
+export function isHostedRuntime(): boolean {
   if (process.env.ARCO_HOSTED === "1") return true;
+  if (process.env.ARCO_MOBILE_LOCAL === "1") return true;
   if (fs.existsSync("/.dockerenv")) return true;
   // Linux servers (Coolify, VPS) cannot open the user's local Finder.
   return process.platform === "linux";
@@ -42,5 +44,6 @@ export async function getWorkspaceFeatures(): Promise<WorkspaceFeatures> {
     defaultBrowsePath: hosted ? projectsDir : os.homedir(),
     githubClone: true,
     githubOAuthConfigured: isGitHubOAuthConfigured(),
+    kosmos: getKosmosDeployment(hosted),
   };
 }

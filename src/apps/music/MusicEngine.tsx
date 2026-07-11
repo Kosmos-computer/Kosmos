@@ -6,6 +6,10 @@ import { useEffect, useRef } from "react";
 import { registerMusicSeekHandler } from "./musicAudio";
 import { formatMusicTime, useMusicStore } from "./musicStore";
 
+function shouldBePlaying(): boolean {
+  return useMusicStore.getState().playing;
+}
+
 export function MusicEngine() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const init = useMusicStore((s) => s.init);
@@ -39,24 +43,10 @@ export function MusicEngine() {
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !previewSrc) return;
-
     audio.pause();
-
-    const tryPlay = () => {
-      if (!playing) return;
-      void audio.play().catch(() => stopPlayback());
-    };
-
-    const onCanPlay = () => tryPlay();
-    audio.addEventListener("canplay", onCanPlay, { once: true });
+    audio.currentTime = 0;
     audio.load();
-
-    if (playing && audio.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
-      tryPlay();
-    }
-
-    return () => audio.removeEventListener("canplay", onCanPlay);
-  }, [previewSrc, trackId, playing, stopPlayback]);
+  }, [previewSrc, trackId]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -64,8 +54,29 @@ export function MusicEngine() {
 
     if (!playing) {
       audio.pause();
+      return;
     }
-  }, [playing, previewSrc]);
+
+    const tryPlay = () => {
+      if (!shouldBePlaying()) return;
+      const playPromise = audio.play();
+      if (playPromise === undefined) return;
+      void playPromise
+        .then(() => {
+          if (!shouldBePlaying()) audio.pause();
+        })
+        .catch(() => stopPlayback());
+    };
+
+    if (audio.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
+      tryPlay();
+      return;
+    }
+
+    const onCanPlay = () => tryPlay();
+    audio.addEventListener("canplay", onCanPlay, { once: true });
+    return () => audio.removeEventListener("canplay", onCanPlay);
+  }, [playing, previewSrc, trackId, stopPlayback]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -106,5 +117,5 @@ export function MusicEngine() {
 
   if (!previewSrc) return null;
 
-  return <audio ref={audioRef} src={previewSrc} preload="metadata" aria-hidden="true" />;
+  return <audio ref={audioRef} src={previewSrc} preload={playing ? "auto" : "metadata"} aria-hidden="true" />;
 }

@@ -1,0 +1,22 @@
+{
+  "name": "@arco/tauri",
+  "private": true,
+  "version": "0.1.2",
+  "description": "Arco OS Tauri shell — cross-platform prototype (desktop + iOS + Android) around the shared Vite UI.",
+  "type": "module",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "tauri": "tauri",
+    "android:init": "tauri android init",
+    "ios:init": "tauri ios init",
+    "android:dev": "tauri android dev",
+    "ios:dev": "tauri ios dev"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.9.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.9.0"
+  }
+}

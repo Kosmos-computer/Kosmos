@@ -4,8 +4,6 @@
  */
 import { resolveSystemAppId, SYSTEM_APP_CATALOG } from "./systemApps.js";
 
-export const DEFAULT_SHELL_APP = "chat";
-
 export type ShellRouteTarget =
   | { type: "system"; appId: string; section?: string }
   | { type: "generated"; appId: string }

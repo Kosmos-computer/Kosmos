@@ -24,7 +24,7 @@ export function LogoMarkGraphic() {
 }
 
 /** Square-grid logo mark — standalone icon for boot splash, favicons, etc. */
-export function LogoMark({ className, title = "Arco" }: LogoMarkProps) {
+export function LogoMark({ className, title = "Kosmos" }: LogoMarkProps) {
   return (
     <svg
       className={className}

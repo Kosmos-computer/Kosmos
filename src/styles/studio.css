@@ -332,7 +332,8 @@
 }
 
 .arco-sidenav__itempin,
-.arco-sidenav__itemdelete {
+.arco-sidenav__itemdelete,
+.arco-sidenav__itemmenu {
   display: inline-flex;
   padding: 6px;
   border-radius: var(--arco-radius-s);
@@ -349,14 +350,19 @@
 }
 .arco-sidenav__item:hover .arco-sidenav__itempin,
 .arco-sidenav__item:hover .arco-sidenav__itemdelete,
+.arco-sidenav__item:hover .arco-sidenav__itemmenu,
 .arco-sidenav__itempin:focus-visible,
 .arco-sidenav__itemdelete:focus-visible,
+.arco-sidenav__itemmenu:focus-visible,
 .arco-sidenav__itempin--active {
   opacity: 1;
   pointer-events: auto;
 }
 .arco-sidenav__itemdelete:hover {
   color: var(--arco-danger);
+}
+.arco-sidenav__itemmenu:hover {
+  color: var(--arco-text-secondary);
 }
 .arco-sidenav__itempin:hover,
 .arco-sidenav__itempin--active {
@@ -477,7 +483,7 @@
 .arco-studio__convtitle {
   margin: 0;
   min-width: 0;
-  max-width: calc(100% - 28px);
+  max-width: calc(100% - 32px);
   font-size: var(--arco-text-base, 14px);
   font-weight: 500;
   line-height: 1.3;
@@ -490,7 +496,7 @@
 
 .arco-studio__convtitle-input {
   min-width: 0;
-  max-width: calc(100% - 28px);
+  max-width: calc(100% - 32px);
   padding: 0;
   border: none;
   background: transparent;
@@ -503,6 +509,10 @@
 
 .arco-studio__convmenu {
   flex-shrink: 0;
+  margin-left: var(--arco-space-s);
+  padding: 2px;
+  min-width: 20px;
+  min-height: 20px;
   color: var(--arco-fg-muted);
 }
 
@@ -906,6 +916,8 @@
 }
 
 .arco-projectpicker--compact .arco-projectpicker__menu {
+  top: auto;
+  bottom: calc(100% + 4px);
   left: 0;
   right: auto;
 }

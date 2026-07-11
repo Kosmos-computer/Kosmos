@@ -20,7 +20,8 @@ import {
   WINDOW_CONTROL_STYLE_OPTIONS,
 } from "../../os/themeTokens";
 import { isArcoDesktop } from "../../lib/desktopBridge";
-import { DesktopUpdatesSection } from "./DesktopUpdatesSection";
+import { ServerProfilesSection } from "./ServerProfilesSection";
+import { mobileShellNeedsServerProfile } from "../../os/server/mobileShellMode";
 import { PasswordSection } from "./PasswordSection";
 import { UsersSection } from "./UsersSection";
 import { AppsSection } from "./AppsSection";
@@ -36,6 +37,9 @@ import { ProvidersSection } from "./ProvidersSection";
 import { SkillsSection } from "./SkillsSection";
 import { MemorySection } from "./MemorySection";
 import { UsageSection } from "./UsageSection";
+import { BillingSection } from "./BillingSection";
+import { KosmosCloudSection } from "./KosmosCloudSection";
+import { PlatformDownloadsSection } from "./PlatformDownloadsSection";
 import { ToolsSection } from "./ToolsSection";
 import { WALLPAPER_GROUPS, type WallpaperId } from "../../os/wallpaper/wallpapers";
 import { AUTH_WALLPAPER_GROUPS, type AuthWallpaperId } from "../../os/wallpaper/authWallpapers";
@@ -555,7 +559,7 @@ export function SettingsApp() {
                   {isArcoDesktop() && (
                     <SettingsFieldRow
                       label="Software updates"
-                      hint="Arco OS checks for updates in the background and prompts you to restart when a new build is ready."
+                      hint="Kosmos checks for updates in the background and prompts you to restart when a new build is ready."
                     >
                       <DesktopUpdatesSection />
                     </SettingsFieldRow>
@@ -725,6 +729,7 @@ export function SettingsApp() {
           )}
 
           {activeSection === "apps" && <AppsSection />}
+          {activeSection === "server" && mobileShellNeedsServerProfile() && <ServerProfilesSection />}
           {activeSection === "tools" && <ToolsSection />}
           {activeSection === "mcp" && <McpServersSection />}
           {activeSection === "skills" && <SkillsSection />}
@@ -735,6 +740,9 @@ export function SettingsApp() {
           {activeSection === "providers" && <ProvidersSection />}
           {activeSection === "external" && <ExternalAccessSection />}
           {activeSection === "usage" && <UsageSection />}
+          {(activeSection === "subscriptions" || activeSection === "billing") && <BillingSection />}
+          {activeSection === "kosmos-cloud" && isArcoDesktop() && <KosmosCloudSection />}
+          {activeSection === "downloads" && <PlatformDownloadsSection />}
           {activeSection === "password" && <PasswordSection />}
           {activeSection === "users" && canManageUsers && <UsersSection />}
         </div>

@@ -3,7 +3,7 @@
  */
 import { useState } from "react";
 import { Button } from "../../components/ui/Button";
-import { useDesktopUpdate, useDesktopUpdateActions } from "../../os/useDesktopUpdate";
+import { useDesktopUpdateController } from "../../os/useDesktopUpdate";
 import {
   canInstallUpdate,
   hasPendingUpdate,
@@ -39,11 +39,11 @@ function statusMessage(state: DesktopUpdateState | null): string {
     case "available":
     case "downloading":
       return state.version
-        ? `Downloading Arco OS ${state.version}…`
+        ? `Downloading Kosmos ${state.version}…`
         : "Downloading update…";
     case "ready":
       return state.version
-        ? `Arco OS ${state.version} is ready — restart to install.`
+        ? `Kosmos ${state.version} is ready — restart to install.`
         : "An update is ready — restart to install.";
     case "not-available":
       return `You're on the latest version (${state.currentVersion}).`;
@@ -51,15 +51,14 @@ function statusMessage(state: DesktopUpdateState | null): string {
       return state.error ?? "Could not check for updates.";
     default:
       if (canInstallUpdate(state)) {
-        return `Arco OS ${state.version} is ready to install.`;
+        return `Kosmos ${state.version} is ready to install.`;
       }
       return `Current version: ${state.currentVersion}`;
   }
 }
 
 export function DesktopUpdatesSection() {
-  const state = useDesktopUpdate();
-  const { checkForUpdates, installUpdate, remindLaterUpdate, skipUpdate } = useDesktopUpdateActions();
+  const { state, checkForUpdates, installUpdate, remindLaterUpdate, skipUpdate } = useDesktopUpdateController();
   const [checking, setChecking] = useState(false);
 
   const handleCheck = async () => {

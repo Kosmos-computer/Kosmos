@@ -577,6 +577,12 @@ export interface AuthStatus {
   user?: AuthUser;
 }
 
+/** Auth endpoints may include a bearer token for cross-origin mobile shells. */
+export interface AuthSessionResponse {
+  user: AuthUser;
+  sessionToken?: string;
+}
+
 /** One row in the install-status checklist shown during first-run setup. */
 export interface InstallCheck {
   id: string;
@@ -607,6 +613,47 @@ export interface WorkspaceFeatures {
   githubClone: boolean;
   /** GitHub OAuth app credentials are configured on the server. */
   githubOAuthConfigured: boolean;
+  /** Kosmos Cloud deployment and billing signals. */
+  kosmos: KosmosDeployment;
+}
+
+/** How this instance is deployed relative to Kosmos Cloud. */
+export type KosmosDeploymentKind =
+  | "desktop-local"
+  | "fly-tenant"
+  | "self-host"
+  | "mobile-remote";
+
+export interface KosmosDeployment {
+  deployment: KosmosDeploymentKind;
+  billingManaged: boolean;
+  tenantApp: string | null;
+  tenantUrl: string | null;
+  controlPlaneUrl: string | null;
+  /** Pre-checkout signup gate (terms + age verification) on the control plane. */
+  signupUrl: string;
+  paymentLinkUrl: string;
+  portalLoginUrl: string;
+  /** Tenant can reach control-plane billing API. */
+  billingConfigured: boolean;
+}
+
+/** GET /api/billing/status — subscription standing for managed tenants. */
+export interface BillingStatus {
+  managed: boolean;
+  tenantApp: string | null;
+  tenantUrl: string | null;
+  checkoutEmail: string | null;
+  planName: string | null;
+  planPriceLabel: string | null;
+  includedCreditsUsd: number | null;
+  subscriptionStatus: string | null;
+  cancelAtPeriodEnd: boolean;
+  currentPeriodEnd: string | null;
+  controlPlaneUrl: string | null;
+  signupUrl: string | null;
+  paymentLinkUrl: string | null;
+  portalLoginUrl: string | null;
 }
 
 // ── Settings ─────────────────────────────────────────────────────────────────

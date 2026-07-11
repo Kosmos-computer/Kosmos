@@ -1,0 +1,12 @@
+{
+  "name": "@arco/platform-bridge",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Cross-platform shell bridge — shared types and runtime detection for Electron, Tauri, and web.",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

@@ -28,11 +28,11 @@
     "zh-CN": "设置"
   },
   "INSTALL$WELCOME_LEAD": {
-    "en": "Welcome to Arco",
-    "es": "Bienvenido a Arco",
-    "de": "Willkommen bei Arco",
-    "ja": "Arco へようこそ",
-    "zh-CN": "欢迎使用 Arco"
+    "en": "Welcome to Kosmos",
+    "es": "Bienvenido a Kosmos",
+    "de": "Willkommen bei Kosmos",
+    "ja": "Kosmos へようこそ",
+    "zh-CN": "欢迎使用 Kosmos"
   },
   "INSTALL$WELCOME_SUBTITLE": {
     "en": "Set up models and your owner account — you can change everything later in Settings.",
@@ -91,11 +91,11 @@
     "zh-CN": "，然后刷新页面。"
   },
   "INSTALL$MODEL_PATH_TITLE": {
-    "en": "How should Arco run models?",
-    "es": "¿Cómo debe ejecutar Arco los modelos?",
-    "de": "Wie soll Arco Modelle ausführen?",
-    "ja": "Arco はどのようにモデルを実行しますか？",
-    "zh-CN": "Arco 应如何运行模型？"
+    "en": "How should Kosmos run models?",
+    "es": "¿Cómo debe ejecutar Kosmos los modelos?",
+    "de": "Wie soll Kosmos Modelle ausführen?",
+    "ja": "Kosmos はどのようにモデルを実行しますか？",
+    "zh-CN": "Kosmos 应如何运行模型？"
   },
   "INSTALL$MODEL_PATH_SUBTITLE": {
     "en": "Pick a default for the agent. Mock mode works with no API key.",
@@ -1183,11 +1183,11 @@
     "zh-CN": "Webhook:"
   },
   "APPS$AUTOMATIONS_IN_ARCO_ONLY": {
-    "en": "In Arco only",
-    "es": "Solo en Arco",
-    "de": "Nur in Arco",
-    "ja": "Arco 内のみ",
-    "zh-CN": "仅在 Arco 内"
+    "en": "In Kosmos only",
+    "es": "Solo en Kosmos",
+    "de": "Nur in Kosmos",
+    "ja": "Kosmos 内のみ",
+    "zh-CN": "仅在 Kosmos 内"
   },
   "APPS$AUTOMATIONS_CREATED": {
     "en": "Created",
@@ -1330,11 +1330,11 @@
     "zh-CN": "无界面运行会拒绝需要确认的工具。如有需要，请在设置 → 工具中添加明确的允许规则。"
   },
   "APPS$AUTOMATIONS_ARCO_CAN_CREATE_THE_SCHEDULE_WRITE_THE_PROMPT_AND_OPTION": {
-    "en": ". Arco can create the schedule, write the prompt, and optionally set up delivery.",
-    "es": ". Arco puede crear el horario, escribir el prompt y, opcionalmente, configurar la entrega.",
-    "de": ". Arco kann den Zeitplan erstellen, den Prompt schreiben und optional die Zustellung einrichten.",
-    "ja": "。Arco がスケジュール作成、プロンプト作成、必要に応じて配信設定まで行えます。",
-    "zh-CN": "。Arco 可以创建计划、编写提示词，并可选择配置投递。"
+    "en": ". Kosmos can create the schedule, write the prompt, and optionally set up delivery.",
+    "es": ". Kosmos puede crear el horario, escribir el prompt y, opcionalmente, configurar la entrega.",
+    "de": ". Kosmos kann den Zeitplan erstellen, den Prompt schreiben und optional die Zustellung einrichten.",
+    "ja": "。Kosmos がスケジュール作成、プロンプト作成、必要に応じて配信設定まで行えます。",
+    "zh-CN": "。Kosmos 可以创建计划、编写提示词，并可选择配置投递。"
   },
   "APPS$AUTOMATIONS_EVERY_WEEKDAY_AT_9AM_SUMMARIZE_MY_CALENDAR_AND_OPEN_TASK": {
     "en": "every weekday at 9am, summarize my calendar and open tasks",
@@ -2233,11 +2233,11 @@
     "zh-CN": "Connect Gmail"
   },
   "APPS$EMAIL_ON_THE_ARCO_SERVER_THEN_ADD_REDIRECT_URI": {
-    "en": "on the Arco server,\n                  then add redirect URI",
-    "es": "on the Arco server,\n                  then add redirect URI",
-    "de": "on the Arco server,\n                  then add redirect URI",
-    "ja": "on the Arco server,\n                  then add redirect URI",
-    "zh-CN": "on the Arco server,\n                  then add redirect URI"
+    "en": "on the Kosmos server,\n                  then add redirect URI",
+    "es": "on the Kosmos server,\n                  then add redirect URI",
+    "de": "on the Kosmos server,\n                  then add redirect URI",
+    "ja": "on the Kosmos server,\n                  then add redirect URI",
+    "zh-CN": "on the Kosmos server,\n                  then add redirect URI"
   },
   "APPS$EMAIL_AND": {
     "en": "and",
@@ -2254,11 +2254,11 @@
     "zh-CN": "Set"
   },
   "APPS$EMAIL_LINK_YOUR_GOOGLE_ACCOUNT_TO_READ_AND_SEND_MAIL_FROM_ARCO": {
-    "en": "Link your Google account to read and send mail from Arco. Messages stay live from Gmail —\n                nothing is copied into a local store yet.",
-    "es": "Link your Google account to read and send mail from Arco. Messages stay live from Gmail —\n                nothing is copied into a local store yet.",
-    "de": "Link your Google account to read and send mail from Arco. Messages stay live from Gmail —\n                nothing is copied into a local store yet.",
-    "ja": "Link your Google account to read and send mail from Arco. Messages stay live from Gmail —\n                nothing is copied into a local store yet.",
-    "zh-CN": "Link your Google account to read and send mail from Arco. Messages stay live from Gmail —\n                nothing is copied into a local store yet."
+    "en": "Link your Google account to read and send mail from Kosmos. Messages stay live from Gmail —\n                nothing is copied into a local store yet.",
+    "es": "Link your Google account to read and send mail from Kosmos. Messages stay live from Gmail —\n                nothing is copied into a local store yet.",
+    "de": "Link your Google account to read and send mail from Kosmos. Messages stay live from Gmail —\n                nothing is copied into a local store yet.",
+    "ja": "Link your Google account to read and send mail from Kosmos. Messages stay live from Gmail —\n                nothing is copied into a local store yet.",
+    "zh-CN": "Link your Google account to read and send mail from Kosmos. Messages stay live from Gmail —\n                nothing is copied into a local store yet."
   },
   "COMMON$DISCONNECT": {
     "en": "Disconnect",
@@ -2772,11 +2772,11 @@
     "zh-CN": "Updated"
   },
   "APPS$LIBRARY_ASK_ARCO_TO_BUILD_AN_APP_IN_CHAT_OR_ADD_A_PROJECT_FROM_S": {
-    "en": "Ask Arco to build an app in Chat, or add a project from Studio&apos;s Browser tab.",
-    "es": "Ask Arco to build an app in Chat, or add a project from Studio&apos;s Browser tab.",
-    "de": "Ask Arco to build an app in Chat, or add a project from Studio&apos;s Browser tab.",
-    "ja": "Ask Arco to build an app in Chat, or add a project from Studio&apos;s Browser tab.",
-    "zh-CN": "Ask Arco to build an app in Chat, or add a project from Studio&apos;s Browser tab."
+    "en": "Ask Kosmos to build an app in Chat, or add a project from Studio&apos;s Browser tab.",
+    "es": "Ask Kosmos to build an app in Chat, or add a project from Studio&apos;s Browser tab.",
+    "de": "Ask Kosmos to build an app in Chat, or add a project from Studio&apos;s Browser tab.",
+    "ja": "Ask Kosmos to build an app in Chat, or add a project from Studio&apos;s Browser tab.",
+    "zh-CN": "Ask Kosmos to build an app in Chat, or add a project from Studio&apos;s Browser tab."
   },
   "APPS$LIBRARY_REFINE": {
     "en": "Refine",
@@ -5929,11 +5929,11 @@
     "zh-CN": "Preview — download not started"
   },
   "APPS$STARTUP_DOWNLOAD_HAPPENS_IN_THE_BACKGROUND_TOOL_CALLING_MODELS_W": {
-    "en": "Download happens in the background. Tool-calling models work best with Arco&apos;s agent.",
-    "es": "Download happens in the background. Tool-calling models work best with Arco&apos;s agent.",
-    "de": "Download happens in the background. Tool-calling models work best with Arco&apos;s agent.",
-    "ja": "Download happens in the background. Tool-calling models work best with Arco&apos;s agent.",
-    "zh-CN": "Download happens in the background. Tool-calling models work best with Arco&apos;s agent."
+    "en": "Download happens in the background. Tool-calling models work best with Kosmos&apos;s agent.",
+    "es": "Download happens in the background. Tool-calling models work best with Kosmos&apos;s agent.",
+    "de": "Download happens in the background. Tool-calling models work best with Kosmos&apos;s agent.",
+    "ja": "Download happens in the background. Tool-calling models work best with Kosmos&apos;s agent.",
+    "zh-CN": "Download happens in the background. Tool-calling models work best with Kosmos&apos;s agent."
   },
   "APPS$STARTUP_PICK_A_STARTER_MODEL": {
     "en": "Pick a starter model",
@@ -5950,11 +5950,11 @@
     "zh-CN": "You can add more providers after setup."
   },
   "APPS$STARTUP_HOW_SHOULD_ARCO_RUN_MODELS": {
-    "en": "How should Arco run models?",
-    "es": "How should Arco run models?",
-    "de": "How should Arco run models?",
-    "ja": "How should Arco run models?",
-    "zh-CN": "How should Arco run models?"
+    "en": "How should Kosmos run models?",
+    "es": "How should Kosmos run models?",
+    "de": "How should Kosmos run models?",
+    "ja": "How should Kosmos run models?",
+    "zh-CN": "How should Kosmos run models?"
   },
   "APPS$STARTUP_SKIP_FOR_NOW": {
     "en": "Skip for now",
@@ -6034,11 +6034,11 @@
     "zh-CN": "Set up your workspace, models, and account in a few steps."
   },
   "APPS$STARTUP_WELCOME_TO_ARCO": {
-    "en": "Welcome to Arco",
-    "es": "Welcome to Arco",
-    "de": "Welcome to Arco",
-    "ja": "Welcome to Arco",
-    "zh-CN": "Welcome to Arco"
+    "en": "Welcome to Kosmos",
+    "es": "Welcome to Kosmos",
+    "de": "Welcome to Kosmos",
+    "ja": "Welcome to Kosmos",
+    "zh-CN": "Welcome to Kosmos"
   },
   "APPS$STUDIO_GRANT_ACCESS_IN_SYSTEM_SETTINGS": {
     "en": "Grant access in System Settings",
@@ -6559,11 +6559,11 @@
     "zh-CN": "exit"
   },
   "APPS$TERMINAL_COMMANDS_RUN_IN_THE_ARCO_WORKSPACE_DATA_WORKSPACE_TRY_LS": {
-    "en": "Commands run in the Arco workspace (data/workspace). Try: ls scripts/",
-    "es": "Commands run in the Arco workspace (data/workspace). Try: ls scripts/",
-    "de": "Commands run in the Arco workspace (data/workspace). Try: ls scripts/",
-    "ja": "Commands run in the Arco workspace (data/workspace). Try: ls scripts/",
-    "zh-CN": "Commands run in the Arco workspace (data/workspace). Try: ls scripts/"
+    "en": "Commands run in the Kosmos workspace (data/workspace). Try: ls scripts/",
+    "es": "Commands run in the Kosmos workspace (data/workspace). Try: ls scripts/",
+    "de": "Commands run in the Kosmos workspace (data/workspace). Try: ls scripts/",
+    "ja": "Commands run in the Kosmos workspace (data/workspace). Try: ls scripts/",
+    "zh-CN": "Commands run in the Kosmos workspace (data/workspace). Try: ls scripts/"
   },
   "APPS$VIDEO_WATCH_ON": {
     "en": "Watch on",
@@ -7014,11 +7014,11 @@
     "zh-CN": "Create the owner account to secure this instance"
   },
   "OS_AUTH_WELCOME_TO_ARCO": {
-    "en": "Welcome to Arco",
-    "es": "Welcome to Arco",
-    "de": "Welcome to Arco",
-    "ja": "Welcome to Arco",
-    "zh-CN": "Welcome to Arco"
+    "en": "Welcome to Kosmos",
+    "es": "Welcome to Kosmos",
+    "de": "Welcome to Kosmos",
+    "ja": "Welcome to Kosmos",
+    "zh-CN": "Welcome to Kosmos"
   },
   "OS_BENTO_OPEN_MUSIC": {
     "en": "Open Music",
@@ -7203,11 +7203,11 @@
     "zh-CN": "Widget label"
   },
   "OS_CURSOR_ARCO": {
-    "en": "Arco",
-    "es": "Arco",
-    "de": "Arco",
-    "ja": "Arco",
-    "zh-CN": "Arco"
+    "en": "Kosmos",
+    "es": "Kosmos",
+    "de": "Kosmos",
+    "ja": "Kosmos",
+    "zh-CN": "Kosmos"
   },
   "APPS$APIS_API_CATALOG_TAB": {
     "en": "API catalog tab",
@@ -7420,18 +7420,18 @@
     "zh-CN": "Resize calendar sidebar"
   },
   "APPS$CHAT_ASK_ARCO_TO_BUILD_SOMETHING": {
-    "en": "Ask Arco to build something",
-    "es": "Ask Arco to build something",
-    "de": "Ask Arco to build something",
-    "ja": "Ask Arco to build something",
-    "zh-CN": "Ask Arco to build something"
+    "en": "Ask Kosmos to build something",
+    "es": "Ask Kosmos to build something",
+    "de": "Ask Kosmos to build something",
+    "ja": "Ask Kosmos to build something",
+    "zh-CN": "Ask Kosmos to build something"
   },
   "APPS$CHAT_ASK_ARCO_TO_BUILD_AUTOMATE_OR_EXPLAIN": {
-    "en": "Ask Arco to build, automate, or explain…",
-    "es": "Ask Arco to build, automate, or explain…",
-    "de": "Ask Arco to build, automate, or explain…",
-    "ja": "Ask Arco to build, automate, or explain…",
-    "zh-CN": "Ask Arco to build, automate, or explain…"
+    "en": "Ask Kosmos to build, automate, or explain…",
+    "es": "Ask Kosmos to build, automate, or explain…",
+    "de": "Ask Kosmos to build, automate, or explain…",
+    "ja": "Ask Kosmos to build, automate, or explain…",
+    "zh-CN": "Ask Kosmos to build, automate, or explain…"
   },
   "APPS$CHAT_END_VOICE_SESSION": {
     "en": "End voice session",
@@ -10037,6 +10037,13 @@
     "ja": "Conversation actions",
     "zh-CN": "Conversation actions"
   },
+  "APPS$STUDIO_SAVE_CONVERSATION": {
+    "en": "Save conversation",
+    "es": "Save conversation",
+    "de": "Save conversation",
+    "ja": "Save conversation",
+    "zh-CN": "Save conversation"
+  },
   "APPS$STUDIO_HIDE_CONVERSATIONS": {
     "en": "Hide conversations",
     "es": "Hide conversations",
@@ -10626,11 +10633,11 @@
     "zh-CN": "App view"
   },
   "OS_MENUBAR_LOCK_ARCO": {
-    "en": "Lock Arco",
-    "es": "Lock Arco",
-    "de": "Lock Arco",
-    "ja": "Lock Arco",
-    "zh-CN": "Lock Arco"
+    "en": "Lock Kosmos",
+    "es": "Lock Kosmos",
+    "de": "Lock Kosmos",
+    "ja": "Lock Kosmos",
+    "zh-CN": "Lock Kosmos"
   },
   "OS_MENUBAR_SEARCH_K": {
     "en": "Search (⌘K)",
@@ -10681,6 +10688,20 @@
     "ja": "Filter open apps",
     "zh-CN": "Filter open apps"
   },
+  "OS_MOBILESHELL_SWIPE_STATUS_BAR": {
+    "en": "Swipe down for status bar",
+    "es": "Swipe down for status bar",
+    "de": "Swipe down for status bar",
+    "ja": "Swipe down for status bar",
+    "zh-CN": "Swipe down for status bar"
+  },
+  "OS_MOBILESHELL_SWIPE_DOCK": {
+    "en": "Swipe up for open apps",
+    "es": "Swipe up for open apps",
+    "de": "Swipe up for open apps",
+    "ja": "Swipe up for open apps",
+    "zh-CN": "Swipe up for open apps"
+  },
   "OS_WINDOWCONTROLS_MINIMIZE_WINDOW": {
     "en": "Minimize window",
     "es": "Minimizar ventana",
@@ -10703,11 +10724,11 @@
     "zh-CN": "关闭窗口"
   },
   "OS_AUTH_ARCO_OS_IS_STARTING": {
-    "en": "Arco OS is starting",
-    "es": "Arco OS is starting",
-    "de": "Arco OS is starting",
-    "ja": "Arco OS is starting",
-    "zh-CN": "Arco OS is starting"
+    "en": "Kosmos is starting",
+    "es": "Kosmos is starting",
+    "de": "Kosmos is starting",
+    "ja": "Kosmos is starting",
+    "zh-CN": "Kosmos is starting"
   },
   "OS_BENTO_CLOSE_BENTO_DRAWER": {
     "en": "Close bento drawer",

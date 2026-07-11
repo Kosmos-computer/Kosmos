@@ -1,10 +1,12 @@
 import { contextBridge, ipcRenderer } from "electron";
+import packageJson from "../package.json" with { type: "json" };
 import { DESKTOP_IPC, UPDATE_IPC, type OpenAppWindowPayload, type TitleBarTheme } from "./ipc.js";
 import type { DesktopUpdateState } from "./ipc.js";
 
 contextBridge.exposeInMainWorld("arcoDesktop", {
   isDesktop: true,
   platform: process.platform,
+  version: packageJson.version,
   openAppWindow: (payload: OpenAppWindowPayload) => ipcRenderer.invoke(DESKTOP_IPC.openAppWindow, payload),
   closeAppWindow: (id: string) => ipcRenderer.invoke(DESKTOP_IPC.closeAppWindow, id),
   focusAppWindow: (id: string) => ipcRenderer.invoke(DESKTOP_IPC.focusAppWindow, id),
@@ -20,9 +22,10 @@ contextBridge.exposeInMainWorld("arcoDesktop", {
   },
   getUpdateState: () => ipcRenderer.invoke(UPDATE_IPC.getState) as Promise<DesktopUpdateState>,
   checkForUpdates: () => ipcRenderer.invoke(UPDATE_IPC.check) as Promise<DesktopUpdateState>,
-  installUpdate: () => ipcRenderer.invoke(UPDATE_IPC.install) as Promise<void>,
-  remindLaterUpdate: (version?: string) => ipcRenderer.invoke(UPDATE_IPC.remindLater, version) as Promise<void>,
-  skipUpdate: (version?: string) => ipcRenderer.invoke(UPDATE_IPC.skip, version) as Promise<void>,
+  installUpdate: () => ipcRenderer.invoke(UPDATE_IPC.install) as Promise<DesktopUpdateState>,
+  remindLaterUpdate: (version?: string) =>
+    ipcRenderer.invoke(UPDATE_IPC.remindLater, version) as Promise<DesktopUpdateState>,
+  skipUpdate: (version?: string) => ipcRenderer.invoke(UPDATE_IPC.skip, version) as Promise<DesktopUpdateState>,
   onUpdateStateChanged: (handler: (state: DesktopUpdateState) => void) => {
     const listener = (_event: unknown, state: DesktopUpdateState) => handler(state);
     ipcRenderer.on(UPDATE_IPC.stateChanged, listener);

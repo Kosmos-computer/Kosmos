@@ -78,7 +78,8 @@ function nextId(): string {
   return `item_${++itemCounter}`;
 }
 
-function sessionToItems(session: Session): ChatItem[] {
+/** Reconstruct the rendered thread from persisted session messages. */
+export function sessionToFeed(session: Session): ChatItem[] {
   const items: ChatItem[] = [];
   const toolItems = new Map<string, Extract<ChatItem, { kind: "tool" }>>();
   for (const m of session.messages) {
@@ -286,7 +287,7 @@ export function useChat(opts?: { activeProjectId?: string | null }) {
       const session = await api.getSession(id);
       if (!buffersRef.current.has(id)) {
         buffersRef.current.set(id, {
-          items: sessionToItems(session),
+          items: sessionToFeed(session),
           streaming: false,
           turnMeta: null,
         });

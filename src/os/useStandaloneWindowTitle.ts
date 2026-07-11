@@ -13,7 +13,7 @@ export function useStandaloneWindowTitle(windowKey: string): string {
 
   return useMemo(() => {
     const kind = parseWindowKey(windowKey);
-    if (!kind) return "Arco OS";
+    if (!kind) return "Kosmos";
 
     switch (kind.type) {
       case "system":

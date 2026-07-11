@@ -200,3 +200,16 @@ environment:
 **Codex in Docker:** the prod image installs `bubblewrap` and writes `/data/.codex/config.toml` for sandboxed file edits.
 
 Local dev: Settings → MCP → **Kosmos Ops** quick-add, or set `ARCO_SEED_OPS_MCP=1`.
+
+## Mobile clients (Chromebook / Android)
+
+After deploy, mobile users connect with the **bundled APK** (`npm run mobile:bundle`) — no URL is baked in. At first run they enter your public origin, e.g. `https://kosmos.tiru.fm`.
+
+Requirements on the hosted instance:
+
+- `ARCO_SECURE_COOKIES=1` (already set for production)
+- CORS middleware from `server/cors.ts` (allows cross-origin session cookies from the Capacitor app)
+
+Users can save multiple server profiles in **Settings → Server** and switch without reinstalling.
+
+See [`docs/mobile-sideload.md`](../../docs/mobile-sideload.md) and [`docs/mobile-chromebook-local-backend.md`](../../docs/mobile-chromebook-local-backend.md).

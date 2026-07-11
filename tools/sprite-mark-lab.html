@@ -313,6 +313,7 @@
 
       .tabs {
         display: flex;
+        flex-wrap: wrap;
         gap: 0.35rem;
         margin-bottom: 0.75rem;
       }
@@ -360,6 +361,125 @@
         letter-spacing: 0.1em;
         text-transform: uppercase;
         color: var(--muted);
+      }
+
+      .mood-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        max-height: calc(100vh - 210px);
+        overflow: auto;
+      }
+
+      .mood-item {
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 0.6rem;
+        background: var(--surface-2);
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .mood-item:hover,
+      .mood-item.active {
+        border-color: var(--accent-dim);
+        background: #1e2a26;
+      }
+
+      .mood-item__head {
+        display: flex;
+        gap: 0.5rem;
+        align-items: flex-start;
+      }
+
+      .mood-item__thumb {
+        width: 42px;
+        height: 30px;
+        flex-shrink: 0;
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        grid-template-rows: repeat(5, 1fr);
+        gap: 1px;
+        background: var(--border);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+
+      .mood-item__thumb span {
+        background: var(--pixel-off);
+      }
+
+      .mood-item__thumb span.on {
+        background: var(--pixel-on);
+      }
+
+      .mood-item__copy {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .mood-item__title {
+        font-weight: 600;
+        font-size: 11px;
+      }
+
+      .mood-item__status {
+        display: inline-block;
+        margin-top: 0.15rem;
+        font-size: 9px;
+        color: var(--accent);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+
+      .mood-item__desc {
+        color: var(--muted);
+        font-size: 10px;
+        margin-top: 0.25rem;
+        line-height: 1.35;
+      }
+
+      .mood-frame-strip {
+        display: flex;
+        gap: 0.25rem;
+        margin-top: 0.45rem;
+        flex-wrap: wrap;
+      }
+
+      .mood-frame-strip .thumb {
+        width: 28px;
+        height: 20px;
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        grid-template-rows: repeat(5, 1fr);
+        gap: 1px;
+        background: var(--border);
+        border-radius: 2px;
+        overflow: hidden;
+      }
+
+      .mood-frame-strip .thumb span {
+        background: var(--pixel-off);
+      }
+
+      .mood-frame-strip .thumb span.on {
+        background: var(--pixel-on);
+      }
+
+      .mood-item__actions {
+        display: flex;
+        gap: 0.35rem;
+        margin-top: 0.5rem;
+      }
+
+      .mood-item__actions button {
+        flex: 1;
+      }
+
+      .mood-item__meta {
+        font-size: 9px;
+        color: var(--muted);
+        margin-top: 0.35rem;
       }
 
       @media (max-width: 1100px) {
@@ -429,6 +549,7 @@
       <aside class="panel">
         <div class="tabs">
           <button class="tab active" data-tab="library">Library</button>
+          <button class="tab" data-tab="moods">Moods</button>
           <button class="tab" data-tab="organic">Organic</button>
           <button class="tab" data-tab="export">Export</button>
         </div>
@@ -436,6 +557,12 @@
         <div class="tab-panel active" id="tab-library">
           <input type="text" id="libSearch" placeholder="Search patterns…" style="width:100%;margin-bottom:0.5rem" />
           <div class="library" id="library"></div>
+        </div>
+
+        <div class="tab-panel" id="tab-moods">
+          <input type="text" id="moodSearch" placeholder="Search moods &amp; faces…" style="width:100%;margin-bottom:0.5rem" />
+          <div class="mood-list" id="moodList"></div>
+          <p class="hint">Preview conversation-state sequences and face patterns as they appear in agent status lines.</p>
         </div>
 
         <div class="tab-panel" id="tab-organic">
@@ -598,28 +725,27 @@
 
       // ── Faces, glyphs, words ──
       const FACE_PATTERNS = {
-        "face · neutral": fromIndices([idx(2,1), idx(4,1), idx(2,3), idx(3,3), idx(4,3)]),
+        "face · neutral": fromIndices([idx(2,1), idx(4,1), idx(2,4), idx(3,4), idx(4,4)]),
         "face · smile": fromIndices([
           idx(2,1), idx(4,1),
-          idx(1,3), idx(2,4), idx(3,4), idx(4,4), idx(5,3),
+          idx(2,4), idx(3,4), idx(4,4),
         ]),
         "face · grin": fromIndices([
           idx(2,1), idx(4,1),
-          idx(1,3), idx(2,3), idx(3,3), idx(4,3), idx(5,3),
-          idx(2,4), idx(4,4),
+          idx(1,4), idx(2,4), idx(3,4), idx(4,4), idx(5,4),
         ]),
-        "face · blink": fromIndices([idx(1,3), idx(2,4), idx(3,4), idx(4,4), idx(5,3)]),
+        "face · blink": fromIndices([idx(1,4), idx(2,4), idx(3,4), idx(4,4), idx(5,4)]),
         "face · wink": fromIndices([
           idx(2,1), idx(4,1), idx(4,0),
-          idx(1,3), idx(2,4), idx(3,4), idx(4,4), idx(5,3),
+          idx(1,4), idx(2,4), idx(3,4), idx(4,4), idx(5,4),
         ]),
         "face · surprised": fromIndices([
           idx(2,0), idx(4,0), idx(2,1), idx(4,1),
-          idx(3,3),
+          idx(3,4),
         ]),
         "face · sleep": fromIndices([
           idx(1,1), idx(2,1), idx(4,1), idx(5,1),
-          idx(2,3), idx(3,3), idx(4,3),
+          idx(2,4), idx(3,4), idx(4,4),
         ]),
       };
 
@@ -775,6 +901,7 @@
         if (library.length) setMask(library[0].mask, library[0].name);
         renderLibrary(libSearch.value);
         refreshExport();
+        renderMoods(document.getElementById("moodSearch").value);
       }
 
       function buildOrganicLibrary() {
@@ -836,10 +963,33 @@
       let seqIndex = 0;
       let seqPlaying = false;
       let seqTimer = null;
+      let moodPlaying = false;
+      let moodTimer = null;
+      let moodPlayFrames = [];
+      let moodPlayIndex = 0;
+      let activeMoodId = null;
+
+      const CONVERSATION_STATE_DEFS = [
+        { id: "idle", status: "idle", label: "Idle", description: "Logo breathe while the agent is resting." },
+        { id: "thinking", status: "thinking", label: "Thinking", description: "Equalizer bars while the agent processes." },
+        { id: "connecting", status: "connecting", label: "Connecting", description: "Ring pulse while linking or streaming." },
+        { id: "success", status: "success", label: "Success", description: "Smile, then grin — task completed." },
+        { id: "happy", status: "happy", label: "Happy", description: "Smile, grin, blink — upbeat completion." },
+        { id: "error", status: "error", label: "Error", description: "Surprised, then neutral — something failed." },
+        { id: "waiting", status: "waiting", label: "Waiting", description: "Maps to blink in conversations." },
+        { id: "blink", status: "blink", label: "Blink", description: "Smile and blink loop." },
+        { id: "wink", status: "wink", label: "Wink", description: "Smile and wink loop." },
+        { id: "working", status: "working", label: "Working", description: "Random geometric patterns (no face sequence)." },
+      ];
+
+      const WORKING_PREVIEW_PATTERNS = buildGeometricLibrary()
+        .filter((item) => !item.name.startsWith("eq "))
+        .map((item) => ({ name: item.name, mask: item.mask }));
 
       // ── DOM ──
       const gridEl = document.getElementById("grid");
       const libraryEl = document.getElementById("library");
+      const moodListEl = document.getElementById("moodList");
       const sequenceEl = document.getElementById("sequenceList");
       const frameLabel = document.getElementById("frameLabel");
       const litCount = document.getElementById("litCount");
@@ -989,6 +1139,192 @@
         });
       }
 
+      function buildMoodCatalog() {
+        const states = CONVERSATION_STATE_DEFS.flatMap((def) => {
+          if (def.id === "working") {
+            return [{
+              kind: "state",
+              id: def.id,
+              status: def.status,
+              label: def.label,
+              description: def.description,
+              frames: WORKING_PREVIEW_PATTERNS,
+              frameMs: 140,
+              loop: true,
+              playable: WORKING_PREVIEW_PATTERNS.length > 0,
+            }];
+          }
+
+          const seqId = def.id === "waiting" ? "blink" : def.id;
+          const seq = repoSequences.find((entry) => entry.id === seqId);
+          if (!seq || !seq.frames.length) return [];
+
+          return [{
+            kind: "state",
+            id: def.id,
+            status: def.status,
+            label: def.label,
+            description: def.description,
+            frames: seq.frames,
+            frameMs: seq.frameMs || 160,
+            loop: seq.loop !== false,
+            playable: true,
+            sequenceId: seq.id,
+          }];
+        });
+
+        const faces = library
+          .filter((item) => item.category === "faces")
+          .map((item) => ({
+            kind: "face",
+            id: item.id || item.name,
+            status: null,
+            label: item.name,
+            description: "Static face glyph from the sprite mark library.",
+            frames: [{ name: item.name, mask: item.mask }],
+            frameMs: 500,
+            loop: false,
+            playable: true,
+          }));
+
+        return [...states, ...faces];
+      }
+
+      function renderMoods(filter = "") {
+        const q = filter.toLowerCase().trim();
+        const catalog = buildMoodCatalog();
+        moodListEl.innerHTML = "";
+
+        const sections = [
+          { title: "Conversation states", items: catalog.filter((item) => item.kind === "state") },
+          { title: "Face patterns", items: catalog.filter((item) => item.kind === "face") },
+        ];
+
+        sections.forEach((section) => {
+          const visible = section.items.filter((item) => {
+            if (!q) return true;
+            const haystack = [
+              item.label,
+              item.description,
+              item.status,
+              item.sequenceId,
+              item.id,
+            ].filter(Boolean).join(" ").toLowerCase();
+            return haystack.includes(q);
+          });
+          if (!visible.length) return;
+
+          const heading = document.createElement("div");
+          heading.className = "category-label";
+          heading.textContent = section.title;
+          moodListEl.appendChild(heading);
+
+          visible.forEach((item) => {
+            const el = document.createElement("div");
+            el.className = "mood-item" + (activeMoodId === item.id ? " active" : "");
+
+            const head = document.createElement("div");
+            head.className = "mood-item__head";
+
+            const thumb = document.createElement("div");
+            thumb.className = "mood-item__thumb";
+            renderThumb(thumb, item.frames[0].mask);
+
+            const copy = document.createElement("div");
+            copy.className = "mood-item__copy";
+
+            const title = document.createElement("div");
+            title.className = "mood-item__title";
+            title.textContent = item.label;
+
+            const desc = document.createElement("div");
+            desc.className = "mood-item__desc";
+            desc.textContent = item.description;
+
+            copy.append(title, desc);
+            if (item.status) {
+              const status = document.createElement("div");
+              status.className = "mood-item__status";
+              status.textContent = `status: ${item.status}`;
+              copy.appendChild(status);
+            }
+
+            head.append(thumb, copy);
+            el.appendChild(head);
+
+            if (item.frames.length > 1) {
+              const strip = document.createElement("div");
+              strip.className = "mood-frame-strip";
+              item.frames.forEach((frame, frameIndex) => {
+                const frameThumb = document.createElement("div");
+                frameThumb.className = "thumb";
+                frameThumb.title = frame.name;
+                renderThumb(frameThumb, frame.mask);
+                frameThumb.addEventListener("click", (event) => {
+                  event.stopPropagation();
+                  stopAll();
+                  activeMoodId = item.id;
+                  moodPlayIndex = frameIndex;
+                  setMask(frame.mask, frame.name);
+                  renderMoods(document.getElementById("moodSearch").value);
+                });
+                strip.appendChild(frameThumb);
+              });
+              el.appendChild(strip);
+            }
+
+            const meta = document.createElement("div");
+            meta.className = "mood-item__meta";
+            meta.textContent = item.kind === "face"
+              ? "1 frame"
+              : `${item.frames.length} frames · ${item.frameMs} ms · ${item.loop ? "loop" : "once"}`;
+            el.appendChild(meta);
+
+            const actions = document.createElement("div");
+            actions.className = "mood-item__actions";
+
+            const previewBtn = document.createElement("button");
+            previewBtn.textContent = "Preview";
+            previewBtn.addEventListener("click", (event) => {
+              event.stopPropagation();
+              stopAll();
+              activeMoodId = item.id;
+              moodPlayIndex = 0;
+              setMask(item.frames[0].mask, item.frames[0].name);
+              renderMoods(document.getElementById("moodSearch").value);
+            });
+
+            const playBtn = document.createElement("button");
+            playBtn.className = "primary";
+            playBtn.textContent = item.kind === "face" ? "Hold" : "Play";
+            playBtn.disabled = !item.playable;
+            playBtn.addEventListener("click", (event) => {
+              event.stopPropagation();
+              activeMoodId = item.id;
+              playMood(item);
+              renderMoods(document.getElementById("moodSearch").value);
+            });
+
+            actions.append(previewBtn, playBtn);
+            el.appendChild(actions);
+
+            el.addEventListener("click", () => {
+              stopAll();
+              activeMoodId = item.id;
+              moodPlayIndex = 0;
+              setMask(item.frames[0].mask, item.frames[0].name);
+              renderMoods(document.getElementById("moodSearch").value);
+            });
+
+            moodListEl.appendChild(el);
+          });
+        });
+
+        if (!moodListEl.children.length) {
+          moodListEl.innerHTML = '<p class="hint">No moods or faces match this search.</p>';
+        }
+      }
+
       function refreshExport() {
         const customPatterns = library
           .filter((item) => item.category === "custom")
@@ -1049,10 +1385,44 @@
       function stopAll() {
         playing = false;
         seqPlaying = false;
+        moodPlaying = false;
         clearInterval(playTimer);
         clearInterval(seqTimer);
+        clearInterval(moodTimer);
         playTimer = null;
         seqTimer = null;
+        moodTimer = null;
+        moodPlayFrames = [];
+      }
+
+      function playMood(item) {
+        stopAll();
+        if (!item.frames.length) return;
+
+        if (item.kind === "face") {
+          moodPlaying = true;
+          setMask(item.frames[0].mask, item.frames[0].name);
+          return;
+        }
+
+        moodPlaying = true;
+        moodPlayFrames = item.frames;
+        moodPlayIndex = 0;
+        const interval = item.id === "working"
+          ? getPlayInterval()
+          : (item.frameMs || Number(frameMsInput.value) || 140);
+
+        setMask(moodPlayFrames[0].mask, moodPlayFrames[0].name);
+        moodTimer = setInterval(() => {
+          moodPlayIndex = (moodPlayIndex + 1) % moodPlayFrames.length;
+          if (!item.loop && moodPlayIndex === 0) {
+            stopAll();
+            renderMoods(document.getElementById("moodSearch").value);
+            return;
+          }
+          const frame = moodPlayFrames[moodPlayIndex];
+          setMask(frame.mask, `${item.label} · ${frame.name}`);
+        }, interval);
       }
 
       function playLibrary() {
@@ -1188,6 +1558,9 @@
       });
 
       libSearch.addEventListener("input", () => renderLibrary(libSearch.value));
+      document.getElementById("moodSearch").addEventListener("input", (event) => {
+        renderMoods(event.target.value);
+      });
       frameMsInput.addEventListener("change", refreshExport);
 
       // Organic tab
@@ -1232,7 +1605,12 @@
       // Keyboard shortcuts
       window.addEventListener("keydown", (e) => {
         if (e.target.matches("input, textarea")) return;
-        if (e.code === "Space") { e.preventDefault(); playing || seqPlaying ? stopAll() : (sequence.length ? playSequence() : playLibrary()); }
+        if (e.code === "Space") {
+          e.preventDefault();
+          playing || seqPlaying || moodPlaying
+            ? stopAll()
+            : (sequence.length ? playSequence() : playLibrary());
+        }
         if (e.code === "ArrowRight") document.getElementById("nextBtn").click();
         if (e.code === "ArrowLeft") document.getElementById("prevBtn").click();
       });
@@ -1240,6 +1618,7 @@
       // Init — load synced repo library (falls back to inline patterns offline)
       loadRepoLibrary().then(() => {
         renderSequence();
+        renderMoods();
       });
     </script>
   </body>

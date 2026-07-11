@@ -11,6 +11,7 @@
 import path from "node:path";
 import fs from "node:fs";
 import crypto from "node:crypto";
+import { fileURLToPath } from "node:url";
 import Database from "better-sqlite3";
 import {
   FILES_CHANGED_TOPIC,
@@ -35,7 +36,11 @@ const MAX_CONTENT_BYTES = 12 * 1024 * 1024;
 export const MAX_AUDIO_BYTES = 100 * 1024 * 1024;
 
 const BLOBS_DIR = path.join(dataDirs.root, "files");
-const SEED_PDF_PATH = path.join(import.meta.dirname, "../seeds/arco-test.pdf");
+const moduleDir =
+  typeof import.meta.dirname === "string"
+    ? import.meta.dirname
+    : path.dirname(fileURLToPath(import.meta.url));
+const SEED_PDF_PATH = path.join(moduleDir, "../seeds/arco-test.pdf");
 const SEED_PDF_NAME = "Arco Sample.pdf";
 
 function announceChange(): void {

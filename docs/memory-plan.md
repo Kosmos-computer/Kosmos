@@ -61,6 +61,7 @@ permission model**, not ad-hoc files the agent happens to read.
 | --- | --- | --- |
 | **Hermes** | Session-end commit, recall prefill, SOUL/USER/MEMORY sections, redaction on export, memory API | Monolithic file layout tied to `HERMES_HOME`; gateway-specific lifecycle hooks |
 | **Longformer Psyche** | Operator UI: memory browser, collection health, RAG trace viewer, graph explorer, identity doc editor | Mock-only data; no backend in the demo |
+| **Engram** (`reference/engram/`) | Receipt-gated writes, blind assessor separation from tutor, FSRS in deterministic code (not LLM), SessionStart re-anchor from disk, open JSON learner model + concept DAGs, append-only grade receipts | Full tutoring/SRS product surface; Claude/Codex plugin packaging; explorable HTML contract (unless Learning workspace is scoped) |
 | **NanoClaw / OpenClaw** | File scaffold for imported agent memory; group-scoped memory dirs | Container-per-group isolation (Arco uses ACL tables instead) |
 | **Arco today** | `sessionStore`, `grantStore`, `policyStore`, `skillStore`, audit JSONL, Settings sections pattern | Transcript-as-only-context; skills mistaken for episodic memory |
 

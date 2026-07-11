@@ -14,6 +14,12 @@ docs/saas-plan.md
 # Per-tenant provisioning output — contains LiteLLM virtual keys
 deploy/fly/tenants/
 
+# Local Fly deploy secrets (Stripe, OpenRouter, LiteLLM master key)
+deploy/fly/.deploy-secrets.local
+
+# Desktop pack staging tree (generated copy of repo for Electron builds)
+apps/desktop/pack-staging/
+
 # Tauri (model-manager)
 model-manager/src-tauri/target/
 model-manager/src-tauri/gen/

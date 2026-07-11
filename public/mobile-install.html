@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Install Arco OS — Mobile</title>
+    <script>
+      // Force HTTPS — Chrome blocks APK downloads from HTTP / untrusted pages.
+      if (location.protocol !== "https:") {
+        location.replace("https://" + location.host + location.pathname + location.search);
+      }
+    </script>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0a0a0c;
+        --fg: #f4f4f5;
+        --muted: #a1a1aa;
+        --accent: #3b82f6;
+        --card: #18181b;
+        --border: #27272a;
+        --warn: #f59e0b;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "IBM Plex Sans", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--fg);
+        display: grid;
+        place-items: center;
+        padding: 24px;
+      }
+      main {
+        width: min(480px, 100%);
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 28px;
+      }
+      h1 { margin: 0 0 8px; font-size: 1.5rem; }
+      p { color: var(--muted); line-height: 1.5; }
+      .btn {
+        display: block;
+        margin-top: 12px;
+        padding: 14px 22px;
+        background: var(--accent);
+        color: white;
+        text-decoration: none;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 1rem;
+        text-align: center;
+        border: none;
+        cursor: pointer;
+        width: 100%;
+      }
+      .btn--secondary {
+        background: transparent;
+        color: var(--accent);
+        border: 1px solid var(--border);
+      }
+      .warn {
+        margin-top: 16px;
+        padding: 12px;
+        border-radius: 8px;
+        background: rgba(245, 158, 11, 0.1);
+        border: 1px solid rgba(245, 158, 11, 0.35);
+        color: #fcd34d;
+        font-size: 0.9rem;
+      }
+      ol { color: var(--muted); padding-left: 1.2rem; line-height: 1.6; }
+      code {
+        background: #09090b;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.9em;
+        word-break: break-all;
+      }
+      .note {
+        margin-top: 20px;
+        padding: 12px;
+        border-radius: 8px;
+        background: #09090b;
+        border: 1px solid var(--border);
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Install Arco OS</h1>
+      <p>Android app for phones and Chromebooks with Android app support.</p>
+
+      <div class="warn">
+        <strong>Chromebook:</strong> use the <strong>ZIP download</strong> below if APK is blocked.
+        Rename the file to <code>arco-os-mobile.apk</code> after download.
+      </div>
+
+      <a class="btn" href="/downloads/arco-os-mobile.zip" download="arco-os-mobile.zip">
+        Download ZIP (Chromebook — recommended)
+      </a>
+
+      <a class="btn btn--secondary" href="/downloads/arco-os-mobile.apk" download="arco-os-mobile.apk">
+        Download APK (Android phone)
+      </a>
+
+      <div class="note">
+        <strong>Setup</strong>
+        <ol>
+          <li>Open this page with <strong>HTTPS</strong>: <code id="https-url"></code></li>
+          <li>If you see “Your connection is not private” → <strong>Advanced → Proceed</strong>.</li>
+          <li>Download ZIP (Chromebook) or APK (phone).</li>
+          <li><strong>Files</strong> → <strong>Downloads</strong> → rename <code>.zip</code> to <code>.apk</code> if needed → tap to install.</li>
+          <li>Keep your Mac running <code>npm run dev:chromebook</code> on the same Wi‑Fi.</li>
+        </ol>
+      </div>
+
+      <p style="margin-top: 20px">
+        <a href="/" style="color: var(--accent)">← Back to Arco in browser</a>
+      </p>
+    </main>
+    <script>
+      document.getElementById("https-url").textContent =
+        "https://" + location.host + "/mobile-install.html";
+    </script>
+  </body>
+</html>

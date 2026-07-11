@@ -49,7 +49,7 @@ export function ChatThread({ items, streaming, turnMeta, onFollowUp }: ChatThrea
               return (
                 <AgentActionBlock
                   key={item.id}
-                  title={String(item.args.command ?? "shell command")}
+                  title="Shell command"
                   command={String(item.args.command ?? "")}
                   output={item.result}
                   defaultOpen={false}

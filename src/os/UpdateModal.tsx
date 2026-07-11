@@ -3,8 +3,8 @@
  */
 import { Download, RefreshCw } from "lucide-react";
 import { Button } from "../components/ui/Button";
-import type { DesktopUpdateState } from "@shared/desktopUpdate";
-import { useDesktopUpdate, useDesktopUpdateActions } from "./useDesktopUpdate";
+import { shouldShowUpdateModal, type DesktopUpdateState } from "@shared/desktopUpdate";
+import { useDesktopUpdateController } from "./useDesktopUpdate";
 
 function formatProgress(progress?: number): string {
   if (progress == null || Number.isNaN(progress)) return "";
@@ -34,7 +34,7 @@ function UpdateModalBody({
           <div>
             <h2 className="arco-update-modal__title">Update ready</h2>
             <p className="arco-update-modal__subtitle">
-              Arco OS {version ?? "update"} is downloaded and ready to install.
+              Kosmos {version ?? "update"} is downloaded and ready to install.
             </p>
           </div>
         </header>
@@ -72,8 +72,8 @@ function UpdateModalBody({
             <h2 className="arco-update-modal__title">Downloading update</h2>
             <p className="arco-update-modal__subtitle">
               {version
-                ? `Arco OS ${version} will install after download (${currentVersion} → ${version}).`
-                : "Fetching the latest Arco OS release."}
+                ? `Kosmos ${version} will install after download (${currentVersion} → ${version}).`
+                : "Fetching the latest Kosmos release."}
             </p>
           </div>
         </header>
@@ -106,15 +106,11 @@ function UpdateModalBody({
 }
 
 export function UpdateModal() {
-  const state = useDesktopUpdate();
-  const { installUpdate, remindLaterUpdate, skipUpdate } = useDesktopUpdateActions();
+  const { state, installUpdate, remindLaterUpdate, skipUpdate } = useDesktopUpdateController();
 
-  if (!state) return null;
+  if (!shouldShowUpdateModal(state)) return null;
 
-  const visible = state.status === "ready" || state.status === "downloading" || state.status === "available";
-  if (!visible) return null;
-
-  const version = state.version;
+  const version = state!.version;
 
   return (
     <div className="arco-update-modal__backdrop" role="presentation">
@@ -125,7 +121,7 @@ export function UpdateModal() {
         aria-labelledby="arco-update-modal-title"
       >
         <UpdateModalBody
-          state={state}
+          state={state!}
           onInstall={() => void installUpdate()}
           onRemindLater={() => void remindLaterUpdate(version)}
           onSkip={() => void skipUpdate(version)}

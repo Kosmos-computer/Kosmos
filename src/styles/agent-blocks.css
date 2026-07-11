@@ -65,9 +65,11 @@
 }
 
 .arco-agent-action__command {
+  flex: 1;
+  min-width: 0;
   font-family: var(--arco-font-mono);
   font-size: var(--arco-text-xs);
-  color: var(--arco-text-tertiary);
+  color: var(--arco-text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

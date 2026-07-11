@@ -3,11 +3,12 @@
 #   fly deploy . --config deploy/fly/template.fly.toml \
 #     --build-only --push --image-label demo
 #
-# → registry.fly.io/arco-template:demo, which provision-tenant.ts deploys
+# → registry.fly.io/kosmos-template:demo, which provision-tenant.ts deploys
 # per tenant. If the remote builder runs out of memory on the Vite build,
 # retry with --local-only (needs Docker/Colima running locally).
 
-app = "arco-template"
+app = "kosmos-template"
 
 [build]
-  dockerfile = "Dockerfile"
+  # Prebuilt dist/ on host; runtime image only installs deps + rebuilds native addons.
+  dockerfile = "Dockerfile.runtime"

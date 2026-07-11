@@ -218,9 +218,9 @@ export const SETTINGS_STUB_DATA: StubSettingsWorkspaceData = {
     {
       id: "subscriptions",
       title: "Subscriptions",
+      intro: "Kosmos Hosted plan and renewal — wired to your cloud subscription when billing is managed.",
       links: [
-        { id: "active-subs", label: "Active subscriptions", value: "1 active" },
-        { id: "payment-method", label: "Payment method", value: "Visa •••• 4242" },
+        { id: "hosted-plan", label: "Kosmos Hosted", value: "See plan details below" },
       ],
     },
     {
@@ -232,10 +232,9 @@ export const SETTINGS_STUB_DATA: StubSettingsWorkspaceData = {
     {
       id: "billing",
       title: "Billing",
+      intro: "Invoices and payment method open in the Stripe customer portal when your instance is billing-managed.",
       links: [
-        { id: "billing-history", label: "Billing history", value: "View" },
-        { id: "billing-address", label: "Billing address", value: "Edit" },
-        { id: "tax-info", label: "Tax information", value: "Add" },
+        { id: "portal", label: "Customer portal", value: "Manage billing" },
       ],
     },
     {

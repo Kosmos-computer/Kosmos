@@ -1,33 +1,22 @@
 /**
  * Root — AuthGate owns boot/login/lock; once the session is ready it mounts
- * the desktop or mobile shell by viewport (the chrome profile).
+ * the desktop or mobile shell by platform profile (native) or viewport (web).
  */
-import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BrowserRouter } from "react-router-dom";
 import { AuthGate } from "./os/auth/AuthGate";
+import { ServerConnectGate } from "./os/server/ServerConnectGate";
 import { ElectronShell } from "./os/ElectronShell";
 import { EmbedAppShell, readEmbedLaunch } from "./os/EmbedAppShell";
 import { StandaloneAppWindow } from "./os/StandaloneAppWindow";
 import { ShellRoutes } from "./os/ShellRoutes";
 import { getStandaloneWindowKey } from "./os/nativeAppWindows";
 import { I18nLocaleSync } from "./i18n/I18nLocaleSync";
-
-function useIsMobile(): boolean {
-  const [mobile, setMobile] = useState(() => window.matchMedia("(max-width: 767px)").matches);
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 767px)");
-    const onChange = (e: MediaQueryListEvent) => setMobile(e.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
-  return mobile;
-}
-
+import { useShellProfile } from "./os/useShellProfile";
 export default function App() {
   const { i18n } = useTranslation();
   const standaloneKey = getStandaloneWindowKey();
-  const isMobile = useIsMobile();
+  const isMobile = useShellProfile();
   const embedLaunch = typeof window !== "undefined" ? readEmbedLaunch() : null;
 
   if (standaloneKey) {
@@ -52,11 +41,13 @@ export default function App() {
   return (
     <ElectronShell key={i18n.language}>
       <I18nLocaleSync />
-      <AuthGate>
-        <BrowserRouter>
-          <ShellRoutes isMobile={isMobile} />
-        </BrowserRouter>
-      </AuthGate>
+      <ServerConnectGate>
+        <AuthGate>
+          <BrowserRouter>
+            <ShellRoutes isMobile={isMobile} />
+          </BrowserRouter>
+        </AuthGate>
+      </ServerConnectGate>
     </ElectronShell>
   );
 }

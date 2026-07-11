@@ -1,10 +1,9 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
-import { bootstrapElectronShell } from "./os/bootstrapElectronShell";
+import { bootstrapPlatformShell } from "./os/bootstrapPlatformShell";
+import { bootMobileLocalShell } from "./os/mobileLocalBoot";
 import { waitForI18n } from "./i18n";
-
-bootstrapElectronShell();
 
 // OpenUI component library styles (generated apps + inline chat UI).
 import "@openuidev/react-ui/index.css";
@@ -43,6 +42,7 @@ import "./styles/kamiji.css";
 import "./styles/generator.css";
 import "./styles/imagegen.css";
 import "./styles/auth.css";
+import "./styles/server-connect.css";
 import "./styles/os.css";
 import "./styles/command-palette.css";
 import "./styles/bento.css";
@@ -59,6 +59,8 @@ import "./styles/adaptive.css";
 import "./styles/richmarkdown.css";
 
 async function bootstrap() {
+  await bootMobileLocalShell();
+  await bootstrapPlatformShell();
   await waitForI18n();
   createRoot(document.getElementById("root")!).render(
     <StrictMode>

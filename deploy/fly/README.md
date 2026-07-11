@@ -4,11 +4,13 @@ The usage-based stack from the SaaS plan: one Firecracker microVM + volume per
 tenant (auto-stop when idle), a LiteLLM credits gateway routing to serverless
 per-token inference (OpenRouter), budget-capped virtual keys per tenant.
 
+**Full architecture, live apps, secrets, and gaps:** see [SAAS.md](SAAS.md).
+
 ```
-customer ──► https://arco-<name>.fly.dev          (tenant microVM, /data volume)
+customer ──► https://kosmos-<name>.fly.dev          (tenant microVM, /data volume)
                     │  LLM_BASE_URL + virtual key
                     ▼
-             https://arco-gateway.fly.dev          (LiteLLM proxy, always on)
+             https://kosmos-gateway.fly.dev          (LiteLLM proxy, always on)
                     │  OPENROUTER_API_KEY
                     ▼
              OpenRouter (per-token serverless)     Neon Postgres (key/spend store)
@@ -26,8 +28,8 @@ customer ──► https://arco-<name>.fly.dev          (tenant microVM, /data v
 
 ```bash
 cd deploy/fly/gateway
-fly apps create arco-gateway --org personal   # rename if taken; app names are global
-fly secrets set --app arco-gateway \
+fly apps create kosmos-gateway --org personal   # rename if taken; app names are global
+fly secrets set --app kosmos-gateway \
   OPENROUTER_API_KEY=sk-or-... \
   DATABASE_URL='postgres://...neon.tech/...' \
   LITELLM_MASTER_KEY=sk-master-$(openssl rand -hex 16)
@@ -37,15 +39,15 @@ fly deploy
 Smoke test (save the master key somewhere safe first):
 
 ```bash
-curl -s https://arco-gateway.fly.dev/key/generate \
+curl -s https://kosmos-gateway.fly.dev/key/generate \
   -H "Authorization: Bearer $LITELLM_MASTER_KEY" -H "Content-Type: application/json" \
   -d '{"key_alias":"smoke","max_budget":1}'
 # → {"key":"sk-..."} — then run one completion with it:
-curl -s https://arco-gateway.fly.dev/v1/chat/completions \
+curl -s https://kosmos-gateway.fly.dev/v1/chat/completions \
   -H "Authorization: Bearer sk-..." -H "Content-Type: application/json" \
   -d '{"model":"qwen3-30b","messages":[{"role":"user","content":"hi"}]}'
 # and confirm spend registered:
-curl -s https://arco-gateway.fly.dev/key/info -H "Authorization: Bearer sk-..."
+curl -s https://kosmos-gateway.fly.dev/key/info -H "Authorization: Bearer sk-..."
 ```
 
 Model catalog lives in [gateway/config.yaml](gateway/config.yaml) — verify the
@@ -55,7 +57,7 @@ OpenRouter slugs at <https://openrouter.ai/models> before first deploy.
 
 ```bash
 # From the repo root:
-fly apps create arco-template --org personal
+fly apps create kosmos-template --org personal
 fly deploy . --config deploy/fly/template.fly.toml --build-only --push --image-label demo
 ```
 
@@ -67,7 +69,7 @@ Docker/Colima running).
 ```bash
 export LITELLM_MASTER_KEY=sk-master-...
 npx tsx scripts/provision-tenant.ts acme --budget 5
-# → https://arco-acme.fly.dev  (first visit = Arco's first-run owner setup)
+# → https://kosmos-acme.fly.dev  (first visit = Kosmos first-run owner setup)
 ```
 
 Teardown: `npx tsx scripts/provision-tenant.ts acme --destroy`
@@ -80,7 +82,7 @@ Teardown: `npx tsx scripts/provision-tenant.ts acme --destroy`
    refreshed from the gateway (`/key/info`).
 4. Ask the agent to write a multi-hundred-MB file — the workspace quota
    (`ARCO_WORKSPACE_QUOTA_MB`, default 512) refuses it.
-5. Show the machine auto-stopping after idle in `fly machine list -a arco-acme`
+5. Show the machine auto-stopping after idle in `fly machine list -a kosmos-acme`
    (storage-only billing while stopped).
 
 ## Costs & caveats

@@ -58,6 +58,195 @@ If machine setup is incomplete, the welcome step lists what's missing and asks y
 
 To start over, stop the server and delete `data/users.json` and `data/auth-sessions.json`.
 
+## Installation by platform
+
+Arco is one codebase with several **shells** (wrappers). The backend and apps live in this repo; some experiences are separate distribution layers.
+
+| Platform | Shell | Backend | Best for |
+| --- | --- | --- | --- |
+| **Browser** | Vite dev / production build | Local or hosted | Development, any device with Chrome |
+| **macOS / Windows / Linux** | Electron (`apps/desktop`) | Embedded Node | Primary desktop app |
+| **Android phone** | Capacitor (`apps/mobile`) | Thin client: user-chosen server; **Local APK**: embedded Node sidecar | Sideload APK |
+| **Chromebook** | Bundled APK, PWA, or dev sideload | Coolify / Tailscale Mac / LAN / Linux on device | No Play Store needed |
+| **SteamOS** | [kosmos-steamos](../kosmos-steamos) (sibling repo) | Arco Hono server | Steam Deck / Steam Machine desktop mode |
+| **iOS** | Capacitor (scaffold) | Hosted API | Not packaged yet |
+
+See also: [`docs/mobile-sideload.md`](docs/mobile-sideload.md), [`docs/mobile-chromebook-local-backend.md`](docs/mobile-chromebook-local-backend.md), [`docs/multi-platform-prototype.md`](docs/multi-platform-prototype.md), [`apps/mobile/README.md`](apps/mobile/README.md).
+
+### Browser (development)
+
+Default path — works on any machine with Node 22+:
+
+```bash
+npm install
+npm run setup
+npm run dev
+```
+
+Open http://localhost:4610.
+
+For **Chromebook / tablet on your LAN**, bind to the network with HTTPS (required for installs and some Chrome downloads):
+
+```bash
+npm run dev:chromebook
+```
+
+Then on the device: `https://YOUR_MAC_IP:4610` (accept the self-signed certificate once).
+
+### macOS, Windows, and Linux (desktop app)
+
+Native desktop with embedded backend — no separate Node install for end users.
+
+**Development:**
+
+```bash
+npm run desktop:dev:all    # server + web + Electron
+```
+
+**Production build:**
+
+```bash
+npm run dist:desktop       # macOS: DMG/ZIP; also Windows NSIS, Linux AppImage
+```
+
+Install the artifact from `apps/desktop/release/`. See [`apps/desktop/`](apps/desktop/) and [`.cursor/skills/arco-desktop-packaging/SKILL.md`](.cursor/skills/arco-desktop-packaging/SKILL.md) for packaging details.
+
+**macOS menu bar companion** (optional): [`apps/menubar-tasks/README.md`](apps/menubar-tasks/README.md) — quick tasks from the status bar.
+
+### Android phone and Chromebook (mobile shell)
+
+Capacitor WebView around the shared UI (`MobileShell`). **No Play Store required.**
+
+**Full guides:** [`docs/mobile-sideload.md`](docs/mobile-sideload.md) · [`docs/mobile-chromebook-local-backend.md`](docs/mobile-chromebook-local-backend.md) · [`apps/mobile/README.md`](apps/mobile/README.md)
+
+#### Bundled APK (recommended — independent client)
+
+UI ships inside the APK. **You enter the server URL at first run** (no default host). Switch backends in **Settings → Server** without reinstalling.
+
+Each server is a separate Arco instance (own accounts, drive, sessions): Coolify/VPS, home Mac over Tailscale, LAN IP, or Chromebook Linux backend.
+
+**Build machine (one-time):**
+
+```bash
+brew install android-platform-tools openjdk@21
+npm run mobile:setup          # first time — adds apps/mobile/android/
+```
+
+**Build and install:**
+
+```bash
+npm run mobile:bundle
+# → public/downloads/arco-os-mobile-bundled.apk
+
+npm run mobile:install              # USB Android phone (bundled; server at first run)
+CHROMEBOOK_IP=10.0.0.47 npm run mobile:chromebook:install   # Wi‑Fi ADB to Chromebook
+# or: adb install -r public/downloads/arco-os-mobile-bundled.apk
+```
+
+**First run on device:** Connect to Arco → enter server URL (e.g. `https://your-coolify-domain`, `https://macbook.tailnet.ts.net:4600`, `http://10.0.0.12:4600`) → optional **Find on this network** (detects your Wi‑Fi subnet on Android and Chromebook) → sign in or complete setup wizard on that server.
+
+**Hosted server:** deploy with `ARCO_SECURE_COOKIES=1` and CORS enabled (included in `server/cors.ts`). See [`deploy/coolify/README.md`](deploy/coolify/README.md).
+
+#### Local embedded backend (Android prototype)
+
+Full Arco on device — nodejs-mobile sidecar + same UI. **Not** the thin client; no server URL entry.
+
+```bash
+export ANDROID_NDK_HOME=…   # recommended for Razr (arm64 sqlite rebuild)
+npm run mobile:local:install
+```
+
+See [`docs/mobile-local-android.md`](docs/mobile-local-android.md).
+
+#### Dev sideload (Mac Vite + shared backend)
+
+For development only — app loads UI from your Mac; uses Mac `data/` (not independent).
+
+```bash
+npm run dev:chromebook                                              # terminal 1
+MOBILE_DEV=1 CAP_SERVER_URL=https://YOUR_MAC_IP:4610 \
+  CHROMEBOOK_IP=10.0.0.47 npm run mobile:chromebook:install         # terminal 2
+```
+
+USB phone dev:
+
+```bash
+npm run dev && npm run mobile:install:dev
+```
+
+#### Chromebook install methods
+
+| Method | When to use |
+|--------|-------------|
+| **Bundled APK** | Production-like; pick any server URL in app |
+| **PWA in Chrome** | Easiest; no APK; point browser at a running server |
+| **ADB from Mac over Wi‑Fi** | Sideload APK; no Developer Mode |
+| **Download ZIP/APK** | From `dev:chromebook` download page |
+| **Linux backend on device** | Power users — Arco in Crostini + APK → `http://100.115.92.2:4600` |
+
+**PWA (any Chromebook, same Wi‑Fi as server):**
+
+```bash
+npm run dev:chromebook    # or npm start on a reachable host
+```
+
+Chrome → `https://YOUR_SERVER:4610` → **Install app**.
+
+**ADB sideload (one-time on Chromebook: Settings → Linux → Develop Android apps → ADB debugging):**
+
+```bash
+CHROMEBOOK_IP=10.0.0.47 npm run mobile:chromebook:install
+```
+
+**Home Mac as server (Tailscale):** on Mac run `npm run build && ARCO_DATA_DIR=~/arco-home ARCO_SECURE_COOKIES=1 npm start`, expose `:4600` via Tailscale; in the mobile app add `https://your-mac.tailnet-name.ts.net:4600`.
+
+See [`docs/mobile-chromebook-local-backend.md`](docs/mobile-chromebook-local-backend.md) for Linux-on-Chromebook and distribution roadmap.
+
+### Android phone (USB quick reference)
+
+```bash
+npm run mobile:install        # Bundled APK — server URL at first run (recommended)
+npm run mobile:install:dev    # Dev sideload — USB + adb reverse; run npm run dev on Mac
+npm run mobile:apk            # APK only → public/downloads/
+npm run mobile:icons          # Regenerate launcher icons from desktop brand mark
+```
+
+First-time USB setup (Developer options, USB debugging): [`docs/mobile-sideload.md` § Enable Developer options](docs/mobile-sideload.md#enable-developer-options-on-android-phones).
+
+### SteamOS (Steam Deck / Steam Machine)
+
+Use the sibling **`kosmos-steamos`** repo (distribution layer for SteamOS Desktop Mode — Arco apps via embed, not a fork):
+
+```bash
+# kosmos-steamos/ with Kosmos as sibling (see upstream/config.json)
+npm install
+npm run dev:stack                 # Arco backend + UI + Kosmos shell
+
+# On SteamOS Desktop Mode
+npm run build:desktop
+./platform/steamos/install.sh --session
+```
+
+See `kosmos-steamos/README.md` and `kosmos-steamos/docs/upstream-sync.md` for install and catalog sync.
+
+### Hosted / server-only
+
+Run the API + built UI without a native shell (Docker, VPS, homelab):
+
+```bash
+npm run build
+npm start                         # serves :4600
+```
+
+Or use `Dockerfile` / `Dockerfile.prod`. **Mobile bundled APK:** users enter this host at first run in the app (Settings → Server). Deploy with `ARCO_SECURE_COOKIES=1` for HTTPS. See [`deploy/coolify/README.md`](deploy/coolify/README.md).
+
+### iOS and Tauri (experimental)
+
+| Target | Status | Notes |
+| --- | --- | --- |
+| **iOS** | Scaffold | `apps/mobile` — `npm run cap -w @arco/mobile add ios` after Xcode setup |
+| **Tauri desktop/mobile** | Prototype branch | `apps/tauri` — alternative cross-platform shell; see `docs/multi-platform-prototype.md` |
+
 ### Dependencies
 
 | Component | Required? | Notes |
@@ -158,6 +347,18 @@ for engine swapping.
 | `npm run desktop` | Build and launch the Electron desktop app |
 | `npm run desktop:dev:all` | Server + web + Electron desktop together |
 | `npm run dist:desktop` | Build a distributable desktop package (DMG/ZIP on macOS) |
+| `npm run dev:chromebook` | Server + HTTPS Vite on LAN (`:4610`) for Chromebook/tablet dev |
+| `npm run dev:mobile` | Server + HTTP Vite on LAN (`:4610`) — alternative to HTTPS for WebView |
+| `npm run mobile:setup` | First-time Capacitor Android project setup |
+| `npm run mobile:bundle` | Bundled APK — UI in app, server URL chosen at first run |
+| `npm run mobile:install` | USB phone (bundled): build + install; server profiles at first run |
+| `npm run mobile:install:dev` | USB phone (dev): build + `adb reverse` + install against Mac Vite |
+| `npm run mobile:local:bundle` | Local APK — embedded Node backend on device |
+| `npm run mobile:local:install` | USB install local APK (Razr prototype) |
+| `npm run mobile:chromebook:install` | Install on Chromebook over Wi‑Fi ADB (`CHROMEBOOK_IP=…`; bundled by default) |
+| `npm run mobile:apk` | Dev APK + copy to `public/downloads/` (loads from Mac Vite when synced) |
+| `npm run mobile:icons` | Regenerate Android launcher icons from desktop brand mark |
+| `npm run mobile:sync` | Copy web build into Android project |
 | `npm run menubar-tasks:auth` | Mint a session token for the macOS menu bar tasks app |
 | `npm run menubar-tasks` | Build and open the menu bar tasks app (macOS 13+) |
 | `npm run models` | Launch the Arco Models manager (Tauri) |

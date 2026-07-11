@@ -8,6 +8,7 @@ import type {
   AgentToolInfo,
   AppSummary,
   AuditEntry,
+  AuthSessionResponse,
   AuthStatus,
   AuthUser,
   Role,
@@ -42,6 +43,7 @@ import type {
   ImageGenStyle,
   Settings,
   UsageResponse,
+  BillingStatus,
   CursorConnectionStatus,
   CursorModelInfo,
   AgentBackend,
@@ -129,15 +131,15 @@ export const api = {
     displayName?: string;
     password: string;
     settings?: Partial<Settings>;
-  }) => post<{ user: AuthUser }>("/api/auth/setup", data),
+  }) => post<AuthSessionResponse>("/api/auth/setup", data),
   installStatus: () => fetch("/api/system/install-status").then((r) => json<InstallStatus>(r)),
   workspaceFeatures: () =>
     fetch("/api/system/workspace-features").then((r) => json<WorkspaceFeatures>(r)),
   authLogin: (username: string, password: string) =>
-    post<{ user: AuthUser }>("/api/auth/login", { username, password }),
+    post<AuthSessionResponse>("/api/auth/login", { username, password }),
   authLogout: () => post<{ ok: true }>("/api/auth/logout"),
   authLock: () => post<{ ok: true }>("/api/auth/lock"),
-  authUnlock: (password: string) => post<{ user: AuthUser }>("/api/auth/unlock", { password }),
+  authUnlock: (password: string) => post<AuthSessionResponse>("/api/auth/unlock", { password }),
   changePassword: (currentPassword: string, newPassword: string) =>
     post<{ ok: true }>("/api/auth/password", { currentPassword, newPassword }),
   listUsers: () => fetch("/api/auth/users").then((r) => json<UserSummary[]>(r)),
@@ -862,6 +864,12 @@ export const api = {
   getSettings: () => fetch("/api/settings").then((r) => json<Settings>(r)),
   getUsage: (refresh = false) =>
     fetch(`/api/usage${refresh ? "?refresh=1" : ""}`).then((r) => json<UsageResponse>(r)),
+  getBillingStatus: (refresh = false) =>
+    fetch(`/api/billing/status${refresh ? "?refresh=1" : ""}`).then((r) => json<BillingStatus>(r)),
+  openBillingPortal: () =>
+    fetch("/api/billing/portal", { method: "POST" }).then((r) =>
+      json<{ url: string }>(r),
+    ),
   saveSettings: (patch: Partial<Settings>) =>
     fetch("/api/settings", {
       method: "PUT",

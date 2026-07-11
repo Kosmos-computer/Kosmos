@@ -1,0 +1,75 @@
+#!/usr/bin/env node
+/**
+ * Build and install BOTH Android flavors side by side on a USB-connected device.
+ *
+ *   npm run mobile:install:both
+ *
+ * Installs:
+ *   • Kosmos Connect  (com.arco.os.mobile)       — thin client
+ *   • Kosmos Local    (com.arco.os.mobile.local) — embedded Node backend
+ */
+import { execSync, spawnSync } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { MOBILE_APK } from "./mobile-apk-paths.mjs";
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+
+function run(cmd) {
+  console.log(`\n→ ${cmd}`);
+  execSync(cmd, { stdio: "inherit", cwd: root });
+}
+
+function adb(args) {
+  return spawnSync("adb", args, { encoding: "utf8" });
+}
+
+const devices = adb(["devices"]);
+const authorized = devices.stdout
+  .split("\n")
+  .slice(1)
+  .map((l) => l.trim())
+  .filter((l) => l.endsWith("device"));
+if (authorized.length === 0) {
+  console.error("[mobile:install:both] No authorized Android device on USB");
+  process.exit(1);
+}
+
+/** Prefer ANDROID_SERIAL, else the first authorized device (skip unauthorized siblings). */
+const serial =
+  process.env.ANDROID_SERIAL?.trim() ||
+  authorized[0].split(/\s+/)[0];
+const adbTarget = ["-s", serial];
+
+if (!process.env.SKIP_BUILD) {
+  // Build Local first, then Connect last so the thin-client UI is never overwritten
+  // by mobile.local env before assembleConnectDebug runs.
+  run("npm run mobile:local:bundle");
+  run("npm run mobile:bundle");
+}
+
+for (const [label, apkPath] of [
+  ["Kosmos Connect", MOBILE_APK.connect],
+  ["Kosmos Local", MOBILE_APK.local],
+]) {
+  if (!fs.existsSync(apkPath)) {
+    console.error(`[mobile:install:both] Missing ${label} APK: ${apkPath}`);
+    process.exit(1);
+  }
+  console.log(`\n[mobile:install:both] Installing ${label}`);
+  const install = adb([...adbTarget, "install", "-r", apkPath]);
+  process.stdout.write(install.stdout ?? "");
+  process.stderr.write(install.stderr ?? "");
+  if (install.status !== 0) {
+    process.exit(install.status ?? 1);
+  }
+}
+
+console.log(`
+✓ Both apps installed on ${serial}.
+
+Look for two launcher icons:
+  • Kosmos Connect — remote server client
+  • Kosmos Local   — full stack on device
+`);

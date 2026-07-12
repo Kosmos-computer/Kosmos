@@ -39,7 +39,7 @@ export type ChatItem =
       approved?: boolean;
       options?: ConfirmOption[];
     }
-  | { kind: "error"; id: string; text: string }
+  | { kind: "error"; id: string; text: string; code?: "credits_insufficient" }
   | {
       kind: "thought";
       id: string;
@@ -183,7 +183,15 @@ function applyAgentEvent(buffer: SessionBuffer, event: AgentEvent): void {
       );
       break;
     case "error":
-      buffer.items = [...buffer.items, { kind: "error", id: nextId(), text: event.message }];
+      buffer.items = [
+        ...buffer.items,
+        {
+          kind: "error",
+          id: nextId(),
+          text: event.message,
+          ...(event.code ? { code: event.code } : {}),
+        },
+      ];
       break;
     case "usage":
       buffer.turnMeta = buffer.turnMeta

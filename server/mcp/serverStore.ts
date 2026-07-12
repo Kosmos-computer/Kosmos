@@ -12,6 +12,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { McpServerConfig, McpTransport } from "../../shared/types.js";
 import { dataDirs } from "../env.js";
+import { writeSecureJson } from "../security/secureFs.js";
 
 const FILE = path.join(dataDirs.root, "mcp-servers.json");
 
@@ -26,7 +27,7 @@ function load(): McpServerConfig[] {
 }
 
 function save(list: McpServerConfig[]): void {
-  fs.writeFileSync(FILE, JSON.stringify(list, null, 2), "utf-8");
+  writeSecureJson(FILE, list);
 }
 
 /** name → url-safe slug that also satisfies the OpenAI tool-name charset. */

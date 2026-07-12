@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import { bootstrapPlatformShell } from "./os/bootstrapPlatformShell";
+import { applyKosmosConnectReturn } from "./os/server/kosmosConnectReturn";
 import { bootMobileLocalShell } from "./os/mobileLocalBoot";
 import { waitForI18n } from "./i18n";
 
@@ -59,6 +60,7 @@ import "./styles/adaptive.css";
 import "./styles/richmarkdown.css";
 
 async function bootstrap() {
+  if (applyKosmosConnectReturn()) return;
   await bootMobileLocalShell();
   await bootstrapPlatformShell();
   await waitForI18n();

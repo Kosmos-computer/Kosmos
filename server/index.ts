@@ -140,10 +140,12 @@ import {
   listPodcastTranscripts,
   transcribePodcastEpisode,
 } from "./services/podcastTranscriptService.js";
+import { creditsInsufficientMessage, isCreditsInsufficientError } from "./agent/creditsError.js";
 import { transcriptionRoutes } from "./routes/transcription.js";
 import { shareRoutes } from "./routes/shareRoutes.js";
 import { usageRoutes } from "./routes/usage.js";
 import { billingRoutes } from "./routes/billing.js";
+import { storageRoutes } from "./routes/storage.js";
 import { startTranscriptionSupervisor } from "./transcription/supervisor.js";
 import { listRemoteVideos, listRemotePodcastEpisodes } from "./services/mediaRemoteService.js";
 import type { FileCreateInput } from "../shared/capabilities/files.js";
@@ -247,6 +249,7 @@ app.route("/api/transcription", transcriptionRoutes);
 app.route("/api/models", modelRoutes);
 app.route("/api/usage", usageRoutes);
 app.route("/api/billing", billingRoutes);
+app.route("/api/storage", storageRoutes);
 
 // ── Chat ─────────────────────────────────────────────────────────────────────
 
@@ -303,7 +306,14 @@ app.post("/api/chat", requireCap("chat"), async (c) => {
       });
       emit({ type: "done" });
     } catch (err) {
-      emit({ type: "error", message: err instanceof Error ? err.message : "Agent turn failed" });
+      const message = err instanceof Error ? err.message : "Agent turn failed";
+      emit({
+        type: "error",
+        message,
+        ...(isCreditsInsufficientError(message) || message === creditsInsufficientMessage()
+          ? { code: "credits_insufficient" as const }
+          : {}),
+      });
     }
     await Promise.all(pending);
     await stream.close();

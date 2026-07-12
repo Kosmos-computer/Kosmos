@@ -14,6 +14,7 @@ import type {
   DeliveryTarget,
 } from "../../shared/types.js";
 import { dataDirs } from "../env.js";
+import { writeSecureJsonAsync } from "../security/secureFs.js";
 import { describeSchedule, syncScheduleFields } from "../automations/scheduleUtils.js";
 
 const MAX_EMBEDDED_RUNS = 5;
@@ -126,8 +127,7 @@ async function readAll(): Promise<Automation[]> {
 }
 
 async function writeAllRaw(stored: StoredAutomation[]): Promise<void> {
-  await fs.mkdir(dataDirs.root, { recursive: true });
-  await fs.writeFile(FILE, JSON.stringify(stored, null, 2), "utf-8");
+  await writeSecureJsonAsync(FILE, stored);
 }
 
 async function writeAll(automations: Automation[]): Promise<void> {

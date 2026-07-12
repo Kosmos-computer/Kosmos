@@ -10,6 +10,7 @@ import { ToolCard } from "../../apps/chat/ToolCard";
 import { ConfirmCard } from "../../apps/chat/ConfirmCard";
 import { ChatBubbleFooter } from "./ChatBubbleFooter";
 import { ChatErrorBlock } from "./ChatErrorBlock";
+import { CreditsInsufficientBlock } from "./CreditsInsufficientBlock";
 import {
   AgentActionBlock,
   AgentStatusLine,
@@ -74,7 +75,11 @@ export function ChatThread({ items, streaming, turnMeta, onFollowUp }: ChatThrea
               </AgentStatusLine>
             );
           case "error":
-            return <ChatErrorBlock key={item.id} text={item.text} />;
+            return item.code === "credits_insufficient" ? (
+              <CreditsInsufficientBlock key={item.id} text={item.text} />
+            ) : (
+              <ChatErrorBlock key={item.id} text={item.text} />
+            );
         }
       })}
       {streaming ? <AgentStatusLine meta={meta}><T k={I18nKey.COMPONENTS$CHAT_WORKING} /></AgentStatusLine> : null}

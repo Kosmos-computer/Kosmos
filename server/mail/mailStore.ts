@@ -8,6 +8,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { MailAccountInfo, MailAccountStatus, MailProvider } from "../../shared/mail.js";
 import { dataDirs } from "../env.js";
+import { writeSecureJson } from "../security/secureFs.js";
 import { exchangeGoogleCode, refreshGoogleAccessToken } from "./googleOAuth.js";
 
 const FILE = path.join(dataDirs.root, "mail-accounts.json");
@@ -39,8 +40,7 @@ function load(): MailAccountsFile {
 }
 
 function save(file: MailAccountsFile): void {
-  fs.mkdirSync(dataDirs.root, { recursive: true });
-  fs.writeFileSync(FILE, JSON.stringify(file, null, 2), { encoding: "utf-8", mode: 0o600 });
+  writeSecureJson(FILE, file);
 }
 
 function toInfo(record: MailAccountRecord): MailAccountInfo {

@@ -12,6 +12,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { ExternalAccessInfo, ExternalClientScope } from "../../shared/types.js";
 import { dataDirs } from "../env.js";
+import { writeSecureJson } from "../security/secureFs.js";
 
 const FILE = path.join(dataDirs.root, "external-clients.json");
 
@@ -40,7 +41,7 @@ function load(): State {
 }
 
 function save(state: State): void {
-  fs.writeFileSync(FILE, JSON.stringify(state, null, 2), "utf-8");
+  writeSecureJson(FILE, state);
 }
 
 export const externalClients = {

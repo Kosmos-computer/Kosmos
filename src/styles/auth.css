@@ -285,33 +285,84 @@
 .arco-install__checks {
   display: flex;
   flex-direction: column;
+  gap: var(--arco-space-m);
+}
+
+.arco-install__checks-head {
+  display: flex;
+  align-items: flex-start;
   gap: var(--arco-space-s);
-  padding: var(--arco-space-m);
-  border-radius: var(--arco-radius-m);
-  background: var(--arco-bg-hover);
-  border: 1px solid var(--arco-border);
+}
+
+.arco-install__checks-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--arco-text-tertiary);
+}
+
+.arco-install__checks-head-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-xs);
+  min-width: 0;
 }
 
 .arco-install__checks-title {
   font-size: var(--arco-text-sm);
   font-weight: 600;
   color: var(--arco-text-primary);
+  line-height: 1.35;
 }
 
 .arco-install__checks-lead {
   margin: 0;
   font-size: var(--arco-text-xs);
-  color: var(--arco-text-tertiary);
+  color: var(--arco-text-secondary);
   line-height: 1.5;
 }
 
-.arco-install__checks-lead code {
-  font-family: var(--arco-font-mono, ui-monospace, monospace);
-  font-size: 0.95em;
-  padding: 1px 4px;
+.arco-install__checks-cmd {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-s) var(--arco-space-m);
   border-radius: var(--arco-radius-s);
-  background: var(--arco-bg-surface);
+  background: var(--arco-bg-sunk);
   border: 1px solid var(--arco-border);
+}
+
+.arco-install__checks-cmd-icon {
+  flex-shrink: 0;
+  color: var(--arco-text-tertiary);
+}
+
+.arco-install__checks-cmd code {
+  font-family: var(--arco-font-mono, ui-monospace, monospace);
+  font-size: var(--arco-text-sm);
+  font-weight: 500;
+  color: var(--arco-text-primary);
+  letter-spacing: -0.01em;
+}
+
+.arco-install__checks-meter {
+  height: 3px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--arco-border) 70%, transparent);
+  overflow: hidden;
+}
+
+.arco-install__checks-meter-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--arco-accent), var(--arco-accent-strong));
+  transition: width var(--arco-dur-fast) var(--arco-ease);
+}
+
+.arco-install__checks-meter-label {
+  margin-top: calc(-1 * var(--arco-space-xs));
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+  text-align: right;
 }
 
 .arco-install__checks-list {
@@ -323,30 +374,112 @@
   gap: var(--arco-space-xs);
 }
 
-.arco-install__checks-list li {
+.arco-install__checks-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-s) var(--arco-space-m);
+  border-radius: var(--arco-radius-s);
+  background: var(--arco-bg-surface);
+  border: 1px solid var(--arco-border);
+}
+
+.arco-install__checks-item--ok {
+  opacity: 0.72;
+}
+
+.arco-install__checks-status {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.arco-install__checks-status--ok {
+  color: var(--arco-accent-strong);
+}
+
+.arco-install__checks-status--fail {
+  color: var(--arco-text-tertiary);
+}
+
+.arco-install__checks-body {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding-left: var(--arco-space-m);
-  position: relative;
-}
-
-.arco-install__checks-list li::before {
-  content: "✗";
-  position: absolute;
-  left: 0;
-  font-size: var(--arco-text-xs);
-  color: var(--arco-danger);
+  min-width: 0;
 }
 
 .arco-install__checks-label {
   font-size: var(--arco-text-sm);
   font-weight: 500;
   color: var(--arco-text-primary);
+  line-height: 1.35;
 }
 
 .arco-install__checks-hint {
   font-size: var(--arco-text-xs);
+  color: var(--arco-text-secondary);
+  line-height: 1.45;
+}
+
+.arco-install__checks-detail {
+  display: block;
+  margin-top: var(--arco-space-xs);
+  padding: var(--arco-space-xs) var(--arco-space-s);
+  border-radius: var(--arco-radius-s);
+  font-family: var(--arco-font-mono, ui-monospace, monospace);
+  font-size: 0.68rem;
+  line-height: 1.45;
   color: var(--arco-text-tertiary);
-  line-height: 1.4;
+  word-break: break-word;
+  background: color-mix(in srgb, var(--arco-bg-sunk) 80%, transparent);
+  border: 1px solid color-mix(in srgb, var(--arco-border) 80%, transparent);
+}
+
+.arco-install__kosmos-connect {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-m);
+  padding: var(--arco-space-m);
+  border-radius: var(--arco-radius-m);
+  border: 1px solid var(--arco-border);
+  background: var(--arco-bg-hover);
+}
+
+.arco-install__kosmos-connect .arco-input,
+.arco-authscreen__form .arco-input {
+  width: 100%;
+}
+
+.arco-install__kosmos-connect-lead {
+  margin: 0;
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-secondary);
+  line-height: 1.5;
+}
+
+.arco-install__kosmos-connect-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-s);
+}
+
+.arco-install__kosmos-connect-advanced {
+  margin-top: var(--arco-space-xs);
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+}
+
+.arco-install__kosmos-connect-advanced summary {
+  cursor: pointer;
+  user-select: none;
+  color: var(--arco-text-secondary);
+}
+
+.arco-install__kosmos-connect-advanced-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-s);
+  margin-top: var(--arco-space-s);
+  padding-top: var(--arco-space-s);
+  border-top: 1px solid var(--arco-border);
 }

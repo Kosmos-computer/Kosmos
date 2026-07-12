@@ -160,6 +160,97 @@
     "ja": "既存の Ollama インストールを使用",
     "zh-CN": "使用已有的 Ollama 安装"
   },
+  "INSTALL$MODEL_PATH_KOSMOS_LABEL": {
+    "en": "Kosmos",
+    "es": "Kosmos",
+    "de": "Kosmos",
+    "ja": "Kosmos",
+    "zh-CN": "Kosmos"
+  },
+  "INSTALL$MODEL_PATH_KOSMOS_HINT": {
+    "en": "Hosted cloud — sign in or create an account",
+    "es": "Nube alojada — inicia sesión o crea una cuenta",
+    "de": "Gehostete Cloud — anmelden oder Konto erstellen",
+    "ja": "ホスト型クラウド — サインインまたはアカウント作成",
+    "zh-CN": "托管云端 — 登录或创建账户"
+  },
+  "INSTALL$KOSMOS_CONNECT_LEAD": {
+    "en": "Enter your instance URL from your welcome email, then connect to sign in. New here? Create an account first.",
+    "es": "Introduce la URL de tu instancia del correo de bienvenida y conéctate para iniciar sesión. ¿Eres nuevo? Crea una cuenta primero.",
+    "de": "Gib die Instanz-URL aus deiner Willkommens-E-Mail ein und verbinde dich zum Anmelden. Neu hier? Erstelle zuerst ein Konto.",
+    "ja": "ウェルカムメールのインスタンス URL を入力して接続し、サインインしてください。初めての方は先にアカウントを作成してください。",
+    "zh-CN": "输入欢迎邮件中的实例 URL 并连接以登录。新用户请先创建账户。"
+  },
+  "INSTALL$KOSMOS_CONNECT_WEB_LEAD": {
+    "en": "Sign in with the email you used at checkout, or create a new cloud account. When you finish on the web, you will return here connected.",
+    "es": "Inicia sesión con el correo que usaste al pagar o crea una cuenta nueva en la nube. Al terminar en la web, volverás aquí conectado.",
+    "de": "Melde dich mit der E-Mail aus dem Checkout an oder erstelle ein neues Cloud-Konto. Nach Abschluss im Web kehrst du hier verbunden zurück.",
+    "ja": "チェックアウト時のメールでサインインするか、新しいクラウドアカウントを作成してください。Web で完了すると、接続済みでここに戻ります。",
+    "zh-CN": "使用结账时的邮箱登录，或创建新的云端账户。在网页上完成后，你将返回此处并已连接。"
+  },
+  "INSTALL$KOSMOS_CONNECT_WEB": {
+    "en": "Connect on web",
+    "es": "Conectar en la web",
+    "de": "Im Web verbinden",
+    "ja": "Web で接続",
+    "zh-CN": "在网页上连接"
+  },
+  "INSTALL$KOSMOS_MANUAL_URL": {
+    "en": "Enter instance URL manually",
+    "es": "Introducir URL de instancia manualmente",
+    "de": "Instanz-URL manuell eingeben",
+    "ja": "インスタンス URL を手動で入力",
+    "zh-CN": "手动输入实例 URL"
+  },
+  "INSTALL$KOSMOS_INSTANCE_URL_LABEL": {
+    "en": "Instance URL",
+    "es": "URL de la instancia",
+    "de": "Instanz-URL",
+    "ja": "インスタンス URL",
+    "zh-CN": "实例 URL"
+  },
+  "INSTALL$KOSMOS_INSTANCE_URL_PLACEHOLDER": {
+    "en": "kosmos-yourname.fly.dev",
+    "es": "kosmos-yourname.fly.dev",
+    "de": "kosmos-yourname.fly.dev",
+    "ja": "kosmos-yourname.fly.dev",
+    "zh-CN": "kosmos-yourname.fly.dev"
+  },
+  "INSTALL$KOSMOS_CONNECT": {
+    "en": "Connect",
+    "es": "Conectar",
+    "de": "Verbinden",
+    "ja": "接続",
+    "zh-CN": "连接"
+  },
+  "INSTALL$KOSMOS_CONNECTING": {
+    "en": "Connecting…",
+    "es": "Conectando…",
+    "de": "Verbinden…",
+    "ja": "接続中…",
+    "zh-CN": "连接中…"
+  },
+  "INSTALL$KOSMOS_CREATE_ACCOUNT": {
+    "en": "Create account",
+    "es": "Crear cuenta",
+    "de": "Konto erstellen",
+    "ja": "アカウントを作成",
+    "zh-CN": "创建账户"
+  },
+  "INSTALL$KOSMOS_CONNECT_TITLE": {
+    "en": "Connect to Kosmos",
+    "es": "Conectar a Kosmos",
+    "de": "Mit Kosmos verbinden",
+    "ja": "Kosmos に接続",
+    "zh-CN": "连接到 Kosmos"
+  },
+  "INSTALL$KOSMOS_CONNECT_SUBTITLE": {
+    "en": "Sign in to your hosted instance or create a new cloud account.",
+    "es": "Inicia sesión en tu instancia alojada o crea una nueva cuenta en la nube.",
+    "de": "Melde dich bei deiner gehosteten Instanz an oder erstelle ein neues Cloud-Konto.",
+    "ja": "ホスト型インスタンスにサインインするか、新しいクラウドアカウントを作成してください。",
+    "zh-CN": "登录托管实例或创建新的云端账户。"
+  },
   "INSTALL$PROVIDER_TITLE": {
     "en": "Connect a cloud provider",
     "es": "Conectar un proveedor en la nube",

@@ -6,27 +6,48 @@
  *   sessions/      — chat + automation sessions, one JSON per session
  *   db/            — SQLite databases, one file per namespace
  *   workspace/     — the agent's working directory (scripts, files, exec cwd)
- *   settings.json  — LLM provider config + shell prefs
+ *   settings.json  — LLM provider config + shell prefs (API keys live in the vault)
+ *   secrets.vault.json — sealed API keys / tokens
  *   automations.json
  */
 import fs from "node:fs";
 import path from "node:path";
 import type { AgentBackend, AgentBackendKind, Settings } from "../shared/types.js";
+import { writeSecureJson } from "./security/secureFs.js";
+import {
+  hydrateSettingsSecrets,
+  sealSettingsSecrets,
+} from "./security/settingsSecrets.js";
 
-const ROOT = process.env.ARCO_DATA_DIR
-  ? path.resolve(process.env.ARCO_DATA_DIR)
-  : path.resolve(process.cwd(), "data");
+/** Resolved on each access so tests can set ARCO_DATA_DIR before use. */
+export function getDataRoot(): string {
+  return process.env.ARCO_DATA_DIR
+    ? path.resolve(process.env.ARCO_DATA_DIR)
+    : path.resolve(process.cwd(), "data");
+}
 
 export const dataDirs = {
-  root: ROOT,
-  apps: path.join(ROOT, "apps"),
-  sessions: path.join(ROOT, "sessions"),
-  db: path.join(ROOT, "db"),
-  workspace: path.join(ROOT, "workspace"),
+  get root() {
+    return getDataRoot();
+  },
+  get apps() {
+    return path.join(getDataRoot(), "apps");
+  },
+  get sessions() {
+    return path.join(getDataRoot(), "sessions");
+  },
+  get db() {
+    return path.join(getDataRoot(), "db");
+  },
+  get workspace() {
+    return path.join(getDataRoot(), "workspace");
+  },
 };
 
 export function ensureDataDirs(): void {
-  for (const dir of Object.values(dataDirs)) fs.mkdirSync(dir, { recursive: true });
+  for (const dir of [dataDirs.root, dataDirs.apps, dataDirs.sessions, dataDirs.db, dataDirs.workspace]) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
   const scriptsDir = path.join(dataDirs.workspace, "scripts");
   fs.mkdirSync(scriptsDir, { recursive: true });
   const projectsDir = path.join(dataDirs.workspace, "projects");
@@ -36,7 +57,7 @@ export function ensureDataDirs(): void {
 
 /** Codex ACP reads sandbox settings from $CODEX_HOME/config.toml. */
 function ensureCodexConfig(): void {
-  const codexHome = path.join(ROOT, ".codex");
+  const codexHome = path.join(getDataRoot(), ".codex");
   fs.mkdirSync(codexHome, { recursive: true });
   const configPath = path.join(codexHome, "config.toml");
   if (fs.existsSync(configPath)) return;
@@ -54,7 +75,9 @@ function ensureCodexConfig(): void {
 
 // ── Settings ─────────────────────────────────────────────────────────────────
 
-const SETTINGS_FILE = path.join(ROOT, "settings.json");
+function settingsFile(): string {
+  return path.join(getDataRoot(), "settings.json");
+}
 
 const DEFAULT_SETTINGS: Settings = {
   provider: process.env.LLM_PROVIDER?.trim()
@@ -145,24 +168,46 @@ function migrateLegacyAgentBackends(raw: Record<string, unknown>): Partial<Setti
   };
 }
 
-export function loadSettings(): Settings {
+function hasPlaintextSettingsSecrets(settings: Settings): boolean {
+  if (settings.apiKey?.trim() && !settings.apiKey.includes("••••")) return true;
+  if (settings.cursorApiKey?.trim() && !settings.cursorApiKey.includes("••••")) return true;
+  if (settings.apiKeys) {
+    for (const key of Object.values(settings.apiKeys)) {
+      if (key?.trim() && !key.includes("••••")) return true;
+    }
+  }
+  return false;
+}
+
+function readSettingsFromDisk(): Settings {
   try {
-    const raw = JSON.parse(fs.readFileSync(SETTINGS_FILE, "utf-8")) as Record<string, unknown>;
-    return applyLlmEnvOverrides({
+    const raw = JSON.parse(fs.readFileSync(settingsFile(), "utf-8")) as Record<string, unknown>;
+    return {
       ...DEFAULT_SETTINGS,
       ...(raw as Partial<Settings>),
       ...migrateLegacyAgentBackends(raw),
-    });
+    };
   } catch {
-    return applyLlmEnvOverrides({ ...DEFAULT_SETTINGS });
+    return { ...DEFAULT_SETTINGS };
   }
+}
+
+export function loadSettings(): Settings {
+  const fromDisk = readSettingsFromDisk();
+  // Migrate legacy plaintext keys into the vault once, then rewrite settings.json.
+  if (hasPlaintextSettingsSecrets(fromDisk)) {
+    const cleared = sealSettingsSecrets(fromDisk);
+    writeSecureJson(settingsFile(), cleared);
+  }
+  // Vault first, then env overrides (hosted LLM_API_KEY wins).
+  return applyLlmEnvOverrides(hydrateSettingsSecrets(readSettingsFromDisk()));
 }
 
 export function saveSettings(patch: Partial<Settings>): Settings {
   const merged = { ...loadSettings(), ...patch };
-  fs.mkdirSync(ROOT, { recursive: true });
-  fs.writeFileSync(SETTINGS_FILE, JSON.stringify(merged, null, 2), "utf-8");
-  return merged;
+  const cleared = sealSettingsSecrets(merged);
+  writeSecureJson(settingsFile(), cleared);
+  return applyLlmEnvOverrides(hydrateSettingsSecrets(cleared));
 }
 
 /** API keys never leave the server unmasked. */

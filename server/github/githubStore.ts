@@ -7,6 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { GitHubAccountInfo, GitHubAccountStatus } from "../../shared/github.js";
 import { dataDirs } from "../env.js";
+import { writeSecureJson } from "../security/secureFs.js";
 import { exchangeGitHubCode } from "./githubOAuth.js";
 
 const FILE = path.join(dataDirs.root, "github-accounts.json");
@@ -35,8 +36,7 @@ function load(): GitHubAccountsFile {
 }
 
 function save(file: GitHubAccountsFile): void {
-  fs.mkdirSync(dataDirs.root, { recursive: true });
-  fs.writeFileSync(FILE, JSON.stringify(file, null, 2), { encoding: "utf-8", mode: 0o600 });
+  writeSecureJson(FILE, file);
 }
 
 function toInfo(record: GitHubAccountRecord): GitHubAccountInfo {

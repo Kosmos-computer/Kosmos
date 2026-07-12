@@ -195,7 +195,7 @@ export type AgentEvent =
    */
   | { type: "app_event"; topic: string }
   | { type: "done" }
-  | { type: "error"; message: string };
+  | { type: "error"; message: string; code?: "credits_insufficient" };
 
 // ── Agent cursor (AI-driven virtual mouse) ──────────────────────────────────
 //
@@ -650,10 +650,54 @@ export interface BillingStatus {
   subscriptionStatus: string | null;
   cancelAtPeriodEnd: boolean;
   currentPeriodEnd: string | null;
+  planQuotaMb: number | null;
+  extraQuotaMb: number | null;
+  totalQuotaMb: number | null;
   controlPlaneUrl: string | null;
   signupUrl: string | null;
   paymentLinkUrl: string | null;
   portalLoginUrl: string | null;
+  checkoutEnabled?: boolean;
+}
+
+export interface BillingCreditPack {
+  priceId: string;
+  label: string;
+  creditsUsd: number;
+}
+
+export interface BillingStorageAddon {
+  priceId: string;
+  label: string;
+  quotaMb: number;
+}
+
+export interface BillingUpgradePlan {
+  priceId: string;
+  name: string;
+  monthlyPriceUsd: number | null;
+  includedCreditsUsd: number;
+  quotaMb: number;
+}
+
+export interface BillingAddons {
+  creditPacks: BillingCreditPack[];
+  storageAddons: BillingStorageAddon[];
+  upgradePlans: BillingUpgradePlan[];
+  currentPlan: {
+    name: string;
+    monthlyPriceUsd: number | null;
+    includedCreditsUsd: number;
+    quotaMb: number;
+  } | null;
+}
+
+export interface StorageStatus {
+  planQuotaMb: number;
+  extraQuotaMb: number;
+  totalQuotaMb: number;
+  usedMb: number;
+  remainingMb: number;
 }
 
 // ── Settings ─────────────────────────────────────────────────────────────────

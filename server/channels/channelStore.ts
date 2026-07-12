@@ -18,6 +18,7 @@ import type {
   PendingPairing,
 } from "../../shared/types.js";
 import { dataDirs } from "../env.js";
+import { writeSecureJson } from "../security/secureFs.js";
 
 const FILE = path.join(dataDirs.root, "channels.json");
 
@@ -42,7 +43,7 @@ function load(): ChannelsFile {
 }
 
 function save(file: ChannelsFile): void {
-  fs.writeFileSync(FILE, JSON.stringify(file, null, 2), "utf-8");
+  writeSecureJson(FILE, file);
 }
 
 /** name → url-safe slug (also used in the chat→session map keys). */

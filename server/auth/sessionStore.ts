@@ -12,6 +12,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { dataDirs } from "../env.js";
+import { writeSecureJson } from "../security/secureFs.js";
 
 const SESSIONS_FILE = path.join(dataDirs.root, "auth-sessions.json");
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
@@ -34,7 +35,7 @@ function load(): AuthSession[] {
 }
 
 function save(sessions: AuthSession[]): void {
-  fs.writeFileSync(SESSIONS_FILE, JSON.stringify(sessions), { encoding: "utf-8", mode: 0o600 });
+  writeSecureJson(SESSIONS_FILE, sessions);
 }
 
 const hashToken = (token: string) => crypto.createHash("sha256").update(token).digest("hex");

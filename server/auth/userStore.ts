@@ -13,6 +13,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { ROLE_CAPABILITIES, type AuthUser, type Role, type UserSummary } from "../../shared/types.js";
 import { dataDirs } from "../env.js";
+import { writeSecureJson } from "../security/secureFs.js";
 
 const USERS_FILE = path.join(dataDirs.root, "users.json");
 
@@ -77,7 +78,7 @@ function load(): UserRecord[] {
 
 function save(users: UserRecord[]): void {
   // Owner-only readable: the file holds password hashes.
-  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), { encoding: "utf-8", mode: 0o600 });
+  writeSecureJson(USERS_FILE, users);
 }
 
 /** Strip secrets and expand the role into concrete capabilities. */

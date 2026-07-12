@@ -4,8 +4,9 @@
  * (hosted instances; LiteLLM /key/info via GET /api/usage).
  */
 import { useCallback, useEffect, useState } from "react";
-import type { UsageResponse } from "@shared/types";
+import type { BillingAddons, UsageResponse } from "@shared/types";
 import { api } from "../../lib/api";
+import { useDeployment } from "../../hooks/useDeployment";
 import {
   SettingsAlert,
   SettingsFieldRow,
@@ -45,32 +46,58 @@ function BudgetBar({ spend, maxBudget }: { spend: number; maxBudget: number }) {
 }
 
 export function UsageSection() {
+  const { deployment } = useDeployment();
   const [data, setData] = useState<UsageResponse | null>(null);
+  const [addons, setAddons] = useState<BillingAddons | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [checkoutBusy, setCheckoutBusy] = useState<string | null>(null);
 
   const load = useCallback(async (refresh = false) => {
     setLoading(true);
     setError(null);
     try {
-      setData(await api.getUsage(refresh));
+      const [usage, addonData] = await Promise.all([
+        api.getUsage(refresh),
+        deployment.billingConfigured ? api.getBillingAddons() : Promise.resolve(null),
+      ]);
+      setData(usage);
+      setAddons(addonData);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load usage");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [deployment.billingConfigured]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
+  const startCheckout = async (priceId: string) => {
+    setCheckoutBusy(priceId);
+    setError(null);
+    try {
+      const { url } = await api.startBillingCheckout(priceId, "credits");
+      window.location.href = url;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not start checkout");
+      setCheckoutBusy(null);
+    }
+  };
+
   const credits = data?.credits ?? null;
   const local = data?.local ?? null;
+  const hasCreditPacks = (addons?.creditPacks.length ?? 0) > 0;
+  const lowCredits =
+    credits?.maxBudget != null &&
+    credits.remaining != null &&
+    credits.maxBudget > 0 &&
+    credits.remaining / credits.maxBudget <= 0.1;
 
   return (
     <SettingsPage>
-      <SettingsSection intro="Token spend for this instance. Credits appear when the model provider is a metered gateway.">
+      <SettingsSection intro="Token spend for this instance. Buy more credits when your budget runs low.">
         <SettingsStack>
           {error && <SettingsAlert>{error}</SettingsAlert>}
 
@@ -94,6 +121,29 @@ export function UsageSection() {
                     </span>
                   </SettingsFieldRow>
                 )}
+                {lowCredits && (
+                  <SettingsAlert tone="muted">
+                    Credits are running low. Buy more to keep using the agent without interruption.
+                  </SettingsAlert>
+                )}
+                {hasCreditPacks ? (
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+                    {addons?.creditPacks.map((pack) => (
+                      <Button
+                        key={pack.priceId}
+                        variant="primary"
+                        onClick={() => void startCheckout(pack.priceId)}
+                        disabled={checkoutBusy === pack.priceId}
+                      >
+                        {checkoutBusy === pack.priceId ? "Opening…" : `Buy ${pack.label}`}
+                      </Button>
+                    ))}
+                  </div>
+                ) : deployment.billingConfigured ? (
+                  <SettingsAlert tone="muted">
+                    Credit top-ups are not configured yet. Open Billing to manage your subscription.
+                  </SettingsAlert>
+                ) : null}
               </SettingsPanelBody>
             </SettingsPanel>
           )}

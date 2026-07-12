@@ -44,6 +44,8 @@ import type {
   Settings,
   UsageResponse,
   BillingStatus,
+  BillingAddons,
+  StorageStatus,
   CursorConnectionStatus,
   CursorModelInfo,
   AgentBackend,
@@ -866,6 +868,14 @@ export const api = {
     fetch(`/api/usage${refresh ? "?refresh=1" : ""}`).then((r) => json<UsageResponse>(r)),
   getBillingStatus: (refresh = false) =>
     fetch(`/api/billing/status${refresh ? "?refresh=1" : ""}`).then((r) => json<BillingStatus>(r)),
+  getBillingAddons: () => fetch("/api/billing/addons").then((r) => json<BillingAddons>(r)),
+  startBillingCheckout: (priceId: string, kind: "credits" | "storage" | "plan") =>
+    fetch("/api/billing/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ priceId, kind }),
+    }).then((r) => json<{ url: string }>(r)),
+  getStorageStatus: () => fetch("/api/storage").then((r) => json<StorageStatus>(r)),
   openBillingPortal: () =>
     fetch("/api/billing/portal", { method: "POST" }).then((r) =>
       json<{ url: string }>(r),

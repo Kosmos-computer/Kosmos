@@ -11,6 +11,10 @@ import type {
 } from "openai/resources/chat/completions.mjs";
 import type { Settings } from "../../shared/types.js";
 import { recordUsage } from "../stores/usageStore.js";
+import {
+  creditsInsufficientMessage,
+  isCreditsInsufficientError,
+} from "./creditsError.js";
 
 export type LlmMessage = ChatCompletionMessageParam;
 
@@ -138,6 +142,9 @@ async function apiTurn(opts: StreamTurnOptions): Promise<LlmTurn> {
  */
 function describeCompletionError(err: unknown): string {
   const message = err instanceof Error ? err.message : String(err);
+  if (isCreditsInsufficientError(message)) {
+    return creditsInsufficientMessage();
+  }
   if (/json\.exception\.parse_error/.test(message)) {
     return (
       "The local model got stuck generating a response (likely a repetition " +

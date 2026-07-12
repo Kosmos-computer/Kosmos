@@ -559,6 +559,19 @@
   opacity: 1;
 }
 
+.arco-chat__error--credits .arco-chat__error-hint {
+  margin: var(--arco-space-xs) 0 0;
+  color: var(--arco-text-secondary);
+  font-size: var(--arco-text-xs);
+}
+
+.arco-chat__error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--arco-space-xs);
+  margin-top: var(--arco-space-s);
+}
+
 .arco-chat__working {
   font-size: var(--arco-text-sm);
   color: var(--arco-text-tertiary);

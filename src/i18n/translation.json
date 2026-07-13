@@ -496,6 +496,20 @@
     "ja": "Kamiji",
     "zh-CN": "Kamiji"
   },
+  "OS$APP_KEYBOARD": {
+    "en": "Keyboard",
+    "es": "Teclado",
+    "de": "Keyboard",
+    "ja": "キーボード",
+    "zh-CN": "键盘"
+  },
+  "APPS$KEYBOARD_HINT": {
+    "en": "Play with the keys or your computer keyboard",
+    "es": "Toca las teclas o usa el teclado del ordenador",
+    "de": "Spiele mit den Tasten oder deiner Computertastatur",
+    "ja": "鍵盤またはパソコンのキーボードで演奏",
+    "zh-CN": "点击琴键或使用电脑键盘演奏"
+  },
   "OS$APP_MUSIC": {
     "en": "Music",
     "es": "Música",

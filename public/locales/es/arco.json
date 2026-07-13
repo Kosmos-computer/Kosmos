@@ -70,6 +70,8 @@
   "OS$APP_SEARCH": "Buscar",
   "OS$APP_LONGFORMER": "Longformer",
   "OS$APP_KAMIJI": "Kamiji",
+  "OS$APP_KEYBOARD": "Teclado",
+  "APPS$KEYBOARD_HINT": "Toca las teclas o usa el teclado del ordenador",
   "OS$APP_MUSIC": "Música",
   "OS$APP_VIDEO": "Video",
   "OS$APP_MEET": "Meet",

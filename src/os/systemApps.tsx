@@ -39,6 +39,7 @@ import {
   Search,
   FileText,
   Egg,
+  Piano,
   Boxes,
   Bot,
 } from "lucide-react";
@@ -81,6 +82,7 @@ import { DownloadsApp } from "../apps/downloads/DownloadsApp";
 import { SearchApp } from "../apps/search/SearchApp";
 import { LongformerApp } from "../apps/longformer/LongformerApp";
 import { KamijiApp } from "../apps/kamiji/KamijiApp";
+import { KeyboardApp } from "../apps/keyboard/KeyboardApp";
 
 export interface SystemAppDef {
   id: SystemAppId;
@@ -104,6 +106,7 @@ export const SYSTEM_APPS: SystemAppDef[] = [
   { id: "search", titleKey: I18nKey.OS$APP_SEARCH, icon: Search, component: SearchApp },
   { id: "longformer", titleKey: I18nKey.OS$APP_LONGFORMER, icon: FileText, component: LongformerApp },
   { id: "kamiji", titleKey: I18nKey.OS$APP_KAMIJI, icon: Egg, component: KamijiApp },
+  { id: "keyboard", titleKey: I18nKey.OS$APP_KEYBOARD, icon: Piano, component: KeyboardApp },
   { id: "music", titleKey: I18nKey.OS$APP_MUSIC, icon: Music, component: MusicApp },
   { id: "video", titleKey: I18nKey.OS$APP_VIDEO, icon: PlaySquare, component: VideoApp },
   { id: "meet", titleKey: I18nKey.OS$APP_MEET, icon: Video, component: MeetApp },

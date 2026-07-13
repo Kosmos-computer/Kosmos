@@ -18,6 +18,7 @@ export const SYSTEM_APP_TITLE_KEYS: Record<SystemAppId, I18nKey> = {
   search: I18nKey.OS$APP_SEARCH,
   longformer: I18nKey.OS$APP_LONGFORMER,
   kamiji: I18nKey.OS$APP_KAMIJI,
+  keyboard: I18nKey.OS$APP_KEYBOARD,
   music: I18nKey.OS$APP_MUSIC,
   video: I18nKey.OS$APP_VIDEO,
   meet: I18nKey.OS$APP_MEET,

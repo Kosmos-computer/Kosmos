@@ -70,6 +70,8 @@
   "OS$APP_SEARCH": "搜索",
   "OS$APP_LONGFORMER": "Longformer",
   "OS$APP_KAMIJI": "Kamiji",
+  "OS$APP_KEYBOARD": "键盘",
+  "APPS$KEYBOARD_HINT": "点击琴键或使用电脑键盘演奏",
   "OS$APP_MUSIC": "音乐",
   "OS$APP_VIDEO": "视频",
   "OS$APP_MEET": "会议",

@@ -40,6 +40,7 @@ import "./styles/memory.css";
 import "./styles/agents.css";
 import "./styles/longformer.css";
 import "./styles/kamiji.css";
+import "./styles/keyboard.css";
 import "./styles/generator.css";
 import "./styles/imagegen.css";
 import "./styles/auth.css";

@@ -43,6 +43,7 @@ export type SystemAppId =
   | "memory"
   | "longformer"
   | "kamiji"
+  | "keyboard"
   | "models";
 
 export type WindowKind =

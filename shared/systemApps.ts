@@ -23,6 +23,7 @@ export const SYSTEM_APP_CATALOG: SystemAppCatalogEntry[] = [
   { id: "search", title: "Search" },
   { id: "longformer", title: "Longformer" },
   { id: "kamiji", title: "Kamiji" },
+  { id: "keyboard", title: "Keyboard" },
   { id: "music", title: "Music" },
   { id: "video", title: "Video" },
   { id: "meet", title: "Meet" },

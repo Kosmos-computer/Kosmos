@@ -194,6 +194,15 @@
   line-height: 1.6;
 }
 
+.arco-email__html-frame {
+  display: block;
+  width: 100%;
+  min-height: 160px;
+  border: 0;
+  background: #fff;
+  border-radius: var(--arco-radius-s);
+}
+
 .arco-email__reply-bar {
   display: flex;
   gap: var(--arco-space-s);
@@ -256,7 +265,7 @@
 }
 
 .arco-email__connect-card {
-  max-width: 420px;
+  max-width: 520px;
   display: flex;
   flex-direction: column;
   gap: var(--arco-space-m);
@@ -298,3 +307,148 @@
   justify-content: center;
   gap: var(--arco-space-xs);
 }
+
+.arco-gmail-oauth {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-m);
+}
+
+.arco-gmail-oauth--settings .arco-gmail-oauth__title {
+  font-size: var(--arco-text-md);
+}
+
+.arco-gmail-oauth__title {
+  margin: 0;
+  font-size: var(--arco-text-lg);
+  color: var(--arco-text-primary);
+}
+
+.arco-gmail-oauth__lead,
+.arco-gmail-oauth__note,
+.arco-gmail-oauth__status,
+.arco-gmail-oauth__redirect {
+  margin: 0;
+  color: var(--arco-text-secondary);
+  line-height: 1.5;
+  font-size: var(--arco-text-sm);
+}
+
+.arco-gmail-oauth__fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-s);
+}
+
+.arco-gmail-oauth__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-xs);
+}
+
+.arco-gmail-oauth__field-label {
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-secondary);
+}
+
+.arco-gmail-oauth__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--arco-space-s);
+}
+
+.arco-gmail-oauth__error {
+  margin: 0;
+  font-size: var(--arco-text-sm);
+  color: var(--arco-danger);
+}
+
+.arco-gmail-oauth--ready {
+  align-items: stretch;
+}
+
+.arco-gmail-oauth__google-btn {
+  width: 100%;
+  justify-content: center;
+  gap: var(--arco-space-s);
+  min-height: 44px;
+}
+
+.arco-gmail-oauth__admin-link {
+  align-self: center;
+  border: none;
+  background: transparent;
+  color: var(--arco-text-tertiary);
+  font-size: var(--arco-text-sm);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  padding: var(--arco-space-xs);
+}
+
+.arco-gmail-oauth__admin-link:hover {
+  color: var(--arco-text-secondary);
+}
+
+.arco-gmail-oauth__divider {
+  margin: 0;
+  text-align: center;
+  color: var(--arco-text-tertiary);
+  font-size: var(--arco-text-sm);
+}
+
+.arco-gmail-oauth__gmail-help {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-m);
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-m);
+  background: var(--arco-bg-surface-solid);
+}
+
+.arco-gmail-oauth__gmail-help--active {
+  border-color: color-mix(in srgb, var(--arco-accent, #1a73e8) 45%, var(--arco-border));
+  background: color-mix(in srgb, var(--arco-accent, #1a73e8) 8%, var(--arco-bg-surface-solid));
+}
+
+.arco-gmail-oauth__gmail-help-title {
+  margin: 0;
+  font-size: var(--arco-text-sm);
+  font-weight: 600;
+  color: var(--arco-text-primary);
+}
+
+.arco-gmail-oauth__gmail-help-lead {
+  margin: 0;
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-secondary);
+  line-height: 1.45;
+}
+
+.arco-gmail-oauth__gmail-help-steps {
+  margin: 0;
+  padding-left: 1.25rem;
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-secondary);
+  line-height: 1.5;
+}
+
+.arco-gmail-oauth__gmail-help-steps li + li {
+  margin-top: 0.25rem;
+}
+
+.arco-gmail-oauth__gmail-help-link {
+  font-size: var(--arco-text-sm);
+  font-weight: 500;
+  color: var(--arco-accent, #1a73e8);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  width: fit-content;
+}
+
+.arco-gmail-oauth__gmail-help-link:hover {
+  color: var(--arco-text-primary);
+}
+
+

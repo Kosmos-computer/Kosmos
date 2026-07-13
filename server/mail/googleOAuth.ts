@@ -3,6 +3,12 @@
  * Uses fetch only (no googleapis dependency).
  */
 import crypto from "node:crypto";
+import {
+  googleRedirectUri as configuredRedirectUri,
+  isGoogleOAuthConfigured,
+  resolveGoogleClientId,
+  resolveGoogleClientSecret,
+} from "./googleOAuthConfig.js";
 
 const AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -17,31 +23,26 @@ const SCOPES = [
 const pendingStates = new Map<string, { userId: string; expiresAt: number }>();
 
 function clientId(): string {
-  const value = process.env.GOOGLE_CLIENT_ID?.trim();
-  if (!value) throw new Error("GOOGLE_CLIENT_ID is not configured");
+  const value = resolveGoogleClientId();
+  if (!value) throw new Error("Google OAuth client ID is not configured");
   return value;
 }
 
 function clientSecret(): string {
-  const value = process.env.GOOGLE_CLIENT_SECRET?.trim();
-  if (!value) throw new Error("GOOGLE_CLIENT_SECRET is not configured");
+  const value = resolveGoogleClientSecret();
+  if (!value) throw new Error("Google OAuth client secret is not configured");
   return value;
 }
 
 export function googleRedirectUri(): string {
-  return (
-    process.env.GOOGLE_REDIRECT_URI?.trim() ??
-    `http://localhost:${process.env.PORT ?? 4600}/api/mail/oauth/google/callback`
-  );
+  return configuredRedirectUri();
 }
 
 export function webOriginAfterOAuth(): string {
   return process.env.ARCO_WEB_ORIGIN?.trim() ?? "http://localhost:4610";
 }
 
-export function isGoogleOAuthConfigured(): boolean {
-  return Boolean(process.env.GOOGLE_CLIENT_ID?.trim() && process.env.GOOGLE_CLIENT_SECRET?.trim());
-}
+export { isGoogleOAuthConfigured };
 
 export function createOAuthState(userId: string): string {
   purgeExpiredStates();

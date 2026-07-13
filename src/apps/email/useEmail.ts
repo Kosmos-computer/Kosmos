@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../lib/api";
-import type { MailAccountInfo } from "@shared/mail";
+import type { MailAccountInfo, MailOAuthStatus } from "@shared/mail";
 import { MAIL_FOLDERS } from "./emailMock";
 import type { EmailInboxFilter } from "./types";
 
 /** Live Gmail proxy via /api/mail — replaces useEmailStub once connected. */
 export function useEmail() {
   const [accounts, setAccounts] = useState<MailAccountInfo[]>([]);
-  const [oauthConfigured, setOauthConfigured] = useState(false);
+  const [oauth, setOauth] = useState<MailOAuthStatus | null>(null);
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [inboxFilter, setInboxFilter] = useState<EmailInboxFilter>("all");
@@ -28,7 +28,7 @@ export function useEmail() {
   >([]);
   const [activeSubject, setActiveSubject] = useState<string | undefined>();
   const [activeMessages, setActiveMessages] = useState<
-    { id: string; senderName: string; timestamp: string; body: string }[]
+    { id: string; senderName: string; timestamp: string; body: string; htmlBody?: string }[]
   >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,16 +39,21 @@ export function useEmail() {
 
   const connectedAccount = accounts[0];
   const isConnected = Boolean(connectedAccount);
+  const oauthConfigured = oauth?.configured ?? false;
 
   const refreshStatus = useCallback(async () => {
     try {
       const status = await api.mailStatus();
-      setOauthConfigured(status.oauthConfigured);
+      setOauth(status.oauth);
       setAccounts(status.accounts);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load mail status");
     }
+  }, []);
+
+  const applyOauth = useCallback((next: MailOAuthStatus) => {
+    setOauth(next);
   }, []);
 
   const refreshThreads = useCallback(async () => {
@@ -190,7 +195,9 @@ export function useEmail() {
     accounts,
     connectedAccount,
     isConnected,
+    oauth,
     oauthConfigured,
+    applyOauth,
     folders,
     activeFolderId,
     setActiveFolderId,

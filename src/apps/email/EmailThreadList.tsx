@@ -4,7 +4,7 @@ import { T } from "../../i18n/T";
 import { Inbox, Mail, Search, Star } from "lucide-react";
 import { Badge, Button, Chip, EmptyState, Input } from "../../components/ui";
 import type { EmailThread } from "./types";
-import { useTranslation } from "react-i18next";
+import { EmailHtmlBody } from "./EmailHtmlBody";
 
 export function EmailThreadList({
   threads,
@@ -124,9 +124,8 @@ export function EmailReadingPane({
   messages,
 }: {
   subject?: string;
-  messages: { id: string; senderName: string; timestamp: string; body: string }[];
+  messages: { id: string; senderName: string; timestamp: string; body: string; htmlBody?: string }[];
 }) {
-  const { t } = useTranslation();
   if (!subject || messages.length === 0) {
     return (
       <div className="arco-email__reading arco-email__reading--empty">
@@ -156,9 +155,13 @@ export function EmailReadingPane({
             </div>
           </header>
           <div className="arco-email__message-body">
-            {message.body.split("\n").map((line, index) => (
-              <p key={`${message.id}-${index}`}>{line || "\u00a0"}</p>
-            ))}
+            {message.htmlBody ? (
+              <EmailHtmlBody html={message.htmlBody} />
+            ) : (
+              message.body.split("\n").map((line, index) => (
+                <p key={`${message.id}-${index}`}>{line || "\u00a0"}</p>
+              ))
+            )}
           </div>
         </article>
       ))}

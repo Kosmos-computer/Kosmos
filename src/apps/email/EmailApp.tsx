@@ -7,6 +7,7 @@ import { SidebarPane } from "../../components/patterns";
 import { Button, Input } from "../../components/ui";
 import { EmailReadingPane, EmailThreadList } from "./EmailThreadList";
 import { EmailSidebar } from "./EmailSidebar";
+import { GmailOAuthSetup } from "./GmailOAuthSetup";
 import { useEmail } from "./useEmail";
 
 export function EmailApp() {
@@ -45,21 +46,11 @@ export function EmailApp() {
         {!email.isConnected ? (
           <div className="arco-email__connect arco-scroll">
             <div className="arco-email__connect-card">
-              <h2><T k={I18nKey.APPS$EMAIL_CONNECT_GMAIL} /></h2>
-              <p><T k={I18nKey.APPS$EMAIL_LINK_YOUR_GOOGLE_ACCOUNT_TO_READ_AND_SEND_MAIL_FROM_ARCO} /></p>
-              {!email.oauthConfigured ? (
-                <p className="arco-email__connect-note">
-                  <T k={I18nKey.APPS$EMAIL_SET} />
-                  <code>GOOGLE_CLIENT_ID</code>
-                  <T k={I18nKey.APPS$EMAIL_AND} />
-                  <code>GOOGLE_CLIENT_SECRET</code>
-                  <T k={I18nKey.APPS$EMAIL_ON_THE_ARCO_SERVER_THEN_ADD_REDIRECT_URI} />
-                  {/* eslint-disable-next-line i18next/no-literal-string -- OAuth redirect URL */}
-                  <code>http://localhost:4600/api/mail/oauth/google/callback</code>.
-                </p>
-              ) : null}
-              {email.error ? <p className="arco-email__connect-error">{email.error}</p> : null}
-              <Button variant="primary" onClick={email.connectGmail} disabled={!email.oauthConfigured}><T k={I18nKey.APPS$EMAIL_CONNECT_GMAIL} /></Button>
+              <GmailOAuthSetup
+                oauth={email.oauth}
+                onUpdated={email.applyOauth}
+                onConnected={() => void email.refreshStatus()}
+              />
             </div>
           </div>
         ) : (

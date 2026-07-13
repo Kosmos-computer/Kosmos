@@ -1,22 +1,14 @@
-import { I18nKey } from "../../i18n/declaration";
-import i18n from "../../i18n/index";
-import { T } from "../../i18n/T";
 /**
- * Settings → Connected accounts — GitHub OAuth plus team/social links.
+ * Settings → Connected accounts — GitHub OAuth plus Gmail and team/social links.
  */
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link2, Trash2 } from "lucide-react";
+import type { MailOAuthStatus } from "@shared/mail";
 import { presetById } from "@shared/serviceConnections";
 import {
   ConnectServiceModal,
   GitHubConnectCard,
   ListSearch,
-} from "../../components/patterns";
-import { useGitHubConnection } from "../../connections/useGitHubConnection";
-import { useConnectionStore } from "../../connections/useConnectionStore";
-import { useCan } from "../../os/auth/authStore";
-import { matchesListSearch } from "../../lib/listSearch";
-import {
   SettingsEmpty,
   SettingsPage,
   SettingsPanel,
@@ -28,7 +20,16 @@ import {
   SettingsStack,
   SettingsSubhead,
 } from "../../components/patterns";
+import { useGitHubConnection } from "../../connections/useGitHubConnection";
+import { useConnectionStore } from "../../connections/useConnectionStore";
+import { useCan } from "../../os/auth/authStore";
+import { matchesListSearch } from "../../lib/listSearch";
+import { api } from "../../lib/api";
+import { GmailOAuthSetup } from "../email/GmailOAuthSetup";
 import { Button } from "../../components/ui";
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
 
 export function ConnectedAccountsSection() {
   const canManage = useCan("settings:write");
@@ -40,6 +41,14 @@ export function ConnectedAccountsSection() {
   const [connectOpen, setConnectOpen] = useState(false);
   const [connectDomain, setConnectDomain] = useState<"teams" | "social">("teams");
   const [searchQuery, setSearchQuery] = useState("");
+  const [mailOauth, setMailOauth] = useState<MailOAuthStatus | null>(null);
+
+  useEffect(() => {
+    void api
+      .mailStatus()
+      .then((status) => setMailOauth(status.oauth))
+      .catch(() => setMailOauth(null));
+  }, []);
 
   const filteredConnections = connections.filter((connection) =>
     matchesListSearch(
@@ -63,7 +72,21 @@ export function ConnectedAccountsSection() {
           <SettingsSubhead>GitHub</SettingsSubhead>
           <GitHubConnectCard connection={github} variant="inline" />
 
-          <SettingsSubhead><T k={I18nKey.APPS$SETTINGS_OTHER_CONNECTED_ACCOUNTS} /></SettingsSubhead>
+          <SettingsSubhead><T k={I18nKey.APPS$EMAIL_GMAIL} /></SettingsSubhead>
+          <SettingsPanel>
+            <SettingsPanelBody>
+              <GmailOAuthSetup
+                oauth={mailOauth}
+                onUpdated={setMailOauth}
+                onConnected={() => {
+                  void api.mailStatus().then((status) => setMailOauth(status.oauth));
+                }}
+                variant="settings"
+              />
+            </SettingsPanelBody>
+          </SettingsPanel>
+
+          <SettingsSubhead>Other connected accounts</SettingsSubhead>
           {connections.length > 0 ? (
             <ListSearch
               value={searchQuery}
@@ -79,7 +102,9 @@ export function ConnectedAccountsSection() {
           ) : (
             filteredConnections.map((connection) => (
               <SettingsPanel key={connection.id}>
-                <SettingsPanelHeader title={connection.label} />
+                <SettingsPanelHeader>
+                  <span className="arco-settings-panel__title">{connection.label}</span>
+                </SettingsPanelHeader>
                 <SettingsPanelBody>
                   <SettingsRow>
                     <Link2 size={14} className="arco-icon arco-icon--secondary" />

@@ -1913,10 +1913,35 @@ app.delete("/api/skills/:id", requireCap("settings:write"), (c) => {
 
 app.get("/api/mail/status", (c) => {
   const user = currentUser(c);
+  const oauth = mailGateway.oauthStatus();
   return c.json({
-    oauthConfigured: mailGateway.oauthConfigured(),
+    oauthConfigured: oauth.configured,
+    oauth,
     accounts: mailGateway.listAccounts(user.id),
   });
+});
+
+app.put("/api/mail/oauth/config", requireCap("settings:write"), async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as {
+    clientId?: string;
+    clientSecret?: string;
+  };
+  try {
+    const oauth = mailGateway.saveOAuthSettings({
+      clientId: body.clientId,
+      clientSecret: body.clientSecret,
+    });
+    return c.json(oauth);
+  } catch (err) {
+    return c.json(
+      { error: err instanceof Error ? err.message : "Could not save Google OAuth settings" },
+      400,
+    );
+  }
+});
+
+app.delete("/api/mail/oauth/config", requireCap("settings:write"), (c) => {
+  return c.json(mailGateway.clearOAuthSettings());
 });
 
 app.get("/api/mail/accounts", (c) => c.json(mailGateway.listAccounts(currentUser(c).id)));
@@ -1925,6 +1950,37 @@ app.delete("/api/mail/accounts/:id", (c) => {
   const ok = mailGateway.disconnect(currentUser(c).id, c.req.param("id"));
   if (!ok) return c.json({ error: "Not found" }, 404);
   return c.json({ ok: true });
+});
+
+app.post("/api/mail/accounts/password", async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as {
+    email?: string;
+    password?: string;
+    imapHost?: string;
+    imapPort?: number;
+    smtpHost?: string;
+    smtpPort?: number;
+    smtpSecure?: boolean;
+  };
+  try {
+    const account = await mailGateway.connectWithPassword(currentUser(c).id, {
+      email: String(body.email ?? ""),
+      password: String(body.password ?? ""),
+      endpoints: {
+        imapHost: body.imapHost,
+        imapPort: body.imapPort,
+        smtpHost: body.smtpHost,
+        smtpPort: body.smtpPort,
+        smtpSecure: body.smtpSecure,
+      },
+    });
+    return c.json(account);
+  } catch (err) {
+    return c.json(
+      { error: err instanceof Error ? err.message : "Could not connect mail account" },
+      400,
+    );
+  }
 });
 
 app.get("/api/mail/oauth/google/start", (c) => {

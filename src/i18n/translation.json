@@ -11219,5 +11219,236 @@
     "de": "Speichern…",
     "ja": "保存中…",
     "zh-CN": "保存中…"
+  },
+  "APPS$EMAIL_GMAIL": {
+    "en": "Gmail",
+    "es": "Gmail",
+    "de": "Gmail",
+    "ja": "Gmail",
+    "zh-CN": "Gmail"
+  },
+  "APPS$EMAIL_OAUTH_SETUP_INTRO": {
+    "en": "Create a Google Cloud OAuth web client, then paste the Client ID and Secret here.",
+    "es": "Create a Google Cloud OAuth web client, then paste the Client ID and Secret here.",
+    "de": "Create a Google Cloud OAuth web client, then paste the Client ID and Secret here.",
+    "ja": "Create a Google Cloud OAuth web client, then paste the Client ID and Secret here.",
+    "zh-CN": "Create a Google Cloud OAuth web client, then paste the Client ID and Secret here."
+  },
+  "APPS$EMAIL_OAUTH_ADD_REDIRECT_URI": {
+    "en": "Authorized redirect URI:",
+    "es": "Authorized redirect URI:",
+    "de": "Authorized redirect URI:",
+    "ja": "Authorized redirect URI:",
+    "zh-CN": "Authorized redirect URI:"
+  },
+  "APPS$EMAIL_OAUTH_CLIENT_ID": {
+    "en": "Client ID",
+    "es": "Client ID",
+    "de": "Client ID",
+    "ja": "Client ID",
+    "zh-CN": "Client ID"
+  },
+  "APPS$EMAIL_OAUTH_CLIENT_SECRET": {
+    "en": "Client secret",
+    "es": "Client secret",
+    "de": "Client secret",
+    "ja": "Client secret",
+    "zh-CN": "Client secret"
+  },
+  "APPS$EMAIL_OAUTH_CLIENT_ID_PLACEHOLDER": {
+    "en": "….apps.googleusercontent.com",
+    "es": "….apps.googleusercontent.com",
+    "de": "….apps.googleusercontent.com",
+    "ja": "….apps.googleusercontent.com",
+    "zh-CN": "….apps.googleusercontent.com"
+  },
+  "APPS$EMAIL_OAUTH_CLIENT_SECRET_PLACEHOLDER": {
+    "en": "GOCSPX-…",
+    "es": "GOCSPX-…",
+    "de": "GOCSPX-…",
+    "ja": "GOCSPX-…",
+    "zh-CN": "GOCSPX-…"
+  },
+  "APPS$EMAIL_OAUTH_SECRET_KEEP": {
+    "en": "Leave blank to keep current secret",
+    "es": "Leave blank to keep current secret",
+    "de": "Leave blank to keep current secret",
+    "ja": "Leave blank to keep current secret",
+    "zh-CN": "Leave blank to keep current secret"
+  },
+  "APPS$EMAIL_OAUTH_SAVE": {
+    "en": "Save Google app credentials",
+    "es": "Save Google app credentials",
+    "de": "Save Google app credentials",
+    "ja": "Save Google app credentials",
+    "zh-CN": "Save Google app credentials"
+  },
+  "APPS$EMAIL_OAUTH_CLEAR": {
+    "en": "Clear saved credentials",
+    "es": "Clear saved credentials",
+    "de": "Clear saved credentials",
+    "ja": "Clear saved credentials",
+    "zh-CN": "Clear saved credentials"
+  },
+  "APPS$EMAIL_OAUTH_CONFIGURED_VIA_ENV": {
+    "en": "Google OAuth app is configured via server environment.",
+    "es": "Google OAuth app is configured via server environment.",
+    "de": "Google OAuth app is configured via server environment.",
+    "ja": "Google OAuth app is configured via server environment.",
+    "zh-CN": "Google OAuth app is configured via server environment."
+  },
+  "APPS$EMAIL_OAUTH_CONFIGURED_VIA_SETTINGS": {
+    "en": "Google OAuth app credentials are saved on this instance.",
+    "es": "Google OAuth app credentials are saved on this instance.",
+    "de": "Google OAuth app credentials are saved on this instance.",
+    "ja": "Google OAuth app credentials are saved on this instance.",
+    "zh-CN": "Google OAuth app credentials are saved on this instance."
+  },
+  "APPS$EMAIL_OAUTH_ASK_ADMIN": {
+    "en": "Ask an admin with Settings access to paste the Google OAuth Client ID and Secret.",
+    "es": "Ask an admin with Settings access to paste the Google OAuth Client ID and Secret.",
+    "de": "Ask an admin with Settings access to paste the Google OAuth Client ID and Secret.",
+    "ja": "Ask an admin with Settings access to paste the Google OAuth Client ID and Secret.",
+    "zh-CN": "Ask an admin with Settings access to paste the Google OAuth Client ID and Secret."
+  },
+  "APPS$EMAIL_CONNECT_WITH_GOOGLE": {
+    "en": "Continue with Google",
+    "es": "Continue with Google",
+    "de": "Continue with Google",
+    "ja": "Continue with Google",
+    "zh-CN": "Continue with Google"
+  },
+  "APPS$EMAIL_OAUTH_MANAGE_APP": {
+    "en": "Manage Google app credentials",
+    "es": "Manage Google app credentials",
+    "de": "Manage Google app credentials",
+    "ja": "Manage Google app credentials",
+    "zh-CN": "Manage Google app credentials"
+  },
+  "APPS$EMAIL_SIGN_IN": {
+    "en": "Sign in",
+    "es": "Sign in",
+    "de": "Sign in",
+    "ja": "Sign in",
+    "zh-CN": "Sign in"
+  },
+  "APPS$EMAIL_SIGN_IN_LEAD": {
+    "en": "Enter your email and password, like other mail apps.",
+    "es": "Enter your email and password, like other mail apps.",
+    "de": "Enter your email and password, like other mail apps.",
+    "ja": "Enter your email and password, like other mail apps.",
+    "zh-CN": "Enter your email and password, like other mail apps."
+  },
+  "APPS$EMAIL_ADDRESS": {
+    "en": "Email",
+    "es": "Email",
+    "de": "Email",
+    "ja": "Email",
+    "zh-CN": "Email"
+  },
+  "APPS$EMAIL_ADDRESS_PLACEHOLDER": {
+    "en": "you@example.com",
+    "es": "you@example.com",
+    "de": "you@example.com",
+    "ja": "you@example.com",
+    "zh-CN": "you@example.com"
+  },
+  "APPS$EMAIL_PASSWORD": {
+    "en": "Password",
+    "es": "Password",
+    "de": "Password",
+    "ja": "Password",
+    "zh-CN": "Password"
+  },
+  "APPS$EMAIL_PASSWORD_PLACEHOLDER": {
+    "en": "Password or app password",
+    "es": "Password or app password",
+    "de": "Password or app password",
+    "ja": "Password or app password",
+    "zh-CN": "Password or app password"
+  },
+  "APPS$EMAIL_SIGNING_IN": {
+    "en": "Signing in…",
+    "es": "Signing in…",
+    "de": "Signing in…",
+    "ja": "Signing in…",
+    "zh-CN": "Signing in…"
+  },
+  "APPS$EMAIL_OR": {
+    "en": "or",
+    "es": "or",
+    "de": "or",
+    "ja": "or",
+    "zh-CN": "or"
+  },
+  "APPS$EMAIL_GMAIL_APP_PASSWORD_HINT": {
+    "en": "Gmail: use an App Password from Google Account → Security (normal Google passwords are blocked).",
+    "es": "Gmail: use an App Password from Google Account → Security (normal Google passwords are blocked).",
+    "de": "Gmail: use an App Password from Google Account → Security (normal Google passwords are blocked).",
+    "ja": "Gmail: use an App Password from Google Account → Security (normal Google passwords are blocked).",
+    "zh-CN": "Gmail: use an App Password from Google Account → Security (normal Google passwords are blocked)."
+  },
+  "APPS$EMAIL_OAUTH_OPTIONAL_GOOGLE": {
+    "en": "Optional: enable Continue with Google (OAuth app)",
+    "es": "Optional: enable Continue with Google (OAuth app)",
+    "de": "Optional: enable Continue with Google (OAuth app)",
+    "ja": "Optional: enable Continue with Google (OAuth app)",
+    "zh-CN": "Optional: enable Continue with Google (OAuth app)"
+  },
+  "APPS$EMAIL_APP_PASSWORD_PLACEHOLDER": {
+    "en": "16-character App Password",
+    "es": "16-character App Password",
+    "de": "16-character App Password",
+    "ja": "16-character App Password",
+    "zh-CN": "16-character App Password"
+  },
+  "APPS$EMAIL_GMAIL_APP_PASSWORD_TITLE": {
+    "en": "Using Gmail?",
+    "es": "Using Gmail?",
+    "de": "Using Gmail?",
+    "ja": "Using Gmail?",
+    "zh-CN": "Using Gmail?"
+  },
+  "APPS$EMAIL_GMAIL_APP_PASSWORD_LEAD": {
+    "en": "Google blocks your normal password in mail apps. Create an App Password and paste it below instead.",
+    "es": "Google blocks your normal password in mail apps. Create an App Password and paste it below instead.",
+    "de": "Google blocks your normal password in mail apps. Create an App Password and paste it below instead.",
+    "ja": "Google blocks your normal password in mail apps. Create an App Password and paste it below instead.",
+    "zh-CN": "Google blocks your normal password in mail apps. Create an App Password and paste it below instead."
+  },
+  "APPS$EMAIL_GMAIL_APP_PASSWORD_STEP_1": {
+    "en": "Open Google Account → Security (2-Step Verification must be on).",
+    "es": "Open Google Account → Security (2-Step Verification must be on).",
+    "de": "Open Google Account → Security (2-Step Verification must be on).",
+    "ja": "Open Google Account → Security (2-Step Verification must be on).",
+    "zh-CN": "Open Google Account → Security (2-Step Verification must be on)."
+  },
+  "APPS$EMAIL_GMAIL_APP_PASSWORD_STEP_2": {
+    "en": "Choose App passwords, then create one for “Mail”.",
+    "es": "Choose App passwords, then create one for “Mail”.",
+    "de": "Choose App passwords, then create one for “Mail”.",
+    "ja": "Choose App passwords, then create one for “Mail”.",
+    "zh-CN": "Choose App passwords, then create one for “Mail”."
+  },
+  "APPS$EMAIL_GMAIL_APP_PASSWORD_STEP_3": {
+    "en": "Copy the 16-character password Google shows you.",
+    "es": "Copy the 16-character password Google shows you.",
+    "de": "Copy the 16-character password Google shows you.",
+    "ja": "Copy the 16-character password Google shows you.",
+    "zh-CN": "Copy the 16-character password Google shows you."
+  },
+  "APPS$EMAIL_GMAIL_APP_PASSWORD_STEP_4": {
+    "en": "Paste it in the Password field here (not your regular Google password).",
+    "es": "Paste it in the Password field here (not your regular Google password).",
+    "de": "Paste it in the Password field here (not your regular Google password).",
+    "ja": "Paste it in the Password field here (not your regular Google password).",
+    "zh-CN": "Paste it in the Password field here (not your regular Google password)."
+  },
+  "APPS$EMAIL_GMAIL_APP_PASSWORD_OPEN": {
+    "en": "Open Google App Passwords",
+    "es": "Open Google App Passwords",
+    "de": "Open Google App Passwords",
+    "ja": "Open Google App Passwords",
+    "zh-CN": "Open Google App Passwords"
   }
 }

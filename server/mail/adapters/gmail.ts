@@ -74,25 +74,42 @@ function decodeBase64Url(value: string): string {
   return Buffer.from(padded, "base64").toString("utf-8");
 }
 
-function extractBody(part: GmailMessagePart | undefined): string {
+function extractPartByMime(part: GmailMessagePart | undefined, mime: string): string {
   if (!part) return "";
-  if (part.body?.data) {
+  if (part.mimeType === mime && part.body?.data) {
     return decodeBase64Url(part.body.data);
   }
   if (part.parts?.length) {
-    const plain = part.parts.find((child) => child.mimeType === "text/plain");
-    if (plain) return extractBody(plain);
-    const html = part.parts.find((child) => child.mimeType === "text/html");
-    if (html) {
-      const raw = extractBody(html);
-      return raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-    }
     for (const child of part.parts) {
-      const nested = extractBody(child);
-      if (nested) return nested;
+      const found = extractPartByMime(child, mime);
+      if (found) return found;
     }
   }
   return "";
+}
+
+function extractBodies(part: GmailMessagePart | undefined): { body: string; htmlBody?: string } {
+  const html = extractPartByMime(part, "text/html").trim();
+  const plain = extractPartByMime(part, "text/plain").trim();
+  if (html) {
+    return {
+      body: plain || html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim(),
+      htmlBody: html
+        .replace(/<script[\s\S]*?<\/script>/gi, "")
+        .replace(/\son\w+=(["']).*?\1/gi, "")
+        .replace(/\son\w+=([^\s>]+)/gi, ""),
+    };
+  }
+  if (plain) return { body: plain };
+  // Fallback for non-multipart payloads
+  if (part?.body?.data) {
+    const raw = decodeBase64Url(part.body.data);
+    if (part.mimeType === "text/html") {
+      return { body: raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim(), htmlBody: raw };
+    }
+    return { body: raw };
+  }
+  return { body: "" };
 }
 
 function formatTimestamp(internalDate?: string): string {
@@ -138,11 +155,13 @@ function toThreadSummary(thread: GmailThread): MailThread {
 
 function toMessage(message: GmailMessage): MailMessage {
   const headers = message.payload?.headers;
+  const bodies = extractBodies(message.payload);
   return {
     id: message.id,
     senderName: parseSender(headerValue(headers, "From")),
     timestamp: formatTimestamp(message.internalDate),
-    body: extractBody(message.payload) || message.snippet || "",
+    body: bodies.body || message.snippet || "",
+    htmlBody: bodies.htmlBody,
   };
 }
 

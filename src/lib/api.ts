@@ -69,6 +69,7 @@ import type {
   MailAccountInfo,
   MailFolderId,
   MailInboxFilter,
+  MailOAuthStatus,
   MailSendInput,
   MailThread,
   MailThreadDetail,
@@ -696,8 +697,29 @@ export const api = {
   // Mail (Gmail OAuth + live proxy)
   mailStatus: () =>
     fetch("/api/mail/status").then((r) =>
-      json<{ oauthConfigured: boolean; accounts: MailAccountInfo[] }>(r),
+      json<{
+        oauthConfigured: boolean;
+        oauth: MailOAuthStatus;
+        accounts: MailAccountInfo[];
+      }>(r),
     ),
+  saveMailOAuthConfig: (input: { clientId?: string; clientSecret?: string }) =>
+    fetch("/api/mail/oauth/config", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    }).then((r) => json<MailOAuthStatus>(r)),
+  clearMailOAuthConfig: () =>
+    fetch("/api/mail/oauth/config", { method: "DELETE" }).then((r) => json<MailOAuthStatus>(r)),
+  connectMailPassword: (input: {
+    email: string;
+    password: string;
+    imapHost?: string;
+    imapPort?: number;
+    smtpHost?: string;
+    smtpPort?: number;
+    smtpSecure?: boolean;
+  }) => post<MailAccountInfo>("/api/mail/accounts/password", input),
   listMailAccounts: () => fetch("/api/mail/accounts").then((r) => json<MailAccountInfo[]>(r)),
   disconnectMailAccount: (id: string) =>
     fetch(`/api/mail/accounts/${encodeURIComponent(id)}`, { method: "DELETE" }).then((r) =>

@@ -24,7 +24,7 @@ if (marked && promptsOk && docsOk) {
   process.exit(0);
 }
 
-const result = spawnSync(process.execPath, ["scripts/setup.mts", "--skip-npm"], {
+const result = spawnSync("npm", ["run", "setup", "--", "--skip-npm"], {
   cwd: REPO_ROOT,
   stdio: "inherit",
   env: process.env,

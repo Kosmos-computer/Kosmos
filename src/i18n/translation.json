@@ -5384,10 +5384,10 @@
   },
   "APPS$SETTINGS_CONNECT_SOCIAL": {
     "en": "Connect social",
-    "es": "Connect social",
-    "de": "Connect social",
-    "ja": "Connect social",
-    "zh-CN": "Connect social"
+    "es": "Conectar red social",
+    "de": "Social verbinden",
+    "ja": "ソーシャルを接続",
+    "zh-CN": "连接社交账户"
   },
   "APPS$SETTINGS_CONNECT_TEAM_CHAT": {
     "en": "Connect team chat",
@@ -5832,52 +5832,122 @@
   },
   "APPS$SOCIAL_FOLLOW": {
     "en": "Follow",
-    "es": "Follow",
-    "de": "Follow",
-    "ja": "Follow",
-    "zh-CN": "Follow"
+    "es": "Seguir",
+    "de": "Folgen",
+    "ja": "フォロー",
+    "zh-CN": "关注"
   },
   "APPS$SOCIAL_WHO_TO_FOLLOW": {
     "en": "Who to follow",
-    "es": "Who to follow",
-    "de": "Who to follow",
-    "ja": "Who to follow",
-    "zh-CN": "Who to follow"
+    "es": "A quién seguir",
+    "de": "Wem folgen",
+    "ja": "おすすめユーザー",
+    "zh-CN": "推荐关注"
   },
   "APPS$SOCIAL_TRENDS_FOR_YOU": {
     "en": "Trends for you",
-    "es": "Trends for you",
-    "de": "Trends for you",
-    "ja": "Trends for you",
-    "zh-CN": "Trends for you"
+    "es": "Tendencias para ti",
+    "de": "Trends für dich",
+    "ja": "おすすめのトレンド",
+    "zh-CN": "为你推荐的趋势"
+  },
+  "APPS$SOCIAL_TRENDING_HASHTAGS": {
+    "en": "Trending hashtags",
+    "es": "Hashtags en tendencia",
+    "de": "Trending-Hashtags",
+    "ja": "トレンドのハッシュタグ",
+    "zh-CN": "热门标签"
+  },
+  "APPS$SOCIAL_DISCOVER_FEEDS": {
+    "en": "Discover feeds",
+    "es": "Descubrir feeds",
+    "de": "Feeds entdecken",
+    "ja": "フィードを見つける",
+    "zh-CN": "发现动态源"
+  },
+  "APPS$SOCIAL_TRENDING_LINKS": {
+    "en": "Trending links",
+    "es": "Enlaces en tendencia",
+    "de": "Trending-Links",
+    "ja": "トレンドのリンク",
+    "zh-CN": "热门链接"
+  },
+  "APPS$SOCIAL_YOUR_RELAYS": {
+    "en": "Your relays",
+    "es": "Tus relays",
+    "de": "Deine Relays",
+    "ja": "接続中のリレー",
+    "zh-CN": "你的中继"
+  },
+  "APPS$SOCIAL_SEARCH_PEOPLE": {
+    "en": "Search people",
+    "es": "Buscar personas",
+    "de": "Personen suchen",
+    "ja": "ユーザーを検索",
+    "zh-CN": "搜索用户"
+  },
+  "APPS$SOCIAL_SEARCH_RESULTS": {
+    "en": "Search results",
+    "es": "Resultados de búsqueda",
+    "de": "Suchergebnisse",
+    "ja": "検索結果",
+    "zh-CN": "搜索结果"
+  },
+  "APPS$SOCIAL_SEARCHING": {
+    "en": "Searching…",
+    "es": "Buscando…",
+    "de": "Suche…",
+    "ja": "検索中…",
+    "zh-CN": "正在搜索…"
+  },
+  "APPS$SOCIAL_NO_RESULTS": {
+    "en": "No people found",
+    "es": "No se encontraron personas",
+    "de": "Keine Personen gefunden",
+    "ja": "ユーザーが見つかりません",
+    "zh-CN": "未找到用户"
+  },
+  "APPS$SOCIAL_LOADING_SUGGESTIONS": {
+    "en": "Loading suggestions…",
+    "es": "Cargando sugerencias…",
+    "de": "Vorschläge werden geladen…",
+    "ja": "おすすめを読み込み中…",
+    "zh-CN": "正在加载推荐…"
+  },
+  "APPS$SOCIAL_NO_SUGGESTIONS": {
+    "en": "No suggestions right now",
+    "es": "No hay sugerencias por ahora",
+    "de": "Gerade keine Vorschläge",
+    "ja": "現在おすすめはありません",
+    "zh-CN": "暂无推荐"
   },
   "APPS$SOCIAL_CONNECT_ACCOUNT": {
     "en": "Connect account",
-    "es": "Connect account",
-    "de": "Connect account",
-    "ja": "Connect account",
-    "zh-CN": "Connect account"
+    "es": "Conectar cuenta",
+    "de": "Konto verbinden",
+    "ja": "アカウントを接続",
+    "zh-CN": "连接账户"
   },
   "APPS$SOCIAL_LINK_AN_ACCOUNT_TO_LOAD_YOUR_TIMELINE_AND_POST_FROM_KOSM": {
     "en": "Link an account to load your timeline and post from Kosmos.",
-    "es": "Link an account to load your timeline and post from Kosmos.",
-    "de": "Link an account to load your timeline and post from Kosmos.",
-    "ja": "Link an account to load your timeline and post from Kosmos.",
-    "zh-CN": "Link an account to load your timeline and post from Kosmos."
+    "es": "Vincula una cuenta para cargar tu timeline y publicar desde Kosmos.",
+    "de": "Verknüpfe ein Konto, um deine Timeline zu laden und aus Kosmos zu posten.",
+    "ja": "アカウントを連携すると、タイムラインの読み込みと Kosmos からの投稿ができます。",
+    "zh-CN": "关联账户后即可在 Kosmos 中加载时间线并发帖。"
   },
   "APPS$SOCIAL_FOLLOWING": {
     "en": "Following",
-    "es": "Following",
-    "de": "Following",
-    "ja": "Following",
-    "zh-CN": "Following"
+    "es": "Siguiendo",
+    "de": "Folge ich",
+    "ja": "フォロー中",
+    "zh-CN": "正在关注"
   },
   "APPS$SOCIAL_FOR_YOU": {
     "en": "For you",
-    "es": "For you",
-    "de": "For you",
-    "ja": "For you",
-    "zh-CN": "For you"
+    "es": "Para ti",
+    "de": "Für dich",
+    "ja": "おすすめ",
+    "zh-CN": "为你推荐"
   },
   "APPS$STARTUP_RESTART_PREVIEW": {
     "en": "Restart preview",
@@ -9500,10 +9570,10 @@
   },
   "APPS$SETTINGS_ACCOUNTS_LINKED_TO_GROUPS_AND_SOCIAL_WORKSPACES_OAUTH_AN": {
     "en": "Accounts linked to Groups and Social workspaces. OAuth and server-side token storage replace local stubs in a later phase.",
-    "es": "Accounts linked to Groups and Social workspaces. OAuth and server-side token storage replace local stubs in a later phase.",
-    "de": "Accounts linked to Groups and Social workspaces. OAuth and server-side token storage replace local stubs in a later phase.",
-    "ja": "Accounts linked to Groups and Social workspaces. OAuth and server-side token storage replace local stubs in a later phase.",
-    "zh-CN": "Accounts linked to Groups and Social workspaces. OAuth and server-side token storage replace local stubs in a later phase."
+    "es": "Cuentas vinculadas a Grupos y redes sociales. OAuth y el almacenamiento de tokens en el servidor reemplazarán los stubs locales más adelante.",
+    "de": "Mit Gruppen und Social verknüpfte Konten. OAuth und serverseitige Token-Speicherung ersetzen lokale Stubs in einer späteren Phase.",
+    "ja": "グループとソーシャルに連携したアカウントです。OAuth とサーバー側トークン保存は今後のフェーズでローカルの仮実装を置き換えます。",
+    "zh-CN": "已关联到群组和社交工作区的账户。OAuth 与服务端令牌存储将在后续阶段替换本地占位实现。"
   },
   "APPS$SETTINGS_RUNTIME": {
     "en": "Runtime",
@@ -10032,45 +10102,297 @@
   },
   "APPS$SOCIAL_VERIFIED": {
     "en": "Verified",
-    "es": "Verified",
-    "de": "Verified",
-    "ja": "Verified",
-    "zh-CN": "Verified"
+    "es": "Verificado",
+    "de": "Verifiziert",
+    "ja": "認証済み",
+    "zh-CN": "已认证"
   },
   "APPS$SOCIAL_SOCIAL_NETWORKS": {
     "en": "Social networks",
-    "es": "Social networks",
-    "de": "Social networks",
-    "ja": "Social networks",
-    "zh-CN": "Social networks"
+    "es": "Redes sociales",
+    "de": "Soziale Netzwerke",
+    "ja": "ソーシャルネットワーク",
+    "zh-CN": "社交网络"
   },
   "APPS$SOCIAL_CONNECT_ANOTHER_NETWORK": {
     "en": "Connect another network",
-    "es": "Connect another network",
-    "de": "Connect another network",
-    "ja": "Connect another network",
-    "zh-CN": "Connect another network"
+    "es": "Conectar otra red",
+    "de": "Weiteres Netzwerk verbinden",
+    "ja": "別のネットワークを接続",
+    "zh-CN": "连接其他网络"
   },
   "APPS$SOCIAL_COMPOSE_POST": {
     "en": "Compose post",
-    "es": "Compose post",
-    "de": "Compose post",
-    "ja": "Compose post",
-    "zh-CN": "Compose post"
+    "es": "Redactar publicación",
+    "de": "Beitrag verfassen",
+    "ja": "投稿を作成",
+    "zh-CN": "撰写帖子"
   },
   "APPS$SOCIAL_POST": {
     "en": "Post",
-    "es": "Post",
-    "de": "Post",
-    "ja": "Post",
-    "zh-CN": "Post"
+    "es": "Publicar",
+    "de": "Posten",
+    "ja": "投稿",
+    "zh-CN": "发帖"
   },
   "APPS$SOCIAL_WHAT_S_HAPPENING": {
     "en": "What's happening?",
-    "es": "What's happening?",
-    "de": "What's happening?",
-    "ja": "What's happening?",
-    "zh-CN": "What's happening?"
+    "es": "¿Qué está pasando?",
+    "de": "Was gibt’s Neues?",
+    "ja": "いまどうしてる？",
+    "zh-CN": "有什么新鲜事？"
+  },
+  "APPS$SOCIAL_UNFOLLOW": {
+    "en": "Unfollow",
+    "es": "Dejar de seguir",
+    "de": "Entfolgen",
+    "ja": "フォロー解除",
+    "zh-CN": "取消关注"
+  },
+  "APPS$SOCIAL_REPLY": {
+    "en": "Reply",
+    "es": "Responder",
+    "de": "Antworten",
+    "ja": "返信",
+    "zh-CN": "回复"
+  },
+  "APPS$SOCIAL_REPLY_PLACEHOLDER": {
+    "en": "Write a reply…",
+    "es": "Escribe una respuesta…",
+    "de": "Antwort schreiben…",
+    "ja": "返信を書く…",
+    "zh-CN": "写回复…"
+  },
+  "APPS$SOCIAL_LIKE": {
+    "en": "Like",
+    "es": "Me gusta",
+    "de": "Gefällt mir",
+    "ja": "いいね",
+    "zh-CN": "喜欢"
+  },
+  "APPS$SOCIAL_UNLIKE": {
+    "en": "Unlike",
+    "es": "Ya no me gusta",
+    "de": "Gefällt mir nicht mehr",
+    "ja": "いいねを取り消す",
+    "zh-CN": "取消喜欢"
+  },
+  "APPS$SOCIAL_REPOST": {
+    "en": "Repost",
+    "es": "Republicar",
+    "de": "Erneut posten",
+    "ja": "リポスト",
+    "zh-CN": "转发"
+  },
+  "APPS$SOCIAL_LOADING_FEED": {
+    "en": "Loading timeline…",
+    "es": "Cargando timeline…",
+    "de": "Timeline wird geladen…",
+    "ja": "タイムラインを読み込み中…",
+    "zh-CN": "正在加载时间线…"
+  },
+  "APPS$SOCIAL_EMPTY_FEED": {
+    "en": "No posts yet. Follow people on Bluesky or publish your first post.",
+    "es": "Aún no hay publicaciones. Sigue a personas en Bluesky o publica tu primer post.",
+    "de": "Noch keine Beiträge. Folge Personen auf Bluesky oder veröffentliche deinen ersten Post.",
+    "ja": "まだ投稿がありません。Bluesky でフォローするか、最初の投稿をしましょう。",
+    "zh-CN": "还没有帖子。在 Bluesky 上关注他人，或发布你的第一条帖子。"
+  },
+  "APPS$SOCIAL_DISCONNECT": {
+    "en": "Disconnect",
+    "es": "Desconectar",
+    "de": "Trennen",
+    "ja": "切断",
+    "zh-CN": "断开连接"
+  },
+  "APPS$SOCIAL_NAV": {
+    "en": "Bluesky navigation",
+    "es": "Navegación de Bluesky",
+    "de": "Bluesky-Navigation",
+    "ja": "Bluesky ナビゲーション",
+    "zh-CN": "Bluesky 导航"
+  },
+  "APPS$SOCIAL_NAV_NEW_POST": {
+    "en": "New Post",
+    "es": "Nueva publicación",
+    "de": "Neuer Beitrag",
+    "ja": "新規投稿",
+    "zh-CN": "新帖子"
+  },
+  "APPS$SOCIAL_NAV_HOME": {
+    "en": "Home",
+    "es": "Inicio",
+    "de": "Startseite",
+    "ja": "ホーム",
+    "zh-CN": "首页"
+  },
+  "APPS$SOCIAL_NAV_EXPLORE": {
+    "en": "Explore",
+    "es": "Explorar",
+    "de": "Entdecken",
+    "ja": "検索",
+    "zh-CN": "探索"
+  },
+  "APPS$SOCIAL_NAV_NOTIFICATIONS": {
+    "en": "Notifications",
+    "es": "Notificaciones",
+    "de": "Benachrichtigungen",
+    "ja": "通知",
+    "zh-CN": "通知"
+  },
+  "APPS$SOCIAL_NAV_CHAT": {
+    "en": "Chat",
+    "es": "Chat",
+    "de": "Chat",
+    "ja": "チャット",
+    "zh-CN": "聊天"
+  },
+  "APPS$SOCIAL_NAV_FEEDS": {
+    "en": "Feeds",
+    "es": "Feeds",
+    "de": "Feeds",
+    "ja": "フィード",
+    "zh-CN": "动态源"
+  },
+  "APPS$SOCIAL_NAV_LISTS": {
+    "en": "Lists",
+    "es": "Listas",
+    "de": "Listen",
+    "ja": "リスト",
+    "zh-CN": "列表"
+  },
+  "APPS$SOCIAL_NAV_SAVED": {
+    "en": "Saved",
+    "es": "Guardados",
+    "de": "Gespeichert",
+    "ja": "保存済み",
+    "zh-CN": "已保存"
+  },
+  "APPS$SOCIAL_NAV_PROFILE": {
+    "en": "Profile",
+    "es": "Perfil",
+    "de": "Profil",
+    "ja": "プロフィール",
+    "zh-CN": "个人资料"
+  },
+  "APPS$SOCIAL_NAV_SETTINGS": {
+    "en": "Settings",
+    "es": "Ajustes",
+    "de": "Einstellungen",
+    "ja": "設定",
+    "zh-CN": "设置"
+  },
+  "APPS$SOCIAL_SECTION_COMING_SOON": {
+    "en": "Coming soon — this section isn’t wired to Bluesky yet.",
+    "es": "Próximamente: esta sección aún no está conectada a Bluesky.",
+    "de": "Demnächst — dieser Bereich ist noch nicht mit Bluesky verbunden.",
+    "ja": "近日公開 — このセクションはまだ Bluesky に接続されていません。",
+    "zh-CN": "即将推出 — 此部分尚未接入 Bluesky。"
+  },
+  "APPS$SOCIAL_PROFILE_CONNECTED_AS": {
+    "en": "Connected as",
+    "es": "Conectado como",
+    "de": "Verbunden als",
+    "ja": "接続中",
+    "zh-CN": "已连接为"
+  },
+  "APPS$SOCIAL_BACK": {
+    "en": "Back",
+    "es": "Atrás",
+    "de": "Zurück",
+    "ja": "戻る",
+    "zh-CN": "返回"
+  },
+  "APPS$SOCIAL_FOLLOWERS": {
+    "en": "Followers",
+    "es": "Seguidores",
+    "de": "Follower",
+    "ja": "フォロワー",
+    "zh-CN": "关注者"
+  },
+  "APPS$SOCIAL_FOLLOWING_COUNT": {
+    "en": "Following",
+    "es": "Seguidos",
+    "de": "Folge ich",
+    "ja": "フォロー中",
+    "zh-CN": "正在关注"
+  },
+  "APPS$SOCIAL_POSTS_COUNT": {
+    "en": "Posts",
+    "es": "Publicaciones",
+    "de": "Beiträge",
+    "ja": "投稿",
+    "zh-CN": "帖子"
+  },
+  "APPS$SOCIAL_THREAD": {
+    "en": "Post",
+    "es": "Publicación",
+    "de": "Beitrag",
+    "ja": "投稿",
+    "zh-CN": "帖子"
+  },
+  "APPS$SOCIAL_REPLIES": {
+    "en": "Replies",
+    "es": "Respuestas",
+    "de": "Antworten",
+    "ja": "返信",
+    "zh-CN": "回复"
+  },
+  "APPS$SOCIAL_LOADING_PROFILE": {
+    "en": "Loading profile…",
+    "es": "Cargando perfil…",
+    "de": "Profil wird geladen…",
+    "ja": "プロフィールを読み込み中…",
+    "zh-CN": "正在加载资料…"
+  },
+  "APPS$SOCIAL_LOADING_THREAD": {
+    "en": "Loading thread…",
+    "es": "Cargando hilo…",
+    "de": "Thread wird geladen…",
+    "ja": "スレッドを読み込み中…",
+    "zh-CN": "正在加载帖子…"
+  },
+  "APPS$SOCIAL_OPEN_POST": {
+    "en": "Open post",
+    "es": "Abrir publicación",
+    "de": "Beitrag öffnen",
+    "ja": "投稿を開く",
+    "zh-CN": "打开帖子"
+  },
+  "APPS$SOCIAL_VIEW_PROFILE": {
+    "en": "View profile",
+    "es": "Ver perfil",
+    "de": "Profil ansehen",
+    "ja": "プロフィールを表示",
+    "zh-CN": "查看资料"
+  },
+  "COMPONENTS$PATTERNS_BLUESKY_HANDLE": {
+    "en": "Bluesky handle",
+    "es": "Usuario de Bluesky",
+    "de": "Bluesky-Handle",
+    "ja": "Bluesky ハンドル",
+    "zh-CN": "Bluesky 用户名"
+  },
+  "COMPONENTS$PATTERNS_APP_PASSWORD": {
+    "en": "App password",
+    "es": "Contraseña de app",
+    "de": "App-Passwort",
+    "ja": "アプリパスワード",
+    "zh-CN": "应用密码"
+  },
+  "COMPONENTS$PATTERNS_BLUESKY_APP_PASSWORD_HINT": {
+    "en": "Create an app password at bsky.app → Settings → App Passwords. OAuth replaces this later.",
+    "es": "Crea una contraseña de app en bsky.app → Ajustes → App Passwords. OAuth lo reemplazará más adelante.",
+    "de": "Erstelle ein App-Passwort unter bsky.app → Einstellungen → App-Passwörter. OAuth ersetzt das später.",
+    "ja": "bsky.app → 設定 → アプリパスワード でアプリパスワードを作成してください。後で OAuth に置き換わります。",
+    "zh-CN": "在 bsky.app → 设置 → 应用密码 创建应用密码。之后将由 OAuth 替代。"
+  },
+  "COMPONENTS$PATTERNS_HANDLE_PLACEHOLDER": {
+    "en": "you.bsky.social",
+    "es": "you.bsky.social",
+    "de": "you.bsky.social",
+    "ja": "you.bsky.social",
+    "zh-CN": "you.bsky.social"
   },
   "APPS$STARTUP_ENABLE_DOCKER": {
     "en": "Enable Docker",

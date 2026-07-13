@@ -1,0 +1,18 @@
+{
+  "id": "core.slides",
+  "name": "Slides",
+  "version": "0.1.0",
+  "description": "Presentations stored in the OS file store as JSON. Implements os.slides@1.",
+  "icon": "presentation",
+  "tier": "code",
+  "entry": { "kind": "bundle", "path": "slides/dist" },
+  "implements": ["os.slides@1"],
+  "permissions": [
+    { "kind": "contract", "id": "os.files@1", "access": "read" },
+    { "kind": "contract", "id": "os.files@1", "access": "write" },
+    { "kind": "contract", "id": "os.slides@1", "access": "read" },
+    { "kind": "contract", "id": "os.slides@1", "access": "write" },
+    { "kind": "shell", "features": ["notify"] }
+  ],
+  "events": { "subscribes": ["files.changed"] }
+}

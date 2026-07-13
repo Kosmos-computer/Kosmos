@@ -4,7 +4,7 @@ import { EMPTY_SHEET_JSON } from "@shared/capabilities/sheets";
 import { api } from "../../lib/api";
 import { systemLaunchKey, useDocumentLaunchStore } from "../../os/documentLaunchStore";
 import { useOsStore } from "../../os/osStore";
-import { SHEETS_WORKBOOKS } from "./sheetsMock";
+import { evaluateFormula } from "@shared/sheetFormula";
 import {
   cellAddress,
   formatCellDisplay,
@@ -29,14 +29,23 @@ function cellsBySheet(workbook: Workbook): Record<string, SheetCells> {
   return Object.fromEntries(workbook.sheets.map((sheet) => [sheet.id, cloneCells(sheet.cells)]));
 }
 
-/** Sheets editor — loads workbooks from Drive when available, falls back to mock data. */
+/** Sheets editor — Drive-backed workbooks with live formula recalculation. */
 export function useSheets() {
   const notify = useOsStore((s) => s.notify);
   const pendingLaunchId = useDocumentLaunchStore((s) => s.peek(systemLaunchKey("sheets")));
   const consumeLaunch = useDocumentLaunchStore((s) => s.consume);
 
-  const [workbooks, setWorkbooks] = useState<Workbook[]>(SHEETS_WORKBOOKS);
-  const [activeWorkbookId, setActiveWorkbookId] = useState(SHEETS_WORKBOOKS[0]?.id ?? "");
+  const emptyWorkbook = useMemo(
+    (): Workbook => ({
+      id: "local",
+      title: "Untitled spreadsheet",
+      sheets: EMPTY_SHEET_JSON.sheets.map((sheet) => ({ ...sheet, cells: {} })),
+    }),
+    [],
+  );
+
+  const [workbooks, setWorkbooks] = useState<Workbook[]>([]);
+  const [activeWorkbookId, setActiveWorkbookId] = useState("");
   const [openFileId, setOpenFileId] = useState<string | null>(null);
   const [location, setLocation] = useState<SheetsLocation>("home");
   const [sidebarWidth, setSidebarWidth] = useState(240);
@@ -44,24 +53,25 @@ export function useSheets() {
   const [error, setError] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [importWarnings, setImportWarnings] = useState<string[]>([]);
 
-  const [activeSheetId, setActiveSheetId] = useState(SHEETS_WORKBOOKS[0]?.sheets[0]?.id ?? "");
-  const [sheetCells, setSheetCells] = useState<Record<string, SheetCells>>(() =>
-    cellsBySheet(SHEETS_WORKBOOKS[0] ?? { id: "", title: "", sheets: [] }),
-  );
+  const [activeSheetId, setActiveSheetId] = useState(emptyWorkbook.sheets[0]?.id ?? "");
+  const [sheetCells, setSheetCells] = useState<Record<string, SheetCells>>(() => cellsBySheet(emptyWorkbook));
   const [selection, setSelection] = useState<CellSelection>({ col: 0, row: 0 });
   const [formulaDraft, setFormulaDraft] = useState<string | null>(null);
-  const [starred, setStarred] = useState(Boolean(SHEETS_WORKBOOKS[0]?.starred));
-  const [history, setHistory] = useState<Record<string, SheetCells>[]>([sheetCells]);
+  const [starred, setStarredState] = useState(false);
+  const [history, setHistory] = useState<Record<string, SheetCells>[]>(() => [cellsBySheet(emptyWorkbook)]);
   const [historyIndex, setHistoryIndex] = useState(0);
 
-  const activeWorkbook = workbooks.find((workbook) => workbook.id === activeWorkbookId) ?? workbooks[0];
+  const activeWorkbook = workbooks.find((workbook) => workbook.id === activeWorkbookId) ?? workbooks[0] ?? emptyWorkbook;
   const activeSheet =
-    activeWorkbook?.sheets.find((sheet) => sheet.id === activeSheetId) ?? activeWorkbook?.sheets[0];
+    activeWorkbook.sheets.find((sheet) => sheet.id === activeSheetId) ?? activeWorkbook.sheets[0];
   const cells = activeSheet ? sheetCells[activeSheet.id] ?? {} : {};
   const selectedAddress = cellAddress(selection.col, selection.row);
   const selectedCell = cells[selectedAddress];
   const formulaValue = formulaDraft ?? selectedCell?.formula ?? String(selectedCell?.value ?? "");
+  const selectedEvaluated =
+    selectedCell?.formula?.startsWith("=") ? evaluateFormula(selectedCell.formula, cells) : undefined;
 
   const activeFormats = useMemo(() => {
     const formats = new Set<string>();
@@ -82,7 +92,7 @@ export function useSheets() {
     setSheetCells(nextCells);
     setSelection({ col: 0, row: 0 });
     setFormulaDraft(null);
-    setStarred(Boolean(workbook.starred));
+    setStarredState(Boolean(workbook.starred));
     setHistory([nextCells]);
     setHistoryIndex(0);
     setDirty(false);
@@ -99,14 +109,9 @@ export function useSheets() {
         starred: entry.starred,
         sheets: [{ id: "sheet-1", name: "Sheet1", cells: {} }],
       }));
-      const driveIds = new Set(driveWorkbooks.map((workbook) => workbook.id));
-      const merged = [
-        ...driveWorkbooks,
-        ...SHEETS_WORKBOOKS.filter((workbook) => !driveIds.has(workbook.id)),
-      ];
-      setWorkbooks(merged.length > 0 ? merged : SHEETS_WORKBOOKS);
+      setWorkbooks(driveWorkbooks);
     } catch {
-      setWorkbooks(SHEETS_WORKBOOKS);
+      setWorkbooks([]);
     }
   }, []);
 
@@ -122,6 +127,7 @@ export function useSheets() {
         });
         loadWorkbookState(workbook, fileId);
         setError(null);
+        setImportWarnings([]);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Could not open spreadsheet");
       } finally {
@@ -142,16 +148,9 @@ export function useSheets() {
 
   const selectWorkbook = useCallback(
     (workbookId: string) => {
-      const workbook = workbooks.find((item) => item.id === workbookId);
-      if (!workbook) return;
-      const isDriveFile = !SHEETS_WORKBOOKS.some((mock) => mock.id === workbookId);
-      if (isDriveFile) {
-        void openWorkbookFile(workbookId);
-        return;
-      }
-      loadWorkbookState(workbook, null);
+      void openWorkbookFile(workbookId);
     },
-    [loadWorkbookState, openWorkbookFile, workbooks],
+    [openWorkbookFile],
   );
 
   const pushHistory = useCallback(
@@ -289,28 +288,42 @@ export function useSheets() {
     } finally {
       setSaving(false);
     }
-  }, [
-    activeSheet,
-    activeWorkbook,
-    notify,
-    openFileId,
-    refreshDriveWorkbooks,
-    sheetCells,
-    starred,
-  ]);
+  }, [activeSheet, activeWorkbook, notify, openFileId, refreshDriveWorkbooks, sheetCells, starred]);
 
   const createWorkbook = useCallback(async () => {
     const name = window.prompt("Spreadsheet name:", "Untitled spreadsheet");
     if (!name?.trim()) return;
-    const workbook: Workbook = {
-      id: `new-${Date.now()}`,
-      title: name.trim(),
-      sheets: EMPTY_SHEET_JSON.sheets.map((sheet) => ({ ...sheet, cells: {} })),
+    try {
+      const created = await api.createDriveEntry({
+        name: `${name.trim()}.sheet.json`,
+        kind: "file",
+        mimeType: SHEET_MIME,
+        content: serializeWorkbook({
+          id: "new",
+          title: name.trim(),
+          sheets: EMPTY_SHEET_JSON.sheets.map((sheet) => ({ ...sheet, cells: {} })),
+        }),
+      });
+      await openWorkbookFile(created.id);
+      notify(`Created ${created.name}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not create spreadsheet");
+    }
+  }, [notify, openWorkbookFile]);
+
+  const addSheet = useCallback(() => {
+    if (!activeWorkbook) return;
+    const index = activeWorkbook.sheets.length + 1;
+    const id = `sheet-${Date.now()}`;
+    const next: Workbook = {
+      ...activeWorkbook,
+      sheets: [...activeWorkbook.sheets, { id, name: `Sheet${index}`, cells: {} }],
     };
-    loadWorkbookState(workbook, null);
-    setWorkbooks((prev) => [workbook, ...prev]);
+    setWorkbooks((prev) => prev.map((w) => (w.id === next.id ? next : w)));
+    setSheetCells((prev) => ({ ...prev, [id]: {} }));
+    setActiveSheetId(id);
     setDirty(true);
-  }, [loadWorkbookState]);
+  }, [activeWorkbook]);
 
   return {
     workbooks,
@@ -335,7 +348,7 @@ export function useSheets() {
     },
     selectedAddress,
     selectedCell,
-    selectedDisplay: formatCellDisplay(selectedCell),
+    selectedDisplay: formatCellDisplay(selectedCell, selectedEvaluated),
     formulaValue,
     setFormulaDraft,
     commitFormula,
@@ -345,15 +358,20 @@ export function useSheets() {
     canUndo: historyIndex > 0,
     canRedo: historyIndex < history.length - 1,
     starred,
-    setStarred,
+    setStarred: (value: boolean | ((prev: boolean) => boolean)) => {
+      setStarredState(value);
+      setDirty(true);
+    },
     selectWorkbook,
     createWorkbook,
     saveWorkbook,
+    addSheet,
     dirty,
     saving,
     loading,
     error,
     openFileId,
+    importWarnings,
   };
 }
 

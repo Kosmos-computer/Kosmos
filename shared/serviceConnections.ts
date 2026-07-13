@@ -6,7 +6,7 @@
 export type ConnectionDomain = "teams" | "social" | "video" | "podcast";
 
 export type TeamProviderId = "mattermost" | "slack" | "matrix";
-export type SocialProviderId = "bluesky" | "mastodon" | "nostr";
+export type SocialProviderId = "bluesky" | "mastodon" | "nostr" | "twitter" | "facebook";
 export type VideoProviderId = "youtube" | "vimeo";
 export type PodcastProviderId = "spotify" | "apple-podcasts" | "audible";
 export type ServiceProviderId =
@@ -40,6 +40,8 @@ export interface ServiceProviderPreset {
   requiresInstance: boolean;
   /** Personal access token / app password for stub connect (OAuth later). */
   requiresToken: boolean;
+  /** Require account hint / handle (Bluesky handle). */
+  requiresAccountHint?: boolean;
   accent: string;
   initials: string;
 }
@@ -82,6 +84,7 @@ export const SERVICE_PROVIDER_PRESETS: ServiceProviderPreset[] = [
     hint: "AT Protocol social feed — app password for now, OAuth later.",
     requiresInstance: false,
     requiresToken: true,
+    requiresAccountHint: true,
     accent: "#0085ff",
     initials: "BS",
   },
@@ -89,7 +92,7 @@ export const SERVICE_PROVIDER_PRESETS: ServiceProviderPreset[] = [
     id: "mastodon",
     domain: "social",
     label: "Mastodon",
-    hint: "Pick your instance, then authorize or paste an access token.",
+    hint: "Instance URL + access token (Preferences → Development → New application).",
     requiresInstance: true,
     requiresToken: true,
     accent: "#6364ff",
@@ -99,11 +102,31 @@ export const SERVICE_PROVIDER_PRESETS: ServiceProviderPreset[] = [
     id: "nostr",
     domain: "social",
     label: "Nostr",
-    hint: "Relays + nsec/npub — local engine wiring comes later.",
+    hint: "Paste your nsec; optional relays (Snort defaults if blank). Vault-backed.",
     requiresInstance: false,
     requiresToken: true,
     accent: "#8b5cf6",
     initials: "No",
+  },
+  {
+    id: "twitter",
+    domain: "social",
+    label: "X (Twitter)",
+    hint: "Paste an X OAuth 2.0 user access token (developer.x.com — tweet.read/write, users.read).",
+    requiresInstance: false,
+    requiresToken: true,
+    accent: "#000000",
+    initials: "X",
+  },
+  {
+    id: "facebook",
+    domain: "social",
+    label: "Facebook",
+    hint: "Paste a Graph API Page or user access token; optional Page ID for Page posting.",
+    requiresInstance: false,
+    requiresToken: true,
+    accent: "#1877f2",
+    initials: "Fb",
   },
   {
     id: "youtube",

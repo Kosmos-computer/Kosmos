@@ -7,7 +7,7 @@ import { SidebarPane } from "../../components/patterns";
 import { SheetGridView } from "./SheetGridView";
 import { SheetsSidebar } from "./SheetsSidebar";
 import { FormulaBar, SheetsToolbar } from "./SheetsToolbar";
-import { formatCellDisplay, SHEETS_MENU_ITEMS } from "./types";
+import { SHEETS_MENU_ITEMS } from "./types";
 import { useSheets } from "./useSheets";
 import { useTranslation } from "react-i18next";
 
@@ -111,7 +111,7 @@ export function SheetsApp() {
 
         <footer className="arco-sheets__sheet-tabs">
           <div className="arco-sheets__tab-controls">
-            <Button variant="ghost" size="icon" aria-label={i18n.t(I18nKey.APPS$SHEETS_ADD_SHEET)}>
+            <Button variant="ghost" size="icon" aria-label={i18n.t(I18nKey.APPS$SHEETS_ADD_SHEET)} onClick={() => sheets.addSheet()}>
               <Plus size={15} />
             </Button>
             <button type="button" className="arco-sheets__all-sheets-btn" aria-label={i18n.t(I18nKey.APPS$SHEETS_ALL_SHEETS)}>
@@ -138,7 +138,7 @@ export function SheetsApp() {
             })}
           </div>
           <div className="arco-sheets__sheet-summary">
-            {sheets.selectedCell ? formatCellDisplay(sheets.selectedCell) : "Select a cell"}
+            {sheets.selectedCell ? sheets.selectedDisplay : "Select a cell"}
           </div>
         </footer>
       </div>

@@ -11,6 +11,7 @@
  *   POST /api/exec                — terminal command runner
  *   GET/PUT /api/settings         — LLM provider config + shell prefs
  *   GET/POST /api/mail/*          — Gmail OAuth + live mail proxy
+ *   GET/POST /api/social/*        — Bluesky/Mastodon/Nostr live social proxy
  *
  * In production it also serves the built shell from dist/.
  */
@@ -170,6 +171,7 @@ import {
 } from "./github/githubOAuth.js";
 import { githubGateway } from "./github/githubGateway.js";
 import { githubStore } from "./github/githubStore.js";
+import { socialGateway } from "./social/socialGateway.js";
 import { getOpsStatus } from "./ops/deployOps.js";
 import { startSelfHeal } from "./ops/selfHeal.js";
 
@@ -2098,6 +2100,276 @@ app.get("/api/github/oauth/callback", async (c) => {
   } catch (err) {
     const message = err instanceof Error ? err.message : "oauth_failed";
     return c.redirect(`${githubWebOriginAfterOAuth()}/?githubError=${encodeURIComponent(message)}`);
+  }
+});
+
+// ── Social (Bluesky / Mastodon / Nostr / X / Facebook live proxy) ─────────────
+
+app.get("/api/social/status", (c) => {
+  return c.json(socialGateway.status(currentUser(c).id));
+});
+
+app.get("/api/social/accounts", (c) => c.json(socialGateway.listAccounts(currentUser(c).id)));
+
+app.delete("/api/social/accounts/:id", async (c) => {
+  const ok = socialGateway.disconnect(currentUser(c).id, c.req.param("id"));
+  if (!ok) return c.json({ error: "Not found" }, 404);
+  return c.json({ ok: true });
+});
+
+app.post("/api/social/accounts/bluesky", async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as {
+    handle?: string;
+    appPassword?: string;
+    service?: string;
+  };
+  try {
+    const account = await socialGateway.connectWithAppPassword(currentUser(c).id, {
+      handle: String(body.handle ?? ""),
+      appPassword: String(body.appPassword ?? ""),
+      service: body.service,
+    });
+    return c.json(account);
+  } catch (err) {
+    return c.json(
+      { error: err instanceof Error ? err.message : "Could not connect Bluesky account" },
+      400,
+    );
+  }
+});
+
+app.post("/api/social/accounts/mastodon", async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as {
+    instanceUrl?: string;
+    accessToken?: string;
+  };
+  try {
+    const account = await socialGateway.connectMastodon(currentUser(c).id, {
+      instanceUrl: String(body.instanceUrl ?? ""),
+      accessToken: String(body.accessToken ?? ""),
+    });
+    return c.json(account);
+  } catch (err) {
+    return c.json(
+      { error: err instanceof Error ? err.message : "Could not connect Mastodon account" },
+      400,
+    );
+  }
+});
+
+app.post("/api/social/accounts/nostr", async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as {
+    nsec?: string;
+    relays?: string[] | string;
+  };
+  const relays = Array.isArray(body.relays)
+    ? body.relays.map(String)
+    : String(body.relays ?? "")
+        .split(/[\s,]+/)
+        .filter(Boolean);
+  try {
+    const account = await socialGateway.connectWithNostrKey(currentUser(c).id, {
+      nsec: String(body.nsec ?? ""),
+      relays,
+    });
+    return c.json(account);
+  } catch (err) {
+    return c.json(
+      { error: err instanceof Error ? err.message : "Could not connect Nostr account" },
+      400,
+    );
+  }
+});
+
+app.post("/api/social/accounts/twitter", async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as { accessToken?: string };
+  try {
+    const account = await socialGateway.connectTwitter(currentUser(c).id, {
+      accessToken: String(body.accessToken ?? ""),
+    });
+    return c.json(account);
+  } catch (err) {
+    return c.json(
+      { error: err instanceof Error ? err.message : "Could not connect X/Twitter account" },
+      400,
+    );
+  }
+});
+
+app.post("/api/social/accounts/facebook", async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as {
+    accessToken?: string;
+    pageId?: string;
+  };
+  try {
+    const account = await socialGateway.connectFacebook(currentUser(c).id, {
+      accessToken: String(body.accessToken ?? ""),
+      pageId: body.pageId ? String(body.pageId) : undefined,
+    });
+    return c.json(account);
+  } catch (err) {
+    return c.json(
+      { error: err instanceof Error ? err.message : "Could not connect Facebook account" },
+      400,
+    );
+  }
+});
+
+app.get("/api/social/feed", async (c) => {
+  const cursor = c.req.query("cursor") ?? undefined;
+  const accountId = c.req.query("accountId") ?? undefined;
+  try {
+    return c.json(await socialGateway.getHomeFeed(currentUser(c).id, { cursor, accountId }));
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Could not load feed" }, 502);
+  }
+});
+
+app.get("/api/social/profile", async (c) => {
+  const actor = c.req.query("actor") ?? "";
+  const cursor = c.req.query("cursor") ?? undefined;
+  const accountId = c.req.query("accountId") ?? undefined;
+  try {
+    return c.json(
+      await socialGateway.getProfile(currentUser(c).id, { actor, cursor, accountId }),
+    );
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Could not load profile" }, 502);
+  }
+});
+
+app.get("/api/social/thread", async (c) => {
+  const uri = c.req.query("uri") ?? "";
+  const accountId = c.req.query("accountId") ?? undefined;
+  try {
+    return c.json(await socialGateway.getThread(currentUser(c).id, { uri, accountId }));
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Could not load thread" }, 502);
+  }
+});
+
+app.get("/api/social/sidebar", async (c) => {
+  const accountId = c.req.query("accountId") ?? undefined;
+  try {
+    return c.json(await socialGateway.getSidebar(currentUser(c).id, { accountId }));
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Could not load sidebar" }, 502);
+  }
+});
+
+app.get("/api/social/search", async (c) => {
+  const query = c.req.query("q") ?? "";
+  const accountId = c.req.query("accountId") ?? undefined;
+  try {
+    return c.json(await socialGateway.searchActors(currentUser(c).id, { query, accountId }));
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Could not search" }, 502);
+  }
+});
+
+app.post("/api/social/posts", async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as { text?: string; accountId?: string };
+  try {
+    return c.json(
+      await socialGateway.createPost(currentUser(c).id, {
+        text: String(body.text ?? ""),
+        accountId: body.accountId,
+      }),
+    );
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Could not create post" }, 400);
+  }
+});
+
+app.post("/api/social/posts/reply", async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as {
+    text?: string;
+    parentUri?: string;
+    parentCid?: string;
+    rootUri?: string;
+    rootCid?: string;
+    accountId?: string;
+  };
+  try {
+    return c.json(
+      await socialGateway.replyToPost(currentUser(c).id, {
+        text: String(body.text ?? ""),
+        parentUri: String(body.parentUri ?? ""),
+        parentCid: String(body.parentCid ?? ""),
+        rootUri: String(body.rootUri ?? ""),
+        rootCid: String(body.rootCid ?? ""),
+        accountId: body.accountId,
+      }),
+    );
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Could not reply" }, 400);
+  }
+});
+
+app.post("/api/social/posts/like", async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as {
+    uri?: string;
+    cid?: string;
+    unlike?: boolean;
+    likeUri?: string;
+    accountId?: string;
+  };
+  try {
+    return c.json(
+      await socialGateway.likePost(currentUser(c).id, {
+        uri: String(body.uri ?? ""),
+        cid: String(body.cid ?? ""),
+        unlike: Boolean(body.unlike),
+        likeUri: body.likeUri,
+        accountId: body.accountId,
+      }),
+    );
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Could not like post" }, 400);
+  }
+});
+
+app.post("/api/social/posts/repost", async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as {
+    uri?: string;
+    cid?: string;
+    unrepost?: boolean;
+    repostUri?: string;
+    accountId?: string;
+  };
+  try {
+    return c.json(
+      await socialGateway.repostPost(currentUser(c).id, {
+        uri: String(body.uri ?? ""),
+        cid: String(body.cid ?? ""),
+        unrepost: Boolean(body.unrepost),
+        repostUri: body.repostUri,
+        accountId: body.accountId,
+      }),
+    );
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Could not repost" }, 400);
+  }
+});
+
+app.post("/api/social/actors/follow", async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as {
+    did?: string;
+    unfollow?: boolean;
+    followUri?: string;
+    accountId?: string;
+  };
+  try {
+    return c.json(
+      await socialGateway.followActor(currentUser(c).id, {
+        did: String(body.did ?? ""),
+        unfollow: Boolean(body.unfollow),
+        followUri: body.followUri,
+        accountId: body.accountId,
+      }),
+    );
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Could not follow" }, 400);
   }
 });
 

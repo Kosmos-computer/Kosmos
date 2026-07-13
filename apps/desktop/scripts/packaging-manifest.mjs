@@ -10,7 +10,7 @@ export const COPY_PATHS = [
   "package-lock.json",
 ];
 
-export const APP_DIRS = ["calculator", "calendar", "docs", "drive", "menubar-tasks"];
+export const APP_DIRS = ["calculator", "calendar", "docs", "drive", "menubar-tasks", "timer"];
 
 /** Paths that must exist after staging — relative to the arco runtime root. */
 export const RUNTIME_REQUIRED = [

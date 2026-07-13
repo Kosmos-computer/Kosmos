@@ -75,6 +75,25 @@ import type {
   MailThreadDetail,
 } from "@shared/mail";
 import type { GitHubAccountInfo, GitHubRepoSummary } from "@shared/github";
+import type {
+  SocialAccountInfo,
+  SocialBlueskyConnectInput,
+  SocialCreatePostInput,
+  SocialFacebookConnectInput,
+  SocialFeedResponse,
+  SocialFollowInput,
+  SocialLikeInput,
+  SocialMastodonConnectInput,
+  SocialNostrConnectInput,
+  SocialProfileResponse,
+  SocialReplyInput,
+  SocialRepostInput,
+  SocialSearchResponse,
+  SocialSidebarResponse,
+  SocialStatusResponse,
+  SocialThreadResponse,
+  SocialTwitterConnectInput,
+} from "@shared/social";
 
 /** GET /api/models — the registry and the slot table in one payload. */
 export interface ModelsResponse {
@@ -108,13 +127,33 @@ function broadcastAuthFailure(body: string): void {
   window.dispatchEvent(new CustomEvent<AuthFailureCode>("arco:auth-failure", { detail: code }));
 }
 
+async function readJsonBody<T>(res: Response): Promise<T> {
+  const body = await res.text().catch(() => "");
+  if (!body.trim()) {
+    throw new Error(
+      res.ok
+        ? `Empty response from ${res.url || "API"}`
+        : `${res.status} ${res.statusText}: empty response from ${res.url || "API"}`,
+    );
+  }
+  try {
+    return JSON.parse(body) as T;
+  } catch {
+    throw new Error(
+      res.ok
+        ? `Invalid JSON from ${res.url || "API"}: ${body.slice(0, 120)}`
+        : `${res.status} ${res.statusText}: ${body.slice(0, 200)}`,
+    );
+  }
+}
+
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     if (res.status === 401 && !res.url.includes("/api/auth/")) broadcastAuthFailure(body);
     throw new Error(`${res.status} ${res.statusText}${body ? `: ${body.slice(0, 200)}` : ""}`);
   }
-  return res.json() as Promise<T>;
+  return readJsonBody<T>(res);
 }
 
 /** POST JSON helper — the auth routes are all small JSON round-trips. */
@@ -575,7 +614,7 @@ export const api = {
       headers: { "Content-Type": "application/json", "x-app-token": token },
       body: JSON.stringify({ method, params }),
     }).then(async (res) => {
-      const data = (await res.json()) as { result?: unknown; error?: string };
+      const data = await readJsonBody<{ result?: unknown; error?: string }>(res);
       if (!res.ok || data.error) throw new Error(data.error ?? "Bridge call failed");
       return data.result;
     }),
@@ -778,6 +817,73 @@ export const api = {
   connectGitHub: () => {
     window.location.href = "/api/github/oauth/start";
   },
+
+  // Social (Bluesky / Mastodon / Nostr / X / Facebook live proxy)
+  socialStatus: () =>
+    fetch("/api/social/status").then((r) => json<SocialStatusResponse>(r)),
+  connectBluesky: (input: SocialBlueskyConnectInput) =>
+    post<SocialAccountInfo>("/api/social/accounts/bluesky", input),
+  connectMastodon: (input: SocialMastodonConnectInput) =>
+    post<SocialAccountInfo>("/api/social/accounts/mastodon", input),
+  connectNostr: (input: SocialNostrConnectInput) =>
+    post<SocialAccountInfo>("/api/social/accounts/nostr", input),
+  connectTwitter: (input: SocialTwitterConnectInput) =>
+    post<SocialAccountInfo>("/api/social/accounts/twitter", input),
+  connectFacebook: (input: SocialFacebookConnectInput) =>
+    post<SocialAccountInfo>("/api/social/accounts/facebook", input),
+  disconnectSocialAccount: (id: string) =>
+    fetch(`/api/social/accounts/${encodeURIComponent(id)}`, { method: "DELETE" }).then((r) =>
+      json<{ ok: true }>(r),
+    ),
+  listSocialFeed: (params: { cursor?: string; accountId?: string } = {}) => {
+    const search = new URLSearchParams();
+    if (params.cursor) search.set("cursor", params.cursor);
+    if (params.accountId) search.set("accountId", params.accountId);
+    const suffix = search.toString();
+    return fetch(`/api/social/feed${suffix ? `?${suffix}` : ""}`).then((r) =>
+      json<SocialFeedResponse>(r),
+    );
+  },
+  getSocialProfile: (params: { actor: string; cursor?: string; accountId?: string }) => {
+    const search = new URLSearchParams({ actor: params.actor });
+    if (params.cursor) search.set("cursor", params.cursor);
+    if (params.accountId) search.set("accountId", params.accountId);
+    return fetch(`/api/social/profile?${search.toString()}`).then((r) =>
+      json<SocialProfileResponse>(r),
+    );
+  },
+  getSocialThread: (params: { uri: string; accountId?: string }) => {
+    const search = new URLSearchParams({ uri: params.uri });
+    if (params.accountId) search.set("accountId", params.accountId);
+    return fetch(`/api/social/thread?${search.toString()}`).then((r) =>
+      json<SocialThreadResponse>(r),
+    );
+  },
+  getSocialSidebar: (params: { accountId?: string } = {}) => {
+    const search = new URLSearchParams();
+    if (params.accountId) search.set("accountId", params.accountId);
+    const suffix = search.toString();
+    return fetch(`/api/social/sidebar${suffix ? `?${suffix}` : ""}`).then((r) =>
+      json<SocialSidebarResponse>(r),
+    );
+  },
+  searchSocialActors: (params: { query: string; accountId?: string }) => {
+    const search = new URLSearchParams({ q: params.query });
+    if (params.accountId) search.set("accountId", params.accountId);
+    return fetch(`/api/social/search?${search.toString()}`).then((r) =>
+      json<SocialSearchResponse>(r),
+    );
+  },
+  createSocialPost: (input: SocialCreatePostInput) =>
+    post<{ uri: string; cid: string }>("/api/social/posts", input),
+  replySocialPost: (input: SocialReplyInput) =>
+    post<{ uri: string; cid: string }>("/api/social/posts/reply", input),
+  likeSocialPost: (input: SocialLikeInput) =>
+    post<{ ok: true; likeUri?: string }>("/api/social/posts/like", input),
+  repostSocialPost: (input: SocialRepostInput) =>
+    post<{ ok: true; repostUri?: string }>("/api/social/posts/repost", input),
+  followSocialActor: (input: SocialFollowInput) =>
+    post<{ ok: true; followUri?: string }>("/api/social/actors/follow", input),
 
   // Channels (external messaging: Telegram, …)
   listChannels: () => fetch("/api/channels").then((r) => json<ChannelInfo[]>(r)),

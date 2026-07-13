@@ -1,0 +1,12 @@
+{
+  "id": "core.timer",
+  "name": "Timer",
+  "version": "0.1.0",
+  "description": "Countdown timers and clock-time alarms with shell notifications.",
+  "icon": "timer",
+  "tier": "code",
+  "entry": { "kind": "bundle", "path": "timer" },
+  "permissions": [
+    { "kind": "shell", "features": ["notify"] }
+  ]
+}

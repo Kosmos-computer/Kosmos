@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Timer</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div id="app" class="timer-workspace" aria-label="Timer">
+      <header class="timer-header">
+        <div class="timer-header__title-row">
+          <svg
+            class="timer-header__icon"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <line x1="10" x2="14" y1="2" y2="2" />
+            <line x1="12" x2="15" y1="14" y2="11" />
+            <circle cx="12" cy="14" r="8" />
+          </svg>
+          <div>
+            <div class="timer-header__title">Timer</div>
+            <div id="clock-now" class="timer-header__subtitle">—</div>
+          </div>
+        </div>
+        <div class="timer-header__chips" role="group" aria-label="Mode">
+          <button type="button" id="mode-timer" class="timer-chip timer-chip--active" aria-pressed="true">
+            Timer
+          </button>
+          <button type="button" id="mode-alarm" class="timer-chip" aria-pressed="false">Alarm</button>
+          <button type="button" id="sound-toggle" class="timer-chip" aria-pressed="true" title="Alert sound">
+            Sound on
+          </button>
+        </div>
+      </header>
+
+      <div id="alert-banner" class="timer-alert" hidden></div>
+
+      <main class="timer-body">
+        <section class="timer-composer" aria-label="Create">
+          <label class="timer-field">
+            <span class="timer-field__label">Label (optional)</span>
+            <input id="label-input" class="timer-input" type="text" placeholder="Focus block" maxlength="80" />
+          </label>
+
+          <div id="timer-form" class="timer-form">
+            <div class="timer-field">
+              <span class="timer-field__label">Presets</span>
+              <div id="presets" class="timer-presets" role="group" aria-label="Duration presets"></div>
+            </div>
+            <div class="timer-field">
+              <span class="timer-field__label">Custom</span>
+              <div class="timer-duration-row">
+                <input id="hours" class="timer-input timer-input--num" type="number" min="0" max="99" value="0" aria-label="Hours" />
+                <span class="timer-duration-unit">h</span>
+                <input id="minutes" class="timer-input timer-input--num" type="number" min="0" max="59" value="30" aria-label="Minutes" />
+                <span class="timer-duration-unit">m</span>
+                <input id="seconds" class="timer-input timer-input--num" type="number" min="0" max="59" value="0" aria-label="Seconds" />
+                <span class="timer-duration-unit">s</span>
+              </div>
+            </div>
+            <button type="button" id="start-timer" class="timer-btn timer-btn--primary">Start timer</button>
+          </div>
+
+          <div id="alarm-form" class="timer-form" hidden>
+            <div class="timer-field">
+              <span class="timer-field__label">Time (24h)</span>
+              <div class="timer-duration-row">
+                <input id="alarm-hour" class="timer-input timer-input--num" type="number" min="0" max="23" aria-label="Hour" />
+                <span class="timer-duration-unit">:</span>
+                <input id="alarm-minute" class="timer-input timer-input--num" type="number" min="0" max="59" aria-label="Minute" />
+              </div>
+              <p class="timer-hint">If that time already passed today, it sets for tomorrow.</p>
+            </div>
+            <button type="button" id="set-alarm" class="timer-btn timer-btn--primary">Set alarm</button>
+          </div>
+        </section>
+
+        <aside class="timer-list-panel" aria-label="Active timers and alarms">
+          <h2 class="timer-list-panel__title">Active</h2>
+          <ul id="entry-list" class="timer-list"></ul>
+          <p id="list-empty" class="timer-list-empty">No timers or alarms yet.</p>
+        </aside>
+      </main>
+    </div>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

@@ -202,4 +202,27 @@ export type AppHostMessage =
   /** App → host: replace toolbar slots rendered beside the app title. */
   | { appBridge: true; type: "toolbar-set"; slots: AppToolbarSlot[] }
   /** Host → app: user edited a toolbar slot (e.g. search input). */
-  | { appBridge: true; type: "toolbar-input"; id: string; value: string };
+  | { appBridge: true; type: "toolbar-input"; id: string; value: string }
+  /**
+   * Host → app: agent cursor command inside the iframe (snapshot / click / type / select).
+   * Handled automatically by createAppClient() — apps do not need custom wiring.
+   */
+  | {
+      appBridge: true;
+      type: "ui.command";
+      id: number;
+      command:
+        | { kind: "snapshot" }
+        | { kind: "click"; targetId: string }
+        | { kind: "type"; targetId: string; text: string; submit?: boolean }
+        | { kind: "select"; targetId: string; value: string };
+    }
+  /** App → host: result of a ui.command. */
+  | {
+      appBridge: true;
+      type: "ui.result";
+      id: number;
+      ok: boolean;
+      result?: unknown;
+      error?: string;
+    };

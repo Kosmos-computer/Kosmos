@@ -20,19 +20,26 @@ import type {
   CursorCommand,
   CursorResult,
   OsUiAction,
+  OsUiResult,
   UiSnapshot,
   WorkspaceEntry,
 } from "../../shared/types.js";
+import {
+  buildShellAppCatalog,
+  controlForResolvedApp,
+  type ShellAppCatalogEntry,
+} from "../../shared/agentAppCatalog.js";
 import { lintOpenUICode, type LintReport } from "../lint/lint-openui.js";
 import { generatorCatalogStore } from "../stores/generatorCatalogStore.js";
 import { appStore } from "../stores/appStore.js";
 import { installedAppStore } from "../platform/installedAppStore.js";
+import { webAppStore } from "../stores/webAppStore.js";
 import { automationStore } from "../stores/automationStore.js";
 import { invokeIntent } from "../capabilities/registry.js";
 import { appendAudit } from "../platform/grantStore.js";
 import { intentMeta } from "../../shared/capabilities/index.js";
 import { getActiveRoot, resolveProjectPath } from "../stores/projectStore.js";
-import { resolveSystemAppId, SYSTEM_APP_CATALOG } from "../../shared/systemApps.js";
+import { resolveSystemAppId } from "../../shared/systemApps.js";
 import { dbExecute, dbQuery } from "../stores/db.js";
 import { skillStore } from "../skills/skillStore.js";
 import { bus } from "../bus.js";
@@ -119,6 +126,9 @@ export async function runExec(command: string): Promise<{
 // tool results are truncated for the LLM, and a busy desktop's raw JSON
 // (rects, nesting) would blow that budget for no targeting benefit.
 
+/** Cap interactive elements per window so tool results stay under the 6k budget. */
+const MAX_ELEMENTS_PER_WINDOW = 40;
+
 /** One element as the LLM sees it: `e12 button "Save" @420,310 [disabled]`. */
 function formatElement(el: UiSnapshot["shell"][number]): string {
   const flags = [el.disabled ? "disabled" : "", el.value ? `value="${el.value}"` : ""]
@@ -129,12 +139,27 @@ function formatElement(el: UiSnapshot["shell"][number]): string {
 
 function formatSnapshot(snap: UiSnapshot): Record<string, unknown> {
   return {
+    hostMode: snap.hostMode,
     screen: `${snap.screen.w}x${snap.screen.h}`,
-    windows: snap.windows.map((w) => ({
-      title: w.title,
-      focused: w.focused || undefined,
-      elements: w.elements.map(formatElement),
-    })),
+    windows: snap.windows.map((w) => {
+      const truncated = w.elements.length > MAX_ELEMENTS_PER_WINDOW;
+      const elements = w.elements.slice(0, MAX_ELEMENTS_PER_WINDOW).map(formatElement);
+      return {
+        title: w.title,
+        windowId: w.windowId,
+        focused: w.focused || undefined,
+        minimized: w.minimized || undefined,
+        control: w.control,
+        reason: w.reason,
+        elements,
+        ...(truncated
+          ? {
+              truncated: true,
+              note: `Showing ${MAX_ELEMENTS_PER_WINDOW}/${w.elements.length} elements. Call ui_snapshot again with windowTitle="${w.title}" to focus this window.`,
+            }
+          : {}),
+      };
+    }),
     shell: snap.shell.map(formatElement),
     ...(snap.opaqueRegions.length > 0 ? { notReachable: snap.opaqueRegions } : {}),
   };
@@ -151,11 +176,156 @@ async function runCursorCommand(
   const { requestId, result } = requestClientAction<CursorResult>();
   ctx.emit({ type: "cursor_request", requestId, command });
   const res = await result;
-  if (!res.ok) return { error: res.error ?? "Cursor command failed" };
+  if (!res.ok) {
+    return {
+      error: res.error ?? "Cursor command failed",
+      ...(res.focusAppId ? { focusAppId: res.focusAppId } : {}),
+      ...(res.focusTitle ? { focusTitle: res.focusTitle } : {}),
+    };
+  }
+  const screenKey = command.kind === "snapshot" ? "screen" : "screenAfter";
   return {
     ...(res.outcome ? { outcome: res.outcome } : {}),
-    ...(res.snapshot ? { screenAfter: formatSnapshot(res.snapshot) } : {}),
+    ...(res.snapshot ? { [screenKey]: formatSnapshot(res.snapshot) } : {}),
   };
+}
+
+/** Round-trip one os_ui action; waits for the shell to settle the window. */
+async function runOsUiAction(
+  action: OsUiAction,
+  ctx: ToolContext,
+  meta?: { control?: string; toolHint?: string; note?: string },
+): Promise<Record<string, unknown>> {
+  if (!ctx.interactive) {
+    // Headless automations can still emit for attached desktops later; no round-trip.
+    ctx.emit({ type: "os_ui", action });
+    return { ok: true, ...(meta ?? {}), note: meta?.note ?? "Emitted without wait (headless)." };
+  }
+  const { requestId, result } = requestClientAction<OsUiResult>();
+  ctx.emit({ type: "os_ui", action, requestId });
+  const res = await result;
+  if (!res.ok) return { error: res.error ?? "os_ui failed", ...(meta ?? {}) };
+  return {
+    ok: true,
+    windowId: res.windowId,
+    title: res.title,
+    focused: res.focused,
+    minimized: res.minimized,
+    control: res.control ?? meta?.control,
+    toolHint: res.toolHint ?? meta?.toolHint,
+    note: res.note ?? meta?.note,
+    windows: res.windows,
+  };
+}
+
+async function loadShellCatalog(): Promise<ShellAppCatalogEntry[]> {
+  const generated = await appStore.list();
+  const installed = installedAppStore.list();
+  const web = webAppStore.list();
+  return buildShellAppCatalog({
+    generated: generated.map((a) => ({ id: a.id, title: a.title, updatedAt: a.updatedAt })),
+    installed,
+    web: web.map((a) => ({ id: a.id, name: a.name })),
+  });
+}
+
+type ResolveOk = { appId: string; kind: ShellAppCatalogEntry["kind"]; control: string; toolHint?: string; title: string };
+type ResolveErr = {
+  error: string;
+  availableApps: ShellAppCatalogEntry[];
+  matches?: ShellAppCatalogEntry[];
+};
+
+/**
+ * Map whatever the model called the app onto a real id. Exact id wins; when a
+ * display title matches both a system app and an installed app, return both
+ * so the model can pick an explicit id instead of getting a silent shadow.
+ */
+async function resolveAppId(raw: string): Promise<ResolveOk | ResolveErr> {
+  const wanted = raw.trim();
+  const lower = wanted.toLowerCase();
+  const catalog = await loadShellCatalog();
+
+  const exact = catalog.find((e) => e.id === wanted || e.id.toLowerCase() === lower);
+  if (exact) {
+    return {
+      appId: exact.id,
+      kind: exact.kind,
+      control: exact.control,
+      toolHint: exact.toolHint,
+      title: exact.title,
+    };
+  }
+
+  const titleExact = catalog.filter((e) => e.title.toLowerCase() === lower);
+  if (titleExact.length > 1) {
+    return {
+      error: `Multiple apps named "${raw}". Pick an id from matches (system titles can shadow installed apps like core.calendar).`,
+      matches: titleExact,
+      availableApps: catalog,
+    };
+  }
+  if (titleExact.length === 1) {
+    const hit = titleExact[0]!;
+    return {
+      appId: hit.id,
+      kind: hit.kind,
+      control: hit.control,
+      toolHint: hit.toolHint,
+      title: hit.title,
+    };
+  }
+
+  const systemAppId = resolveSystemAppId(wanted);
+  if (systemAppId) {
+    const meta = controlForResolvedApp(systemAppId, catalog);
+    return {
+      appId: systemAppId,
+      kind: "system",
+      control: meta.control,
+      toolHint: meta.toolHint,
+      title: meta.title,
+    };
+  }
+
+  const titlePartial = catalog.filter(
+    (e) => e.title.toLowerCase().includes(lower) || lower.includes(e.title.toLowerCase()),
+  );
+  if (titlePartial.length === 1) {
+    const hit = titlePartial[0]!;
+    return {
+      appId: hit.id,
+      kind: hit.kind,
+      control: hit.control,
+      toolHint: hit.toolHint,
+      title: hit.title,
+    };
+  }
+  if (titlePartial.length > 1) {
+    return {
+      error: `Ambiguous app name "${raw}". Pick an id from matches.`,
+      matches: titlePartial,
+      availableApps: catalog,
+    };
+  }
+
+  return {
+    error: `No app matches "${raw}". Pick an id from availableApps. Use list_apps for the full catalog (system, installed, generated, web). Only use app_create when the user wants a new custom app.`,
+    availableApps: catalog,
+  };
+}
+
+function noteForControl(control: string, toolHint?: string): string | undefined {
+  if (control === "tools") {
+    return `This app is best operated with domain tools${toolHint ? ` (${toolHint})` : ""}, not mouse_click. Opening the window alone is not enough.`;
+  }
+  if (control === "open_only") {
+    return "This app has no UI bridge and no domain tools yet. You can open/focus the window only — do not retry mouse_click. Prefer apps with control=cursor (including bridged iframes) or control=tools.";
+  }
+  if (control === "cursor" && toolHint?.includes("bridge")) {
+    return "Cursor-driveable via AppHost UI bridge (path #2). Snapshot element ids look like g:installed:…:eN.";
+  }
+  return undefined;
 }
 
 /**
@@ -192,51 +362,6 @@ async function agentInvokeIntent(
 }
 
 import { webSearch } from "../services/searchService.js";
-
-// ── App id resolution for os_ui ──────────────────────────────────────────────
-
-/**
- * Map whatever the model called the app — an exact id, a system id (possibly
- * qualified like "core.settings"), or a display title ("Tasks") — onto a real
- * app id. A miss returns the full catalog so the model self-corrects in one
- * iteration instead of reporting phantom success.
- */
-async function resolveAppId(
-  raw: string,
-): Promise<{ appId: string } | { error: string; availableApps: { id: string; title: string }[] }> {
-  const wanted = raw.trim();
-  const lower = wanted.toLowerCase();
-
-  const systemAppId = resolveSystemAppId(wanted);
-  if (systemAppId) return { appId: systemAppId };
-
-  const generated = await appStore.list();
-  const installed = installedAppStore.list().filter((a) => a.enabled);
-  if (
-    generated.some((a) => a.id === wanted) ||
-    installed.some((a) => a.manifest.id === wanted)
-  ) {
-    return { appId: wanted };
-  }
-
-  const byTitle =
-    generated.find((a) => a.title.toLowerCase() === lower) ??
-    generated.find((a) => a.title.toLowerCase().includes(lower));
-  if (byTitle) return { appId: byTitle.id };
-  const byName =
-    installed.find((a) => a.manifest.name.toLowerCase() === lower) ??
-    installed.find((a) => a.manifest.name.toLowerCase().includes(lower));
-  if (byName) return { appId: byName.manifest.id };
-
-  return {
-    error: `No app matches "${raw}". Pick an id from availableApps. Built-in shell apps (Podcasts, Music, Tasks, …) are listed as system apps — use open_app with their title or id. Only use app_create when the user wants a new custom app.`,
-    availableApps: [
-      ...SYSTEM_APP_CATALOG.map((entry) => ({ id: entry.id, title: `${entry.title} (system app)` })),
-      ...installed.map((a) => ({ id: a.manifest.id, title: a.manifest.name })),
-      ...generated.map((a) => ({ id: a.id, title: a.title })),
-    ],
-  };
-}
 
 export const agentTools: AgentTool[] = [
   // ── Generative apps (openclaw-os pipeline) ─────────────────────────────────
@@ -323,12 +448,10 @@ export const agentTools: AgentTool[] = [
   },
   {
     name: "list_apps",
-    description: "List all generated apps (id, title, updatedAt).",
+    description:
+      "List every launchable shell app: system, installed, generated, and web. Each entry includes kind and control mode (cursor = mouse-driveable, tools = use domain tools like calendar_*/mail_*, open_only = window only — cursor cannot drive content).",
     parameters: { type: "object", properties: {} },
-    execute: async () => {
-      const apps = await appStore.list();
-      return apps.map((a) => ({ id: a.id, title: a.title, updatedAt: a.updatedAt }));
-    },
+    execute: async () => loadShellCatalog(),
   },
 
   // ── Coding capacity (agent-canvas spirit) ──────────────────────────────────
@@ -1043,6 +1166,73 @@ export const agentTools: AgentTool[] = [
       }
     },
   },
+  {
+    name: "docs_export",
+    description:
+      "Export an Arco document (TipTap JSON in Drive) to markdown, html, odt, docx, or json.",
+    parameters: {
+      type: "object",
+      properties: {
+        id: { type: "string" },
+        format: { type: "string", enum: ["json", "markdown", "html", "odt", "docx"] },
+      },
+      required: ["id"],
+    },
+    execute: async (args, ctx) =>
+      agentInvokeIntent(
+        "docs.export",
+        { id: args.id, format: args.format ?? "markdown" },
+        `Export document ${String(args.id ?? "")}`,
+        ctx,
+      ),
+  },
+  {
+    name: "sheets_query",
+    description:
+      "Read a cell range from a spreadsheet in Drive (A1 notation). Returns evaluated values.",
+    parameters: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "Workbook file id" },
+        sheet: { type: "string" },
+        range: { type: "string", description: "e.g. A1:C10" },
+      },
+      required: ["id", "range"],
+    },
+    execute: async (args, ctx) =>
+      agentInvokeIntent("sheets.query", args, `Query sheet range ${String(args.range ?? "")}`, ctx),
+  },
+  {
+    name: "sheets_write_range",
+    description: "Write a 2D values array into a spreadsheet starting at an A1 address.",
+    parameters: {
+      type: "object",
+      properties: {
+        id: { type: "string" },
+        sheet: { type: "string" },
+        start: { type: "string", default: "A1" },
+        values: { type: "array", items: { type: "array" } },
+      },
+      required: ["id", "values"],
+    },
+    execute: async (args, ctx) =>
+      agentInvokeIntent("sheets.write_range", args, `Write sheet range on ${String(args.id ?? "")}`, ctx),
+  },
+  {
+    name: "slides_create",
+    description: "Create a new presentation in Drive (os.slides@1).",
+    parameters: {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        parentId: { type: "string" },
+        content: { type: "object" },
+      },
+      required: ["name"],
+    },
+    execute: async (args, ctx) =>
+      agentInvokeIntent("slides.create", args, `Create presentation ${String(args.name ?? "")}`, ctx),
+  },
 
   {
     name: "share_create",
@@ -1180,18 +1370,27 @@ export const agentTools: AgentTool[] = [
   {
     name: "os_ui",
     description:
-      "Drive the Arco desktop: open an app window (action=open_app + appId — an app id or the app's display title, e.g. \"Tasks\" or \"Docs\"), open a system app (action=open_system + app — a system id like settings or a display name like Docs; non-system names resolve to open_app), close an app's window (action=close_app + appId — id or title), show a notification (action=notify + message), or focus a Studio drawer tab (action=open_workspace_tab + tab one of: files, diffs, terminal, preview, browser; optional path — a file to select, or a URL when tab=browser, e.g. after starting a dev server). If the app isn't found the result lists every available app.",
+      "Drive the Arco desktop and wait until the window settles. Actions: open_app / open_system / close_app / focus_app / minimize_app / restore_app / notify / open_workspace_tab. Prefer list_apps first. Result includes control mode — when control=tools use calendar_*/mail_* instead of the cursor; when control=open_only the window opens but content is not mouse-driveable (iframe). Use focus_app when a click reports a covered target.",
     parameters: {
       type: "object",
       properties: {
         action: {
           type: "string",
-          enum: ["open_app", "open_system", "close_app", "notify", "open_workspace_tab"],
+          enum: [
+            "open_app",
+            "open_system",
+            "close_app",
+            "focus_app",
+            "minimize_app",
+            "restore_app",
+            "notify",
+            "open_workspace_tab",
+          ],
         },
         appId: {
           type: "string",
           description:
-            "App id (for open_app / close_app): a generated app id, an installed app id like core.calendar, or a system app id like settings",
+            "App id (for open/close/focus/minimize/restore): system id, generated id, installed id like core.docs, or web app id — or a display title",
         },
         app: { type: "string", description: "System app id (for open_system)" },
         message: { type: "string", description: "Notification text (for notify)" },
@@ -1209,26 +1408,52 @@ export const agentTools: AgentTool[] = [
       required: ["action"],
     },
     execute: async (args, ctx) => {
+      const appActions = new Set([
+        "open_app",
+        "close_app",
+        "focus_app",
+        "minimize_app",
+        "restore_app",
+      ]);
       let action: OsUiAction;
-      if (
-        (args.action === "open_app" || args.action === "close_app") &&
-        typeof args.appId === "string"
-      ) {
-        // Resolve before emitting: a made-up id would no-op silently in the
-        // shell while the model reports success. Exact id first, then a
-        // case-insensitive title match ("Tasks" → the Tasks app's id).
+      let meta: { control?: string; toolHint?: string; note?: string } | undefined;
+
+      if (appActions.has(String(args.action)) && typeof args.appId === "string") {
         const resolved = await resolveAppId(args.appId);
         if ("error" in resolved) return resolved;
-        action = { action: args.action, appId: resolved.appId };
+        meta = {
+          control: resolved.control,
+          toolHint: resolved.toolHint,
+          note: noteForControl(resolved.control, resolved.toolHint),
+        };
+        action = {
+          action: args.action as
+            | "open_app"
+            | "close_app"
+            | "focus_app"
+            | "minimize_app"
+            | "restore_app",
+          appId: resolved.appId,
+        };
       } else if (args.action === "open_system" && typeof args.app === "string") {
         const systemAppId = resolveSystemAppId(args.app);
         if (systemAppId) {
+          const catalog = await loadShellCatalog();
+          const resolved = controlForResolvedApp(systemAppId, catalog);
+          meta = {
+            control: resolved.control,
+            toolHint: resolved.toolHint,
+            note: noteForControl(resolved.control, resolved.toolHint),
+          };
           action = { action: "open_system", app: systemAppId };
         } else {
-          // Installed/generated apps (e.g. "Docs" → core.docs) are not system
-          // apps — resolve and open through the unified open_app path.
           const resolved = await resolveAppId(args.app);
           if ("error" in resolved) return resolved;
+          meta = {
+            control: resolved.control,
+            toolHint: resolved.toolHint,
+            note: noteForControl(resolved.control, resolved.toolHint),
+          };
           action = { action: "open_app", appId: resolved.appId };
         }
       } else if (args.action === "notify" && typeof args.message === "string") {
@@ -1249,8 +1474,7 @@ export const agentTools: AgentTool[] = [
       } else {
         return { error: "Invalid os_ui action or missing argument" };
       }
-      ctx.emit({ type: "os_ui", action });
-      return { ok: true };
+      return runOsUiAction(action, ctx, meta);
     },
   },
 
@@ -1258,14 +1482,29 @@ export const agentTools: AgentTool[] = [
   {
     name: "ui_snapshot",
     description:
-      "See the user's desktop: returns every visible window and its interactive elements (buttons, inputs, links) with stable element ids. Call this before mouse_click/type_text, and again whenever the UI may have changed. Element ids stay valid until the element unmounts.",
-    parameters: { type: "object", properties: {} },
-    execute: async (_args, ctx) => runCursorCommand({ kind: "snapshot" }, ctx),
+      "See the user's desktop via a DOM inventory of interactive elements (not a screen reader). Returns hostMode, windows (including minimized metadata), control/reason per window, and element ids. Call before mouse_click/type_text. Optional windowTitle focuses one window when the desktop is crowded. Opaque iframes / native host / Monaco are not mouse-driveable — use domain tools or os_ui only.",
+    parameters: {
+      type: "object",
+      properties: {
+        windowTitle: {
+          type: "string",
+          description: "Optional window title filter to reduce snapshot size",
+        },
+      },
+    },
+    execute: async (args, ctx) =>
+      runCursorCommand(
+        {
+          kind: "snapshot",
+          ...(typeof args.windowTitle === "string" ? { windowTitle: args.windowTitle } : {}),
+        },
+        ctx,
+      ),
   },
   {
     name: "mouse_click",
     description:
-      "Move the visible AI cursor to an element and click it, like a human demonstrating the UI. Target by element id from ui_snapshot (preferred — survives window moves) or raw x/y screen coordinates. Returns what was clicked plus a fresh snapshot of the screen after the click.",
+      "Move the visible AI cursor to an element and click it. Target by element id from ui_snapshot (preferred) or raw x/y. Fails clearly when hostMode is native, the target is in an iframe, or another window covers the click point (then use os_ui focus_app).",
     parameters: {
       type: "object",
       properties: {
@@ -1288,7 +1527,7 @@ export const agentTools: AgentTool[] = [
   {
     name: "type_text",
     description:
-      "Click into a text input/textarea (by element id from ui_snapshot) and type text character-by-character with the visible AI cursor. Set submit=true to press Enter afterwards. Replaces the field's existing content.",
+      "Click into an input, textarea, or contenteditable (TipTap/Notes) by element id and type text with the visible AI cursor. Set submit=true to press Enter afterwards. Replaces existing content for input/textarea; inserts into contenteditable.",
     parameters: {
       type: "object",
       properties: {
@@ -1305,6 +1544,28 @@ export const agentTools: AgentTool[] = [
           targetId: String(args.targetId ?? ""),
           text: String(args.text ?? ""),
           ...(args.submit === true ? { submit: true } : {}),
+        },
+        ctx,
+      ),
+  },
+  {
+    name: "select_option",
+    description:
+      "Set a native <select> element's value by element id from ui_snapshot (synthetic dropdown open is unreliable).",
+    parameters: {
+      type: "object",
+      properties: {
+        targetId: { type: "string", description: "Element id of the select" },
+        value: { type: "string", description: "Option value to select" },
+      },
+      required: ["targetId", "value"],
+    },
+    execute: async (args, ctx) =>
+      runCursorCommand(
+        {
+          kind: "select",
+          targetId: String(args.targetId ?? ""),
+          value: String(args.value ?? ""),
         },
         ctx,
       ),

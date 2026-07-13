@@ -223,6 +223,12 @@
   color: var(--arco-text-primary);
 }
 
+.arco-settings-panel__title--with-avatar {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+}
+
 .arco-settings-panel__meta {
   font-size: var(--arco-text-xs);
   color: var(--arco-text-tertiary);

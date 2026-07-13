@@ -10,6 +10,7 @@ import {
 } from "@shared/capabilities/files";
 import { EMPTY_DOC_JSON } from "@shared/capabilities/docs";
 import { EMPTY_SHEET_JSON } from "@shared/capabilities/sheets";
+import { EMPTY_SLIDES_JSON } from "@shared/capabilities/slides";
 import { api } from "../../lib/api";
 import { onAppEvent } from "../../os/appEventBus";
 import { useAuthStore } from "../../os/auth/authStore";
@@ -41,11 +42,7 @@ const NEW_FILE_DEFAULTS: Record<
   slides: {
     name: "Untitled presentation.slides.json",
     mimeType: SLIDES_MIME,
-    content: JSON.stringify({
-      version: 1,
-      title: "Untitled presentation",
-      slides: [{ id: "slide-1", title: "Slide 1", boxes: [] }],
-    }),
+    content: JSON.stringify(EMPTY_SLIDES_JSON),
   },
   task: {
     name: "Untitled tasks.task.json",

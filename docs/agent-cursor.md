@@ -81,12 +81,14 @@ the consequence of its action without a second round trip.
 
 | Tool | Purpose |
 | --- | --- |
-| `ui_snapshot` | List windows + interactive elements with ids |
+| `ui_snapshot` | List windows + interactive elements with ids (`hostMode`, control flags) |
 | `mouse_click` | Animate to an element (by id, or x/y escape hatch) and click |
-| `type_text` | Click into an input and type, optionally submit |
+| `type_text` | Click into an input/textarea/contenteditable and type |
+| `select_option` | Set a native `<select>` value by element id |
 
 Snapshots are compacted server-side to terse lines
 (`e12 button "Save" @420,310`) to respect the 6k-char tool-result budget.
+Pure snapshots use the `screen` key; post-action snapshots use `screenAfter`.
 Headless automation runs get an immediate "no user attached" error, same as
 risky exec commands.
 
@@ -102,28 +104,41 @@ await window.__arcoCursor.execute({ kind: "type", targetId: "e7", text: "hello",
 
 ## Known limitations / left to do
 
-- **Iframes are opaque.** `WebAppSurface` embeds are cross-origin; the DOM
-  walk can't see inside and synthetic events can't reach them. Snapshots
-  report these as `notReachable`. Reaching in would need a postMessage
-  bridge injected into same-origin embeds.
-- **Monaco / xterm.** Clickable but not typeable via DOM events — typing
-  there needs their component APIs. Reported as opaque regions for now.
+- **Not a screen reader.** `ui_snapshot` is a DOM inventory of interactive
+  controls (buttons, inputs, ARIA roles, contenteditable). Non-interactive
+  chrome and custom widgets without roles are invisible.
+- **Iframes:** Code-tier AppHost apps that load `createAppClient()` expose a
+  **UI bridge** (`ui.command` / `ui.result` over postMessage). Snapshots merge
+  guest elements as `g:<windowId>:<localId>` and click/type route through the
+  bridge. Remote URL / web embeds without the SDK stay `open_only` — use
+  domain tools when available (`calendar_*`, `mail_*`) instead of the cursor.
+  Reaching arbitrary cross-origin pages still needs an injected SDK.
+- **Native / separate OS windows.** When `appWindowHost` is native, app
+  content is not in the main document. Snapshots list window metadata with
+  `reason: native_host`; click/type refuse with a clear error.
+- **Minimized windows** unmount from the DOM; snapshots include them as
+  `minimized: true` with empty elements — call `os_ui` restore_app/focus_app.
+- **Monaco / xterm.** Clickable in places but not typeable via DOM events —
+  typing needs their component APIs. Reported as opaque/partial regions.
+- **`os_ui` settles before answering.** Open/focus round-trip through
+  `requestId` so the agent does not race a snapshot against a mounting window.
 - **No drag, hover, right-click, double-click, or scroll commands.** The
   command union (`CursorCommand`) and driver switch are built to extend;
   drag would reuse the same move animation between pointerdown and pointerup.
-- **Select elements.** Native `<select>` dropdowns can't be opened
-  synthetically; a `select_option` command setting the value directly (same
-  native-setter trick) is the pragmatic fix.
+- **Select elements.** Use `select_option` (sets value via the native setter);
+  synthetic dropdown open is unreliable.
+- **Contenteditable / TipTap.** `type_text` inserts via `document.execCommand('insertText')`.
 - **Occlusion is checked only at the click point.** A partially covered
   target whose center is visible still clicks fine; one whose center is
-  covered errors even if an edge is visible.
+  covered errors with `focusAppId` / `focusTitle` so the agent can
+  `os_ui focus_app` instead of flailing.
 - **One attached client assumed.** If several tabs watch the same stream,
   the first to POST the result wins. Fine for a prototype.
 - **Mobile shell.** The cursor is desktop-only (`Desktop.tsx`); `MobileShell`
-  has no overlay and cursor tools will time out there.
+  has no overlay and cursor tools error immediately.
 - **No permission gate.** The agent can click anything a user can, including
   destructive in-app buttons. If that becomes a concern, reuse the
   confirmation gate for clicks on flagged targets.
-- **Snapshot cost.** Occlusion/visibility checks run `getComputedStyle` per
-  candidate; busy desktops with hundreds of targets may want memoization or
-  an element cap.
+- **Snapshot cost / size.** Interactive-element scans use `getComputedStyle`
+  per candidate; server-side formatting caps elements per window and supports
+  `windowTitle` filtering on `ui_snapshot`.

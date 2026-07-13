@@ -1,4 +1,4 @@
-export type SocialNetworkId = "bluesky" | "mastodon" | "nostr";
+export type SocialNetworkId = "bluesky" | "mastodon" | "nostr" | "twitter" | "facebook";
 
 export interface SocialNetworkItem {
   id: SocialNetworkId;
@@ -15,17 +15,4 @@ export interface SocialPost {
   timestamp: string;
   content: string;
   stats: { replies: number; reposts: number; likes: number; views?: number };
-}
-
-export interface SocialTrend {
-  id: string;
-  category: string;
-  title: string;
-  postCount: string;
-}
-
-export interface SocialSuggestion {
-  id: string;
-  name: string;
-  handle: string;
 }

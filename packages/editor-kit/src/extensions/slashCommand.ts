@@ -77,6 +77,41 @@ const SLASH_ITEMS: SlashMenuItem[] = [
       editor.chain().focus().deleteRange(range).setHorizontalRule().run();
     },
   },
+  {
+    id: "link",
+    label: "Link",
+    hint: "Insert or edit a hyperlink",
+    command: ({ editor, range }) => {
+      editor.chain().focus().deleteRange(range).run();
+      const previous = editor.getAttributes("link").href as string | undefined;
+      const href = window.prompt("Link URL", previous ?? "https://");
+      if (href === null) return;
+      if (href === "") {
+        editor.chain().focus().extendMarkRange("link").unsetLink().run();
+        return;
+      }
+      editor.chain().focus().extendMarkRange("link").setLink({ href }).run();
+    },
+  },
+  {
+    id: "image",
+    label: "Image",
+    hint: "Image by URL or file id",
+    command: ({ editor, range }) => {
+      editor.chain().focus().deleteRange(range).run();
+      const src = window.prompt("Image URL or /api/drive/… path", "https://");
+      if (!src?.trim()) return;
+      editor.chain().focus().setImage({ src: src.trim() }).run();
+    },
+  },
+  {
+    id: "table",
+    label: "Table",
+    hint: "3×3 table",
+    command: ({ editor, range }) => {
+      editor.chain().focus().deleteRange(range).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+    },
+  },
 ];
 
 function positionPopup(popup: HTMLElement, clientRect?: (() => DOMRect | null) | null) {

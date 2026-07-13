@@ -2,21 +2,87 @@
  * Agent-driven shell actions — the agent-canvas `canvas_ui` pattern: the
  * server tool emits typed events; the client dispatches them onto the shell
  * stores. Chat streams route their AgentEvents through here.
+ *
+ * When `os_ui` carries a `requestId`, we settle the DOM and POST an OsUiResult
+ * so the agent never races a follow-up ui_snapshot against a still-mounting window.
  */
-import type { AgentEvent } from "@shared/types";
+import type { AgentEvent, AppControlMode, OsUiAction, OsUiResult, OsUiWindowSummary } from "@shared/types";
+import {
+  controlForGeneratedApp,
+  controlForInstalledManifest,
+  controlForSystemApp,
+  controlForWebApp,
+} from "@shared/agentAppCatalog";
 import { resolveSystemAppId } from "@shared/systemApps";
 import { api } from "../lib/api";
 import { useOsStore } from "./osStore";
-import { useWindowStore } from "./windowStore";
+import { useWindowStore, windowKey, type WindowKind } from "./windowStore";
 import { SYSTEM_APPS } from "./systemApps";
 import { executeCursorCommand } from "./cursor/uiDriver";
 import { publishAppEvent } from "./appEventBus";
-import { openShellWindow } from "./shellNavigation";
+import { focusShellWindow, openShellWindow } from "./shellNavigation";
 import { useStudioStore } from "../apps/studio/studioStore";
 import { systemAppTitle } from "./systemAppTitles";
 
-/** Open any resolved app id — system, generated, or installed. */
-function openAppById(appId: string): void {
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+/** Wait for paint + AppHost/iframe mount before answering the agent. */
+async function settleUi(ms = 220): Promise<void> {
+  await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+  await sleep(ms);
+}
+
+function controlMetaForKind(kind: WindowKind): { control: AppControlMode; toolHint?: string } {
+  const os = useOsStore.getState();
+  switch (kind.type) {
+    case "system":
+      return controlForSystemApp(kind.app);
+    case "generated":
+      return controlForGeneratedApp();
+    case "web":
+      return controlForWebApp();
+    case "installed": {
+      const installed = os.installedApps.find((a) => a.manifest.id === kind.appId);
+      if (installed) return controlForInstalledManifest(installed.manifest);
+      return { control: "open_only" };
+    }
+  }
+}
+
+function windowSummaries(): OsUiWindowSummary[] {
+  const wm = useWindowStore.getState();
+  const focusedId = wm.focusedId();
+  return wm.windows.map((w) => ({
+    id: w.id,
+    title: w.title,
+    focused: w.id === focusedId,
+    minimized: w.minimized,
+  }));
+}
+
+function findWindowKeysForAppId(appId: string): string[] {
+  const keys = [
+    `system:${appId}`,
+    `generated:${appId}`,
+    `installed:${appId}`,
+    `web:${appId}`,
+  ];
+  const systemId = resolveSystemAppId(appId);
+  if (systemId && systemId !== appId) keys.push(`system:${systemId}`);
+  return keys;
+}
+
+function findOpenWindow(appId: string) {
+  const wm = useWindowStore.getState();
+  for (const key of findWindowKeysForAppId(appId)) {
+    const win = wm.windows.find((w) => w.id === key);
+    if (win) return win;
+  }
+  return undefined;
+}
+
+/** Open any resolved app id — system, generated, installed, or web. */
+async function openAppById(appId: string): Promise<{ kind: WindowKind; title: string } | { error: string }> {
   const os = useOsStore.getState();
   const wanted = appId.trim();
   const lower = wanted.toLowerCase();
@@ -24,34 +90,156 @@ function openAppById(appId: string): void {
   const systemId = resolveSystemAppId(wanted);
   const sys = systemId ? SYSTEM_APPS.find((a) => a.id === systemId) : undefined;
   if (sys) {
-    openShellWindow({ type: "system", app: sys.id }, systemAppTitle(sys.id));
-    return;
+    const kind: WindowKind = { type: "system", app: sys.id };
+    const title = systemAppTitle(sys.id);
+    openShellWindow(kind, title);
+    return { kind, title };
   }
 
-  void os.refreshApps().then(() => {
-    const state = useOsStore.getState();
-    const generated =
-      state.apps.find((a) => a.id === wanted) ??
-      state.apps.find((a) => a.title.toLowerCase() === lower) ??
-      state.apps.find((a) => a.title.toLowerCase().includes(lower));
-    if (generated) {
-      openShellWindow({ type: "generated", appId: generated.id }, generated.title);
-      return;
+  await os.refreshApps();
+  const state = useOsStore.getState();
+
+  const generated =
+    state.apps.find((a) => a.id === wanted) ??
+    state.apps.find((a) => a.title.toLowerCase() === lower) ??
+    state.apps.find((a) => a.title.toLowerCase().includes(lower));
+  if (generated) {
+    const kind: WindowKind = { type: "generated", appId: generated.id };
+    openShellWindow(kind, generated.title);
+    return { kind, title: generated.title };
+  }
+
+  const installed =
+    state.installedApps.find((a) => a.manifest.id === wanted) ??
+    state.installedApps.find((a) => a.manifest.name.toLowerCase() === lower) ??
+    state.installedApps.find((a) => a.manifest.name.toLowerCase().includes(lower));
+  if (installed?.enabled) {
+    const kind: WindowKind = { type: "installed", appId: installed.manifest.id };
+    openShellWindow(kind, installed.manifest.name);
+    return { kind, title: installed.manifest.name };
+  }
+
+  const web =
+    state.webApps.find((a) => a.id === wanted) ??
+    state.webApps.find((a) => a.name.toLowerCase() === lower) ??
+    state.webApps.find((a) => a.name.toLowerCase().includes(lower));
+  if (web) {
+    const kind: WindowKind = { type: "web", webAppId: web.id };
+    openShellWindow(kind, web.name);
+    return { kind, title: web.name };
+  }
+
+  return { error: `App "${appId}" not found on the desktop.` };
+}
+
+function resultForWindow(
+  win: { id: string; title: string; minimized: boolean } | undefined,
+  meta: { control: AppControlMode; toolHint?: string },
+  note?: string,
+): OsUiResult {
+  const focusedId = useWindowStore.getState().focusedId();
+  return {
+    ok: true,
+    windowId: win?.id,
+    title: win?.title,
+    focused: win ? win.id === focusedId : undefined,
+    minimized: win?.minimized,
+    control: meta.control,
+    toolHint: meta.toolHint,
+    note,
+    windows: windowSummaries(),
+  };
+}
+
+async function executeOsUiAction(action: OsUiAction): Promise<OsUiResult> {
+  const os = useOsStore.getState();
+  const wm = useWindowStore.getState();
+
+  switch (action.action) {
+    case "open_app": {
+      const opened = await openAppById(action.appId);
+      if ("error" in opened) return { ok: false, error: opened.error, windows: windowSummaries() };
+      await settleUi(opened.kind.type === "installed" || opened.kind.type === "web" ? 320 : 220);
+      const win = useWindowStore.getState().windows.find((w) => w.id === windowKey(opened.kind));
+      const meta = controlMetaForKind(opened.kind);
+      let note: string | undefined;
+      if (meta.control === "tools") {
+        note = `Opened "${opened.title}". Prefer domain tools${meta.toolHint ? ` (${meta.toolHint})` : ""} over the cursor.`;
+      } else if (meta.control === "open_only") {
+        note = `Opened "${opened.title}" but its content is opaque to the cursor (iframe/web). Do not retry mouse_click.`;
+      }
+      return resultForWindow(win, meta, note);
     }
-    const installed =
-      state.installedApps.find((a) => a.manifest.id === wanted) ??
-      state.installedApps.find((a) => a.manifest.name.toLowerCase() === lower) ??
-      state.installedApps.find((a) => a.manifest.name.toLowerCase().includes(lower));
-    if (installed?.enabled) {
-      openShellWindow({ type: "installed", appId: installed.manifest.id }, installed.manifest.name);
+
+    case "open_system": {
+      const def = SYSTEM_APPS.find((a) => a.id === action.app);
+      if (def) {
+        const kind: WindowKind = { type: "system", app: def.id };
+        const title = systemAppTitle(def.id);
+        openShellWindow(kind, title);
+        await settleUi();
+        const win = useWindowStore.getState().windows.find((w) => w.id === windowKey(kind));
+        const meta = controlMetaForKind(kind);
+        return resultForWindow(win, meta);
+      }
+      return executeOsUiAction({ action: "open_app", appId: action.app });
     }
-  });
+
+    case "close_app": {
+      for (const key of findWindowKeysForAppId(action.appId)) wm.close(key);
+      await settleUi(80);
+      return { ok: true, windows: windowSummaries() };
+    }
+
+    case "focus_app":
+    case "restore_app": {
+      const win = findOpenWindow(action.appId);
+      if (!win) {
+        return {
+          ok: false,
+          error: `No open window for "${action.appId}". Use open_app first.`,
+          windows: windowSummaries(),
+        };
+      }
+      focusShellWindow(win.id);
+      await settleUi(120);
+      const after = useWindowStore.getState().windows.find((w) => w.id === win.id);
+      return resultForWindow(after, controlMetaForKind(win.kind));
+    }
+
+    case "minimize_app": {
+      const win = findOpenWindow(action.appId);
+      if (!win) {
+        return {
+          ok: false,
+          error: `No open window for "${action.appId}".`,
+          windows: windowSummaries(),
+        };
+      }
+      if (!win.minimized) wm.toggleMinimize(win.id);
+      await settleUi(80);
+      const after = useWindowStore.getState().windows.find((w) => w.id === win.id);
+      return resultForWindow(after, controlMetaForKind(win.kind));
+    }
+
+    case "notify": {
+      os.notify(action.message);
+      return { ok: true, windows: windowSummaries() };
+    }
+
+    case "open_workspace_tab": {
+      const kind: WindowKind = { type: "system", app: "studio" };
+      openShellWindow(kind, systemAppTitle("studio"));
+      await settleUi();
+      const win = useWindowStore.getState().windows.find((w) => w.id === windowKey(kind));
+      return resultForWindow(win, controlForSystemApp("studio"));
+    }
+  }
 }
 
 /** Handle the shell-relevant subset of AgentEvents (chat handles the rest). */
 export function handleShellEvent(event: AgentEvent, sessionKey?: string | null): void {
   const os = useOsStore.getState();
-  const wm = useWindowStore.getState();
 
   useStudioStore.getState().ingestAgentEvent(event, sessionKey);
 
@@ -61,7 +249,6 @@ export function handleShellEvent(event: AgentEvent, sessionKey?: string | null):
       break;
 
     case "automations_changed":
-      // The Automations app polls; nothing shell-global to do.
       break;
 
     case "automation_run_finished": {
@@ -71,55 +258,24 @@ export function handleShellEvent(event: AgentEvent, sessionKey?: string | null):
     }
 
     case "app_event":
-      // Platform topic (files.changed, calendar.changed, …) — fan out to
-      // open AppHost windows, which forward to subscribing app iframes.
       publishAppEvent({ topic: event.topic });
       break;
 
     case "cursor_request":
-      // The server parked a tool mid-turn waiting for this. Execute the
-      // cursor command (animation included) and answer; the driver never
-      // throws, so a reply is guaranteed before the server-side timeout.
       void executeCursorCommand(event.command).then((result) =>
         api.answerClientRequest(event.requestId, result),
       );
       break;
 
     case "os_ui": {
-      const action = event.action;
-      if (action.action === "open_app") {
-        openAppById(action.appId);
-      } else if (action.action === "open_system") {
-        // Look up lazily: resolving SYSTEM_APPS at module scope creates a
-        // circular-import TDZ crash (systemApps → app components → osActions).
-        const def = SYSTEM_APPS.find((a) => a.id === action.app);
-        if (def) {
-          openShellWindow({ type: "system", app: def.id }, systemAppTitle(def.id));
-        } else {
-          // Older callers may still send open_system for installed apps like
-          // "docs" — treat the id as an open_app target instead of no-op'ing.
-          openAppById(action.app);
-        }
-      } else if (action.action === "close_app") {
-        // The agent addresses apps by id, not window key — try every kind.
-        // wm.close on a key with no open window is a no-op.
-        const keys = [
-          `system:${action.appId}`,
-          `generated:${action.appId}`,
-          `installed:${action.appId}`,
-          `web:${action.appId}`,
-        ];
-        const systemId = resolveSystemAppId(action.appId);
-        if (systemId && systemId !== action.appId) {
-          keys.push(`system:${systemId}`);
-        }
-        for (const key of keys) wm.close(key);
-      } else if (action.action === "notify") {
-        os.notify(action.message);
-      } else if (action.action === "open_workspace_tab") {
-        // Tab/path state was already set by the studio store's ingest above;
-        // here we just make sure the Studio window is visible.
-        openShellWindow({ type: "system", app: "studio" }, systemAppTitle("studio"));
+      const requestId = event.requestId;
+      if (requestId) {
+        void executeOsUiAction(event.action).then((result) =>
+          api.answerClientRequest(requestId, result),
+        );
+      } else {
+        // Legacy / fire-and-forget emitters (e.g. app_create) — still run the action.
+        void executeOsUiAction(event.action);
       }
       break;
     }

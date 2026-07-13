@@ -1,9 +1,11 @@
-import type { SocialNetworkItem, SocialPost, SocialSuggestion, SocialTrend } from "./types";
+import type { SocialNetworkItem, SocialPost } from "./types";
 
 export const SOCIAL_NETWORKS: SocialNetworkItem[] = [
   { id: "bluesky", label: "Bluesky", initials: "BS", accent: "#0085ff" },
   { id: "mastodon", label: "Mastodon", initials: "Ma", accent: "#6364ff" },
   { id: "nostr", label: "Nostr", initials: "No", accent: "#8b5cf6" },
+  { id: "twitter", label: "X", initials: "X", accent: "#000000" },
+  { id: "facebook", label: "Facebook", initials: "Fb", accent: "#1877f2" },
 ];
 
 export const SOCIAL_POSTS: SocialPost[] = [
@@ -34,18 +36,6 @@ export const SOCIAL_POSTS: SocialPost[] = [
     content: "Shipped the new onboarding flow for community volunteers. Feedback welcome.",
     stats: { replies: 9, reposts: 21, likes: 186, views: 4200 },
   },
-];
-
-export const SOCIAL_TRENDS: SocialTrend[] = [
-  { id: "t1", category: "Local · Trending", title: "Summer picnic", postCount: "1.2K posts" },
-  { id: "t2", category: "Technology", title: "ActivityPub", postCount: "842 posts" },
-  { id: "t3", category: "Community", title: "Volunteer week", postCount: "530 posts" },
-];
-
-export const SOCIAL_SUGGESTIONS: SocialSuggestion[] = [
-  { id: "s1", name: "Jordan Hayes", handle: "@jordanhayes" },
-  { id: "s2", name: "Sam Patel", handle: "@sampatel" },
-  { id: "s3", name: "Meridian Events", handle: "@meridianevents" },
 ];
 
 export function formatCount(value: number): string {

@@ -22,6 +22,12 @@ import { primeComposer } from "../chat/composerBus";
 import { useWindowStore, windowKey } from "../../os/windowStore";
 import { useOsStore } from "../../os/osStore";
 import { AppSurface } from "./AppSurface";
+import {
+  registerIframeUiDriver,
+  unregisterIframeUiDriver,
+  type GuestUiCommand,
+  type GuestUiSnapshot,
+} from "../../os/cursor/iframeUiBridge";
 
 /**
  * Collect the shell's design tokens for the app iframe. The shell's own
@@ -87,6 +93,12 @@ export function AppHost({ appId }: { appId: string }) {
   const [frameTick, setFrameTick] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [toolbarSlots, setToolbarSlots] = useState<AppToolbarSlot[]>([]);
+  const uiSeq = useRef(0);
+  const uiPending = useRef(
+    new Map<number, { resolve: (v: unknown) => void; reject: (e: Error) => void }>(),
+  );
+
+  const installedWindowId = windowKey({ type: "installed", appId });
 
   const entry = app?.manifest.entry;
   const baseSrc =
@@ -129,6 +141,52 @@ export function AppHost({ appId }: { appId: string }) {
     [src],
   );
 
+  const sendUiCommand = useCallback(
+    (command: GuestUiCommand) =>
+      new Promise<unknown>((resolve, reject) => {
+        const id = ++uiSeq.current;
+        uiPending.current.set(id, { resolve, reject });
+        postToApp({ appBridge: true, type: "ui.command", id, command });
+        window.setTimeout(() => {
+          if (!uiPending.current.has(id)) return;
+          uiPending.current.delete(id);
+          reject(new Error("App UI bridge timed out — is createAppClient() loaded?"));
+        }, 4_000);
+      }),
+    [postToApp],
+  );
+
+  // Register agent cursor path #2 while this AppHost iframe is mounted.
+  useEffect(() => {
+    if (entry?.kind === "openui") return;
+    registerIframeUiDriver(installedWindowId, async (command) => {
+      try {
+        const result = await sendUiCommand(command);
+        if (command.kind === "snapshot") {
+          const snap = result as GuestUiSnapshot;
+          const frame = iframeRef.current?.getBoundingClientRect();
+          const ox = frame?.x ?? 0;
+          const oy = frame?.y ?? 0;
+          return {
+            elements: (snap.elements ?? []).map((el) => ({
+              ...el,
+              // Guest rects are iframe-local; translate to shell viewport for the cursor.
+              rect: {
+                ...el.rect,
+                x: Math.round(el.rect.x + ox),
+                y: Math.round(el.rect.y + oy),
+              },
+            })),
+          };
+        }
+        return { ok: true as const };
+      } catch (err) {
+        return { error: err instanceof Error ? err.message : String(err) };
+      }
+    });
+    return () => unregisterIframeUiDriver(installedWindowId);
+  }, [installedWindowId, sendUiCommand, entry?.kind, frameTick]);
+
   const pushTheme = useCallback(() => {
     postToApp({ appBridge: true, type: "theme", theme, tokens: collectAppTokens() });
   }, [postToApp, theme, accentPreset, radiusPreset, fontPreset, textScalePreset, spacingPreset]);
@@ -164,6 +222,14 @@ export function AppHost({ appId }: { appId: string }) {
       }
       if (msg.type === "toolbar-set") {
         setToolbarSlots(msg.slots);
+        return;
+      }
+      if (msg.type === "ui.result") {
+        const pending = uiPending.current.get(msg.id);
+        if (!pending) return;
+        uiPending.current.delete(msg.id);
+        if (msg.ok) pending.resolve(msg.result);
+        else pending.reject(new Error(msg.error || "UI bridge command failed"));
         return;
       }
       if (msg.type !== "request") return;

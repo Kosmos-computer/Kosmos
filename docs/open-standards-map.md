@@ -34,11 +34,14 @@ Every subsystem is sorted by one question: do we ride an existing open standard,
 | External channels | Telegram Bot API (HTTP JSON) | **Adopt** | Per-channel vendor APIs behind a gateway. Matrix would be the open-standard channel if one is wanted later. | `server/channels/telegram.ts` |
 | Design tokens | Custom `--arco-*` CSS vars, forwarded to apps as `--os-*` | **Bridge** | Keep CSS-var delivery; add a DTCG (`$type`/`$value`) token file as canonical source so themes are portable. | `src/styles/tokens.css`, `src/apps/appview/AppHost.tsx` |
 | Calendar data | Custom `os.calendar@1` JSON + ISO 8601 | **Bridge** | The intent contract is ours (define); the data should gain iCal (RFC 5545) import/export at the boundary. | `shared/capabilities/calendar.ts` |
+| Docs | TipTap JSON (`application/x-os-doc+json`) | **Bridge** | ODT / DOCX / Markdown / HTML via `@arco/doc-interop` + `docs.import`/`docs.export`. | `packages/doc-interop/`, `docs/office-format-interop.md` |
+| Sheets | Workbook JSON (`application/x-os-sheet+json`) | **Bridge** | ODS / XLSX / CSV / TSV; `sheets.query` for agents. | `packages/doc-interop/`, `shared/sheetFormula.ts` |
+| Slides | Deck JSON (`application/x-os-slides+json`) | **Bridge** | ODP / PPTX / HTML; PDF export one-way. | `apps/slides/`, `packages/doc-interop/` |
 | Auth | scrypt + HttpOnly session cookie; bearer tokens for external MCP | **Bridge** | Fine for a local OS. Move to OAuth 2.1/OIDC when third-party clients or the outward MCP server go multi-user. | `server/auth/`, `server/mcp/outward.ts` |
 | Public REST API | REST + JSON, undocumented | **Bridge** | No redesign needed — describe the existing routes with an OpenAPI document when external consumers appear. | `server/index.ts` |
 | Skills | SKILL.md + YAML frontmatter | **Bridge** | Already de-facto compatible with the Claude/Cursor skills format. Track that ecosystem rather than diverging. | `server/skills/skillStore.ts` |
 
-Tally: 9 define, 9 adopt, 5 bridge.
+Tally: 9 define, 9 adopt, 8 bridge.
 
 ## 3. If we fork or replace OpenUI: what becomes the spec
 

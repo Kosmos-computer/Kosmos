@@ -72,6 +72,7 @@ const WRITE_SYSTEM_TOOLS = new Set([
   "os_ui",
   "mouse_click",
   "type_text",
+  "select_option",
 ]);
 
 function systemTools(): RegisteredTool[] {

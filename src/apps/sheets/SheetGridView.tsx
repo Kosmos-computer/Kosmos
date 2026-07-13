@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { evaluateFormula } from "@shared/sheetFormula";
 import {
   cellAddress,
   columnLabel,
@@ -47,6 +48,16 @@ export function SheetGridView({
 
   const selectedAddress = cellAddress(selection.col, selection.row);
   const selectedCell = getCell(cells, selectedAddress);
+
+  const evaluated = useMemo(() => {
+    const map: Record<string, number | string> = {};
+    for (const [addr, cell] of Object.entries(cells)) {
+      if (cell.formula?.startsWith("=")) {
+        map[addr] = evaluateFormula(cell.formula, cells);
+      }
+    }
+    return map;
+  }, [cells]);
 
   const commitEdit = useCallback(
     (address: string, rawValue: string) => {
@@ -167,7 +178,7 @@ export function SheetGridView({
                 const cell = getCell(cells, address);
                 const isSelected = selection.col === col && selection.row === row;
                 const isEditing = editingAddress === address;
-                const display = formatCellDisplay(cell);
+                const display = formatCellDisplay(cell, evaluated[address]);
                 const classes = [
                   "arco-sheets__cell",
                   isSelected ? "arco-sheets__cell--selected" : "",

@@ -32,10 +32,32 @@ export const TASK_MIME = "application/x-os-task+json";
 export const SCHEDULE_MIME = "application/x-os-schedule+json";
 export const PDF_MIME = "application/pdf";
 
+/** Office / web interchange mimes (Drive upload → import bridges). */
+export const ODT_MIME = "application/vnd.oasis.opendocument.text";
+export const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+export const ODS_MIME = "application/vnd.oasis.opendocument.spreadsheet";
+export const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+export const ODP_MIME = "application/vnd.oasis.opendocument.presentation";
+export const PPTX_MIME = "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+export const MARKDOWN_MIME = "text/markdown";
+export const HTML_MIME = "text/html";
+export const CSV_MIME = "text/csv";
+export const TSV_MIME = "text/tab-separated-values";
+
+export const DOC_IMPORT_MIMES = new Set([ODT_MIME, DOCX_MIME, MARKDOWN_MIME, HTML_MIME, "text/x-markdown"]);
+export const SHEET_IMPORT_MIMES = new Set([ODS_MIME, XLSX_MIME, CSV_MIME, TSV_MIME]);
+export const SLIDES_IMPORT_MIMES = new Set([ODP_MIME, PPTX_MIME, HTML_MIME]);
+
 /** Blobs that must not be round-tripped as UTF-8 text. */
 export function isBinaryMime(mimeType: string): boolean {
   return (
     mimeType === PDF_MIME ||
+    mimeType === ODT_MIME ||
+    mimeType === DOCX_MIME ||
+    mimeType === ODS_MIME ||
+    mimeType === XLSX_MIME ||
+    mimeType === ODP_MIME ||
+    mimeType === PPTX_MIME ||
     mimeType.startsWith("image/") ||
     mimeType.startsWith("video/") ||
     mimeType.startsWith("audio/")

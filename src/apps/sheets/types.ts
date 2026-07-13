@@ -106,9 +106,17 @@ export function cellAddress(col: number, row: number): string {
   return `${columnLabel(col)}${row + 1}`;
 }
 
-export function formatCellDisplay(cell: Cell | undefined): string {
+export function formatCellDisplay(
+  cell: Cell | undefined,
+  evaluated?: number | string,
+): string {
   if (!cell) return "";
-  const raw = cell.formula?.startsWith("=") ? cell.formula : String(cell.value ?? "");
+  const raw =
+    evaluated !== undefined
+      ? String(evaluated)
+      : cell.formula?.startsWith("=")
+        ? cell.formula
+        : String(cell.value ?? "");
   const format = cell.format?.numberFormat ?? "plain";
 
   if (format === "currency" && raw && !raw.startsWith("=")) {

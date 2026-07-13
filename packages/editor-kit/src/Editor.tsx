@@ -8,6 +8,8 @@ export interface DocEditorProps {
   placeholder?: string;
   onChange?: (doc: JSONContent) => void;
   editable?: boolean;
+  /** Called once when the TipTap editor instance is ready (for toolbars). */
+  onEditorReady?: (editor: import("@tiptap/core").Editor) => void;
 }
 
 export function DocEditor({
@@ -15,12 +17,14 @@ export function DocEditor({
   placeholder = "Start writing…",
   onChange,
   editable = true,
+  onEditorReady,
 }: DocEditorProps) {
   const editor = useEditor({
-    extensions: createEditorExtensions({ placeholder, widgets: true, slashCommands: true }),
+    extensions: createEditorExtensions({ placeholder, widgets: true, slashCommands: true, richBlocks: true }),
     content,
     editable,
     onUpdate: ({ editor: ed }) => onChange?.(ed.getJSON()),
+    onCreate: ({ editor: ed }) => onEditorReady?.(ed),
   });
 
   useEffect(() => {

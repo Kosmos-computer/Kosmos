@@ -31,7 +31,7 @@ const TOOL_GROUPS: { label: string; match: (name: string) => boolean }[] = [
   {
     label: "Desktop & apps",
     match: (n) =>
-      ["os_ui", "ui_snapshot", "mouse_click", "type_text"].includes(n) ||
+      ["os_ui", "ui_snapshot", "mouse_click", "type_text", "select_option"].includes(n) ||
       n.startsWith("app_") ||
       n === "get_app" ||
       n === "list_apps",

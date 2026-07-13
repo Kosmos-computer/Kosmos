@@ -13,16 +13,28 @@ import type { CalendarEventInput } from "../../shared/capabilities/calendar.js";
 import { CALCULATOR_CONTRACT_ID } from "../../shared/capabilities/calculator.js";
 import { CALENDAR_CONTRACT_ID } from "../../shared/capabilities/calendar.js";
 import { DOCS_CONTRACT_ID, EMPTY_DOC_JSON } from "../../shared/capabilities/docs.js";
-import { DOC_MIME, FILES_CONTRACT_ID, SHEET_MIME, type FileCreateInput } from "../../shared/capabilities/files.js";
+import { DOC_MIME, FILES_CONTRACT_ID, SHEET_MIME, SLIDES_MIME, type FileCreateInput } from "../../shared/capabilities/files.js";
 import { EMPTY_SHEET_JSON, SHEETS_CONTRACT_ID } from "../../shared/capabilities/sheets.js";
-import { exportDocToMarkdown } from "../../shared/docFormat.js";
-import { SHEETS_CONTRACT_ID } from "../../shared/capabilities/sheets.js";
+import { EMPTY_SLIDES_JSON, SLIDES_CONTRACT_ID } from "../../shared/capabilities/slides.js";
 import { VOICE_CONTRACT_ID } from "../../shared/capabilities/voice.js";
 import { SHARES_CONTRACT_ID } from "../../shared/capabilities/shares.js";
 import type { ShareCreateInput } from "../../shared/capabilities/shares.js";
 import { TASKS_CONTRACT_ID } from "../../shared/capabilities/tasks.js";
 import type { TaskInput, TaskStatus } from "../../shared/capabilities/tasks.js";
 import { intentMeta } from "../../shared/capabilities/index.js";
+import {
+  exportDoc,
+  exportSheet,
+  exportSlides,
+  importDoc,
+  importSheet,
+  importSlides,
+  type DocFormat,
+  type SheetFormat,
+  type SlidesFormat,
+  type WorkbookDoc,
+} from "../../packages/doc-interop/src/index.js";
+import { expandRange, evaluateFormula } from "../../shared/sheetFormula.js";
 import { calculatorService } from "../services/calculatorService.js";
 import { calendarService } from "../services/calendarService.js";
 import { tasksService } from "../services/tasksService.js";
@@ -39,10 +51,34 @@ const DEFAULT_PROVIDERS: Record<string, string> = {
   [FILES_CONTRACT_ID]: "system",
   [DOCS_CONTRACT_ID]: "system",
   [SHEETS_CONTRACT_ID]: "system",
+  [SLIDES_CONTRACT_ID]: "system",
   [VOICE_CONTRACT_ID]: "system",
   [TASKS_CONTRACT_ID]: "system",
   [SHARES_CONTRACT_ID]: "system",
 };
+
+function ensureArcoName(name: string, suffix: string): string {
+  if (name.toLowerCase().endsWith(suffix)) return name;
+  const base = name.replace(/\.[^.]+$/i, "");
+  return `${base}${suffix}`;
+}
+
+async function retainSourceSibling(
+  name: string,
+  parentId: string | null,
+  bytes: Uint8Array,
+  retain: boolean,
+): Promise<string | undefined> {
+  if (!retain) return undefined;
+  const created = filesService.create({
+    name: `${name}.source`,
+    kind: "file",
+    parentId,
+    mimeType: "application/octet-stream",
+    contentBase64: Buffer.from(bytes).toString("base64"),
+  });
+  return created.id;
+}
 
 /** Where the Pipecat voice service listens (voice-server/bot.py). */
 const VOICE_SERVER_URL = process.env.VOICE_SERVER_URL ?? "http://localhost:4630";
@@ -160,17 +196,48 @@ const systemHandlers: Record<string, IntentHandler> = {
   },
   "docs.export": async (p) => {
     const file = filesService.readContent(String(p.id ?? ""));
-    const format = String(p.format ?? "json");
-    if (format === "markdown") {
-      let doc: unknown;
-      try {
-        doc = JSON.parse(file.content);
-      } catch {
-        throw new Error("Document content is not valid JSON");
-      }
-      return { id: file.id, name: file.name, format, content: exportDocToMarkdown(doc as never) };
+    const format = String(p.format ?? "json") as DocFormat;
+    let doc: unknown;
+    try {
+      doc = JSON.parse(file.content);
+    } catch {
+      throw new Error("Document content is not valid JSON");
     }
-    return { id: file.id, name: file.name, format: "json", content: file.content };
+    if (format === "json") {
+      return { id: file.id, name: file.name, format, content: file.content };
+    }
+    const exported = await exportDoc(doc as never, format);
+    return {
+      id: file.id,
+      name: file.name,
+      format,
+      content: format === "markdown" || format === "html" ? new TextDecoder().decode(exported.bytes) : undefined,
+      contentBase64: Buffer.from(exported.bytes).toString("base64"),
+      mimeType: exported.mimeType,
+      filenameExt: exported.filenameExt,
+      warnings: exported.warnings,
+    };
+  },
+  "docs.import": async (p) => {
+    const format = String(p.format ?? "markdown") as DocFormat;
+    const bytes = Buffer.from(String(p.contentBase64 ?? ""), "base64");
+    const imported = await importDoc(new Uint8Array(bytes), format);
+    const parentId = p.parentId == null ? null : String(p.parentId);
+    const name = ensureArcoName(String(p.name ?? "Imported.doc.json"), ".doc.json");
+    const created = filesService.create({
+      name,
+      kind: "file",
+      mimeType: DOC_MIME,
+      parentId,
+      content: JSON.stringify(imported.content),
+    });
+    const sourceId = await retainSourceSibling(
+      name,
+      parentId,
+      new Uint8Array(bytes),
+      p.retainSource !== false && (format === "odt" || format === "docx"),
+    );
+    return { ...created, warnings: imported.warnings, sourceId };
   },
 
   // os.sheets@1 — thin wrappers over the file store
@@ -195,6 +262,190 @@ const systemHandlers: Record<string, IntentHandler> = {
       throw new Error("Spreadsheet content is not valid JSON");
     }
     return { ...file, workbook };
+  },
+  "sheets.query": async (p) => {
+    const file = filesService.readContent(String(p.id ?? ""));
+    const workbook = JSON.parse(file.content) as WorkbookDoc;
+    const sheetName = typeof p.sheet === "string" ? p.sheet : undefined;
+    const sheet =
+      workbook.sheets.find((s) => s.id === sheetName || s.name === sheetName) ?? workbook.sheets[0];
+    if (!sheet) throw new Error("Workbook has no sheets");
+    const range = String(p.range ?? "A1");
+    const addresses = expandRange(range);
+    const values = addresses.map((addr) => {
+      const cell = sheet.cells[addr];
+      if (!cell) return null;
+      if (cell.formula?.startsWith("=")) return evaluateFormula(cell.formula, sheet.cells);
+      return cell.value ?? null;
+    });
+    // Shape as 2D grid when range spans rows/cols
+    const parts = range.split(":");
+    if (parts.length === 1) {
+      return { id: file.id, sheet: sheet.name, range, values: [[values[0] ?? null]] };
+    }
+    const a = addresses[0];
+    const b = addresses[addresses.length - 1];
+    const startCol = a.replace(/\d+/g, "");
+    const endCol = b.replace(/\d+/g, "");
+    const startRow = Number(a.replace(/[A-Z]/gi, ""));
+    const endRow = Number(b.replace(/[A-Z]/gi, ""));
+    const colCount =
+      endCol.split("").reduce((n, ch) => n * 26 + (ch.charCodeAt(0) - 64), 0) -
+      startCol.split("").reduce((n, ch) => n * 26 + (ch.charCodeAt(0) - 64), 0) +
+      1;
+    const rows: (string | number | null)[][] = [];
+    for (let r = startRow; r <= endRow; r++) {
+      rows.push(values.splice(0, colCount) as (string | number | null)[]);
+    }
+    return { id: file.id, sheet: sheet.name, range, values: rows };
+  },
+  "sheets.write_range": async (p) => {
+    const file = filesService.readContent(String(p.id ?? ""));
+    const workbook = JSON.parse(file.content) as WorkbookDoc;
+    const sheetName = typeof p.sheet === "string" ? p.sheet : undefined;
+    const sheet =
+      workbook.sheets.find((s) => s.id === sheetName || s.name === sheetName) ?? workbook.sheets[0];
+    if (!sheet) throw new Error("Workbook has no sheets");
+    const start = String(p.start ?? "A1").toUpperCase();
+    const startMatch = start.match(/^([A-Z]+)(\d+)$/);
+    if (!startMatch) throw new Error("Invalid start address");
+    const startCol = startMatch[1].split("").reduce((n, ch) => n * 26 + (ch.charCodeAt(0) - 64), 0) - 1;
+    const startRow = Number(startMatch[2]) - 1;
+    const values = Array.isArray(p.values) ? (p.values as unknown[][]) : [];
+    values.forEach((row, ri) => {
+      (Array.isArray(row) ? row : []).forEach((value, ci) => {
+        let colLabel = "";
+        let col = startCol + ci;
+        while (col >= 0) {
+          colLabel = String.fromCharCode(65 + (col % 26)) + colLabel;
+          col = Math.floor(col / 26) - 1;
+        }
+        const addr = `${colLabel}${startRow + ri + 1}`;
+        if (typeof value === "string" && value.startsWith("=")) {
+          sheet.cells[addr] = { formula: value, value };
+        } else if (value === null || value === undefined || value === "") {
+          delete sheet.cells[addr];
+        } else {
+          sheet.cells[addr] = {
+            value: typeof value === "number" ? value : String(value),
+          };
+        }
+      });
+    });
+    filesService.writeContent(file.id, JSON.stringify(workbook));
+    return { id: file.id, sheet: sheet.name, written: values.length };
+  },
+  "sheets.export": async (p) => {
+    const file = filesService.readContent(String(p.id ?? ""));
+    const format = String(p.format ?? "json") as SheetFormat;
+    const workbook = JSON.parse(file.content) as WorkbookDoc;
+    if (format === "json") {
+      return { id: file.id, name: file.name, format, content: file.content };
+    }
+    const exported = await exportSheet(workbook, format);
+    return {
+      id: file.id,
+      name: file.name,
+      format,
+      contentBase64: Buffer.from(exported.bytes).toString("base64"),
+      mimeType: exported.mimeType,
+      filenameExt: exported.filenameExt,
+      warnings: exported.warnings,
+    };
+  },
+  "sheets.import": async (p) => {
+    const format = String(p.format ?? "csv") as SheetFormat;
+    const bytes = Buffer.from(String(p.contentBase64 ?? ""), "base64");
+    const imported = await importSheet(new Uint8Array(bytes), format);
+    const parentId = p.parentId == null ? null : String(p.parentId);
+    const name = ensureArcoName(String(p.name ?? "Imported.sheet.json"), ".sheet.json");
+    const created = filesService.create({
+      name,
+      kind: "file",
+      mimeType: SHEET_MIME,
+      parentId,
+      content: JSON.stringify(imported.content),
+    });
+    const sourceId = await retainSourceSibling(
+      name,
+      parentId,
+      new Uint8Array(bytes),
+      p.retainSource !== false && (format === "ods" || format === "xlsx"),
+    );
+    return { ...created, warnings: imported.warnings, sourceId };
+  },
+
+  // os.slides@1
+  "slides.create": (p) => {
+    const name = ensureArcoName(String(p.name ?? "Untitled.slides.json"), ".slides.json");
+    const contentObj =
+      typeof p.content === "object" && p.content !== null ? p.content : EMPTY_SLIDES_JSON;
+    return filesService.create({
+      name,
+      kind: "file",
+      mimeType: SLIDES_MIME,
+      parentId: p.parentId == null ? null : String(p.parentId),
+      content: JSON.stringify(contentObj),
+    });
+  },
+  "slides.open": async (p) => {
+    const file = filesService.readContent(String(p.id ?? ""));
+    let deck: Record<string, unknown>;
+    try {
+      const parsed = JSON.parse(file.content || "null");
+      deck =
+        parsed && typeof parsed === "object" && !Array.isArray(parsed)
+          ? (parsed as Record<string, unknown>)
+          : { ...EMPTY_SLIDES_JSON };
+    } catch {
+      throw new Error("Presentation content is not valid JSON");
+    }
+    if (typeof deck.width !== "number") deck.width = EMPTY_SLIDES_JSON.width;
+    if (typeof deck.height !== "number") deck.height = EMPTY_SLIDES_JSON.height;
+    if (!Array.isArray(deck.slides) || deck.slides.length === 0) {
+      deck.slides = [...EMPTY_SLIDES_JSON.slides];
+    }
+    return { id: file.id, name: file.name, mimeType: file.mimeType, deck };
+  },
+  "slides.export": async (p) => {
+    const file = filesService.readContent(String(p.id ?? ""));
+    const format = String(p.format ?? "json") as SlidesFormat;
+    const deck = JSON.parse(file.content);
+    if (format === "json") {
+      return { id: file.id, name: file.name, format, content: file.content };
+    }
+    const exported = await exportSlides(deck, format);
+    return {
+      id: file.id,
+      name: file.name,
+      format,
+      content: format === "html" ? new TextDecoder().decode(exported.bytes) : undefined,
+      contentBase64: Buffer.from(exported.bytes).toString("base64"),
+      mimeType: exported.mimeType,
+      filenameExt: exported.filenameExt,
+      warnings: exported.warnings,
+    };
+  },
+  "slides.import": async (p) => {
+    const format = String(p.format ?? "html") as SlidesFormat;
+    const bytes = Buffer.from(String(p.contentBase64 ?? ""), "base64");
+    const imported = await importSlides(new Uint8Array(bytes), format);
+    const parentId = p.parentId == null ? null : String(p.parentId);
+    const name = ensureArcoName(String(p.name ?? "Imported.slides.json"), ".slides.json");
+    const created = filesService.create({
+      name,
+      kind: "file",
+      mimeType: SLIDES_MIME,
+      parentId,
+      content: JSON.stringify(imported.content),
+    });
+    const sourceId = await retainSourceSibling(
+      name,
+      parentId,
+      new Uint8Array(bytes),
+      p.retainSource !== false && (format === "odp" || format === "pptx"),
+    );
+    return { ...created, warnings: imported.warnings, sourceId };
   },
 
   // os.shares@1 — scoped public links over os.files@1

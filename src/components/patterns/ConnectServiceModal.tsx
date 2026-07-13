@@ -65,7 +65,13 @@ export function ConnectServiceModal({
   );
   const canSave =
     (!preset.requiresInstance || instanceUrl.trim().length > 0) &&
-    (!preset.requiresToken || token.trim().length > 0);
+    (!preset.requiresToken || token.trim().length > 0) &&
+    (!preset.requiresAccountHint || accountHint.trim().length > 0);
+
+  const isBluesky = providerId === "bluesky";
+  const isNostr = providerId === "nostr";
+  const isFacebook = providerId === "facebook";
+  const isTwitter = providerId === "twitter";
 
   function handleSave() {
     onConnect({
@@ -166,43 +172,111 @@ export function ConnectServiceModal({
             <p className="arco-connect-modal__hint">{preset.hint}</p>
           </section>
 
-          {preset.requiresInstance ? (
+          {preset.requiresInstance || isNostr ? (
             <section className="arco-connect-modal__section">
-              <label className="arco-connect-modal__label" htmlFor="connect-instance-url"><T k={I18nKey.COMPONENTS$PATTERNS_SERVER_INSTANCE_URL} /></label>
+              <label className="arco-connect-modal__label" htmlFor="connect-instance-url">
+                {isNostr ? "Relay URLs (optional)" : <T k={I18nKey.COMPONENTS$PATTERNS_SERVER_INSTANCE_URL} />}
+              </label>
               <Input
                 id="connect-instance-url"
                 value={instanceUrl}
                 onChange={(event) => setInstanceUrl(event.target.value)}
-                placeholder="https://chat.example.com"
+                placeholder={
+                  isNostr
+                    ? "wss://relay.snort.social, wss://nos.lol"
+                    : providerId === "mastodon"
+                      ? "https://mastodon.social"
+                      : "https://chat.example.com"
+                }
+                spellCheck={false}
+              />
+              {isNostr ? (
+                <p className="arco-connect-modal__hint">
+                  Comma-separated wss:// relays. Leave blank to use Snort defaults.
+                </p>
+              ) : null}
+            </section>
+          ) : null}
+
+          {isBluesky || preset.requiresAccountHint ? (
+            <section className="arco-connect-modal__section">
+              <label className="arco-connect-modal__label" htmlFor="connect-account-hint">
+                <T k={I18nKey.COMPONENTS$PATTERNS_BLUESKY_HANDLE} />
+              </label>
+              <Input
+                id="connect-account-hint"
+                value={accountHint}
+                onChange={(event) => setAccountHint(event.target.value)}
+                placeholder={i18n.t(I18nKey.COMPONENTS$PATTERNS_HANDLE_PLACEHOLDER)}
+                spellCheck={false}
+              />
+            </section>
+          ) : isFacebook ? (
+            <section className="arco-connect-modal__section">
+              <label className="arco-connect-modal__label" htmlFor="connect-account-hint">
+                Page ID (optional)
+              </label>
+              <Input
+                id="connect-account-hint"
+                value={accountHint}
+                onChange={(event) => setAccountHint(event.target.value)}
+                placeholder="1234567890"
+                spellCheck={false}
+              />
+              <p className="arco-connect-modal__hint">
+                Leave blank to connect as the user (/me). Set a Page ID to post and read as that Page.
+              </p>
+            </section>
+          ) : !isNostr && !isTwitter ? (
+            <section className="arco-connect-modal__section">
+              <label className="arco-connect-modal__label" htmlFor="connect-account-hint">
+                <T k={I18nKey.COMPONENTS$PATTERNS_ACCOUNT_LABEL_OPTIONAL} />
+              </label>
+              <Input
+                id="connect-account-hint"
+                value={accountHint}
+                onChange={(event) => setAccountHint(event.target.value)}
+                placeholder={i18n.t(I18nKey.COMPONENTS$PATTERNS_YOU_OR_WORK_COMPANY_COM)}
                 spellCheck={false}
               />
             </section>
           ) : null}
 
-          <section className="arco-connect-modal__section">
-            <label className="arco-connect-modal__label" htmlFor="connect-account-hint"><T k={I18nKey.COMPONENTS$PATTERNS_ACCOUNT_LABEL_OPTIONAL} /></label>
-            <Input
-              id="connect-account-hint"
-              value={accountHint}
-              onChange={(event) => setAccountHint(event.target.value)}
-              placeholder={i18n.t(I18nKey.COMPONENTS$PATTERNS_YOU_OR_WORK_COMPANY_COM)}
-              spellCheck={false}
-            />
-          </section>
-
           {preset.requiresToken ? (
             <section className="arco-connect-modal__section">
-              <label className="arco-connect-modal__label" htmlFor="connect-token"><T k={I18nKey.COMPONENTS$PATTERNS_ACCESS_TOKEN} /></label>
+              <label className="arco-connect-modal__label" htmlFor="connect-token">
+                {isBluesky ? (
+                  <T k={I18nKey.COMPONENTS$PATTERNS_APP_PASSWORD} />
+                ) : isNostr ? (
+                  "nsec private key"
+                ) : (
+                  <T k={I18nKey.COMPONENTS$PATTERNS_ACCESS_TOKEN} />
+                )}
+              </label>
               <Input
                 id="connect-token"
                 type="password"
                 value={token}
                 onChange={(event) => setToken(event.target.value)}
-                placeholder={i18n.t(I18nKey.COMPONENTS$PATTERNS_PASTE_TOKEN_OAUTH_REPLACES_THIS_LATER)}
+                placeholder={
+                  isBluesky
+                    ? i18n.t(I18nKey.COMPONENTS$PATTERNS_APP_PASSWORD)
+                    : isNostr
+                      ? "nsec1… or 64-char hex"
+                      : i18n.t(I18nKey.COMPONENTS$PATTERNS_PASTE_TOKEN_OAUTH_REPLACES_THIS_LATER)
+                }
                 autoComplete="off"
                 spellCheck={false}
               />
-              <p className="arco-connect-modal__hint"><T k={I18nKey.COMPONENTS$PATTERNS_STORED_LOCALLY_FOR_THIS_PROTOTYPE_PRODUCTION_WIRING_USES} /></p>
+              <p className="arco-connect-modal__hint">
+                {isBluesky ? (
+                  <T k={I18nKey.COMPONENTS$PATTERNS_BLUESKY_APP_PASSWORD_HINT} />
+                ) : isNostr ? (
+                  "Stored in the Arco vault. Prefer a dedicated key; never paste a key you use for funds."
+                ) : (
+                  <T k={I18nKey.COMPONENTS$PATTERNS_STORED_LOCALLY_FOR_THIS_PROTOTYPE_PRODUCTION_WIRING_USES} />
+                )}
+              </p>
             </section>
           ) : null}
         </div>

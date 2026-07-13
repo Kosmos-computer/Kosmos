@@ -130,15 +130,44 @@ export type SessionSummary = Omit<Session, "messages"> & { messageCount: number 
 /** Tabs available in the Studio's context drawer (agent-canvas pattern). */
 export type WorkspaceTab = "files" | "diffs" | "terminal" | "preview" | "browser";
 
+/** How the agent should operate an opened app (mirrors shared/agentAppCatalog). */
+export type AppControlMode = "cursor" | "tools" | "open_only";
+
 /** Shell actions the agent can drive through the `os_ui` tool. */
 export type OsUiAction =
-  /** appId is a generated-app id or an installed-app manifest id (e.g. "core.calendar"). */
+  /** appId is a system / generated / installed / web app id. */
   | { action: "open_app"; appId: string }
   | { action: "open_system"; app: string }
   /** Close a window by app id — any kind (system, generated, installed, web). */
   | { action: "close_app"; appId: string }
+  /** Raise / un-minimize a window that is already open. */
+  | { action: "focus_app"; appId: string }
+  | { action: "minimize_app"; appId: string }
+  | { action: "restore_app"; appId: string }
   | { action: "notify"; message: string }
   | { action: "open_workspace_tab"; tab: WorkspaceTab; path?: string };
+
+/** Compact window list attached to os_ui results so the agent skips a snapshot race. */
+export interface OsUiWindowSummary {
+  id: string;
+  title: string;
+  focused: boolean;
+  minimized: boolean;
+}
+
+/** Shell → server answer for an os_ui round-trip. */
+export interface OsUiResult {
+  ok: boolean;
+  error?: string;
+  windowId?: string;
+  title?: string;
+  focused?: boolean;
+  minimized?: boolean;
+  control?: AppControlMode;
+  toolHint?: string;
+  note?: string;
+  windows?: OsUiWindowSummary[];
+}
 
 /** Choices a policy confirm card can offer beyond plain allow/deny. */
 export type ConfirmOption = "once" | "session" | "always" | "deny";
@@ -148,7 +177,11 @@ export type AgentEvent =
   | { type: "text_delta"; delta: string }
   | { type: "tool_start"; callId: string; name: string; args: Record<string, unknown> }
   | { type: "tool_end"; callId: string; name: string; result: string }
-  | { type: "os_ui"; action: OsUiAction }
+  /**
+   * Drive the desktop (open/close/focus/…). When `requestId` is set the shell
+   * must POST /api/client-requests/:requestId with an OsUiResult after settle.
+   */
+  | { type: "os_ui"; action: OsUiAction; requestId?: string }
   /**
    * A cursor tool is parked server-side waiting for the shell to execute this
    * command (move/click/type/snapshot) and answer via
@@ -221,16 +254,30 @@ export interface UiElement {
   value?: string;
 }
 
+/** Per-window cursor reachability. */
+export type UiWindowControl = "cursor" | "opaque" | "partial";
+
 /** A window's worth of targets, grouped so the agent reads screen structure. */
 export interface UiWindowSnapshot {
   title: string;
   focused: boolean;
+  /** True when the window is minimized (content not in the DOM). */
+  minimized?: boolean;
+  /** Stable window id from the window manager (e.g. system:notes). */
+  windowId?: string;
+  control?: UiWindowControl;
+  /** Why control is opaque/partial (iframe, monaco, native_host, minimized). */
+  reason?: string;
   elements: UiElement[];
 }
+
+/** Where the cursor DOM walk is running. */
+export type UiHostMode = "embedded" | "native" | "mobile";
 
 /** The whole visible shell: windows plus global chrome (dock, menu bar). */
 export interface UiSnapshot {
   screen: { w: number; h: number };
+  hostMode: UiHostMode;
   windows: UiWindowSnapshot[];
   /** Dock / menu-bar targets that live outside any window. */
   shell: UiElement[];
@@ -240,9 +287,10 @@ export interface UiSnapshot {
 
 /** Commands the server-side cursor tools ask the shell to perform. */
 export type CursorCommand =
-  | { kind: "snapshot" }
+  | { kind: "snapshot"; windowTitle?: string }
   | { kind: "click"; targetId?: string; x?: number; y?: number }
-  | { kind: "type"; targetId: string; text: string; submit?: boolean };
+  | { kind: "type"; targetId: string; text: string; submit?: boolean }
+  | { kind: "select"; targetId: string; value: string };
 
 /** Shell → server answer for a cursor request. */
 export interface CursorResult {
@@ -250,6 +298,9 @@ export interface CursorResult {
   /** Human-readable outcome ("clicked button 'Save' in 'Settings'"). */
   outcome?: string;
   error?: string;
+  /** Suggested os_ui focus target when a click was occluded. */
+  focusAppId?: string;
+  focusTitle?: string;
   snapshot?: UiSnapshot;
 }
 

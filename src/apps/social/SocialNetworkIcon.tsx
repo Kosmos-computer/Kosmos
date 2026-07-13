@@ -6,7 +6,7 @@ export interface SocialNetworkIconProps {
   className?: string;
 }
 
-/** Brand marks for federated social networks (Simple Icons + Nostr community icon). */
+/** Brand marks for social networks (Simple Icons + Nostr community icon). */
 export function SocialNetworkIcon({ network, size = 20, className }: SocialNetworkIconProps) {
   const props = {
     width: size,
@@ -35,9 +35,27 @@ export function SocialNetworkIcon({ network, size = 20, className }: SocialNetwo
           <path d="M210.8 199.4c0 3.1-2.5 5.7-5.7 5.7h-68c-3.1 0-5.7-2.5-5.7-5.7v-15.5c.3-19 2.3-37.2 6.5-45.5 2.5-5 6.7-7.7 11.5-9.1 9.1-2.7 24.9-.9 31.7-1.2 0 0 20.4.8 20.4-10.7s-9.1-8.6-9.1-8.6c-10 .3-17.7-.4-22.6-2.4-8.3-3.3-8.6-9.2-8.6-11.2-.4-23.1-34.5-25.9-64.5-20.1-32.8 6.2.4 53.3.4 116.1v8.4c0 3.1-2.6 5.6-5.7 5.6H57.7c-3.1 0-5.7-2.5-5.7-5.7v-144c0-3.1 2.5-5.7 5.7-5.7h31.7c3.1 0 5.7 2.5 5.7 5.7 0 4.7 5.2 7.2 9 4.5 11.4-8.2 26-12.5 42.4-12.5 36.6 0 64.4 21.4 64.4 68.7v83.2ZM150 99.3c0-6.7-5.4-12.1-12.1-12.1s-12.1 5.4-12.1 12.1 5.4 12.1 12.1 12.1 12.1-5.4 12.1-12.1Z" />
         </svg>
       );
+    case "twitter":
+      return (
+        <svg {...props} viewBox="0 0 24 24" fill="currentColor">
+          <path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z" />
+        </svg>
+      );
+    case "facebook":
+      return (
+        <svg {...props} viewBox="0 0 24 24" fill="currentColor">
+          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+        </svg>
+      );
   }
 }
 
 export function isSocialNetworkId(id: string): id is SocialNetworkId {
-  return id === "bluesky" || id === "mastodon" || id === "nostr";
+  return (
+    id === "bluesky" ||
+    id === "mastodon" ||
+    id === "nostr" ||
+    id === "twitter" ||
+    id === "facebook"
+  );
 }

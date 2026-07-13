@@ -56,6 +56,30 @@ body {
 }
 .docs-btn:disabled { opacity: 0.5; cursor: default; }
 
+.docs-format-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-bottom: 1px solid var(--os-border);
+  background: var(--os-bg-base);
+}
+
+.docs-format-meta {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--os-text-tertiary);
+  align-self: center;
+}
+
+.docs-warnings {
+  padding: 0.5rem 0.75rem;
+  background: color-mix(in srgb, var(--os-accent, #6ea8fe) 12%, transparent);
+  border-bottom: 1px solid var(--os-border);
+  font-size: 0.8rem;
+  color: var(--os-text-secondary);
+}
+
 .docs-list {
   overflow: auto;
   flex: 1;

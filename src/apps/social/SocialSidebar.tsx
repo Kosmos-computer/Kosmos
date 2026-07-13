@@ -18,7 +18,7 @@ export interface SocialSidebarProps {
   trends: SocialTrendItem[];
   suggestions: SocialSuggestedActor[];
   links: SocialSidebarLink[];
-  linksModule?: "discover-feeds" | "trending-links" | "relays";
+  linksModule?: "discover-feeds" | "trending-links" | "relays" | "communities";
   loading?: boolean;
   searchQuery: string;
   searchResults: SocialSuggestedActor[];
@@ -40,11 +40,12 @@ function linksTitleKey(
   if (module === "discover-feeds") return I18nKey.APPS$SOCIAL_DISCOVER_FEEDS;
   if (module === "trending-links") return I18nKey.APPS$SOCIAL_TRENDING_LINKS;
   if (module === "relays") return I18nKey.APPS$SOCIAL_YOUR_RELAYS;
+  if (module === "communities") return I18nKey.APPS$SOCIAL_YOUR_COMMUNITIES;
   return null;
 }
 
 function handleLabel(network: SocialNetworkId, handle: string): string {
-  if (network === "nostr") return handle;
+  if (network === "nostr" || network === "bitsocial") return handle;
   return handle.startsWith("@") ? handle : `@${handle}`;
 }
 

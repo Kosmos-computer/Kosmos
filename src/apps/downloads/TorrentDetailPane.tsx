@@ -23,9 +23,9 @@ function GeneralTab({ torrent }: { torrent: TorrentItem }) {
   return (
     <dl className="arco-downloads-detail__grid">
       <dt><T k={I18nKey.APPS$DOWNLOADS_LOCATION} /></dt>
-      <dd><T k={I18nKey.APPS$DOWNLOADS_DOWNLOADS_COMPLETE} /></dd>
+      <dd className="arco-downloads-detail__mono">{torrent.savePath}</dd>
       <dt><T k={I18nKey.APPS$DOWNLOADS_HASH} /></dt>
-      <dd className="arco-downloads-detail__mono"><T k={I18nKey.APPS$DOWNLOADS_A3F2_9C01_STUB} /></dd>
+      <dd className="arco-downloads-detail__mono">{torrent.id}</dd>
       <dt><T k={I18nKey.APPS$DOWNLOADS_TRACKER} /></dt>
       <dd>{torrent.tracker}</dd>
       <dt><T k={I18nKey.APPS$DOWNLOADS_LAST_ACTIVE} /></dt>
@@ -42,6 +42,12 @@ function GeneralTab({ torrent }: { torrent: TorrentItem }) {
       <dd>{torrent.uploaded}</dd>
       <dt><T k={I18nKey.APPS$DOWNLOADS_REMAINING} /></dt>
       <dd>{torrent.remaining}</dd>
+      {torrent.driveFileIds.length > 0 ? (
+        <>
+          <dt>Drive</dt>
+          <dd>{torrent.driveFileIds.length} file(s) imported</dd>
+        </>
+      ) : null}
       {torrent.error ? (
         <>
           <dt><T k={I18nKey.APPS$DOWNLOADS_ERROR} /></dt>

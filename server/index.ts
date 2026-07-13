@@ -59,6 +59,7 @@ import { appStore } from "./stores/appStore.js";
 import { modelStore } from "./stores/modelStore.js";
 import { modelRoutes } from "./routes/models.js";
 import { llamaEngine } from "./services/llamaEngine.js";
+import { bitsocialDaemon } from "./services/bitsocialDaemon.js";
 import { LOCAL_ENGINE_BASE_URL } from "../shared/models.js";
 import { automationStore } from "./stores/automationStore.js";
 import { getActiveRoot, projectStore, resolveProjectPath } from "./stores/projectStore.js";
@@ -94,8 +95,10 @@ import { shellClientConnected, shellClientCount } from "./shellChannel.js";
 import { filesService } from "./services/filesService.js";
 import { calendarService } from "./services/calendarService.js";
 import { tasksService } from "./services/tasksService.js";
+import { torrentService } from "./services/torrentService.js";
 import type { CalendarEventInput } from "../shared/capabilities/calendar.js";
 import type { TaskInput, TaskStatus } from "../shared/capabilities/tasks.js";
+import type { TorrentAddInput } from "../shared/capabilities/downloads.js";
 import { searchPlaces, geocodePlace, getDrivingRoute } from "./services/mapsService.js";
 import { webSearch } from "./services/searchService.js";
 import { browseErrorHtml, fetchBrowsePage } from "./services/browseProxyService.js";
@@ -189,14 +192,18 @@ if (
 ) {
   void llamaEngine.ensureRunning();
 }
-// Don't orphan the supervised llama-server process on shutdown.
+// Don't orphan supervised sidecars on shutdown.
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.on(signal, () => {
     llamaEngine.dispose();
+    bitsocialDaemon.dispose();
     process.exit(0);
   });
 }
 filesService.ensureSeeds();
+void torrentService.ensureReady().catch((err) => {
+  console.warn("[downloads] failed to start torrent client:", err);
+});
 // Defer RSS-heavy warmups on small VPS hosts so the process can bind :4600
 // and pass health checks before background feed/download work runs.
 const deferWarmups = () => {
@@ -1088,6 +1095,75 @@ app.get("/api/video/stream/:id", (c) => {
 });
 
 app.get("/api/podcast/episodes", (c) => c.json(listLocalEpisodes()));
+
+// ── Downloads / BitTorrent (os.downloads@1) ───────────────────────────────────
+
+app.get("/api/downloads/torrents", requireCap("files:read"), async (c) => {
+  try {
+    return c.json(await torrentService.list());
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : String(err) }, 500);
+  }
+});
+
+app.get("/api/downloads/torrents/:id", requireCap("files:read"), async (c) => {
+  try {
+    return c.json(await torrentService.get(c.req.param("id")));
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : String(err) }, 404);
+  }
+});
+
+app.get("/api/downloads/stats", requireCap("files:read"), async (c) => {
+  try {
+    return c.json(await torrentService.stats());
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : String(err) }, 500);
+  }
+});
+
+app.post("/api/downloads/torrents", requireCap("files:write"), async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as TorrentAddInput;
+  try {
+    const torrent = await torrentService.add(body);
+    return c.json(torrent, 201);
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : String(err) }, 400);
+  }
+});
+
+app.post("/api/downloads/torrents/:id/pause", requireCap("files:write"), async (c) => {
+  try {
+    return c.json(await torrentService.pause(c.req.param("id")));
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : String(err) }, 404);
+  }
+});
+
+app.post("/api/downloads/torrents/:id/resume", requireCap("files:write"), async (c) => {
+  try {
+    return c.json(await torrentService.resume(c.req.param("id")));
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : String(err) }, 404);
+  }
+});
+
+app.post("/api/downloads/torrents/:id/stop", requireCap("files:write"), async (c) => {
+  try {
+    return c.json(await torrentService.stop(c.req.param("id")));
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : String(err) }, 404);
+  }
+});
+
+app.delete("/api/downloads/torrents/:id", requireCap("files:write"), async (c) => {
+  const deleteFiles = c.req.query("deleteFiles") === "1" || c.req.query("deleteFiles") === "true";
+  try {
+    return c.json(await torrentService.remove(c.req.param("id"), deleteFiles));
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : String(err) }, 404);
+  }
+});
 
 app.get("/api/podcast/rss/feeds", (c) => c.json(listSubscribedFeeds()));
 
@@ -2181,6 +2257,28 @@ app.post("/api/social/accounts/nostr", async (c) => {
   }
 });
 
+app.patch("/api/social/accounts/:id/relays", async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as {
+    relays?: string[] | string;
+  };
+  const relays = Array.isArray(body.relays)
+    ? body.relays.map(String)
+    : String(body.relays ?? "")
+        .split(/[\s,]+/)
+        .filter(Boolean);
+  try {
+    const account = socialGateway.updateNostrRelays(currentUser(c).id, c.req.param("id"), {
+      relays,
+    });
+    return c.json(account);
+  } catch (err) {
+    return c.json(
+      { error: err instanceof Error ? err.message : "Could not update Nostr relays" },
+      400,
+    );
+  }
+});
+
 app.post("/api/social/accounts/twitter", async (c) => {
   const body = (await c.req.json().catch(() => ({}))) as { accessToken?: string };
   try {
@@ -2233,6 +2331,51 @@ app.post("/api/social/accounts/reddit", async (c) => {
     );
   }
 });
+
+app.post("/api/social/accounts/bitsocial", async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as {
+    rpcUrl?: string;
+    communities?: string[] | string;
+  };
+  const communities = Array.isArray(body.communities)
+    ? body.communities.map(String)
+    : String(body.communities ?? "")
+        .split(/[\s,]+/)
+        .filter(Boolean);
+  try {
+    const account = await socialGateway.connectBitsocial(currentUser(c).id, {
+      rpcUrl: String(body.rpcUrl ?? ""),
+      communities,
+    });
+    return c.json(account);
+  } catch (err) {
+    return c.json(
+      { error: err instanceof Error ? err.message : "Could not connect Bitsocial account" },
+      400,
+    );
+  }
+});
+
+app.get("/api/social/bitsocial/daemon", async (c) => {
+  return c.json(await bitsocialDaemon.status());
+});
+
+app.post("/api/social/bitsocial/daemon/start", async (c) => {
+  try {
+    return c.json(await bitsocialDaemon.start());
+  } catch (err) {
+    return c.json(
+      { error: err instanceof Error ? err.message : "Could not start Bitsocial daemon" },
+      500,
+    );
+  }
+});
+
+app.post("/api/social/bitsocial/daemon/stop", async (c) => {
+  return c.json(await bitsocialDaemon.stop());
+});
+
+app.get("/api/social/bitsocial/daemon/logs", (c) => c.json({ lines: bitsocialDaemon.logs() }));
 
 app.get("/api/social/feed", async (c) => {
   const cursor = c.req.query("cursor") ?? undefined;

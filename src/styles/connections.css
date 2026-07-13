@@ -150,6 +150,33 @@
   border-top: 1px solid var(--arco-border);
 }
 
+.arco-connect-modal__advanced-toggle {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin-top: var(--arco-space-s);
+  font: inherit;
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-secondary);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.arco-connect-modal__advanced-toggle:hover {
+  color: var(--arco-text-primary);
+}
+
+.arco-connect-modal__advanced {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-s);
+  margin-top: var(--arco-space-m);
+  padding-top: var(--arco-space-m);
+  border-top: 1px solid var(--arco-border);
+}
+
 /* GitHub OAuth connect card (Settings, Studio, Git tab) */
 
 .arco-github-connect {

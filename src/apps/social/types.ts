@@ -4,7 +4,8 @@ export type SocialNetworkId =
   | "nostr"
   | "twitter"
   | "facebook"
-  | "reddit";
+  | "reddit"
+  | "bitsocial";
 
 export interface SocialNetworkItem {
   id: SocialNetworkId;

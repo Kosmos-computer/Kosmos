@@ -48,7 +48,8 @@ function normalizeRelay(url: string): string | null {
   }
 }
 
-export function normalizeNostrRelays(relays: string[]): string[] {
+/** Parse and dedupe relay URLs without applying defaults. */
+export function parseNostrRelays(relays: string[]): string[] {
   const out: string[] = [];
   const seen = new Set<string>();
   for (const raw of relays) {
@@ -59,6 +60,11 @@ export function normalizeNostrRelays(relays: string[]): string[] {
       out.push(relay);
     }
   }
+  return out;
+}
+
+export function normalizeNostrRelays(relays: string[]): string[] {
+  const out = parseNostrRelays(relays);
   return out.length ? out : [...NOSTR_DEFAULT_RELAYS];
 }
 

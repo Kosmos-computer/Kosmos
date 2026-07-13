@@ -90,6 +90,7 @@ function toInfo(record: SocialAccountRecord): SocialAccountInfo {
     defaultSubreddit:
       record.provider === "reddit" && record.service ? record.service : undefined,
     rpcUrl: bitsocial?.rpcUrl,
+    relays: record.provider === "nostr" ? decodeRelays(record.service) : undefined,
     displayName: record.displayName,
     avatar: record.avatar,
   };
@@ -553,6 +554,22 @@ export const socialStore = {
     target.service = service;
     target.status = "connected";
     save(file);
+  },
+
+  /** Persist an updated Nostr relay list without requiring nsec again. */
+  updateNostrRelays(userId: string, accountId: string, relays: string[]): SocialAccountInfo {
+    const file = load();
+    const target = file.accounts.find(
+      (entry) =>
+        entry.userId === userId && entry.id === accountId && entry.provider === "nostr",
+    );
+    if (!target) {
+      throw new Error("Nostr account not found");
+    }
+    target.service = encodeRelays(relays);
+    target.status = "connected";
+    save(file);
+    return toInfo(target);
   },
 
   appPasswordFor(account: SocialAccountRecord): string {

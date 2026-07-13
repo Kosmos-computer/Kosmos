@@ -26,6 +26,8 @@ export interface SocialAccountInfo {
   defaultSubreddit?: string;
   /** Bitsocial PKC RPC WebSocket URL (e.g. ws://localhost:9138). */
   rpcUrl?: string;
+  /** Nostr relay WebSocket URLs (wss://…). */
+  relays?: string[];
   /** Profile display name when known. */
   displayName?: string;
   /** Profile avatar URL when known. */
@@ -163,6 +165,11 @@ export interface SocialNostrConnectInput {
   relays: string[];
 }
 
+export interface SocialNostrRelaysUpdateInput {
+  /** Relay WebSocket URLs (wss://…). Empty list resets to Snort defaults. */
+  relays: string[];
+}
+
 export interface SocialTwitterConnectInput {
   /**
    * X (Twitter) OAuth 2.0 user access token (Bearer).
@@ -197,8 +204,9 @@ export interface SocialBitsocialConnectInput {
   /**
    * PKC RPC WebSocket URL from a running bitsocial-cli daemon
    * (e.g. ws://localhost:9138 or ws://host:9138/<auth-key>).
+   * Omit or leave blank to use ws://localhost:9138.
    */
-  rpcUrl: string;
+  rpcUrl?: string;
   /** Optional community addresses (.bso / IPNS). Defaults to public Seedit communities. */
   communities?: string[];
 }

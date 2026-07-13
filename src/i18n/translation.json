@@ -5879,6 +5879,13 @@
     "ja": "接続中のリレー",
     "zh-CN": "你的中继"
   },
+  "APPS$SOCIAL_YOUR_COMMUNITIES": {
+    "en": "Your communities",
+    "es": "Tus comunidades",
+    "de": "Deine Communities",
+    "ja": "コミュニティ",
+    "zh-CN": "你的社区"
+  },
   "APPS$SOCIAL_SEARCH_PEOPLE": {
     "en": "Search people",
     "es": "Buscar personas",

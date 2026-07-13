@@ -1,11 +1,14 @@
-export type TorrentStatus =
-  | "downloading"
-  | "seeding"
-  | "paused"
-  | "stopped"
-  | "error"
-  | "queued"
-  | "checking";
+/**
+ * Downloads UI types — OS DTO shapes plus view-only filters/tabs.
+ */
+export type {
+  DownloadsStatsDto as GlobalStats,
+  TorrentDto as TorrentItem,
+  TorrentFileDto as TorrentFile,
+  TorrentPeerDto as TorrentPeer,
+  TorrentStatus,
+  TorrentTrackerDto as TorrentTracker,
+} from "@shared/capabilities/downloads";
 
 export type TorrentCategory =
   | "all"
@@ -18,63 +21,6 @@ export type TorrentCategory =
 
 export type TorrentDetailTab = "general" | "trackers" | "peers" | "files" | "statistics";
 
-export interface TorrentTracker {
-  id: string;
-  url: string;
-  status: "working" | "updating" | "error";
-  lastAnnounce: string;
-  seeders: number;
-  leechers: number;
-}
-
-export interface TorrentPeer {
-  id: string;
-  address: string;
-  client: string;
-  progress: number;
-  downSpeed: string;
-  upSpeed: string;
-  flags: string;
-}
-
-export interface TorrentFile {
-  id: string;
-  name: string;
-  size: string;
-  progress: number;
-  priority: "high" | "normal" | "low";
-  wanted: boolean;
-}
-
-export interface TorrentItem {
-  id: string;
-  name: string;
-  size: string;
-  sizeBytes: number;
-  progress: number;
-  status: TorrentStatus;
-  seeds: { connected: number; total: number };
-  peers: { connected: number; total: number };
-  downSpeed: string;
-  upSpeed: string;
-  ratio: number;
-  uploaded: string;
-  downloaded: string;
-  remaining: string;
-  wasted: string;
-  tracker: string;
-  trackerUpdate: string;
-  lastActive: string;
-  maxPeers: number;
-  downLimit: string;
-  upLimit: string;
-  error: string | null;
-  addedAt: string;
-  trackers: TorrentTracker[];
-  peersList: TorrentPeer[];
-  files: TorrentFile[];
-}
-
 export interface TrackerGroup {
   id: string;
   url: string;
@@ -85,13 +31,4 @@ export interface CategoryFilter {
   id: TorrentCategory;
   label: string;
   count: number;
-}
-
-export interface GlobalStats {
-  clientVersion: string;
-  host: string;
-  globalDownSpeed: string;
-  globalUpSpeed: string;
-  freeSpace: string;
-  totalSize: string;
 }

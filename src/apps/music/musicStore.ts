@@ -53,6 +53,10 @@ export function parseMusicTime(label: string): number {
   return 0;
 }
 
+function isLibraryFilter(section: MusicNavSection): section is MusicLibraryFilter {
+  return section === "playlists" || section === "artists" || section === "albums" || section === "podcasts";
+}
+
 async function fetchSeedTracks(): Promise<SeedTrackStatus[]> {
   const res = await fetch("/api/music/tracks");
   if (!res.ok) throw new Error(`Failed to load music seed (${res.status})`);
@@ -355,6 +359,7 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
   setNavSection: (section) => {
     set({
       navSection: section,
+      libraryFilter: isLibraryFilter(section) ? section : get().libraryFilter,
       selectedBroadcastFeed: null,
       broadcastFeedSongs: [],
       broadcastFeedError: null,
@@ -411,12 +416,25 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
   setSearchQuery: (value) => set({ searchQuery: value }),
 
   setActiveLibraryItemId: (id) => {
-    set({ navSection: "home", selectedBroadcastFeed: null, selectedSongId: null });
-    set({ activeLibraryItemId: id });
-    if (id !== "album-tirufm") get().playTrack(id);
+    const section = get().navSection;
+    set({
+      navSection: isLibraryFilter(section) ? section : "home",
+      selectedBroadcastFeed: null,
+      selectedSongId: null,
+      activeLibraryItemId: id,
+    });
+    if (id !== "album-tirufm" && id !== "artist-tirufm") get().playTrack(id);
   },
 
-  setLibraryFilter: (filter) => set({ libraryFilter: filter }),
+  setLibraryFilter: (filter) =>
+    set({
+      libraryFilter: filter,
+      navSection: filter,
+      selectedBroadcastFeed: null,
+      broadcastFeedSongs: [],
+      broadcastFeedError: null,
+      selectedSongId: null,
+    }),
   setContentFilter: (filter) => set({ contentFilter: filter }),
   setPlaying: (playing) => set({ playing }),
 

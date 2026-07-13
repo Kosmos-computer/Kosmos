@@ -13,6 +13,7 @@ import type { CalendarEventInput } from "../../shared/capabilities/calendar.js";
 import { CALCULATOR_CONTRACT_ID } from "../../shared/capabilities/calculator.js";
 import { CALENDAR_CONTRACT_ID } from "../../shared/capabilities/calendar.js";
 import { DOCS_CONTRACT_ID, EMPTY_DOC_JSON } from "../../shared/capabilities/docs.js";
+import { DOWNLOADS_CONTRACT_ID } from "../../shared/capabilities/downloads.js";
 import { DOC_MIME, FILES_CONTRACT_ID, SHEET_MIME, SLIDES_MIME, type FileCreateInput } from "../../shared/capabilities/files.js";
 import { EMPTY_SHEET_JSON, SHEETS_CONTRACT_ID } from "../../shared/capabilities/sheets.js";
 import { EMPTY_SLIDES_JSON, SLIDES_CONTRACT_ID } from "../../shared/capabilities/slides.js";
@@ -40,6 +41,7 @@ import { calendarService } from "../services/calendarService.js";
 import { tasksService } from "../services/tasksService.js";
 import { filesService } from "../services/filesService.js";
 import { shareService } from "../services/shareService.js";
+import { torrentService } from "../services/torrentService.js";
 import { dataDirs } from "../env.js";
 
 const PROVIDERS_FILE = path.join(dataDirs.root, "capability-providers.json");
@@ -50,6 +52,7 @@ const DEFAULT_PROVIDERS: Record<string, string> = {
   [CALENDAR_CONTRACT_ID]: "system",
   [FILES_CONTRACT_ID]: "system",
   [DOCS_CONTRACT_ID]: "system",
+  [DOWNLOADS_CONTRACT_ID]: "system",
   [SHEETS_CONTRACT_ID]: "system",
   [SLIDES_CONTRACT_ID]: "system",
   [VOICE_CONTRACT_ID]: "system",
@@ -490,6 +493,20 @@ const systemHandlers: Record<string, IntentHandler> = {
       "Voice sessions are desktop-owned — stop voice from the shell's voice bar",
     );
   },
+
+  "torrents.list": () => torrentService.list(),
+  "torrents.get": async (p) => torrentService.get(String(p.id ?? "")),
+  "torrents.stats": () => torrentService.stats(),
+  "torrents.add": (p) =>
+    torrentService.add({
+      source: String(p.source ?? ""),
+      ...(typeof p.paused === "boolean" ? { paused: p.paused } : {}),
+    }),
+  "torrents.pause": async (p) => torrentService.pause(String(p.id ?? "")),
+  "torrents.resume": async (p) => torrentService.resume(String(p.id ?? "")),
+  "torrents.stop": async (p) => torrentService.stop(String(p.id ?? "")),
+  "torrents.remove": async (p) =>
+    torrentService.remove(String(p.id ?? ""), Boolean(p.deleteFiles)),
 };
 
 /**

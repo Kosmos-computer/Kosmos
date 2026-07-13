@@ -1,8 +1,8 @@
 import type { MusicRssFeedCategory } from "@shared/musicFeeds";
 
-export type MusicNavSection = "home" | "broadcasts";
-
 export type MusicLibraryFilter = "playlists" | "artists" | "albums" | "podcasts";
+
+export type MusicNavSection = "home" | "broadcasts" | MusicLibraryFilter;
 
 export type MusicContentFilter = "all" | "music" | "podcasts" | "audiobooks";
 

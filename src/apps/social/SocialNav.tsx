@@ -60,6 +60,7 @@ function networkLabel(network: SocialNetworkId): string {
   if (network === "twitter") return "X";
   if (network === "facebook") return "Facebook";
   if (network === "reddit") return "Reddit";
+  if (network === "bitsocial") return "Bitsocial";
   return "Bluesky";
 }
 

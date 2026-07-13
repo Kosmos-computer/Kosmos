@@ -23,6 +23,8 @@ export interface ConnectServiceModalProps {
   existingConnections?: ServiceConnection[];
   /** Pre-select a provider chip when opening from a network rail. */
   initialProvider?: ServiceProviderId;
+  /** When set, only these providers appear (e.g. Social settings scoped to one network). */
+  allowedProviders?: ServiceProviderId[];
   onConnect: (input: ConnectServiceInput) => void;
   onSelectExisting?: (connection: ServiceConnection) => void;
 }
@@ -33,15 +35,22 @@ export function ConnectServiceModal({
   domain,
   existingConnections = [],
   initialProvider,
+  allowedProviders,
   onConnect,
   onSelectExisting,
 }: ConnectServiceModalProps) {
-  const presets = useMemo(() => presetsForDomain(domain), [domain]);
+  const presets = useMemo(() => {
+    const all = presetsForDomain(domain);
+    if (!allowedProviders?.length) return all;
+    const allowed = new Set(allowedProviders);
+    return all.filter((preset) => allowed.has(preset.id));
+  }, [allowedProviders, domain]);
   const [providerId, setProviderId] = useState<ServiceProviderId>(presets[0]?.id ?? "mattermost");
   const [instanceUrl, setInstanceUrl] = useState("");
   const [accountHint, setAccountHint] = useState("");
   const [token, setToken] = useState("");
   const [listSearch, setListSearch] = useState("");
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -51,12 +60,17 @@ export function ConnectServiceModal({
     setAccountHint("");
     setToken("");
     setListSearch("");
+    setShowAdvanced(false);
   }, [open, initialProvider, presets]);
 
   if (!open) return null;
 
   const preset = presetById(providerId);
-  const domainConnections = existingConnections.filter((c) => c.domain === domain);
+  const domainConnections = existingConnections.filter(
+    (c) =>
+      c.domain === domain &&
+      (!allowedProviders?.length || allowedProviders.includes(c.provider)),
+  );
   const filteredConnections = domainConnections.filter((connection) =>
     matchesListSearch(listSearch, connection.label, presetById(connection.provider).label, connection.instanceUrl),
   );
@@ -73,6 +87,7 @@ export function ConnectServiceModal({
   const isFacebook = providerId === "facebook";
   const isTwitter = providerId === "twitter";
   const isReddit = providerId === "reddit";
+  const isBitsocial = providerId === "bitsocial";
 
   function handleSave() {
     onConnect({
@@ -199,6 +214,53 @@ export function ConnectServiceModal({
             </section>
           ) : null}
 
+          {isBitsocial ? (
+            <section className="arco-connect-modal__section">
+              <p className="arco-connect-modal__hint">
+                Connects to the local Bitsocial daemon (<code>ws://localhost:9138</code>) with public
+                community defaults. Kosmos will start the daemon when possible.
+              </p>
+              <button
+                type="button"
+                className="arco-connect-modal__advanced-toggle"
+                aria-expanded={showAdvanced}
+                onClick={() => setShowAdvanced((openAdvanced) => !openAdvanced)}
+              >
+                {showAdvanced ? "Hide advanced" : "Advanced"}
+              </button>
+              {showAdvanced ? (
+                <div className="arco-connect-modal__advanced">
+                  <label className="arco-connect-modal__label" htmlFor="connect-instance-url">
+                    Bitsocial RPC URL
+                  </label>
+                  <Input
+                    id="connect-instance-url"
+                    value={instanceUrl}
+                    onChange={(event) => setInstanceUrl(event.target.value)}
+                    placeholder="ws://localhost:9138"
+                    spellCheck={false}
+                  />
+                  <p className="arco-connect-modal__hint">
+                    Leave blank for the local default. Use the auth-key URL for a remote node.
+                  </p>
+                  <label className="arco-connect-modal__label" htmlFor="connect-account-hint">
+                    Communities
+                  </label>
+                  <Input
+                    id="connect-account-hint"
+                    value={accountHint}
+                    onChange={(event) => setAccountHint(event.target.value)}
+                    placeholder="askseedit.bso, news-posting.bso"
+                    spellCheck={false}
+                  />
+                  <p className="arco-connect-modal__hint">
+                    Comma-separated .bso addresses. Leave blank for public Seedit defaults.
+                  </p>
+                </div>
+              ) : null}
+            </section>
+          ) : null}
+
           {isBluesky || preset.requiresAccountHint ? (
             <section className="arco-connect-modal__section">
               <label className="arco-connect-modal__label" htmlFor="connect-account-hint">
@@ -244,7 +306,7 @@ export function ConnectServiceModal({
                 Used for new posts and crossposts. You can also start a post with r/name: title.
               </p>
             </section>
-          ) : !isNostr && !isTwitter ? (
+          ) : !isNostr && !isTwitter && !isBitsocial ? (
             <section className="arco-connect-modal__section">
               <label className="arco-connect-modal__label" htmlFor="connect-account-hint">
                 <T k={I18nKey.COMPONENTS$PATTERNS_ACCOUNT_LABEL_OPTIONAL} />

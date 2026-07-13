@@ -63,6 +63,7 @@ import type { CreateUseCaseSlotInput, EngineStatus, RegisteredModel, UseCaseSlot
 import type { CalendarEvent, CalendarEventInput } from "@shared/capabilities/calendar";
 import type { Task, TaskInput, TaskStatus } from "@shared/capabilities/tasks";
 import type { FileCreateInput, FileEntry } from "@shared/capabilities/files";
+import type { DownloadsStatsDto, TorrentDto } from "@shared/capabilities/downloads";
 import type { ShareCreateInput, ShareRecord } from "@shared/capabilities/shares";
 import type { InstalledAppInfo, GrantState } from "@shared/manifest";
 import type {
@@ -77,6 +78,7 @@ import type {
 import type { GitHubAccountInfo, GitHubRepoSummary } from "@shared/github";
 import type {
   SocialAccountInfo,
+  SocialBitsocialConnectInput,
   SocialBlueskyConnectInput,
   SocialCreatePostInput,
   SocialFacebookConnectInput,
@@ -85,6 +87,7 @@ import type {
   SocialLikeInput,
   SocialMastodonConnectInput,
   SocialNostrConnectInput,
+  SocialNostrRelaysUpdateInput,
   SocialProfileResponse,
   SocialRedditConnectInput,
   SocialReplyInput,
@@ -152,7 +155,15 @@ async function json<T>(res: Response): Promise<T> {
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     if (res.status === 401 && !res.url.includes("/api/auth/")) broadcastAuthFailure(body);
-    throw new Error(`${res.status} ${res.statusText}${body ? `: ${body.slice(0, 200)}` : ""}`);
+    let detail = body.slice(0, 400);
+    try {
+      const parsed = JSON.parse(body) as { error?: unknown; message?: unknown };
+      if (typeof parsed.error === "string" && parsed.error.trim()) detail = parsed.error;
+      else if (typeof parsed.message === "string" && parsed.message.trim()) detail = parsed.message;
+    } catch {
+      /* keep raw body */
+    }
+    throw new Error(detail || `${res.status} ${res.statusText}`);
   }
   return readJsonBody<T>(res);
 }
@@ -828,12 +839,46 @@ export const api = {
     post<SocialAccountInfo>("/api/social/accounts/mastodon", input),
   connectNostr: (input: SocialNostrConnectInput) =>
     post<SocialAccountInfo>("/api/social/accounts/nostr", input),
+  updateNostrRelays: (id: string, input: SocialNostrRelaysUpdateInput) =>
+    fetch(`/api/social/accounts/${encodeURIComponent(id)}/relays`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    }).then((r) => json<SocialAccountInfo>(r)),
   connectTwitter: (input: SocialTwitterConnectInput) =>
     post<SocialAccountInfo>("/api/social/accounts/twitter", input),
   connectFacebook: (input: SocialFacebookConnectInput) =>
     post<SocialAccountInfo>("/api/social/accounts/facebook", input),
   connectReddit: (input: SocialRedditConnectInput) =>
     post<SocialAccountInfo>("/api/social/accounts/reddit", input),
+  connectBitsocial: (input: SocialBitsocialConnectInput) =>
+    post<SocialAccountInfo>("/api/social/accounts/bitsocial", input),
+  bitsocialDaemonStatus: () =>
+    fetch("/api/social/bitsocial/daemon").then((r) =>
+      json<{
+        phase: "stopped" | "starting" | "running" | "error";
+        rpcUrl: string;
+        binary: string;
+        external?: boolean;
+        detail?: string;
+      }>(r),
+    ),
+  startBitsocialDaemon: () =>
+    post<{
+      phase: "stopped" | "starting" | "running" | "error";
+      rpcUrl: string;
+      binary: string;
+      external?: boolean;
+      detail?: string;
+    }>("/api/social/bitsocial/daemon/start", {}),
+  stopBitsocialDaemon: () =>
+    post<{
+      phase: "stopped" | "starting" | "running" | "error";
+      rpcUrl: string;
+      binary: string;
+      external?: boolean;
+      detail?: string;
+    }>("/api/social/bitsocial/daemon/stop", {}),
   disconnectSocialAccount: (id: string) =>
     fetch(`/api/social/accounts/${encodeURIComponent(id)}`, { method: "DELETE" }).then((r) =>
       json<{ ok: true }>(r),
@@ -1072,6 +1117,35 @@ export const api = {
     fetch(`/api/agent-backends/${id}`, { method: "DELETE" }).then((r) =>
       json<{ backends: AgentBackend[]; activeId: string | null }>(r),
     ),
+
+  // Downloads / BitTorrent (os.downloads@1)
+  downloadsList: () => fetch("/api/downloads/torrents").then((r) => json<TorrentDto[]>(r)),
+  downloadsGet: (id: string) =>
+    fetch(`/api/downloads/torrents/${encodeURIComponent(id)}`).then((r) => json<TorrentDto>(r)),
+  downloadsStats: () => fetch("/api/downloads/stats").then((r) => json<DownloadsStatsDto>(r)),
+  downloadsAdd: (source: string, paused?: boolean) =>
+    fetch("/api/downloads/torrents", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ source, ...(paused !== undefined ? { paused } : {}) }),
+    }).then((r) => json<TorrentDto>(r)),
+  downloadsPause: (id: string) =>
+    fetch(`/api/downloads/torrents/${encodeURIComponent(id)}/pause`, { method: "POST" }).then((r) =>
+      json<TorrentDto>(r),
+    ),
+  downloadsResume: (id: string) =>
+    fetch(`/api/downloads/torrents/${encodeURIComponent(id)}/resume`, { method: "POST" }).then((r) =>
+      json<TorrentDto>(r),
+    ),
+  downloadsStop: (id: string) =>
+    fetch(`/api/downloads/torrents/${encodeURIComponent(id)}/stop`, { method: "POST" }).then((r) =>
+      json<TorrentDto>(r),
+    ),
+  downloadsRemove: (id: string, deleteFiles = false) =>
+    fetch(
+      `/api/downloads/torrents/${encodeURIComponent(id)}${deleteFiles ? "?deleteFiles=1" : ""}`,
+      { method: "DELETE" },
+    ).then((r) => json<{ ok: true }>(r)),
 };
 
 /**

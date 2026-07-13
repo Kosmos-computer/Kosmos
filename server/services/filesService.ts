@@ -492,6 +492,60 @@ export const filesService = {
     return requireEntry(id);
   },
 
+  /**
+   * Import a file already on disk into Drive by copying into the blob store.
+   * Used by Downloads (torrent complete) so we avoid base64 round-trips.
+   */
+  createFromPath(
+    input: { name: string; parentId?: string | null; mimeType?: string; sourcePath: string },
+    options?: { maxBytes?: number },
+  ): FileEntry {
+    const name = input.name?.trim();
+    if (!name) throw new Error("name is required");
+    const sourcePath = input.sourcePath;
+    if (!sourcePath || !fs.existsSync(sourcePath)) throw new Error("Source file not found");
+    const parentId = input.parentId ?? null;
+    requireFolder(parentId);
+
+    const stat = fs.statSync(sourcePath);
+    if (!stat.isFile()) throw new Error("Source path is not a file");
+    const maxBytes = options?.maxBytes ?? MAX_CONTENT_BYTES;
+    if (stat.size > maxBytes) {
+      throw new Error(`Content exceeds the ${Math.round(maxBytes / (1024 * 1024))} MB limit`);
+    }
+
+    const mimeType = input.mimeType?.trim() || "application/octet-stream";
+    const now = new Date().toISOString();
+    const entry: FileEntry = {
+      id: crypto.randomUUID(),
+      name,
+      parentId,
+      mimeType,
+      size: stat.size,
+      starred: false,
+      trashed: false,
+      createdAt: now,
+      updatedAt: now,
+    };
+    getDb()
+      .prepare(
+        `INSERT INTO files (id, name, parentId, mimeType, size, starred, trashed, createdAt, updatedAt)
+         VALUES ($id, $name, $parentId, $mimeType, $size, 0, 0, $createdAt, $updatedAt)`,
+      )
+      .run({
+        id: entry.id,
+        name: entry.name,
+        parentId: entry.parentId,
+        mimeType: entry.mimeType,
+        size: entry.size,
+        createdAt: entry.createdAt,
+        updatedAt: entry.updatedAt,
+      });
+    fs.copyFileSync(sourcePath, blobPath(entry.id));
+    announceChange();
+    return entry;
+  },
+
   /** Idempotent sample content for Drive — PDF smoke test + office-suite catalog. */
   ensureSeeds(): void {
     seedPdf();

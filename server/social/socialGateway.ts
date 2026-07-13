@@ -12,6 +12,7 @@ import type {
   SocialLikeInput,
   SocialMastodonConnectInput,
   SocialNostrConnectInput,
+  SocialNostrRelaysUpdateInput,
   SocialProfileResponse,
   SocialRedditConnectInput,
   SocialReplyInput,
@@ -39,6 +40,10 @@ import {
   normalizeBitsocialRpcUrl,
   type BitsocialSession,
 } from "./adapters/bitsocial.js";
+import {
+  bitsocialDaemon,
+  isManagedBitsocialRpcUrl,
+} from "../services/bitsocialDaemon.js";
 import {
   blueskyCreatePost,
   blueskyFollow,
@@ -99,6 +104,7 @@ import {
 } from "./adapters/mastodon.js";
 import {
   createNostrPool,
+  NOSTR_DEFAULT_RELAYS,
   nostrCreatePost,
   nostrFollow,
   nostrGetAuthorFeed,
@@ -115,6 +121,7 @@ import {
   nostrUnfollow,
   nostrUnlike,
   nostrUnrepost,
+  parseNostrRelays,
   parseNostrSecretKey,
   type NostrSecretKey,
   type NostrSession,
@@ -459,6 +466,22 @@ export const socialGateway = {
     });
   },
 
+  /** Update relays for a connected Nostr account without re-entering nsec. */
+  updateNostrRelays(
+    userId: string,
+    accountId: string,
+    input: SocialNostrRelaysUpdateInput,
+  ): SocialAccountInfo {
+    const raw = input.relays ?? [];
+    const hasInput = raw.some((relay) => relay.trim().length > 0);
+    const parsed = parseNostrRelays(raw);
+    if (hasInput && parsed.length === 0) {
+      throw new Error("No valid wss:// or ws:// relay URLs");
+    }
+    const relays = parsed.length ? parsed : [...NOSTR_DEFAULT_RELAYS];
+    return socialStore.updateNostrRelays(userId, accountId, relays);
+  },
+
   async connectTwitter(
     userId: string,
     input: SocialTwitterConnectInput,
@@ -522,17 +545,38 @@ export const socialGateway = {
     userId: string,
     input: SocialBitsocialConnectInput,
   ): Promise<SocialAccountInfo> {
-    const rpcUrl = normalizeBitsocialRpcUrl(input.rpcUrl);
+    const rpcUrl = normalizeBitsocialRpcUrl(input.rpcUrl ?? "");
     const communities = normalizeBitsocialCommunities(input.communities ?? []);
-    const verified = await bitsocialVerifyConnection(rpcUrl);
-    const service = encodeBitsocialService({ rpcUrl, communities });
-    return socialStore.upsertBitsocialAccount({
-      userId,
-      handle: verified.handle,
-      did: rpcUrl,
-      service,
-      displayName: "Bitsocial",
-    });
+
+    if (isManagedBitsocialRpcUrl(rpcUrl)) {
+      const daemon = await bitsocialDaemon.ensureRunning();
+      if (daemon.phase !== "running") {
+        throw new Error(
+          daemon.detail ||
+            "Bitsocial daemon is not running. Install @bitsocial/bitsocial-cli or start it with npm run bitsocial.",
+        );
+      }
+    }
+
+    try {
+      const verified = await bitsocialVerifyConnection(rpcUrl);
+      const service = encodeBitsocialService({ rpcUrl, communities });
+      return socialStore.upsertBitsocialAccount({
+        userId,
+        handle: verified.handle,
+        did: rpcUrl,
+        service,
+        displayName: "Bitsocial",
+      });
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      if (/Could not connect to Bitsocial RPC/i.test(detail)) {
+        throw new Error(
+          `${detail}. Start the daemon with Connect (auto-start) or \`npm run bitsocial\`. Install CLI: npm i -g @bitsocial/bitsocial-cli`,
+        );
+      }
+      throw err;
+    }
   },
 
   async getHomeFeed(
@@ -682,6 +726,11 @@ export const socialGateway = {
         redditGetPostThread(client, uri),
       );
     }
+    if (account.provider === "bitsocial") {
+      return withBitsocialSession(userId, account.id, (session) =>
+        bitsocialGetPostThread(session, uri),
+      );
+    }
     return withBlueskyAgent(userId, account.id, (agent) => blueskyGetPostThread(agent, uri));
   },
 
@@ -716,6 +765,9 @@ export const socialGateway = {
       return withRedditClient(userId, account.id, (client) =>
         redditCreatePost(client, { text }),
       );
+    }
+    if (account.provider === "bitsocial") {
+      return bitsocialCreatePost();
     }
     return withBlueskyAgent(userId, account.id, (agent) => blueskyCreatePost(agent, text));
   },
@@ -758,6 +810,9 @@ export const socialGateway = {
       return withRedditClient(userId, account.id, (client) =>
         redditCreateComment(client, { parentId: input.parentUri, text }),
       );
+    }
+    if (account.provider === "bitsocial") {
+      return bitsocialReply();
     }
     return withBlueskyAgent(userId, account.id, (agent) =>
       blueskyReply(agent, {
@@ -830,6 +885,9 @@ export const socialGateway = {
         return { ok: true as const, likeUri: input.unlike ? undefined : thingId };
       });
     }
+    if (account.provider === "bitsocial") {
+      return bitsocialLike();
+    }
     return withBlueskyAgent(userId, input.accountId, async (agent) => {
       if (input.unlike) {
         if (!input.likeUri) throw new Error("likeUri is required to unlike");
@@ -898,6 +956,9 @@ export const socialGateway = {
         const result = await redditCrosspost(client, input.uri);
         return { ok: true as const, repostUri: result.uri };
       });
+    }
+    if (account.provider === "bitsocial") {
+      throw new Error("Bitsocial does not support reposts — subscribe to communities instead");
     }
     return withBlueskyAgent(userId, input.accountId, async (agent) => {
       if (input.unrepost) {
@@ -972,6 +1033,16 @@ export const socialGateway = {
           input.unfollow ? "unsub" : "sub",
         );
         return { ok: true as const, followUri: input.unfollow ? undefined : result.uri };
+      });
+    }
+    if (account.provider === "bitsocial") {
+      return withBitsocialSession(userId, account.id, async (session, bitsocialAccount) => {
+        if (input.unfollow) {
+          throw new Error("Unsubscribe from communities in Bitsocial settings for now");
+        }
+        const next = await bitsocialFollowCommunity(session, input.did);
+        socialStore.updateBitsocialService(bitsocialAccount.id, encodeBitsocialService(next));
+        return { ok: true as const, followUri: input.did.trim() };
       });
     }
     return withBlueskyAgent(userId, input.accountId, async (agent) => {
@@ -1063,6 +1134,19 @@ export const socialGateway = {
       });
     }
 
+    if (account.provider === "bitsocial") {
+      return withBitsocialSession(userId, account.id, async (session) => {
+        const links = bitsocialListCommunityLinks(session);
+        return {
+          provider: "bitsocial",
+          trends: [],
+          suggestions: [],
+          links,
+          linksModule: links.length ? "communities" : undefined,
+        };
+      });
+    }
+
     return withBlueskyAgent(userId, account.id, async (agent) => {
       const [trends, suggestions, links] = await Promise.all([
         blueskyGetTrends(agent).catch(() => []),
@@ -1110,6 +1194,11 @@ export const socialGateway = {
     if (account.provider === "reddit") {
       return withRedditClient(userId, account.id, async (client) => ({
         actors: await redditSearchActors(client, query),
+      }));
+    }
+    if (account.provider === "bitsocial") {
+      return withBitsocialSession(userId, account.id, async (session) => ({
+        actors: bitsocialSearchCommunities(session, query),
       }));
     }
     return withBlueskyAgent(userId, account.id, async (agent) => ({

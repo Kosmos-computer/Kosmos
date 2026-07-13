@@ -1,5 +1,5 @@
 /**
- * Live Bluesky / Mastodon / Nostr / X / Facebook social workspace via /api/social.
+ * Live Bluesky / Mastodon / Nostr / X / Facebook / Reddit / Bitsocial social workspace via /api/social.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
@@ -26,6 +26,7 @@ const LIVE_PROVIDERS = new Set<SocialNetworkId>([
   "twitter",
   "facebook",
   "reddit",
+  "bitsocial",
 ]);
 
 export type SocialDetailView =
@@ -152,7 +153,10 @@ export function useSocial() {
         domain: "social" as const,
         provider: liveAccount.provider,
         label: liveAccount.displayName ?? liveAccount.handle,
-        accountHint: `@${liveAccount.handle}`,
+        accountHint:
+          liveAccount.provider === "nostr" || liveAccount.provider === "bitsocial"
+            ? liveAccount.handle
+            : `@${liveAccount.handle}`,
         status: liveAccount.status,
         connectedAt: liveAccount.connectedAt,
         instanceUrl: liveAccount.instanceUrl,
@@ -538,6 +542,26 @@ export function useSocial() {
           setError(null);
         } catch (err) {
           setError(err instanceof Error ? err.message : "Could not connect Reddit");
+        } finally {
+          setLoading(false);
+        }
+        return;
+      }
+
+      if (input.provider === "bitsocial") {
+        const rpcUrl = (input.instanceUrl ?? "").trim() || undefined;
+        const communities = (input.accountHint ?? "")
+          .split(/[\s,]+/)
+          .map((part) => part.trim())
+          .filter(Boolean);
+        setLoading(true);
+        try {
+          const account = await api.connectBitsocial({ rpcUrl, communities });
+          await refreshStatus();
+          activateConnectedAccount(account.id);
+          setError(null);
+        } catch (err) {
+          setError(err instanceof Error ? err.message : "Could not connect Bitsocial");
         } finally {
           setLoading(false);
         }

@@ -12,7 +12,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { Button } from "../../components/ui";
-import type { DownloadsViewModel } from "./useDownloadsStub";
+import type { DownloadsViewModel } from "./useDownloads";
 
 export interface DownloadsToolbarProps {
   vm: Pick<

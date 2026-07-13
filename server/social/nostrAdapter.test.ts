@@ -8,6 +8,7 @@ import {
   mapNostrNote,
   normalizeNostrRelays,
   NOSTR_DEFAULT_RELAYS,
+  parseNostrRelays,
   parseNostrSecretKey,
 } from "./adapters/nostr.js";
 
@@ -86,5 +87,9 @@ describe("parseNostrSecretKey / normalizeNostrRelays", () => {
       "wss://nos.lol",
     ]);
     assert.deepEqual(relays, ["wss://relay.snort.social", "wss://nos.lol"]);
+  });
+
+  it("parseNostrRelays returns empty when nothing valid", () => {
+    assert.deepEqual(parseNostrRelays(["https://not-a-relay", ""]), []);
   });
 });

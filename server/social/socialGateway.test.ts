@@ -91,8 +91,33 @@ describe("socialGateway.connectWithNostrKey", () => {
     });
     assert.equal(account.provider, "nostr");
     assert.ok(account.handle.startsWith("npub1"));
+    assert.ok(Array.isArray(account.relays));
+    assert.ok((account.relays?.length ?? 0) > 0);
     assert.equal(socialStore.listForUser("user-3").length, 1);
     socialStore.disconnect("user-3", account.id);
+  });
+
+  it("updates relays without re-entering nsec", async () => {
+    const { generateSecretKey } = await import("nostr-tools");
+    const hex = Buffer.from(generateSecretKey()).toString("hex");
+    const account = await socialGateway.connectWithNostrKey("user-3b", {
+      nsec: hex,
+      relays: ["wss://relay.snort.social"],
+    });
+    const updated = socialGateway.updateNostrRelays("user-3b", account.id, {
+      relays: ["wss://nos.lol", "wss://relay.damus.io/"],
+    });
+    assert.deepEqual(updated.relays, ["wss://nos.lol", "wss://relay.damus.io"]);
+    assert.throws(
+      () =>
+        socialGateway.updateNostrRelays("user-3b", account.id, {
+          relays: ["https://not-a-relay"],
+        }),
+      /no valid/i,
+    );
+    const reset = socialGateway.updateNostrRelays("user-3b", account.id, { relays: [] });
+    assert.ok((reset.relays?.length ?? 0) > 1);
+    socialStore.disconnect("user-3b", account.id);
   });
 });
 
@@ -123,5 +148,15 @@ describe("socialGateway.connectReddit", () => {
       /access token is required/i,
     );
     assert.equal(socialStore.listForUser("user-6").length, 0);
+  });
+});
+
+describe("socialGateway.connectBitsocial", () => {
+  it("defaults blank RPC URL to the local daemon endpoint", async () => {
+    const { normalizeBitsocialRpcUrl, BITSOCIAL_DEFAULT_RPC } = await import(
+      "./adapters/bitsocial.js"
+    );
+    assert.equal(normalizeBitsocialRpcUrl(""), BITSOCIAL_DEFAULT_RPC);
+    assert.equal(normalizeBitsocialRpcUrl("  "), BITSOCIAL_DEFAULT_RPC);
   });
 });

@@ -1,4 +1,4 @@
-/* Downloads — Transmission-style torrent client (stub) */
+/* Downloads — BitTorrent client (os.downloads@1) */
 
 .arco-downloads {
   flex: 1;
@@ -6,6 +6,7 @@
   display: flex;
   overflow: hidden;
   background: var(--arco-bg-surface-solid);
+  position: relative;
 }
 
 .arco-downloads__main {
@@ -350,4 +351,61 @@
   color: var(--arco-text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.03em;
+}
+
+.arco-downloads__banner {
+  flex-shrink: 0;
+  padding: var(--arco-space-xs) var(--arco-space-m);
+  background: color-mix(in srgb, var(--arco-danger) 12%, transparent);
+  color: var(--arco-danger);
+  font-size: var(--arco-text-sm);
+  border-bottom: 1px solid var(--arco-border);
+}
+
+.arco-downloads__add-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--arco-bg-inverse, #000) 35%, transparent);
+  padding: var(--arco-space-l);
+}
+
+.arco-downloads__add-dialog {
+  width: min(480px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-l);
+  border-radius: var(--arco-radius-m, 8px);
+  background: var(--arco-bg-surface-solid);
+  border: 1px solid var(--arco-border);
+  box-shadow: var(--arco-shadow-l, 0 12px 40px rgba(0, 0, 0, 0.2));
+}
+
+.arco-downloads__add-title {
+  margin: 0;
+  font-size: var(--arco-text-lg);
+  font-weight: 600;
+}
+
+.arco-downloads__add-hint {
+  margin: 0;
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-secondary);
+}
+
+.arco-downloads__add-error {
+  margin: 0;
+  font-size: var(--arco-text-sm);
+  color: var(--arco-danger);
+}
+
+.arco-downloads__add-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--arco-space-s);
+  margin-top: var(--arco-space-xs);
 }

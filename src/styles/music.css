@@ -1317,6 +1317,51 @@ html[data-theme="light"] .arco-music {
   gap: var(--arco-space-xs);
 }
 
+.arco-music__library-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-xs);
+}
+
+.arco-music__library-row {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-m);
+  width: 100%;
+  padding: var(--arco-space-s) var(--arco-space-m);
+  border: none;
+  border-radius: var(--arco-radius-m);
+  background: var(--music-bg-highlight);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  transition: background var(--arco-dur-fast);
+}
+
+.arco-music__library-row:hover {
+  background: var(--music-card-hover-bg);
+}
+
+.arco-music__library-row--active {
+  background: var(--music-active-bg);
+}
+
+.arco-music__library-row-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.arco-music__library-row-meta strong,
+.arco-music__library-row-meta span {
+  display: block;
+}
+
+.arco-music__library-row-meta span {
+  color: var(--music-text-subtle);
+  font-size: var(--arco-text-sm);
+}
+
 .arco-music__feed-row {
   display: flex;
   align-items: center;

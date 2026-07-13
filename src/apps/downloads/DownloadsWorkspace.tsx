@@ -3,11 +3,12 @@ import i18n from "../../i18n/index";
 import { T } from "../../i18n/T";
 import { useCallback, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { SidebarPane } from "../../components/patterns";
+import { AddTorrentDialog } from "./AddTorrentDialog";
 import { DownloadsSidebar } from "./DownloadsSidebar";
 import { DownloadsToolbar } from "./DownloadsToolbar";
 import { TorrentDetailPane } from "./TorrentDetailPane";
 import { TorrentTable } from "./TorrentTable";
-import type { DownloadsViewModel } from "./useDownloadsStub";
+import type { DownloadsViewModel } from "./useDownloads";
 
 export interface DownloadsWorkspaceProps {
   vm: DownloadsViewModel;
@@ -72,6 +73,11 @@ export function DownloadsWorkspace({ vm }: DownloadsWorkspaceProps) {
 
       <div className="arco-downloads__main">
         <DownloadsToolbar vm={vm} />
+        {vm.loadError ? (
+          <div className="arco-downloads__banner" role="alert">
+            {vm.loadError}
+          </div>
+        ) : null}
 
         <div
           className="arco-downloads__split"
@@ -112,17 +118,31 @@ export function DownloadsWorkspace({ vm }: DownloadsWorkspaceProps) {
         </div>
 
         <footer className="arco-downloads__status-bar" aria-label={i18n.t(I18nKey.APPS$DOWNLOADS_TRANSFER_STATUS)}>
-          <span>{vm.globalStats.globalDownSpeed}<T k={I18nKey.APPS$DOWNLOADS_DOWN} /></span>
+          <span>
+            {vm.globalStats.globalDownSpeed}
+            <T k={I18nKey.APPS$DOWNLOADS_DOWN} />
+          </span>
           <span aria-hidden="true">·</span>
-          <span>{vm.globalStats.globalUpSpeed}<T k={I18nKey.APPS$DOWNLOADS_UP} /></span>
+          <span>
+            {vm.globalStats.globalUpSpeed}
+            <T k={I18nKey.APPS$DOWNLOADS_UP} />
+          </span>
           <span aria-hidden="true">·</span>
-          <span>{vm.allTorrents.length}<T k={I18nKey.APPS$DOWNLOADS_TORRENTS} /></span>
+          <span>
+            {vm.allTorrents.length}
+            <T k={I18nKey.APPS$DOWNLOADS_TORRENTS} />
+          </span>
           <span className="arco-downloads__status-bar-spacer" aria-hidden="true" />
-          <span>{vm.globalStats.freeSpace}<T k={I18nKey.APPS$DOWNLOADS_FREE} /></span>
+          <span>
+            {vm.globalStats.freeSpace}
+            <T k={I18nKey.APPS$DOWNLOADS_FREE} />
+          </span>
           <span aria-hidden="true">·</span>
           <span>{vm.globalStats.clientVersion}</span>
         </footer>
       </div>
+
+      <AddTorrentDialog vm={vm} />
     </div>
   );
 }

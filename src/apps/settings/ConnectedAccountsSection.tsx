@@ -32,6 +32,7 @@ import { Avatar, Button } from "../../components/ui";
 import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
 import { T } from "../../i18n/T";
+import { NostrRelaysEditor } from "./NostrRelaysEditor";
 
 export function ConnectedAccountsSection() {
   const canManage = useCan("settings:write");
@@ -57,7 +58,8 @@ export function ConnectedAccountsSection() {
             account.provider === "nostr" ||
             account.provider === "twitter" ||
             account.provider === "facebook" ||
-            account.provider === "reddit",
+            account.provider === "reddit" ||
+            account.provider === "bitsocial",
         ),
       );
     } catch {
@@ -81,7 +83,8 @@ export function ConnectedAccountsSection() {
       connection.provider === "nostr" ||
       connection.provider === "twitter" ||
       connection.provider === "facebook" ||
-      connection.provider === "reddit"
+      connection.provider === "reddit" ||
+      connection.provider === "bitsocial"
     ) {
       return false;
     }
@@ -108,11 +111,15 @@ export function ConnectedAccountsSection() {
               ? "Facebook"
               : account.provider === "reddit"
                 ? "Reddit"
-                : "Bluesky",
+                : account.provider === "bitsocial"
+                  ? "Bitsocial"
+                  : "Bluesky",
       account.did,
       account.instanceUrl,
       account.pageId,
       account.defaultSubreddit,
+      account.rpcUrl,
+      ...(account.relays ?? []),
     ),
   );
 
@@ -173,6 +180,16 @@ export function ConnectedAccountsSection() {
         await refreshSocial();
         return;
       }
+      if (input.provider === "bitsocial") {
+        const rpcUrl = (input.instanceUrl ?? "").trim() || undefined;
+        const communities = (input.accountHint ?? "")
+          .split(/[\s,]+/)
+          .map((part) => part.trim())
+          .filter(Boolean);
+        await api.connectBitsocial({ rpcUrl, communities });
+        await refreshSocial();
+        return;
+      }
       addConnection(input);
     },
     [addConnection, refreshSocial],
@@ -225,7 +242,9 @@ export function ConnectedAccountsSection() {
                         src={account.avatar}
                         size="sm"
                       />
-                      {account.provider === "nostr" ? account.handle : `@${account.handle}`}
+                      {account.provider === "nostr" || account.provider === "bitsocial"
+                        ? account.handle
+                        : `@${account.handle}`}
                     </span>
                   </SettingsPanelHeader>
                   <SettingsPanelBody>
@@ -242,7 +261,9 @@ export function ConnectedAccountsSection() {
                                 ? "Facebook"
                                 : account.provider === "reddit"
                                   ? "Reddit"
-                                  : "Bluesky"}
+                                  : account.provider === "bitsocial"
+                                    ? "Bitsocial"
+                                    : "Bluesky"}
                       </span>
                       {canManage ? (
                         <SettingsRowActions>
@@ -257,6 +278,17 @@ export function ConnectedAccountsSection() {
                         </SettingsRowActions>
                       ) : null}
                     </SettingsRow>
+                    {account.provider === "nostr" ? (
+                      <NostrRelaysEditor
+                        account={account}
+                        canManage={canManage}
+                        onUpdated={(updated) => {
+                          setServerAccounts((prev) =>
+                            prev.map((entry) => (entry.id === updated.id ? updated : entry)),
+                          );
+                        }}
+                      />
+                    ) : null}
                   </SettingsPanelBody>
                 </SettingsPanel>
               ))}

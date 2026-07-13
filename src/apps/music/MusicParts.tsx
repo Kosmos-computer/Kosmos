@@ -3,11 +3,14 @@ import i18n from "../../i18n/index";
 import { T } from "../../i18n/T";
 import { useTranslation } from "react-i18next";
 import {
+  Disc3,
   Heart,
   Home,
   List,
+  ListMusic,
   Maximize2,
   Mic,
+  Mic2,
   Monitor,
   PanelRight,
   Play,
@@ -15,6 +18,7 @@ import {
   Radio,
   Search,
   Square,
+  Users,
 } from "lucide-react";
 import { AlbumArt } from "./AlbumArt";
 import {
@@ -24,10 +28,12 @@ import {
 } from "./MusicBroadcasts";
 import { MusicBroadcastCover } from "./MusicBroadcastCover";
 import { MediaPlayerBar, ListItem, NavSidebar, NavSidebarSectionHeader } from "../../components/patterns";
+import { EmptyState } from "../../components/ui";
 import type {
   MusicContentFilter,
   MusicFeaturedCard,
   MusicLibraryFilter,
+  MusicLibraryItem,
   MusicMixCard,
   MusicNavSection,
   MusicNowPlaying,
@@ -39,14 +45,31 @@ import type { MusicViewModel } from "./useMusicStub";
 const NAV_ITEMS: { id: MusicNavSection; label: string; icon: typeof Home }[] = [
   { id: "home", label: "Home", icon: Home },
   { id: "broadcasts", label: "Broadcasts", icon: Radio },
+  { id: "playlists", label: "Playlists", icon: ListMusic },
+  { id: "artists", label: "Artists", icon: Users },
+  { id: "albums", label: "Albums", icon: Disc3 },
+  { id: "podcasts", label: "Podcasts", icon: Mic2 },
 ];
 
-const LIBRARY_FILTERS: { id: MusicLibraryFilter; label: string }[] = [
-  { id: "playlists", label: "Playlists" },
-  { id: "artists", label: "Artists" },
-  { id: "albums", label: "Albums" },
-  { id: "podcasts", label: "Podcasts" },
-];
+const LIBRARY_FILTER_LABELS: Record<MusicLibraryFilter, string> = {
+  playlists: "Playlists",
+  artists: "Artists",
+  albums: "Albums",
+  podcasts: "Podcasts",
+};
+
+function isLibraryFilter(section: MusicNavSection): section is MusicLibraryFilter {
+  return section === "playlists" || section === "artists" || section === "albums" || section === "podcasts";
+}
+
+function filterLibraryItems(items: MusicLibraryItem[], filter: MusicLibraryFilter) {
+  return items.filter((item) => {
+    if (filter === "playlists") return item.kind === "playlist";
+    if (filter === "artists") return item.kind === "artist";
+    if (filter === "albums") return item.kind === "album";
+    return item.kind === "podcast";
+  });
+}
 
 const CONTENT_FILTERS: { id: MusicContentFilter; label: string }[] = [
   { id: "all", label: "All" },
@@ -69,13 +92,8 @@ export interface MusicLibrarySidebarProps {
 }
 
 export function MusicLibrarySidebar({ vm }: MusicLibrarySidebarProps) {
-  const { t } = useTranslation();
-  const filteredItems = vm.libraryItems.filter((item) => {
-    if (vm.libraryFilter === "playlists") return item.kind === "playlist";
-    if (vm.libraryFilter === "artists") return item.kind === "artist";
-    if (vm.libraryFilter === "albums") return item.kind === "album";
-    return item.kind === "podcast";
-  });
+  const activeFilter = isLibraryFilter(vm.navSection) ? vm.navSection : vm.libraryFilter;
+  const filteredItems = filterLibraryItems(vm.libraryItems, activeFilter);
 
   return (
     <aside className="arco-music__library" aria-label={i18n.t(I18nKey.APPS$MUSIC_YOUR_LIBRARY)}>
@@ -131,24 +149,6 @@ export function MusicLibrarySidebar({ vm }: MusicLibrarySidebarProps) {
             </div>
 
             <div>
-              <NavSidebarSectionHeader title={i18n.t(I18nKey.APPS$MUSIC_FILTER)} />
-              <div className="arco-nav-sidebar__section-items">
-                {LIBRARY_FILTERS.map((filter) => (
-                  <ListItem
-                    key={filter.id}
-                    className="arco-nav-sidebar__nav-item"
-                    label={filter.label}
-                    active={vm.libraryFilter === filter.id && vm.navSection === "home"}
-                    onClick={() => {
-                      vm.setNavSection("home");
-                      vm.setLibraryFilter(filter.id);
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <div>
               <NavSidebarSectionHeader title={i18n.t(I18nKey.APPS$LONGFORMER_LIBRARY)} />
               <div className="arco-nav-sidebar__section-items">
                 {filteredItems.map((item) => (
@@ -165,7 +165,7 @@ export function MusicLibrarySidebar({ vm }: MusicLibrarySidebarProps) {
                     }
                     label={item.title}
                     description={item.subtitle}
-                    active={vm.activeLibraryItemId === item.id && vm.navSection === "home"}
+                    active={vm.activeLibraryItemId === item.id}
                     onClick={() => vm.setActiveLibraryItemId(item.id)}
                   />
                 ))}
@@ -293,6 +293,67 @@ export interface MusicMainContentProps {
   vm: MusicViewModel;
 }
 
+function MusicLibraryDirectory({ vm }: { vm: MusicViewModel }) {
+  const filter = isLibraryFilter(vm.navSection) ? vm.navSection : vm.libraryFilter;
+  const title = LIBRARY_FILTER_LABELS[filter];
+  const items = filterLibraryItems(vm.libraryItems, filter);
+  const query = vm.searchQuery.trim().toLowerCase();
+  const visibleItems = query
+    ? items.filter(
+        (item) =>
+          item.title.toLowerCase().includes(query) ||
+          item.subtitle.toLowerCase().includes(query),
+      )
+    : items;
+
+  return (
+    <main className="arco-music__main">
+      <div className="arco-music__main-scroll arco-music__scrollable">
+        <header className="arco-music__broadcast-header">
+          <div>
+            <h1 className="arco-music__broadcast-title">{title}</h1>
+            <p className="arco-music__broadcast-subtitle">
+              {visibleItems.length} {visibleItems.length === 1 ? "item" : "items"}
+              {query ? ` matching “${vm.searchQuery.trim()}”` : ""}
+            </p>
+          </div>
+        </header>
+
+        {visibleItems.length === 0 ? (
+          <EmptyState title={`No ${title.toLowerCase()} yet`}>
+            Items you add will show up here.
+          </EmptyState>
+        ) : (
+          <div className="arco-music__library-list" role="list" aria-label={title}>
+            {visibleItems.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                role="listitem"
+                className={`arco-music__library-row${
+                  vm.activeLibraryItemId === item.id ? " arco-music__library-row--active" : ""
+                }`}
+                onClick={() => vm.setActiveLibraryItemId(item.id)}
+              >
+                <AlbumArt
+                  trackId={item.coverTrackId ?? item.id}
+                  tone={item.imageTone}
+                  size="md"
+                  alt={item.title}
+                />
+                <span className="arco-music__library-row-meta">
+                  <strong>{item.title}</strong>
+                  <span>{item.subtitle}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </main>
+  );
+}
+
 export function MusicMainContent({ vm }: MusicMainContentProps) {
   if (vm.selectedSongId) {
     return <MusicSongDetail vm={vm} />;
@@ -304,6 +365,10 @@ export function MusicMainContent({ vm }: MusicMainContentProps) {
 
   if (vm.navSection === "broadcasts") {
     return <MusicBroadcastDirectory vm={vm} />;
+  }
+
+  if (isLibraryFilter(vm.navSection)) {
+    return <MusicLibraryDirectory vm={vm} />;
   }
 
   return (

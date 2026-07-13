@@ -127,13 +127,22 @@ export function filterTracks(tracks: SeedTrackStatus[], query: string): SeedTrac
 }
 
 export function albumLibraryItems(tracks: SeedTrackStatus[]): MusicLibraryItem[] {
+  const artistTone = tracks[0] ? asImageTone(tracks[0].artTone) : "violet";
   return [
     {
       id: "album-tirufm",
       title: MUSIC_SEED_ALBUM,
       subtitle: `Album · ${MUSIC_SEED_ARTIST} · ${tracks.length} tracks`,
       kind: "album",
-      imageTone: tracks[0] ? asImageTone(tracks[0].artTone) : "violet",
+      imageTone: artistTone,
+      coverTrackId: tracks[0]?.id,
+    },
+    {
+      id: "artist-tirufm",
+      title: MUSIC_SEED_ARTIST,
+      subtitle: `Artist · ${tracks.length} tracks`,
+      kind: "artist",
+      imageTone: artistTone,
       coverTrackId: tracks[0]?.id,
     },
     ...buildLibraryItems(tracks),

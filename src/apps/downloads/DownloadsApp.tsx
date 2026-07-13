@@ -1,8 +1,8 @@
 import { DownloadsWorkspace } from "./DownloadsWorkspace";
-import { useDownloadsStub } from "./useDownloadsStub";
+import { useDownloads } from "./useDownloads";
 
 export function DownloadsApp() {
-  const vm = useDownloadsStub();
+  const vm = useDownloads();
 
   return <DownloadsWorkspace vm={vm} />;
 }

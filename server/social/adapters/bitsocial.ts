@@ -235,11 +235,10 @@ export class BitsocialRpcClient {
       return;
     }
 
-    const subscriptionId = message && "params" in message ? message.params?.subscription : undefined;
-    if (typeof subscriptionId === "number") {
-      const handler = this.subscriptions.get(subscriptionId);
-      const event = message.params?.event ?? "message";
-      handler?.(event, message.params?.result);
+    if ("params" in message && message.params && typeof message.params.subscription === "number") {
+      const handler = this.subscriptions.get(message.params.subscription);
+      const event = message.params.event ?? "message";
+      handler?.(event, message.params.result);
       return;
     }
 
@@ -272,7 +271,7 @@ export class BitsocialRpcClient {
 
 export function normalizeBitsocialRpcUrl(raw: string): string {
   const trimmed = raw.trim();
-  if (!trimmed) throw new Error("Bitsocial RPC URL is required");
+  if (!trimmed) return BITSOCIAL_DEFAULT_RPC;
   let candidate = trimmed;
   if (!/^[a-z]+:\/\//i.test(candidate)) {
     candidate = `ws://${candidate}`;
@@ -670,7 +669,7 @@ export async function bitsocialGetPostThread(
 
     const replies = replyComments
       .map((entry) => mapBitsocialComment(entry))
-      .filter((item): item is SocialFeedPost => Boolean(item) && item.uri !== cid);
+      .filter((item): item is SocialFeedPost => item !== null && item.uri !== cid);
 
     return { post, ancestors: [], replies };
   } finally {

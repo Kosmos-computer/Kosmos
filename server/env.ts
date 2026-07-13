@@ -42,10 +42,21 @@ export const dataDirs = {
   get workspace() {
     return path.join(getDataRoot(), "workspace");
   },
+  /** BitTorrent download directory (os.downloads@1). */
+  get torrents() {
+    return path.join(getDataRoot(), "torrents");
+  },
 };
 
 export function ensureDataDirs(): void {
-  for (const dir of [dataDirs.root, dataDirs.apps, dataDirs.sessions, dataDirs.db, dataDirs.workspace]) {
+  for (const dir of [
+    dataDirs.root,
+    dataDirs.apps,
+    dataDirs.sessions,
+    dataDirs.db,
+    dataDirs.workspace,
+    dataDirs.torrents,
+  ]) {
     fs.mkdirSync(dir, { recursive: true });
   }
   const scriptsDir = path.join(dataDirs.workspace, "scripts");

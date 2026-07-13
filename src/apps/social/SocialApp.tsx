@@ -286,7 +286,9 @@ export function SocialApp() {
           const network = vm.networks.find((item) => item.id === account.provider);
           const label =
             account.displayName ??
-            (account.provider === "nostr" ? account.handle : `@${account.handle}`);
+            (account.provider === "nostr" || account.provider === "bitsocial"
+              ? account.handle
+              : `@${account.handle}`);
           const active = vm.activeAccountId === account.id;
           return (
             <button
@@ -399,41 +401,62 @@ export function SocialApp() {
           </div>
         ) : showSettings ? (
           <div className="arco-social__section-pane">
-            <EmptyState title={i18n.t(I18nKey.APPS$SOCIAL_NAV_SETTINGS)}>
+            <EmptyState
+              title={`${vm.networks.find((n) => n.id === vm.activeNetworkId)?.label ?? "Social"} settings`}
+            >
               <ul className="arco-social__account-list">
-                {vm.accounts.map((account) => {
-                  const network = vm.networks.find((item) => item.id === account.provider);
-                  const handleLabel =
-                    account.provider === "nostr" ? account.handle : `@${account.handle}`;
-                  return (
-                    <li key={account.id} className="arco-social__account-list-item">
-                      <div className="arco-social__account-list-meta">
-                        <Avatar
-                          name={account.displayName ?? account.handle}
-                          src={account.avatar}
-                          size="sm"
-                        />
-                        <div>
-                          <strong>{account.displayName ?? handleLabel}</strong>
-                          <span>
-                            {network?.label ?? account.provider}
-                            {/* eslint-disable-next-line i18next/no-literal-string -- separator */}
-                            {" · "}
-                            {handleLabel}
-                          </span>
+                {vm.accounts
+                  .filter((account) => account.provider === vm.activeNetworkId)
+                  .map((account) => {
+                    const network = vm.networks.find((item) => item.id === account.provider);
+                    const handleLabel =
+                      account.provider === "nostr" || account.provider === "bitsocial"
+                        ? account.handle
+                        : `@${account.handle}`;
+                    const detailParts = [
+                      network?.label ?? account.provider,
+                      account.instanceUrl,
+                      account.defaultSubreddit
+                        ? `r/${account.defaultSubreddit}`
+                        : undefined,
+                      account.pageId ? `Page ${account.pageId}` : undefined,
+                      account.rpcUrl,
+                      account.relays?.length
+                        ? `${account.relays.length} relay${account.relays.length === 1 ? "" : "s"}`
+                        : undefined,
+                    ].filter(Boolean);
+                    return (
+                      <li key={account.id} className="arco-social__account-list-item">
+                        <div className="arco-social__account-list-meta">
+                          <Avatar
+                            name={account.displayName ?? account.handle}
+                            src={account.avatar}
+                            size="sm"
+                          />
+                          <div className="arco-social__account-list-copy">
+                            <strong title={account.displayName ?? handleLabel}>
+                              {account.displayName ?? handleLabel}
+                            </strong>
+                            <span title={[handleLabel, ...detailParts].join(" · ")}>
+                              {detailParts.join(" · ")}
+                              {/* eslint-disable-next-line i18next/no-literal-string -- separator */}
+                              {" · "}
+                              {handleLabel}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        onClick={() => void vm.disconnectAccount(account.id)}
-                      >
-                        <T k={I18nKey.APPS$SOCIAL_DISCONNECT} />
-                      </Button>
-                    </li>
-                  );
-                })}
+                        <Button
+                          variant="ghost"
+                          className="arco-social__account-list-action"
+                          onClick={() => void vm.disconnectAccount(account.id)}
+                        >
+                          <T k={I18nKey.APPS$SOCIAL_DISCONNECT} />
+                        </Button>
+                      </li>
+                    );
+                  })}
               </ul>
-              <Button variant="primary" onClick={() => vm.openConnect()}>
+              <Button variant="primary" onClick={() => vm.openConnect(vm.activeNetworkId)}>
                 <T k={I18nKey.APPS$SOCIAL_CONNECT_ACCOUNT} />
               </Button>
             </EmptyState>
@@ -592,6 +615,7 @@ export function SocialApp() {
         onClose={() => vm.setConnectOpen(false)}
         domain="social"
         initialProvider={vm.connectProvider}
+        allowedProviders={vm.connectProvider ? [vm.connectProvider] : undefined}
         existingConnections={vm.connectionsAll}
         onConnect={(input) => {
           void vm.handleConnect(input);

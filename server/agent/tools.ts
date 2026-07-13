@@ -889,6 +889,86 @@ export const agentTools: AgentTool[] = [
       ),
   },
 
+  // ── Downloads / BitTorrent (os.downloads@1) ─────────────────────────────────
+  {
+    name: "torrents_list",
+    description:
+      "List torrents in the Downloads app (BitTorrent client). Returns name, progress, status, speeds, and save path.",
+    parameters: { type: "object", properties: {} },
+    execute: async (_args, ctx) => agentInvokeIntent("torrents.list", {}, "List torrents", ctx),
+  },
+  {
+    name: "torrents_add",
+    description:
+      "Add a torrent by magnet URI or http(s) .torrent URL. Downloads to data/torrents; small completed files may import into Drive. Pauses for user approval.",
+    parameters: {
+      type: "object",
+      properties: {
+        source: {
+          type: "string",
+          description: "magnet:?xt=urn:btih:… or https://…/file.torrent",
+        },
+        paused: { type: "boolean", description: "Add in paused state" },
+      },
+      required: ["source"],
+    },
+    execute: async (args, ctx) =>
+      agentInvokeIntent(
+        "torrents.add",
+        {
+          source: String(args.source ?? ""),
+          ...(typeof args.paused === "boolean" ? { paused: args.paused } : {}),
+        },
+        `Add torrent ${String(args.source ?? "").slice(0, 80)}`,
+        ctx,
+      ),
+  },
+  {
+    name: "torrents_pause",
+    description: "Pause a torrent by id (info hash from torrents_list).",
+    parameters: {
+      type: "object",
+      properties: { id: { type: "string" } },
+      required: ["id"],
+    },
+    execute: async (args, ctx) =>
+      agentInvokeIntent("torrents.pause", args, `Pause torrent ${String(args.id ?? "")}`, ctx),
+  },
+  {
+    name: "torrents_resume",
+    description: "Resume a paused or stopped torrent by id.",
+    parameters: {
+      type: "object",
+      properties: { id: { type: "string" } },
+      required: ["id"],
+    },
+    execute: async (args, ctx) =>
+      agentInvokeIntent("torrents.resume", args, `Resume torrent ${String(args.id ?? "")}`, ctx),
+  },
+  {
+    name: "torrents_remove",
+    description:
+      "Remove a torrent by id. Set deleteFiles=true to also delete downloaded data. Pauses for user approval.",
+    parameters: {
+      type: "object",
+      properties: {
+        id: { type: "string" },
+        deleteFiles: { type: "boolean" },
+      },
+      required: ["id"],
+    },
+    execute: async (args, ctx) =>
+      agentInvokeIntent(
+        "torrents.remove",
+        {
+          id: String(args.id ?? ""),
+          ...(typeof args.deleteFiles === "boolean" ? { deleteFiles: args.deleteFiles } : {}),
+        },
+        `Remove torrent ${String(args.id ?? "")}`,
+        ctx,
+      ),
+  },
+
   // ── System tasks (os.tasks@1) ──────────────────────────────────────────────
   {
     name: "tasks_list",

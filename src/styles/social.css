@@ -536,7 +536,6 @@
 }
 
 .arco-social__media-link img,
-.arco-social__video img,
 .arco-social__external img,
 .arco-social__profile-banner img {
   width: 100%;
@@ -551,25 +550,61 @@
 
 .arco-social__video {
   position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   border-radius: var(--arco-radius-m);
   overflow: hidden;
+  background: #0a0a0a;
+  border: 1px solid var(--arco-border);
+}
+
+.arco-social__video--poster-only img {
+  width: 100%;
+  max-height: min(70vh, 520px);
+  object-fit: contain;
+  display: block;
+  background: #0a0a0a;
+}
+
+.arco-social__video-player {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  max-height: min(70vh, 520px);
   background: #000;
+  vertical-align: middle;
 }
 
-.arco-social__video img {
-  max-height: 360px;
-  opacity: 0.9;
+.arco-social__video--landscape .arco-social__video-player {
+  width: 100%;
+  max-height: min(70vh, 480px);
+  object-fit: contain;
 }
 
-.arco-social__video-link {
-  position: absolute;
-  inset: auto 12px 12px auto;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.7);
-  color: #fff;
-  text-decoration: none;
-  font-size: var(--arco-text-sm);
+.arco-social__video--portrait {
+  justify-content: center;
+}
+
+.arco-social__video--portrait .arco-social__video-player {
+  width: auto;
+  max-width: min(100%, 360px);
+  max-height: min(75vh, 640px);
+  object-fit: contain;
+}
+
+@media (max-width: 767px) {
+  .arco-social__video-player,
+  .arco-social__video--landscape .arco-social__video-player {
+    max-height: min(60vh, 420px);
+  }
+
+  .arco-social__video--portrait .arco-social__video-player {
+    max-width: min(100%, 280px);
+    max-height: min(70vh, 560px);
+  }
 }
 
 .arco-social__external {
@@ -813,11 +848,20 @@
   align-items: center;
   gap: var(--arco-space-s);
   min-width: 0;
+  flex: 1;
+}
+
+.arco-social__account-list-copy {
+  min-width: 0;
+  flex: 1;
 }
 
 .arco-social__account-list-meta strong,
 .arco-social__account-list-meta span {
   display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .arco-social__account-list-meta strong {
@@ -828,6 +872,10 @@
 .arco-social__account-list-meta span {
   color: var(--arco-text-secondary);
   font-size: var(--arco-text-xs);
+}
+
+.arco-social__account-list-action {
+  flex-shrink: 0;
 }
 
 .arco-social__feed-status {

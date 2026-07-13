@@ -1,7 +1,7 @@
 {
   "name": "arco-os",
   "private": true,
-  "version": "0.1.5",
+  "version": "0.1.6",
   "type": "module",
   "description": "Arco OS — a generative AI operating system prototype. Desktop shell + agent that builds adaptive live apps.",
   "workspaces": [

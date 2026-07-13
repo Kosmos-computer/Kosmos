@@ -106,25 +106,27 @@ export function ChatApp() {
         listOpen={showSessions}
         list={sessionList}
         detail={
-          <div
-            ref={scrollRef}
-            className="arco-chat__thread arco-scroll"
-            onScroll={() => {
-              const el = scrollRef.current;
-              if (el) followRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
-            }}
-          >
-            {voice.active && <VoiceBar voice={voice} placement="thread" />}
-            {chat.items.length === 0 && (
-              <EmptyState title={i18n.t(I18nKey.APPS$CHAT_ASK_ARCO_TO_BUILD_SOMETHING)}><T k={I18nKey.APPS$CHAT_BUILD_ME_A_SYSTEM_MONITOR_TRACK_MY_READING_LIST_DASHBOAR} /></EmptyState>
-            )}
-            <ChatThread
-              items={chat.items}
-              streaming={chat.streaming}
-              turnMeta={chat.turnMeta}
-              onFollowUp={submit}
-            />
-          </div>
+          <>
+            {voice.active && <VoiceBar voice={voice} placement="expanded" />}
+            <div
+              ref={scrollRef}
+              className="arco-chat__thread arco-scroll"
+              onScroll={() => {
+                const el = scrollRef.current;
+                if (el) followRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+              }}
+            >
+              {chat.items.length === 0 && (
+                <EmptyState title={i18n.t(I18nKey.APPS$CHAT_ASK_ARCO_TO_BUILD_SOMETHING)}><T k={I18nKey.APPS$CHAT_BUILD_ME_A_SYSTEM_MONITOR_TRACK_MY_READING_LIST_DASHBOAR} /></EmptyState>
+              )}
+              <ChatThread
+                items={chat.items}
+                streaming={chat.streaming}
+                turnMeta={chat.turnMeta}
+                onFollowUp={submit}
+              />
+            </div>
+          </>
         }
       />
 

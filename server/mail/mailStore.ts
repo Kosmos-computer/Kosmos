@@ -79,6 +79,11 @@ export const mailStore = {
       .map(toInfo);
   },
 
+  /** First user id that has a connected mail account (headless fallback). */
+  anyConnectedUserId(): string | undefined {
+    return load().accounts[0]?.userId;
+  },
+
   getForUser(userId: string, accountId?: string): MailAccountRecord | undefined {
     const accounts = load().accounts.filter((account) => account.userId === userId);
     if (accountId) return accounts.find((account) => account.id === accountId);

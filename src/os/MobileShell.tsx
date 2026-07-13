@@ -27,6 +27,7 @@ import { VideoShell } from "../apps/video/VideoShell";
 import { PodcastShell } from "../apps/podcast/PodcastShell";
 import { MobileStatusBar } from "./MobileStatusBar";
 import { MobileDock } from "./MobileDock";
+import { connectShellEvents } from "./shellEvents";
 import { SwipeRevealTray } from "./SwipeRevealTray";
 
 export function MobileShell() {
@@ -44,6 +45,9 @@ export function MobileShell() {
 
   useEffect(() => {
     void refreshApps();
+    // Voice /v1 turns need this channel for cursor tools + approvals.
+    const disconnect = connectShellEvents();
+    return disconnect;
   }, [refreshApps]);
 
   const active = [...windows.filter((w) => !w.minimized)].sort((a, b) => b.z - a.z)[0];

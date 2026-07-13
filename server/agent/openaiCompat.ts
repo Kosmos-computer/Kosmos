@@ -20,7 +20,7 @@ import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { getConnInfo } from "@hono/node-server/conninfo";
 import type { AgentEvent } from "../../shared/types.js";
-import { broadcastShellEvent, hasShellClients } from "../shellChannel.js";
+import { broadcastShellEvent, waitForShellClients } from "../shellChannel.js";
 import { modelStore } from "../stores/modelStore.js";
 import { sessionStore } from "../stores/sessionStore.js";
 import { runAgentTurn } from "./loop.js";
@@ -203,6 +203,9 @@ openaiCompatRoutes.post("/chat/completions", async (c) => {
   const isVoice = conversationKey.startsWith("voice");
   const extraSystem = isVoice ? VOICE_SYSTEM : undefined;
   const slot = isVoice ? "voice.brain" : "agent.chat";
+  // Voice often races a shell-events reconnect after server restart; wait a
+  // beat so cursor tools don't falsely go headless while the desktop is open.
+  const interactive = await waitForShellClients(isVoice ? 2_000 : 0);
 
   if (body.stream === false) {
     const text = await runAgentTurn({
@@ -213,7 +216,7 @@ openaiCompatRoutes.post("/chat/completions", async (c) => {
       // Interactive when a desktop is connected to the shell-events channel:
       // it renders approval cards and executes cursor commands. With no
       // desktop the turn runs headless (cursor refuses, confirms deny).
-      interactive: hasShellClients(),
+      interactive,
       slot,
       ...(extraSystem ? { extraSystem } : {}),
     });
@@ -246,7 +249,7 @@ openaiCompatRoutes.post("/chat/completions", async (c) => {
           }
         },
         signal: c.req.raw.signal,
-        interactive: hasShellClients(),
+        interactive,
         slot,
         ...(extraSystem ? { extraSystem } : {}),
       });

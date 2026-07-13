@@ -29,6 +29,25 @@ export function hasShellClients(): boolean {
   return clients > 0;
 }
 
+/** How many desktops currently hold an open shell-events stream. */
+export function shellClientCount(): number {
+  return clients;
+}
+
+/**
+ * Voice turns often land right after a server restart, while EventSource is
+ * still reconnecting. Wait briefly before declaring the turn headless.
+ */
+export async function waitForShellClients(timeoutMs = 2_000): Promise<boolean> {
+  if (clients > 0) return true;
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    if (clients > 0) return true;
+  }
+  return clients > 0;
+}
+
 /** Deliver one event to every connected desktop. */
 export function broadcastShellEvent(event: AgentEvent): void {
   bus.emit("shell_event", event);

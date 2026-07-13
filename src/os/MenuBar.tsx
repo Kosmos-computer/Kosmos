@@ -12,6 +12,7 @@ import { useCommandPaletteStore } from "./commandPaletteStore";
 import { MenuBarBackendStatus } from "./MenuBarBackendStatus";
 import { MenuBarKeyboardControl } from "./MenuBarKeyboardControl";
 import { MenuBarLanguageSwitcher } from "./MenuBarLanguageSwitcher";
+import { MenuBarToolsStatus } from "./MenuBarToolsStatus";
 import { MenuBarVolumeControl } from "./MenuBarVolumeControl";
 import { useOsStore } from "./osStore";
 import { useWindowStore } from "./windowStore";
@@ -146,6 +147,7 @@ export function MenuBar() {
         <MenuBarLanguageSwitcher />
         <MenuBarKeyboardControl />
         <MenuBarVolumeControl />
+        <MenuBarToolsStatus />
         <MenuBarBackendStatus />
         <span>{clock}</span>
       </div>

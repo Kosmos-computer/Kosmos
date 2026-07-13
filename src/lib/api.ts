@@ -136,6 +136,8 @@ export const api = {
     settings?: Partial<Settings>;
   }) => post<AuthSessionResponse>("/api/auth/setup", data),
   installStatus: () => fetch("/api/system/install-status").then((r) => json<InstallStatus>(r)),
+  shellStatus: () =>
+    fetch("/api/system/shell-status").then((r) => json<{ clients: number; interactive: boolean }>(r)),
   workspaceFeatures: () =>
     fetch("/api/system/workspace-features").then((r) => json<WorkspaceFeatures>(r)),
   authLogin: (username: string, password: string) =>

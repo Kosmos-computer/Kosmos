@@ -675,8 +675,8 @@
   justify-content: center;
   gap: var(--arco-space-l);
   padding: var(--arco-space-xl) var(--arco-space-l);
-  margin-bottom: var(--arco-space-m);
-  border-radius: var(--arco-radius-l);
+  background: transparent;
+  border-radius: 0;
   text-align: center;
 }
 

@@ -31,6 +31,17 @@ export default defineConfig({
       "/api": {
         target: apiOrigin,
         changeOrigin: true,
+        // Keep EventSource (/api/shell-events) and chat SSE alive through the
+        // Vite proxy — default timeouts and buffered closes mark voice turns
+        // headless even when the desktop UI is open.
+        timeout: 0,
+        configure: (proxy) => {
+          proxy.on("proxyReq", (proxyReq, _req, res) => {
+            res.on("close", () => {
+              if (!res.writableEnded) proxyReq.destroy();
+            });
+          });
+        },
       },
       // Installed-app bundles + the app SDK are served by the Arco server.
       "/apps": {

@@ -67,6 +67,7 @@ const WRITE_SYSTEM_TOOLS = new Set([
   "docs_create",
   "docs_write",
   "docs_manage",
+  "mail_send",
   "generator_catalog_add",
   "os_ui",
   "mouse_click",

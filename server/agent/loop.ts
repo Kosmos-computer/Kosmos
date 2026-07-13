@@ -53,6 +53,8 @@ export interface RunTurnOptions {
   signal?: AbortSignal;
   /** True when a client is streaming and can answer exec confirmations. */
   interactive?: boolean;
+  /** Authenticated user for per-user tools (mail, github, …). */
+  userId?: string;
   /** Extra system guidance appended for this caller (e.g. voice speakability). */
   extraSystem?: string;
   /**
@@ -103,6 +105,7 @@ export async function runAgentTurn(opts: RunTurnOptions): Promise<string> {
     sessionId: session.id,
     emit: opts.emit,
     interactive: opts.interactive ?? false,
+    userId: opts.userId,
   };
   let finalText = "";
   const usage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };

@@ -82,13 +82,14 @@ import { mcpLogFile } from "./mcp/client.js";
 import "./mcp/tools.js"; // registers the MCP tool contributor with the agent registry
 import "./platform/appTools.js"; // registers installed apps' tool contributions
 import "./channels/tools.js"; // registers channel_send with the agent registry
+import "./mail/tools.js"; // registers mail_list / mail_read / mail_send
 import { channelStore } from "./channels/channelStore.js";
 import { channelGateway } from "./channels/gateway.js";
 import { handleOutwardMcp } from "./mcp/outward.js";
 import { externalClients } from "./platform/externalClients.js";
 import { skillStore } from "./skills/skillStore.js";
 import { bus } from "./bus.js";
-import { shellClientConnected } from "./shellChannel.js";
+import { shellClientConnected, shellClientCount } from "./shellChannel.js";
 import { filesService } from "./services/filesService.js";
 import { calendarService } from "./services/calendarService.js";
 import { tasksService } from "./services/tasksService.js";
@@ -234,6 +235,11 @@ app.get("/api/system/install-status", async (c) => c.json(await getInstallStatus
 
 app.use("/api/*", requireAuth);
 
+/** How many desktops hold /api/shell-events — voice uses this for interactive vs headless. */
+app.get("/api/system/shell-status", (c) =>
+  c.json({ clients: shellClientCount(), interactive: shellClientCount() > 0 }),
+);
+
 app.route("/", shareRoutes);
 
 // ── OpenAI-compatible agent endpoint ─────────────────────────────────────────
@@ -303,6 +309,7 @@ app.post("/api/chat", requireCap("chat"), async (c) => {
         signal: c.req.raw.signal,
         interactive: true,
         readOnly: body.mode === "ask",
+        userId: currentUser(c).id,
       });
       emit({ type: "done" });
     } catch (err) {
@@ -327,8 +334,12 @@ app.post("/api/chat", requireCap("chat"), async (c) => {
 // have no client stream. Those callers put shell-relevant events on the bus
 // ("shell_event"), and every connected desktop receives them here.
 
-app.get("/api/shell-events", (c) =>
-  streamSSE(c, async (stream) => {
+app.get("/api/shell-events", (c) => {
+  // Disable proxy buffering (Vite / nginx) so the desktop counts as connected
+  // immediately and cursor_request events flush in real time.
+  c.header("Cache-Control", "no-cache, no-transform");
+  c.header("X-Accel-Buffering", "no");
+  return streamSSE(c, async (stream) => {
     const forward = (event: AgentEvent) => {
       void stream.writeSSE({ data: JSON.stringify(event) });
     };
@@ -343,8 +354,8 @@ app.get("/api/shell-events", (c) =>
     clearInterval(keepAlive);
     bus.off("shell_event", forward);
     disconnect();
-  }),
-);
+  });
+});
 
 // ── Sessions ─────────────────────────────────────────────────────────────────
 

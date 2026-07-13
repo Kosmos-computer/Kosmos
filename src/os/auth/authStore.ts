@@ -85,7 +85,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
       else set({ phase: "login" });
     } catch {
       // Server unreachable — fall to login; retries happen on submit.
-      set({ phase: "login", error: "Cannot reach the Arco server" });
+      set({ phase: "login", error: "Cannot reach the Kosmos server" });
     }
   },
 

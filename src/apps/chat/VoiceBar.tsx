@@ -1,9 +1,8 @@
 import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
 /**
- * Live voice-session strip above the chat composer: the face rig, the
- * session state, and the most recent exchange. Rendered only while a voice
- * conversation is active.
+ * Live voice-session UI: compact dock above the composer, or an expanded
+ * panel pinned above the scrollable thread (chat does not scroll behind it).
  */
 import { useEffect } from "react";
 import { Maximize2, Minimize2, Minus, X } from "lucide-react";
@@ -22,7 +21,7 @@ const STATE_LABELS: Record<VoiceState, string> = {
   error: "Voice error",
 };
 
-type VoiceBarPlacement = "thread" | "dock";
+type VoiceBarPlacement = "expanded" | "dock";
 
 export function VoiceBar({
   voice,
@@ -39,7 +38,8 @@ export function VoiceBar({
     if (!voice.active) reset();
   }, [voice.active, reset]);
 
-  if (placement === "thread" && display !== "expanded") return null;
+  // Expanded sits above the scrollable thread; dock sits above the composer.
+  if (placement === "expanded" && display !== "expanded") return null;
   if (placement === "dock" && display === "expanded") return null;
 
   const transcript =

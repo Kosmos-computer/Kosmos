@@ -59,6 +59,8 @@ export interface ToolContext {
    * instead of hanging a cron job for the confirmation timeout.
    */
   interactive?: boolean;
+  /** Authenticated Kosmos user (mail, github, …). Optional for headless. */
+  userId?: string;
 }
 
 export interface AgentTool extends LlmToolDef {

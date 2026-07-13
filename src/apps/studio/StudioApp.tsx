@@ -292,8 +292,15 @@ export function StudioApp() {
         >
           {isEmpty ? (
             <div className="arco-studio__empty">
-              <FaceWidget className="arco-studio__emptyface" />
-              <div className="arco-studio__content-inner">{composer}</div>
+              {voice.active ? (
+                <VoiceBar voice={voice} placement="expanded" />
+              ) : (
+                <FaceWidget className="arco-studio__emptyface" />
+              )}
+              <div className="arco-studio__content-inner">
+                {voice.active && <VoiceBar voice={voice} placement="dock" />}
+                {composer}
+              </div>
             </div>
           ) : (
             <>
@@ -314,6 +321,7 @@ export function StudioApp() {
                   }
                 />
               </div>
+              {voice.active && <VoiceBar voice={voice} placement="expanded" />}
               <div
                 ref={scrollRef}
                 className="arco-chat__thread arco-scroll"
@@ -322,7 +330,6 @@ export function StudioApp() {
                   if (el) followRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
                 }}
               >
-                {voice.active && <VoiceBar voice={voice} placement="thread" />}
                 <div className="arco-studio__content-inner">
                   <ChatThread
                     items={chat.items}
@@ -333,12 +340,13 @@ export function StudioApp() {
                 </div>
               </div>
               <div className="arco-composer-dock">
-                <div className="arco-studio__content-inner">{composer}</div>
+                <div className="arco-studio__content-inner">
+                  {voice.active && <VoiceBar voice={voice} placement="dock" />}
+                  {composer}
+                </div>
               </div>
             </>
           )}
-
-          {voice.active && <VoiceBar voice={voice} placement="dock" />}
         </section>
 
         {/* ── Divider + right drawer ───────────────────────────────────── */}

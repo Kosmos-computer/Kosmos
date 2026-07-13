@@ -54,7 +54,10 @@ export function ConnectedAccountsSection() {
           (account) =>
             account.provider === "bluesky" ||
             account.provider === "mastodon" ||
-            account.provider === "nostr",
+            account.provider === "nostr" ||
+            account.provider === "twitter" ||
+            account.provider === "facebook" ||
+            account.provider === "reddit",
         ),
       );
     } catch {
@@ -75,7 +78,10 @@ export function ConnectedAccountsSection() {
     if (
       connection.provider === "bluesky" ||
       connection.provider === "mastodon" ||
-      connection.provider === "nostr"
+      connection.provider === "nostr" ||
+      connection.provider === "twitter" ||
+      connection.provider === "facebook" ||
+      connection.provider === "reddit"
     ) {
       return false;
     }
@@ -100,10 +106,13 @@ export function ConnectedAccountsSection() {
             ? "X"
             : account.provider === "facebook"
               ? "Facebook"
-              : "Bluesky",
+              : account.provider === "reddit"
+                ? "Reddit"
+                : "Bluesky",
       account.did,
       account.instanceUrl,
       account.pageId,
+      account.defaultSubreddit,
     ),
   );
 
@@ -153,6 +162,14 @@ export function ConnectedAccountsSection() {
         if (!accessToken) return;
         const pageId = (input.accountHint ?? "").trim() || undefined;
         await api.connectFacebook({ accessToken, pageId });
+        await refreshSocial();
+        return;
+      }
+      if (input.provider === "reddit") {
+        const accessToken = (input.token ?? "").trim();
+        if (!accessToken) return;
+        const defaultSubreddit = (input.accountHint ?? "").trim() || undefined;
+        await api.connectReddit({ accessToken, defaultSubreddit });
         await refreshSocial();
         return;
       }
@@ -223,7 +240,9 @@ export function ConnectedAccountsSection() {
                               ? "X"
                               : account.provider === "facebook"
                                 ? "Facebook"
-                                : "Bluesky"}
+                                : account.provider === "reddit"
+                                  ? "Reddit"
+                                  : "Bluesky"}
                       </span>
                       {canManage ? (
                         <SettingsRowActions>

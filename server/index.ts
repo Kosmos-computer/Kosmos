@@ -2215,6 +2215,25 @@ app.post("/api/social/accounts/facebook", async (c) => {
   }
 });
 
+app.post("/api/social/accounts/reddit", async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as {
+    accessToken?: string;
+    defaultSubreddit?: string;
+  };
+  try {
+    const account = await socialGateway.connectReddit(currentUser(c).id, {
+      accessToken: String(body.accessToken ?? ""),
+      defaultSubreddit: body.defaultSubreddit ? String(body.defaultSubreddit) : undefined,
+    });
+    return c.json(account);
+  } catch (err) {
+    return c.json(
+      { error: err instanceof Error ? err.message : "Could not connect Reddit account" },
+      400,
+    );
+  }
+});
+
 app.get("/api/social/feed", async (c) => {
   const cursor = c.req.query("cursor") ?? undefined;
   const accountId = c.req.query("accountId") ?? undefined;

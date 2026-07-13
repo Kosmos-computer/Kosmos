@@ -1,8 +1,9 @@
 /**
- * Social gateway — Bluesky, Mastodon, Nostr, X, and Facebook connect/feed/engagement proxied server-side.
+ * Social gateway — Bluesky, Mastodon, Nostr, X, Facebook, Reddit, and Bitsocial connect/feed/engagement proxied server-side.
  */
 import type {
   SocialAccountInfo,
+  SocialBitsocialConnectInput,
   SocialBlueskyConnectInput,
   SocialCreatePostInput,
   SocialFacebookConnectInput,
@@ -12,6 +13,7 @@ import type {
   SocialMastodonConnectInput,
   SocialNostrConnectInput,
   SocialProfileResponse,
+  SocialRedditConnectInput,
   SocialReplyInput,
   SocialRepostInput,
   SocialSearchResponse,
@@ -20,6 +22,23 @@ import type {
   SocialThreadResponse,
   SocialTwitterConnectInput,
 } from "../../shared/social.js";
+import {
+  bitsocialCreatePost,
+  bitsocialFollowCommunity,
+  bitsocialGetPostThread,
+  bitsocialGetProfile,
+  bitsocialGetTimeline,
+  bitsocialLike,
+  bitsocialListCommunityLinks,
+  bitsocialReply,
+  bitsocialSearchCommunities,
+  bitsocialVerifyConnection,
+  decodeBitsocialService,
+  encodeBitsocialService,
+  normalizeBitsocialCommunities,
+  normalizeBitsocialRpcUrl,
+  type BitsocialSession,
+} from "./adapters/bitsocial.js";
 import {
   blueskyCreatePost,
   blueskyFollow,
@@ -100,6 +119,24 @@ import {
   type NostrSecretKey,
   type NostrSession,
 } from "./adapters/nostr.js";
+import {
+  createRedditClient,
+  normalizeSubreddit,
+  redditCreateComment,
+  redditCreatePost,
+  redditCrosspost,
+  redditGetAuthorFeed,
+  redditGetHomeTimeline,
+  redditGetPostThread,
+  redditGetProfile,
+  redditGetSuggestions,
+  redditGetTrendingSubreddits,
+  redditSearchActors,
+  redditSubscribe,
+  redditVerifyCredentials,
+  redditVote,
+  type RedditClient,
+} from "./adapters/reddit.js";
 import {
   createTwitterClient,
   twitterCreateTweet,
@@ -267,6 +304,48 @@ async function withFacebookClient<T>(
   }
 }
 
+async function withRedditClient<T>(
+  userId: string,
+  accountId: string | undefined,
+  run: (client: RedditClient, account: SocialAccountRecordPublic) => Promise<T>,
+): Promise<T> {
+  const account = socialStore.getForUser(userId, accountId);
+  if (!account || account.provider !== "reddit") {
+    throw new Error("No Reddit account connected");
+  }
+
+  try {
+    const client = createRedditClient(
+      socialStore.accessTokenFor(account),
+      account.handle,
+      account.service || undefined,
+    );
+    return await run(client, account);
+  } catch (err) {
+    socialStore.markStatus(account.id, "error");
+    throw err;
+  }
+}
+
+async function withBitsocialSession<T>(
+  userId: string,
+  accountId: string | undefined,
+  run: (session: BitsocialSession, account: SocialAccountRecordPublic) => Promise<T>,
+): Promise<T> {
+  const account = socialStore.getForUser(userId, accountId);
+  if (!account || account.provider !== "bitsocial") {
+    throw new Error("No Bitsocial account connected");
+  }
+
+  try {
+    const session = decodeBitsocialService(account.service);
+    return await run(session, account);
+  } catch (err) {
+    socialStore.markStatus(account.id, "error");
+    throw err;
+  }
+}
+
 function resolveAccount(userId: string, accountId?: string): SocialAccountRecordPublic {
   const account = socialStore.getForUser(userId, accountId);
   if (!account) throw new Error("No social account connected");
@@ -418,6 +497,44 @@ export const socialGateway = {
     });
   },
 
+  async connectReddit(
+    userId: string,
+    input: SocialRedditConnectInput,
+  ): Promise<SocialAccountInfo> {
+    const accessToken = input.accessToken.trim();
+    if (!accessToken) throw new Error("Reddit access token is required");
+    const me = await redditVerifyCredentials(accessToken);
+    const avatar = (me.snoovatar_img || me.icon_img || "")
+      .split("?")[0]
+      .replace(/&amp;/g, "&");
+    return socialStore.upsertRedditAccount({
+      userId,
+      handle: me.name,
+      redditId: me.id || me.name,
+      accessToken,
+      defaultSubreddit: normalizeSubreddit(input.defaultSubreddit),
+      displayName: me.name,
+      avatar: avatar || undefined,
+    });
+  },
+
+  async connectBitsocial(
+    userId: string,
+    input: SocialBitsocialConnectInput,
+  ): Promise<SocialAccountInfo> {
+    const rpcUrl = normalizeBitsocialRpcUrl(input.rpcUrl);
+    const communities = normalizeBitsocialCommunities(input.communities ?? []);
+    const verified = await bitsocialVerifyConnection(rpcUrl);
+    const service = encodeBitsocialService({ rpcUrl, communities });
+    return socialStore.upsertBitsocialAccount({
+      userId,
+      handle: verified.handle,
+      did: rpcUrl,
+      service,
+      displayName: "Bitsocial",
+    });
+  },
+
   async getHomeFeed(
     userId: string,
     opts: { cursor?: string; accountId?: string } = {},
@@ -441,6 +558,16 @@ export const socialGateway = {
     if (account.provider === "facebook") {
       return withFacebookClient(userId, account.id, (client) =>
         facebookGetHomeTimeline(client, { cursor: opts.cursor, limit: 25 }),
+      );
+    }
+    if (account.provider === "reddit") {
+      return withRedditClient(userId, account.id, (client) =>
+        redditGetHomeTimeline(client, { cursor: opts.cursor, limit: 25 }),
+      );
+    }
+    if (account.provider === "bitsocial") {
+      return withBitsocialSession(userId, account.id, (session) =>
+        bitsocialGetTimeline(session, { cursor: opts.cursor, limit: 30 }),
       );
     }
     return withBlueskyAgent(userId, account.id, async (agent) => {
@@ -497,6 +624,23 @@ export const socialGateway = {
         return { profile, feed };
       });
     }
+    if (account.provider === "reddit") {
+      return withRedditClient(userId, account.id, async (client) => {
+        const username = actor.replace(/^\/?u\//i, "");
+        const profile = await redditGetProfile(client, username);
+        const feed = await redditGetAuthorFeed(client, {
+          username: profile.handle,
+          cursor: opts.cursor,
+          limit: 25,
+        });
+        return { profile, feed };
+      });
+    }
+    if (account.provider === "bitsocial") {
+      return withBitsocialSession(userId, account.id, (session) =>
+        bitsocialGetProfile(session, actor),
+      );
+    }
     return withBlueskyAgent(userId, account.id, async (agent) => {
       const [profile, feed] = await Promise.all([
         blueskyGetProfile(agent, actor),
@@ -533,6 +677,11 @@ export const socialGateway = {
         facebookGetPostThread(client, uri),
       );
     }
+    if (account.provider === "reddit") {
+      return withRedditClient(userId, account.id, (client) =>
+        redditGetPostThread(client, uri),
+      );
+    }
     return withBlueskyAgent(userId, account.id, (agent) => blueskyGetPostThread(agent, uri));
   },
 
@@ -561,6 +710,11 @@ export const socialGateway = {
     if (account.provider === "facebook") {
       return withFacebookClient(userId, account.id, (client) =>
         facebookCreatePost(client, { text }),
+      );
+    }
+    if (account.provider === "reddit") {
+      return withRedditClient(userId, account.id, (client) =>
+        redditCreatePost(client, { text }),
       );
     }
     return withBlueskyAgent(userId, account.id, (agent) => blueskyCreatePost(agent, text));
@@ -598,6 +752,11 @@ export const socialGateway = {
     if (account.provider === "facebook") {
       return withFacebookClient(userId, account.id, (client) =>
         facebookCreateComment(client, { postId: input.parentUri, text }),
+      );
+    }
+    if (account.provider === "reddit") {
+      return withRedditClient(userId, account.id, (client) =>
+        redditCreateComment(client, { parentId: input.parentUri, text }),
       );
     }
     return withBlueskyAgent(userId, account.id, (agent) =>
@@ -663,6 +822,14 @@ export const socialGateway = {
         return { ok: true as const, likeUri: result.uri };
       });
     }
+    if (account.provider === "reddit") {
+      return withRedditClient(userId, account.id, async (client) => {
+        const thingId = input.likeUri || input.uri;
+        if (!thingId) throw new Error("Post id is required to vote");
+        await redditVote(client, thingId, input.unlike ? 0 : 1);
+        return { ok: true as const, likeUri: input.unlike ? undefined : thingId };
+      });
+    }
     return withBlueskyAgent(userId, input.accountId, async (agent) => {
       if (input.unlike) {
         if (!input.likeUri) throw new Error("likeUri is required to unlike");
@@ -720,6 +887,15 @@ export const socialGateway = {
           throw new Error("Facebook does not support unsharing via Graph API");
         }
         const result = await facebookSharePost(client, input.uri);
+        return { ok: true as const, repostUri: result.uri };
+      });
+    }
+    if (account.provider === "reddit") {
+      return withRedditClient(userId, account.id, async (client) => {
+        if (input.unrepost) {
+          throw new Error("Reddit does not support uncrosspost via API");
+        }
+        const result = await redditCrosspost(client, input.uri);
         return { ok: true as const, repostUri: result.uri };
       });
     }
@@ -785,6 +961,18 @@ export const socialGateway = {
     }
     if (account.provider === "facebook") {
       throw new Error("Facebook follow is not supported via Graph API for Pages");
+    }
+    if (account.provider === "reddit") {
+      return withRedditClient(userId, account.id, async (client) => {
+        const target = (input.followUri || input.did).trim();
+        if (!target) throw new Error("Subreddit or username is required");
+        const result = await redditSubscribe(
+          client,
+          target,
+          input.unfollow ? "unsub" : "sub",
+        );
+        return { ok: true as const, followUri: input.unfollow ? undefined : result.uri };
+      });
     }
     return withBlueskyAgent(userId, input.accountId, async (agent) => {
       if (input.unfollow) {
@@ -859,6 +1047,22 @@ export const socialGateway = {
       };
     }
 
+    if (account.provider === "reddit") {
+      return withRedditClient(userId, account.id, async (client) => {
+        const [trends, suggestions] = await Promise.all([
+          redditGetTrendingSubreddits(client).catch(() => []),
+          redditGetSuggestions(client).catch(() => []),
+        ]);
+        return {
+          provider: "reddit",
+          trends,
+          suggestions,
+          links: [],
+          linksModule: undefined,
+        };
+      });
+    }
+
     return withBlueskyAgent(userId, account.id, async (agent) => {
       const [trends, suggestions, links] = await Promise.all([
         blueskyGetTrends(agent).catch(() => []),
@@ -901,6 +1105,11 @@ export const socialGateway = {
     if (account.provider === "facebook") {
       return withFacebookClient(userId, account.id, async (client) => ({
         actors: await facebookSearchActors(client, query),
+      }));
+    }
+    if (account.provider === "reddit") {
+      return withRedditClient(userId, account.id, async (client) => ({
+        actors: await redditSearchActors(client, query),
       }));
     }
     return withBlueskyAgent(userId, account.id, async (agent) => ({

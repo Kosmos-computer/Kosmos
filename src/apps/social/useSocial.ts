@@ -25,6 +25,7 @@ const LIVE_PROVIDERS = new Set<SocialNetworkId>([
   "nostr",
   "twitter",
   "facebook",
+  "reddit",
 ]);
 
 export type SocialDetailView =
@@ -516,6 +517,27 @@ export function useSocial() {
           setError(null);
         } catch (err) {
           setError(err instanceof Error ? err.message : "Could not connect Facebook");
+        } finally {
+          setLoading(false);
+        }
+        return;
+      }
+
+      if (input.provider === "reddit") {
+        const accessToken = (input.token ?? "").trim();
+        const defaultSubreddit = (input.accountHint ?? "").trim() || undefined;
+        if (!accessToken) {
+          setError("Reddit access token is required");
+          return;
+        }
+        setLoading(true);
+        try {
+          const account = await api.connectReddit({ accessToken, defaultSubreddit });
+          await refreshStatus();
+          activateConnectedAccount(account.id);
+          setError(null);
+        } catch (err) {
+          setError(err instanceof Error ? err.message : "Could not connect Reddit");
         } finally {
           setLoading(false);
         }

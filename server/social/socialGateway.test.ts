@@ -115,3 +115,13 @@ describe("socialGateway.connectFacebook", () => {
     assert.equal(socialStore.listForUser("user-5").length, 0);
   });
 });
+
+describe("socialGateway.connectReddit", () => {
+  it("rejects empty access token without writing an account", async () => {
+    await assert.rejects(
+      () => socialGateway.connectReddit("user-6", { accessToken: "" }),
+      /access token is required/i,
+    );
+    assert.equal(socialStore.listForUser("user-6").length, 0);
+  });
+});

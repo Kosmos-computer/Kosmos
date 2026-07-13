@@ -76,6 +76,8 @@ function save(file: SocialAccountsFile): void {
 }
 
 function toInfo(record: SocialAccountRecord): SocialAccountInfo {
+  const bitsocial =
+    record.provider === "bitsocial" ? decodeBitsocialServiceSafe(record.service) : null;
   return {
     id: record.id,
     provider: record.provider,
@@ -85,9 +87,24 @@ function toInfo(record: SocialAccountRecord): SocialAccountInfo {
     connectedAt: record.connectedAt,
     instanceUrl: record.provider === "mastodon" ? record.service : undefined,
     pageId: record.provider === "facebook" ? record.did : undefined,
+    defaultSubreddit:
+      record.provider === "reddit" && record.service ? record.service : undefined,
+    rpcUrl: bitsocial?.rpcUrl,
     displayName: record.displayName,
     avatar: record.avatar,
   };
+}
+
+function decodeBitsocialServiceSafe(service: string): { rpcUrl: string } | null {
+  try {
+    const parsed = JSON.parse(service) as { rpcUrl?: string };
+    if (parsed?.rpcUrl) return { rpcUrl: parsed.rpcUrl };
+  } catch {
+    if (service.startsWith("ws://") || service.startsWith("wss://")) {
+      return { rpcUrl: service };
+    }
+  }
+  return null;
 }
 
 function encodeRelays(relays: string[]): string {
@@ -422,6 +439,120 @@ export const socialStore = {
     file.accounts.push(record);
     save(file);
     return toInfo(record);
+  },
+
+  upsertRedditAccount(input: {
+    userId: string;
+    handle: string;
+    redditId: string;
+    accessToken: string;
+    defaultSubreddit?: string;
+    displayName?: string;
+    avatar?: string;
+  }): SocialAccountInfo {
+    const file = load();
+    const now = new Date().toISOString();
+    const service = input.defaultSubreddit?.trim() || "";
+    const existing = file.accounts.find(
+      (account) =>
+        account.userId === input.userId &&
+        account.provider === "reddit" &&
+        account.did === input.redditId,
+    );
+
+    const writeSecrets = (id: string) => {
+      vaultStore.put({
+        id: accessTokenVaultId(id),
+        name: `Reddit access token (${input.handle})`,
+        scope: "oauth",
+        plaintext: input.accessToken,
+      });
+    };
+
+    if (existing) {
+      existing.handle = input.handle;
+      existing.did = input.redditId;
+      existing.service = service;
+      existing.status = "connected";
+      if (input.displayName !== undefined) existing.displayName = input.displayName;
+      if (input.avatar !== undefined) existing.avatar = input.avatar;
+      writeSecrets(existing.id);
+      save(file);
+      return toInfo(existing);
+    }
+
+    const id = crypto.randomUUID();
+    writeSecrets(id);
+    const record: SocialAccountRecord = {
+      id,
+      userId: input.userId,
+      provider: "reddit",
+      handle: input.handle,
+      did: input.redditId,
+      service,
+      status: "connected",
+      connectedAt: now,
+      displayName: input.displayName,
+      avatar: input.avatar,
+    };
+    file.accounts.push(record);
+    save(file);
+    return toInfo(record);
+  },
+
+  upsertBitsocialAccount(input: {
+    userId: string;
+    handle: string;
+    did: string;
+    service: string;
+    displayName?: string;
+  }): SocialAccountInfo {
+    const file = load();
+    const now = new Date().toISOString();
+    const existing = file.accounts.find(
+      (account) =>
+        account.userId === input.userId &&
+        account.provider === "bitsocial" &&
+        account.did === input.did,
+    );
+
+    if (existing) {
+      existing.handle = input.handle;
+      existing.did = input.did;
+      existing.service = input.service;
+      existing.status = "connected";
+      if (input.displayName !== undefined) existing.displayName = input.displayName;
+      save(file);
+      return toInfo(existing);
+    }
+
+    const id = crypto.randomUUID();
+    const record: SocialAccountRecord = {
+      id,
+      userId: input.userId,
+      provider: "bitsocial",
+      handle: input.handle,
+      did: input.did,
+      service: input.service,
+      status: "connected",
+      connectedAt: now,
+      displayName: input.displayName,
+    };
+    file.accounts.push(record);
+    save(file);
+    return toInfo(record);
+  },
+
+  /** Persist updated Bitsocial community subscriptions on an existing account. */
+  updateBitsocialService(accountId: string, service: string): void {
+    const file = load();
+    const target = file.accounts.find((entry) => entry.id === accountId);
+    if (!target || target.provider !== "bitsocial") {
+      throw new Error("Bitsocial account not found");
+    }
+    target.service = service;
+    target.status = "connected";
+    save(file);
   },
 
   appPasswordFor(account: SocialAccountRecord): string {

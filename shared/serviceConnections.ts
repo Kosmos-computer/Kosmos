@@ -6,7 +6,14 @@
 export type ConnectionDomain = "teams" | "social" | "video" | "podcast";
 
 export type TeamProviderId = "mattermost" | "slack" | "matrix";
-export type SocialProviderId = "bluesky" | "mastodon" | "nostr" | "twitter" | "facebook";
+export type SocialProviderId =
+  | "bluesky"
+  | "mastodon"
+  | "nostr"
+  | "twitter"
+  | "facebook"
+  | "reddit"
+  | "bitsocial";
 export type VideoProviderId = "youtube" | "vimeo";
 export type PodcastProviderId = "spotify" | "apple-podcasts" | "audible";
 export type ServiceProviderId =
@@ -127,6 +134,26 @@ export const SERVICE_PROVIDER_PRESETS: ServiceProviderPreset[] = [
     requiresToken: true,
     accent: "#1877f2",
     initials: "Fb",
+  },
+  {
+    id: "reddit",
+    domain: "social",
+    label: "Reddit",
+    hint: "Paste a Reddit OAuth access token (old.reddit.com/prefs/apps). Optional default subreddit for posts.",
+    requiresInstance: false,
+    requiresToken: true,
+    accent: "#ff4500",
+    initials: "Re",
+  },
+  {
+    id: "bitsocial",
+    domain: "social",
+    label: "Bitsocial",
+    hint: "PKC RPC URL from bitsocial-cli (ws://localhost:9138). Optional communities; public defaults if blank.",
+    requiresInstance: true,
+    requiresToken: false,
+    accent: "#e85d04",
+    initials: "Bi",
   },
   {
     id: "youtube",

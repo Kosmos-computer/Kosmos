@@ -72,6 +72,7 @@ export function ConnectServiceModal({
   const isNostr = providerId === "nostr";
   const isFacebook = providerId === "facebook";
   const isTwitter = providerId === "twitter";
+  const isReddit = providerId === "reddit";
 
   function handleSave() {
     onConnect({
@@ -225,6 +226,22 @@ export function ConnectServiceModal({
               />
               <p className="arco-connect-modal__hint">
                 Leave blank to connect as the user (/me). Set a Page ID to post and read as that Page.
+              </p>
+            </section>
+          ) : isReddit ? (
+            <section className="arco-connect-modal__section">
+              <label className="arco-connect-modal__label" htmlFor="connect-account-hint">
+                Default subreddit (optional)
+              </label>
+              <Input
+                id="connect-account-hint"
+                value={accountHint}
+                onChange={(event) => setAccountHint(event.target.value)}
+                placeholder="AskReddit"
+                spellCheck={false}
+              />
+              <p className="arco-connect-modal__hint">
+                Used for new posts and crossposts. You can also start a post with r/name: title.
               </p>
             </section>
           ) : !isNostr && !isTwitter ? (

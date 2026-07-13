@@ -1,6 +1,13 @@
 /** Social API shapes shared between the Arco server and Social app. */
 
-export type SocialProvider = "bluesky" | "mastodon" | "nostr" | "twitter" | "facebook";
+export type SocialProvider =
+  | "bluesky"
+  | "mastodon"
+  | "nostr"
+  | "twitter"
+  | "facebook"
+  | "reddit"
+  | "bitsocial";
 
 export type SocialAccountStatus = "connected" | "expired" | "error";
 
@@ -15,6 +22,10 @@ export interface SocialAccountInfo {
   instanceUrl?: string;
   /** Facebook Page id when connected as a Page. */
   pageId?: string;
+  /** Default subreddit for Reddit posts (without r/ prefix). */
+  defaultSubreddit?: string;
+  /** Bitsocial PKC RPC WebSocket URL (e.g. ws://localhost:9138). */
+  rpcUrl?: string;
   /** Profile display name when known. */
   displayName?: string;
   /** Profile avatar URL when known. */
@@ -171,6 +182,27 @@ export interface SocialFacebookConnectInput {
   pageId?: string;
 }
 
+export interface SocialRedditConnectInput {
+  /**
+   * Reddit OAuth2 user access token (Bearer), same model as RedReader.
+   * Create an installed app at https://old.reddit.com/prefs/apps
+   * (scopes: identity, read, submit, vote, mysubreddits, history, subscribe).
+   */
+  accessToken: string;
+  /** Optional default subreddit for new posts (without r/ prefix). */
+  defaultSubreddit?: string;
+}
+
+export interface SocialBitsocialConnectInput {
+  /**
+   * PKC RPC WebSocket URL from a running bitsocial-cli daemon
+   * (e.g. ws://localhost:9138 or ws://host:9138/<auth-key>).
+   */
+  rpcUrl: string;
+  /** Optional community addresses (.bso / IPNS). Defaults to public Seedit communities. */
+  communities?: string[];
+}
+
 export interface SocialCreatePostInput {
   text: string;
   accountId?: string;
@@ -244,7 +276,8 @@ export type SocialSidebarModuleId =
   | "who-to-follow"
   | "discover-feeds"
   | "trending-links"
-  | "relays";
+  | "relays"
+  | "communities";
 
 export interface SocialSidebarResponse {
   provider: SocialProvider;

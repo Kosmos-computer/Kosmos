@@ -6,6 +6,7 @@ export const SOCIAL_NETWORKS: SocialNetworkItem[] = [
   { id: "nostr", label: "Nostr", initials: "No", accent: "#8b5cf6" },
   { id: "twitter", label: "X", initials: "X", accent: "#000000" },
   { id: "facebook", label: "Facebook", initials: "Fb", accent: "#1877f2" },
+  { id: "reddit", label: "Reddit", initials: "Re", accent: "#ff4500" },
 ];
 
 export const SOCIAL_POSTS: SocialPost[] = [

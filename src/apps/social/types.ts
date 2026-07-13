@@ -1,4 +1,10 @@
-export type SocialNetworkId = "bluesky" | "mastodon" | "nostr" | "twitter" | "facebook";
+export type SocialNetworkId =
+  | "bluesky"
+  | "mastodon"
+  | "nostr"
+  | "twitter"
+  | "facebook"
+  | "reddit";
 
 export interface SocialNetworkItem {
   id: SocialNetworkId;

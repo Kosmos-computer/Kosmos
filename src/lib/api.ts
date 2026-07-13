@@ -86,6 +86,7 @@ import type {
   SocialMastodonConnectInput,
   SocialNostrConnectInput,
   SocialProfileResponse,
+  SocialRedditConnectInput,
   SocialReplyInput,
   SocialRepostInput,
   SocialSearchResponse,
@@ -831,6 +832,8 @@ export const api = {
     post<SocialAccountInfo>("/api/social/accounts/twitter", input),
   connectFacebook: (input: SocialFacebookConnectInput) =>
     post<SocialAccountInfo>("/api/social/accounts/facebook", input),
+  connectReddit: (input: SocialRedditConnectInput) =>
+    post<SocialAccountInfo>("/api/social/accounts/reddit", input),
   disconnectSocialAccount: (id: string) =>
     fetch(`/api/social/accounts/${encodeURIComponent(id)}`, { method: "DELETE" }).then((r) =>
       json<{ ok: true }>(r),

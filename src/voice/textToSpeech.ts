@@ -9,7 +9,7 @@
  * was already playing (and tells its caller so the UI can reset).
  */
 import { parseSegments } from "../components/richmarkdown/parseSegments";
-import { VOICE_SERVER_URL } from "./VoiceClient";
+import { resolveVoiceServerUrl } from "./VoiceClient";
 
 export interface SpeakHandlers {
   /** Fired once playback actually starts (after synthesis latency). */
@@ -87,7 +87,7 @@ export function speak(rawText: string, handlers: SpeakHandlers = {}): () => void
 
   void (async () => {
     try {
-      const res = await fetch(`${VOICE_SERVER_URL}/api/tts`, {
+      const res = await fetch(`${resolveVoiceServerUrl()}/api/tts`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text }),

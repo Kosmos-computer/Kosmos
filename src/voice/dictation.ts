@@ -4,7 +4,7 @@
  * recording audio and POSTing WAV to the voice server's /api/stt (Whisper).
  */
 import { blobToWav16k } from "./audioToWav";
-import { VOICE_SERVER_URL } from "./VoiceClient";
+import { resolveVoiceServerUrl } from "./VoiceClient";
 
 export type DictationStatus = "idle" | "listening" | "processing";
 
@@ -161,7 +161,7 @@ async function startServerDictation(handlers: DictationHandlers): Promise<() => 
         const wav = await blobToWav16k(new Blob(chunks, { type: recorder?.mimeType || "audio/webm" }));
         const body = new FormData();
         body.append("file", wav, "dictation.wav");
-        const res = await fetch(`${VOICE_SERVER_URL}/api/stt`, { method: "POST", body });
+        const res = await fetch(`${resolveVoiceServerUrl()}/api/stt`, { method: "POST", body });
         if (!res.ok) throw new Error(`Voice server returned ${res.status}`);
         const payload = (await res.json()) as { text?: string };
         const text = payload.text?.trim();

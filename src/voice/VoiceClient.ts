@@ -10,12 +10,30 @@
  * speech-to-speech pipeline on the server).
  */
 import { PipecatClient } from "@pipecat-ai/client-js";
-import { SmallWebRTCTransport } from "@pipecat-ai/small-webrtc-transport";
+import { SmallWebRTCTransport, WavMediaManager } from "@pipecat-ai/small-webrtc-transport";
 import type { VoiceEvent, VoiceState } from "@shared/capabilities/voice";
 
-/** The Pipecat voice server (voice-server/). Same-machine by design. */
-export const VOICE_SERVER_URL: string =
-  (import.meta.env.VITE_VOICE_SERVER_URL as string | undefined) ?? "http://localhost:4630";
+const VOICE_PORT = 4630;
+const CONNECT_TIMEOUT_MS = 45_000;
+/** If STT/LLM never produce bot speech, leave Thinking… so the mic feels alive. */
+const THINKING_TIMEOUT_MS = 8_000;
+
+/**
+ * Prefer an explicit Vite override; otherwise talk to the voice server on the
+ * same hostname the page uses so `http://127.0.0.1:4610` does not call
+ * `http://localhost:4630` (different origins / IPv4 vs IPv6 surprises).
+ */
+export function resolveVoiceServerUrl(): string {
+  const fromEnv = import.meta.env.VITE_VOICE_SERVER_URL as string | undefined;
+  if (fromEnv?.trim()) return fromEnv.replace(/\/$/, "");
+  if (typeof window !== "undefined" && window.location?.hostname) {
+    return `http://${window.location.hostname}:${VOICE_PORT}`;
+  }
+  return `http://localhost:${VOICE_PORT}`;
+}
+
+/** @deprecated Prefer resolveVoiceServerUrl() — kept for existing imports. */
+export const VOICE_SERVER_URL: string = resolveVoiceServerUrl();
 
 type VoiceListener = (event: VoiceEvent) => void;
 type TrackListener = (track: MediaStreamTrack | null) => void;
@@ -29,6 +47,9 @@ class VoiceClient {
   /** Audible playback of the bot's voice. The transport only delivers the
    *  WebRTC track; actually hearing it requires an HTMLAudioElement. */
   private audioEl: HTMLAudioElement | null = null;
+  private connectAbort: AbortController | null = null;
+  private restoreFetch: (() => void) | null = null;
+  private thinkingTimer: number | null = null;
 
   getState(): VoiceState {
     return this.state;
@@ -53,7 +74,7 @@ class VoiceClient {
   /** Probe the voice server so UIs can disable the mic when it's down. */
   async checkHealth(): Promise<boolean> {
     try {
-      const res = await fetch(`${VOICE_SERVER_URL}/status`, {
+      const res = await fetch(`${resolveVoiceServerUrl()}/status`, {
         signal: AbortSignal.timeout(1500),
       });
       if (!res.ok) return false;
@@ -65,27 +86,56 @@ class VoiceClient {
   }
 
   async start(): Promise<void> {
-    if (this.client) return;
+    // A previous attempt may have left us mid-connect with a half-built client.
+    if (this.client || this.state === "connecting") {
+      await this.stop();
+    }
     this.setState("connecting");
+
+    const voiceUrl = resolveVoiceServerUrl();
+    const connectAbort = new AbortController();
+    this.connectAbort = connectAbort;
 
     // Barge-in depends on the bot not hearing itself: browser AEC filters the
     // bot's own audio out of the mic before it ever reaches the VAD.
     const client = new PipecatClient({
-      transport: new SmallWebRTCTransport(),
+      transport: new SmallWebRTCTransport({
+        // Default DailyMediaManager pulls call-machine JS from c.daily.co and
+        // fails offline / behind blockers. WavMediaManager is pure WebRTC getUserMedia.
+        mediaManager: new WavMediaManager(),
+      }),
       enableMic: true,
       enableCam: false,
       callbacks: {
         onConnected: () => this.setState("listening"),
         onDisconnected: () => this.teardown(),
-        onUserStartedSpeaking: () => this.setState("userSpeaking"),
-        onUserStoppedSpeaking: () => this.setState("thinking"),
-        onBotStartedSpeaking: () => this.setState("botSpeaking"),
-        onBotStoppedSpeaking: () => this.setState("listening"),
-        onUserTranscript: (data) =>
+        onUserStartedSpeaking: () => {
+          this.clearThinkingTimer();
+          this.setState("userSpeaking");
+        },
+        onUserStoppedSpeaking: () => {
+          this.setState("thinking");
+          this.armThinkingTimer();
+        },
+        onBotStartedSpeaking: () => {
+          this.clearThinkingTimer();
+          this.setState("botSpeaking");
+        },
+        onBotStoppedSpeaking: () => {
+          this.clearThinkingTimer();
+          this.setState("listening");
+        },
+        onUserTranscript: (data) => {
           this.emit({
             type: "userTranscript",
             transcript: { text: data.text, final: data.final },
-          }),
+          });
+          // Empty finals mean the server dropped the turn — don't stay on Thinking…
+          if (data.final && !data.text.trim() && this.state === "thinking") {
+            this.clearThinkingTimer();
+            this.setState("listening");
+          }
+        },
         onBotTranscript: (data) =>
           this.emit({
             type: "botTranscript",
@@ -108,24 +158,58 @@ class VoiceClient {
     });
 
     this.client = client;
+    const timeout = window.setTimeout(() => connectAbort.abort(), CONNECT_TIMEOUT_MS);
+    // Pipecat's makeRequest builds `new Request(url, { body })` then `fetch(request)`.
+    // In Chromium, that cross-origin path makes FastAPI see the JSON body as a raw
+    // string (422 dataclass_type). Replaying the same bytes via fetch(url, init) works.
+    // Keep the patch for the whole session — renegotiation POSTs the offer again.
+    this.restoreFetch?.();
+    this.restoreFetch = installOfferFetchFix();
+
     try {
-      await client.connect({ webrtcUrl: `${VOICE_SERVER_URL}/api/offer` });
+      // Ask for the mic up front so a blocked permission fails fast with a
+      // clear error instead of hanging forever in "Connecting…".
+      await client.initDevices();
+      if (connectAbort.signal.aborted) throw new Error("Voice connection timed out");
+
+      await Promise.race([
+        client.connect({
+          webrtcRequestParams: { endpoint: `${voiceUrl}/api/offer` },
+        }),
+        new Promise<never>((_, reject) => {
+          connectAbort.signal.addEventListener("abort", () => {
+            reject(new Error("Voice connection timed out — is the mic allowed?"));
+          });
+        }),
+      ]);
     } catch (err) {
+      try {
+        await client.disconnect();
+      } catch {
+        // ignore disconnect errors during failed start
+      }
       this.teardown();
       this.setState("error");
-      throw err instanceof Error ? err : new Error("Voice connection failed");
+      throw new Error(formatVoiceConnectError(err));
+    } finally {
+      window.clearTimeout(timeout);
+      if (this.connectAbort === connectAbort) this.connectAbort = null;
     }
   }
 
   async stop(): Promise<void> {
+    this.connectAbort?.abort();
+    this.connectAbort = null;
     const client = this.client;
-    if (!client) return;
     this.client = null;
-    try {
-      await client.disconnect();
-    } finally {
-      this.teardown();
+    if (client) {
+      try {
+        await client.disconnect();
+      } catch {
+        // ignore
+      }
     }
+    this.teardown();
   }
 
   private playBotAudio(track: MediaStreamTrack): void {
@@ -142,6 +226,9 @@ class VoiceClient {
   }
 
   private teardown(): void {
+    this.clearThinkingTimer();
+    this.restoreFetch?.();
+    this.restoreFetch = null;
     this.client = null;
     this.botTrack = null;
     if (this.audioEl) {
@@ -154,6 +241,21 @@ class VoiceClient {
     this.setState("idle");
   }
 
+  private armThinkingTimer(): void {
+    this.clearThinkingTimer();
+    this.thinkingTimer = window.setTimeout(() => {
+      this.thinkingTimer = null;
+      if (this.state === "thinking") this.setState("listening");
+    }, THINKING_TIMEOUT_MS);
+  }
+
+  private clearThinkingTimer(): void {
+    if (this.thinkingTimer != null) {
+      window.clearTimeout(this.thinkingTimer);
+      this.thinkingTimer = null;
+    }
+  }
+
   private setState(state: VoiceState): void {
     if (this.state === state) return;
     this.state = state;
@@ -163,6 +265,69 @@ class VoiceClient {
   private emit(event: VoiceEvent): void {
     this.listeners.forEach((l) => l(event));
   }
+}
+
+/**
+ * Chromium + cross-origin `fetch(Request)` against Pipecat's FastAPI offer
+ * endpoint yields 422 ("body is a string, not a dict"). Flatten to fetch(url, init).
+ */
+function installOfferFetchFix(): () => void {
+  const orig = window.fetch.bind(window);
+  window.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    if (input instanceof Request && /\/api\/offer\/?$/.test(input.url)) {
+      const headers = new Headers(input.headers);
+      if (!headers.has("Content-Type")) headers.set("Content-Type", "application/json");
+      let body = init?.body;
+      if (body == null && input.method !== "GET" && input.method !== "HEAD") {
+        body = await input.clone().text();
+      }
+      // Drop null pc_id so PATCH/POST schemas that require string stay happy.
+      if (typeof body === "string" && body.includes('"pc_id":null')) {
+        try {
+          const parsed = JSON.parse(body) as Record<string, unknown>;
+          if (parsed.pc_id == null) delete parsed.pc_id;
+          body = JSON.stringify(parsed);
+        } catch {
+          // keep original body
+        }
+      }
+      return orig(input.url, {
+        method: input.method,
+        headers,
+        body,
+        mode: input.mode,
+        credentials: input.credentials,
+        cache: input.cache,
+        redirect: input.redirect,
+        referrer: input.referrer,
+        integrity: input.integrity,
+        signal: init?.signal ?? input.signal,
+      });
+    }
+    return orig(input, init);
+  }) as typeof window.fetch;
+  return () => {
+    window.fetch = orig;
+  };
+}
+
+function formatVoiceConnectError(err: unknown): string {
+  if (err instanceof Error && err.message) return err.message;
+  if (typeof err === "string" && err) return err;
+  if (typeof Response !== "undefined" && err instanceof Response) {
+    return `Voice server returned ${err.status}`;
+  }
+  if (err && typeof err === "object" && "message" in err) {
+    const message = (err as { message: unknown }).message;
+    if (message) return String(message);
+  }
+  try {
+    const serialized = JSON.stringify(err);
+    if (serialized && serialized !== "{}") return serialized;
+  } catch {
+    // ignore
+  }
+  return "Voice connection failed";
 }
 
 /** The one voice session for this desktop. */

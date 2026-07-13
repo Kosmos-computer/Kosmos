@@ -114,9 +114,15 @@ def build_stt(config: dict[str, Any]):
     stt_cfg = config.get("stt", {})
     engine = stt_cfg.get("engine", "whisper-mlx")
     language = parse_language(stt_cfg.get("language", "en"))
+    # Local Whisper is slower than cloud STT; Smart Turn waits this long for a
+    # transcript after VAD stop before giving up (default 1.0s is too short).
+    ttfs_p99 = float(stt_cfg.get("ttfsP99Latency", 3.0))
 
     if engine == "whisper-mlx":
+        from pipecat.frames.frames import ErrorFrame, TranscriptionFrame
+        from pipecat.services.settings import assert_given
         from pipecat.services.whisper.stt import MLXModel, WhisperSTTServiceMLX
+        from pipecat.utils.time import time_now_iso8601
 
         # Config uses short names ("large-v3-turbo"); MLX needs the full HF
         # repo id ("mlx-community/whisper-large-v3-turbo"). Full ids (anything
@@ -130,25 +136,121 @@ def build_stt(config: dict[str, Any]):
             except KeyError:
                 valid = ", ".join(m.name.lower().replace("_", "-") for m in MLXModel)
                 raise ValueError(f"Unknown MLX Whisper model {raw_model!r} (expected {valid})")
-        logger.info(f"STT: whisper-mlx model {model}")
+        logger.info(f"STT: whisper-mlx model {model} (ttfs_p99={ttfs_p99}s)")
 
-        return WhisperSTTServiceMLX(
+        # Pipecat's segment filter defaults to 0.6 and drops the mlx top-level
+        # `text` when every segment is filtered — that leaves Smart Turn waiting
+        # for a transcript that never comes, then the 5s turn watchdog fires
+        # with an empty aggregation (UI stuck on Thinking, no chat bubble).
+        no_speech_prob = float(stt_cfg.get("noSpeechProb", 0.85))
+
+        class ResilientWhisperSTTServiceMLX(WhisperSTTServiceMLX):
+            """Whisper MLX with empty-result fallbacks and diagnostics."""
+
+            async def run_stt(self, audio: bytes):
+                try:
+                    import mlx_whisper
+
+                    await self.start_processing_metrics()
+
+                    audio_float = (
+                        np.frombuffer(audio, dtype=np.int16).astype(np.float32) / 32768.0
+                    )
+                    duration_s = len(audio_float) / float(self.sample_rate or 16_000)
+                    rms = (
+                        float(np.sqrt(np.mean(np.square(audio_float)))) if len(audio_float) else 0.0
+                    )
+
+                    model_path = assert_given(self._settings.model)
+                    if model_path is None:
+                        raise ValueError("Whisper model must be specified")
+                    temperature = assert_given(self._settings.temperature)
+                    lang = assert_given(self._settings.language)
+                    language_code = getattr(lang, "value", None) or str(lang)
+
+                    chunk = await asyncio.to_thread(
+                        mlx_whisper.transcribe,
+                        audio_float,
+                        path_or_hf_repo=model_path,
+                        temperature=temperature,
+                        language=language_code,
+                        no_speech_threshold=0.8,
+                        condition_on_previous_text=False,
+                    )
+
+                    text = ""
+                    no_speech_prob_threshold = assert_given(self._settings.no_speech_prob)
+                    kept_segments = 0
+                    for segment in chunk.get("segments", []) or []:
+                        if segment.get("compression_ratio", None) == 0.5555555555555556:
+                            continue
+                        if (
+                            no_speech_prob_threshold is not None
+                            and segment.get("no_speech_prob", 0.0) < no_speech_prob_threshold
+                        ):
+                            text += f"{segment.get('text', '')} "
+                            kept_segments += 1
+
+                    text = text.strip()
+                    raw_text = (chunk.get("text") or "").strip()
+                    if not text and raw_text:
+                        logger.warning(
+                            f"STT segments filtered (kept={kept_segments}); "
+                            f"falling back to mlx text={raw_text!r} "
+                            f"(duration={duration_s:.2f}s rms={rms:.4f})"
+                        )
+                        text = raw_text
+
+                    await self.stop_processing_metrics()
+
+                    if not text:
+                        try:
+                            debug_path = SERVER_DIR / "last-empty-stt.wav"
+                            with wave.open(str(debug_path), "wb") as wf:
+                                wf.setnchannels(1)
+                                wf.setsampwidth(2)
+                                wf.setframerate(int(self.sample_rate or 16_000))
+                                wf.writeframes(audio)
+                            logger.warning(
+                                f"STT empty (duration={duration_s:.2f}s rms={rms:.4f} "
+                                f"segments={len(chunk.get('segments') or [])}); "
+                                f"wrote {debug_path}"
+                            )
+                        except OSError as err:
+                            logger.warning(f"STT empty and failed to write debug wav: {err}")
+                        return
+
+                    await self._handle_transcription(text, True, lang)
+                    logger.debug(f"Transcription: [{text}]")
+                    yield TranscriptionFrame(
+                        text,
+                        self._user_id,
+                        time_now_iso8601(),
+                        lang,
+                    )
+                except Exception as e:
+                    logger.exception(f"STT failed: {e}")
+                    yield ErrorFrame(error=f"Unknown error occurred: {e}")
+
+        return ResilientWhisperSTTServiceMLX(
+            ttfs_p99_latency=ttfs_p99,
             settings=WhisperSTTServiceMLX.Settings(
                 model=model,
                 language=language,
+                no_speech_prob=no_speech_prob,
             ),
         )
     if engine == "faster-whisper":
         from pipecat.services.whisper.stt import WhisperSTTService
 
         return WhisperSTTService(
+            ttfs_p99_latency=ttfs_p99,
             settings=WhisperSTTService.Settings(
                 model=stt_cfg.get("model", "base"),
                 language=language,
             ),
         )
     raise ValueError(f"Unknown STT engine: {engine!r} (expected whisper-mlx | faster-whisper)")
-
 
 def build_tts(config: dict[str, Any]):
     tts_cfg = config.get("tts", {})
@@ -401,10 +503,18 @@ def build_user_params(config: dict[str, Any]) -> LLMUserAggregatorParams:
             stop_secs=float(vad_cfg.get("stopSecs", 0.2)),
         ),
     )
+    # Local Whisper can take a few seconds (cold start much longer). The
+    # default 5s turn watchdog finalizes with an empty aggregation before STT
+    # lands, which skips the LLM and leaves the client on Thinking…
+    turn_stop_timeout = float(config.get("turn", {}).get("stopTimeoutSecs", 12.0))
     if not config.get("turn", {}).get("smartTurn", True):
-        return LLMUserAggregatorParams(vad_analyzer=vad)
+        return LLMUserAggregatorParams(
+            vad_analyzer=vad,
+            user_turn_stop_timeout=turn_stop_timeout,
+        )
     return LLMUserAggregatorParams(
         vad_analyzer=vad,
+        user_turn_stop_timeout=turn_stop_timeout,
         user_turn_strategies=UserTurnStrategies(
             stop=[TurnAnalyzerUserTurnStopStrategy(turn_analyzer=LocalSmartTurnAnalyzerV3())],
         ),

@@ -2,7 +2,9 @@
   "stt": {
     "engine": "whisper-mlx",
     "model": "large-v3-turbo",
-    "language": "en"
+    "language": "en",
+    "ttfsP99Latency": 3.0,
+    "noSpeechProb": 0.85
   },
   "tts": {
     "engine": "kokoro",
@@ -17,9 +19,10 @@
   },
   "vad": {
     "startSecs": 0.12,
-    "stopSecs": 0.2
+    "stopSecs": 0.4
   },
   "turn": {
-    "smartTurn": true
+    "smartTurn": true,
+    "stopTimeoutSecs": 12
   }
 }

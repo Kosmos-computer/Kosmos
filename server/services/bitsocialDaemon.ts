@@ -95,7 +95,7 @@ export function resolveBitsocialLaunch(): LaunchSpec {
   // Last resort: npx will download/run the package (first start can be slow).
   return {
     command: process.platform === "win32" ? "npx.cmd" : "npx",
-    args: ["--yes", "@bitsocial/bitsocial-cli@0.19.84", "daemon"],
+    args: ["--yes", "@bitsocial/bitsocial-cli@0.19.85", "daemon"],
     label: "npx @bitsocial/bitsocial-cli",
   };
 }

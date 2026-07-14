@@ -155,7 +155,7 @@
   "overrides": {
     "bittorrent-tracker@11.2.3": "github:matrix9180/bittorrent-tracker#91cd35dc4260d20723e99c7f4a83eba511f333c1",
     "decompress@4.2.1": "npm:@xhmikosr/decompress@11.1.3",
-    "dompurify@3.2.7": "3.4.12",
+    "dompurify": "3.4.12",
     "express@4.19.2": "4.22.2",
     "path-to-regexp@0.1.12": "0.1.13",
     "protobufjs@6.11.6": "7.6.5",

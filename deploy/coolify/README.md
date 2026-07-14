@@ -45,9 +45,16 @@ The explicit `name:` is important — it prevents Coolify from creating a fresh 
    ```
    ARCO_DATA_DIR=/data
    ARCO_SECURE_COOKIES=1
+   ARCO_ENTRY_MAGIC_KEY=<at-least-32-character-random-secret>
    NODE_ENV=production
    PORT=4600
    ```
+
+   With the entry key set, open `https://your-domain/entry/<key>` once in each
+   browser. Kosmos sets an HttpOnly entry cookie and redirects to the sign-in
+   screen. All shell, asset, app, and API routes return the private entry wall
+   until that cookie is present. Generate a key with `openssl rand -hex 32` and
+   treat the complete entry URL as a credential.
 
 3. **Dockerfile**: use repo root `Dockerfile` (runs `npm run build`). Do **not** use `Dockerfile.prod` — it skips the UI build.
 

@@ -36,6 +36,7 @@ import type {
 import { requireAuth, requireCap, currentUser, type AuthEnv } from "./auth/middleware.js";
 import { authRoutes } from "./auth/routes.js";
 import { mobileShellCors } from "./cors.js";
+import { createEntryGate } from "./security/entryGate.js";
 import { runAgentTurn } from "./agent/loop.js";
 import { runAcpTurn, stopAllAcpRuns } from "./acp/acpAgent.js";
 import { runCursorTurn, stopAllCursorRuns } from "./cursor/cursorAgent.js";
@@ -229,6 +230,9 @@ skillStore.ensureGeneratedSeed(
 
 const app = new Hono<AuthEnv>();
 
+// Hosted instances can require a magic URL before even the login shell or
+// auth API is visible. This must run before CORS, auth, and static handlers.
+app.use("*", createEntryGate());
 app.use("*", mobileShellCors);
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
@@ -239,8 +243,11 @@ app.use("*", mobileShellCors);
 
 app.route("/api/auth", authRoutes);
 
-/** Unauthenticated readiness probe for first boot and dev setup. */
+/** Setup readiness; the entry gate protects this when configured. */
 app.get("/api/system/install-status", async (c) => c.json(await getInstallStatus()));
+
+/** Minimal deployment probe; deliberately exempt from the entry gate. */
+app.get("/health", (c) => c.json({ ok: true }));
 
 app.use("/api/*", requireAuth);
 

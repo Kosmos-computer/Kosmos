@@ -34,6 +34,9 @@ console.log(`[desktop-release] syncing version ${version}`);
 run("node", ["scripts/sync-desktop-version.mjs", "--set", version]);
 run("node", ["scripts/verify-signing-config.mjs"], path.join(repoRoot, "apps/desktop"));
 
+console.log("[desktop-release] installing Electron runtime");
+run("node", ["node_modules/electron/install.js"]);
+
 console.log(`[desktop-release] building Arco OS ${version}`);
 run("npm", ["run", "generate"]);
 run("npm", ["run", "build"]);

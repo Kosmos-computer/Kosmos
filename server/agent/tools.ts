@@ -969,6 +969,96 @@ export const agentTools: AgentTool[] = [
       ),
   },
 
+  // ── Music library (os.music@1) ──────────────────────────────────────────────
+  {
+    name: "music_list_tracks",
+    description:
+      "List tracks in the Music app library (seed + user imports). Returns id, title, artists, album, origin.",
+    parameters: { type: "object", properties: {} },
+    execute: async (_args, ctx) =>
+      agentInvokeIntent("music.tracks.list", {}, "List music tracks", ctx),
+  },
+  {
+    name: "music_import",
+    description:
+      "Import audio into the Music library so it appears in the Music app. Prefer torrentId after a download finishes (imports all completed MP3/M4A/etc from that torrent), or path under data/torrents, or driveFileId. Pauses for user approval.",
+    parameters: {
+      type: "object",
+      properties: {
+        torrentId: {
+          type: "string",
+          description: "Torrent info-hash from torrents_list — imports completed audio files",
+        },
+        fileName: {
+          type: "string",
+          description: "Optional: only import this file from the torrent",
+        },
+        path: {
+          type: "string",
+          description: "Absolute path under data/torrents, MUSIC_SEED_DIR, or workspace",
+        },
+        driveFileId: { type: "string", description: "Drive file id for an audio blob" },
+        title: { type: "string" },
+        artists: { type: "string" },
+        album: { type: "string" },
+      },
+    },
+    execute: async (args, ctx) => {
+      const label =
+        typeof args.torrentId === "string"
+          ? `Import music from torrent ${args.torrentId}`
+          : typeof args.path === "string"
+            ? `Import music from ${args.path}`
+            : typeof args.driveFileId === "string"
+              ? `Import music from Drive ${args.driveFileId}`
+              : "Import music";
+      return agentInvokeIntent("music.tracks.import", args, label, ctx);
+    },
+  },
+  {
+    name: "music_scan_downloads",
+    description:
+      "Scan torrent downloads (or the seed folder) for audio files and import any new ones into the Music library. Use after torrents finish downloading. Pauses for user approval.",
+    parameters: {
+      type: "object",
+      properties: {
+        source: {
+          type: "string",
+          enum: ["torrents", "seed", "path"],
+          description: "Default torrents (data/torrents). Use seed for MUSIC_SEED_DIR extras.",
+        },
+        path: { type: "string", description: "Required when source=path (must be under torrents/seed/workspace)" },
+      },
+    },
+    execute: async (args, ctx) =>
+      agentInvokeIntent(
+        "music.tracks.scan",
+        {
+          ...(typeof args.source === "string" ? { source: args.source } : {}),
+          ...(typeof args.path === "string" ? { path: args.path } : {}),
+        },
+        "Scan for music to import",
+        ctx,
+      ),
+  },
+  {
+    name: "music_remove_track",
+    description:
+      "Remove a user-imported track from the Music library (seed tracks cannot be removed). Pauses for user approval.",
+    parameters: {
+      type: "object",
+      properties: { id: { type: "string" } },
+      required: ["id"],
+    },
+    execute: async (args, ctx) =>
+      agentInvokeIntent(
+        "music.tracks.remove",
+        { id: String(args.id ?? "") },
+        `Remove music track ${String(args.id ?? "")}`,
+        ctx,
+      ),
+  },
+
   // ── System tasks (os.tasks@1) ──────────────────────────────────────────────
   {
     name: "tasks_list",

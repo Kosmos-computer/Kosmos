@@ -10,6 +10,8 @@ import {
   openTorrentInDrive,
   revealTorrentFileOnDisk,
   revealTorrentOnDisk,
+  addTorrentAudioToMusic,
+  addTorrentFileToMusic,
 } from "./openTorrentLocation";
 
 const TABS: { id: TorrentDetailTab; label: string }[] = [
@@ -50,6 +52,13 @@ function GeneralTab({ torrent }: { torrent: TorrentItem }) {
           onClick={() => void run(() => openTorrentInDrive(torrent))}
         >
           Open in Drive
+        </Button>
+        <Button
+          variant="ghost"
+          disabled={busy}
+          onClick={() => void run(() => addTorrentAudioToMusic(torrent))}
+        >
+          Add to Music
         </Button>
         <Button
           variant="ghost"
@@ -188,6 +197,7 @@ function FilesTab({ torrent }: { torrent: TorrentItem }) {
             <th scope="col"><T k={I18nKey.APPS$DOWNLOADS_SIZE} /></th>
             <th scope="col"><T k={I18nKey.APPS$DOWNLOADS_PROGRESS} /></th>
             <th scope="col">Open</th>
+            <th scope="col">Music</th>
           </tr>
         </thead>
         <tbody>
@@ -217,6 +227,21 @@ function FilesTab({ torrent }: { torrent: TorrentItem }) {
                     Disk
                   </Button>
                 </div>
+              </td>
+              <td>
+                <Button
+                  variant="ghost"
+                  disabled={
+                    busyId === file.id ||
+                    file.progress < 1 ||
+                    !/\.(mp3|m4a|aac|wav|ogg|flac)$/i.test(file.name)
+                  }
+                  onClick={() =>
+                    void run(file.id, () => addTorrentFileToMusic(torrent, file.name))
+                  }
+                >
+                  Add
+                </Button>
               </td>
             </tr>
           ))}

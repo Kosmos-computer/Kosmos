@@ -102,7 +102,14 @@ import type { TorrentAddInput } from "../shared/capabilities/downloads.js";
 import { searchPlaces, geocodePlace, getDrivingRoute } from "./services/mapsService.js";
 import { webSearch } from "./services/searchService.js";
 import { browseErrorHtml, fetchBrowsePage } from "./services/browseProxyService.js";
-import { listSeedTracks, statSeedTrack } from "./services/musicSeedService.js";
+import { listMusicTracksAsSeedStatus, statAnyMusicTrack } from "./services/musicLibraryService.js";
+import {
+  getMusicTrack,
+  importMusicTrack,
+  importMusicUpload,
+  removeMusicTrack,
+  scanMusicLibrary,
+} from "./services/musicLibraryService.js";
 import { resolveTrackArt } from "./services/musicArtService.js";
 import {
   addSubscribedMusicFeed,
@@ -853,7 +860,76 @@ app.get("/api/maps/route", async (c) => {
   }
 });
 
-app.get("/api/music/tracks", (c) => c.json(listSeedTracks()));
+app.get("/api/music/tracks", (c) => c.json(listMusicTracksAsSeedStatus()));
+
+app.post("/api/music/tracks/import", async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as {
+    path?: string;
+    driveFileId?: string;
+    torrentId?: string;
+    fileName?: string;
+    title?: string;
+    artists?: string;
+    album?: string;
+  };
+  try {
+    const result = await importMusicTrack(body);
+    return c.json(result, 201);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to import track";
+    return c.json({ error: message }, 400);
+  }
+});
+
+app.post("/api/music/tracks/upload", async (c) => {
+  try {
+    const form = await c.req.parseBody();
+    const file = form.file;
+    if (!file || typeof file === "string") {
+      return c.json({ error: "file is required" }, 400);
+    }
+    const data = Buffer.from(await file.arrayBuffer());
+    const track = importMusicUpload(file.name || "upload.mp3", data, {
+      title: typeof form.title === "string" ? form.title : undefined,
+      artists: typeof form.artists === "string" ? form.artists : undefined,
+      album: typeof form.album === "string" ? form.album : undefined,
+    });
+    return c.json(track, 201);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to upload track";
+    return c.json({ error: message }, 400);
+  }
+});
+
+app.post("/api/music/tracks/scan", async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as {
+    source?: "torrents" | "seed" | "path";
+    path?: string;
+  };
+  try {
+    const result = await scanMusicLibrary(body);
+    return c.json(result);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to scan for music";
+    return c.json({ error: message }, 400);
+  }
+});
+
+app.delete("/api/music/tracks/:id", (c) => {
+  try {
+    return c.json(removeMusicTrack(c.req.param("id")));
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to remove track";
+    const status = message === "Track not found" ? 404 : 400;
+    return c.json({ error: message }, status);
+  }
+});
+
+app.get("/api/music/tracks/:id", (c) => {
+  const track = getMusicTrack(c.req.param("id"));
+  if (!track) return c.json({ error: "Track not found" }, 404);
+  return c.json(track);
+});
 
 /** Avoid process crashes when a client disconnects during a file stream. */
 function createSafeReadStream(absPath: string, options?: { start?: number; end?: number }): ReadStream {
@@ -867,7 +943,7 @@ function attachStreamAbort(stream: ReadStream, signal?: AbortSignal) {
 }
 
 app.get("/api/music/stream/:id", (c) => {
-  const resolved = statSeedTrack(c.req.param("id"));
+  const resolved = statAnyMusicTrack(c.req.param("id"));
   if (!resolved) return c.json({ error: "Track not found" }, 404);
 
   const range = c.req.header("range");

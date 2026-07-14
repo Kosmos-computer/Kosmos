@@ -89,6 +89,53 @@ html[data-theme="light"] .arco-music {
   background: var(--music-hover-bg);
 }
 
+.arco-music__icon-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.arco-music__import {
+  position: relative;
+}
+
+.arco-music__import-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  min-width: 210px;
+  padding: 6px;
+  border-radius: 10px;
+  border: 1px solid var(--music-border);
+  background: var(--music-bg);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+}
+
+.arco-music__import-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--music-text);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.arco-music__import-item:hover:not(:disabled) {
+  background: var(--music-hover-bg);
+}
+
+.arco-music__import-item:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .arco-music__body {
   flex: 1;
   display: flex;

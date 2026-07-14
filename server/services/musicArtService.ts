@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { dataDirs } from "../env.js";
-import { resolveSeedTrack } from "./musicSeedService.js";
+import { resolveAnyMusicTrack } from "./musicLibraryService.js";
 
 const ART_CACHE_DIR = path.join(dataDirs.root, "music-art");
 
@@ -116,7 +116,7 @@ export function resolveTrackArt(trackId: string): { mime: string; absPath: strin
   const cached = findCachedArt(trackId);
   if (cached) return cached;
 
-  const resolved = resolveSeedTrack(trackId);
+  const resolved = resolveAnyMusicTrack(trackId);
   if (!resolved) return null;
 
   const extracted = extractEmbeddedArt(resolved.absPath);

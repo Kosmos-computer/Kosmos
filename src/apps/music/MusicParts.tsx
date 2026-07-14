@@ -2,8 +2,10 @@ import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
 import { T } from "../../i18n/T";
 import { useTranslation } from "react-i18next";
+import { useRef, useState } from "react";
 import {
   Disc3,
+  Download,
   Heart,
   Home,
   List,
@@ -18,6 +20,7 @@ import {
   Radio,
   Search,
   Square,
+  Upload,
   Users,
 } from "lucide-react";
 import { AlbumArt } from "./AlbumArt";
@@ -29,6 +32,7 @@ import {
 import { MusicBroadcastCover } from "./MusicBroadcastCover";
 import { MediaPlayerBar, ListItem, NavSidebar, NavSidebarSectionHeader } from "../../components/patterns";
 import { EmptyState } from "../../components/ui";
+import { useOsStore } from "../../os/osStore";
 import type {
   MusicContentFilter,
   MusicFeaturedCard,
@@ -94,6 +98,22 @@ export interface MusicLibrarySidebarProps {
 export function MusicLibrarySidebar({ vm }: MusicLibrarySidebarProps) {
   const activeFilter = isLibraryFilter(vm.navSection) ? vm.navSection : vm.libraryFilter;
   const filteredItems = filterLibraryItems(vm.libraryItems, activeFilter);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importMenuOpen, setImportMenuOpen] = useState(false);
+  const [importBusy, setImportBusy] = useState(false);
+  const notify = useOsStore((s) => s.notify);
+
+  const runImport = async (action: () => Promise<void>) => {
+    setImportBusy(true);
+    setImportMenuOpen(false);
+    try {
+      await action();
+    } catch (err) {
+      notify(err instanceof Error ? err.message : String(err));
+    } finally {
+      setImportBusy(false);
+    }
+  };
 
   return (
     <aside className="arco-music__library" aria-label={i18n.t(I18nKey.APPS$MUSIC_YOUR_LIBRARY)}>
@@ -104,9 +124,69 @@ export function MusicLibrarySidebar({ vm }: MusicLibrarySidebarProps) {
             <div className="arco-music-library-nav__header">
               <h2 className="arco-music-library-nav__title"><T k={I18nKey.APPS$MUSIC_YOUR_LIBRARY} /></h2>
               <div className="arco-music-library-nav__header-actions">
-                <button type="button" className="arco-music__icon-btn" aria-label={i18n.t(I18nKey.COMMON$CREATE)}>
-                  <Plus size={18} />
-                </button>
+                <div className="arco-music__import">
+                  <button
+                    type="button"
+                    className="arco-music__icon-btn"
+                    aria-label="Add music"
+                    aria-expanded={importMenuOpen}
+                    disabled={importBusy}
+                    onClick={() => setImportMenuOpen((open) => !open)}
+                  >
+                    <Plus size={18} />
+                  </button>
+                  {importMenuOpen ? (
+                    <div className="arco-music__import-menu" role="menu">
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="arco-music__import-item"
+                        disabled={importBusy}
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <Upload size={16} aria-hidden="true" />
+                        Upload audio files
+                      </button>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="arco-music__import-item"
+                        disabled={importBusy}
+                        onClick={() =>
+                          void runImport(async () => {
+                            const result = await vm.importFromTorrents();
+                            notify(
+                              result.imported > 0
+                                ? `Added ${result.imported} track${result.imported === 1 ? "" : "s"} from Downloads`
+                                : result.scanned === 0
+                                  ? "No audio files found in Downloads"
+                                  : "Those tracks are already in your library",
+                            );
+                          })
+                        }
+                      >
+                        <Download size={16} aria-hidden="true" />
+                        Import from Downloads
+                      </button>
+                    </div>
+                  ) : null}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="audio/mpeg,audio/mp4,audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac"
+                    multiple
+                    hidden
+                    onChange={(event) => {
+                      const files = event.target.files;
+                      if (!files?.length) return;
+                      void runImport(async () => {
+                        const count = await vm.uploadTracks(files);
+                        notify(`Added ${count} track${count === 1 ? "" : "s"} to Music`);
+                        event.target.value = "";
+                      });
+                    }}
+                  />
+                </div>
                 <button type="button" className="arco-music__icon-btn" aria-label={i18n.t(I18nKey.APPS$MUSIC_EXPAND_LIBRARY)}>
                   <PanelRight size={18} />
                 </button>

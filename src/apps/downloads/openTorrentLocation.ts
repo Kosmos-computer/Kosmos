@@ -83,3 +83,38 @@ export async function openTorrentFileInDrive(
   });
   useWindowStore.getState().open({ type: "system", app: "files" }, "Files");
 }
+
+function importedCount(result: unknown): number {
+  if (Array.isArray(result)) return result.length;
+  if (result && typeof result === "object") return 1;
+  return 0;
+}
+
+export async function addTorrentAudioToMusic(torrent: TorrentItem): Promise<void> {
+  const result = await api.musicImport({ torrentId: torrent.id });
+  const count = importedCount(result);
+  useOsStore
+    .getState()
+    .notify(
+      count > 0
+        ? `Added ${count} track${count === 1 ? "" : "s"} to Music`
+        : "No new audio was added to Music",
+    );
+  useWindowStore.getState().open({ type: "system", app: "music" }, "Music");
+}
+
+export async function addTorrentFileToMusic(
+  torrent: TorrentItem,
+  fileName: string,
+): Promise<void> {
+  const result = await api.musicImport({ torrentId: torrent.id, fileName });
+  const count = importedCount(result);
+  useOsStore
+    .getState()
+    .notify(
+      count > 0
+        ? `Added ${count} track${count === 1 ? "" : "s"} to Music`
+        : "That track is already in Music",
+    );
+  useWindowStore.getState().open({ type: "system", app: "music" }, "Music");
+}

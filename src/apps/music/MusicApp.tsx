@@ -23,13 +23,15 @@ export function MusicApp() {
     );
   }
 
-  if ((vm.error || vm.tracks.length === 0) && vm.rssFeeds.length === 0) {
+  if (vm.error && vm.tracks.length === 0 && vm.rssFeeds.length === 0) {
     return (
       <div className="arco-music">
-        <EmptyState title={i18n.t(I18nKey.APPS$MUSIC_MUSIC_LIBRARY_UNAVAILABLE)}>
-          {vm.error ??
-            "No seed tracks found. Check that MP3s exist in ~/Music/.../tirufm/Unknown Album or set MUSIC_SEED_DIR."}
-        </EmptyState>
+        <div className="arco-music__body">
+          <MusicLibrarySidebar vm={vm} />
+          <EmptyState title={i18n.t(I18nKey.APPS$MUSIC_MUSIC_LIBRARY_UNAVAILABLE)}>
+            {vm.error}
+          </EmptyState>
+        </div>
       </div>
     );
   }
@@ -38,7 +40,13 @@ export function MusicApp() {
     <div className="arco-music">
       <div className="arco-music__body">
         <MusicLibrarySidebar vm={vm} />
-        <MusicMainContent vm={vm} />
+        {vm.tracks.length === 0 && vm.rssFeeds.length === 0 && !vm.selectedBroadcastFeed ? (
+          <EmptyState title="Your library is empty">
+            Use + to upload audio, or Import from Downloads after a torrent finishes.
+          </EmptyState>
+        ) : (
+          <MusicMainContent vm={vm} />
+        )}
         <MusicNowPlayingPanel
           nowPlaying={vm.nowPlaying}
           onPlayTrack={(id) => {

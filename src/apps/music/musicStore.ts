@@ -158,6 +158,9 @@ interface MusicStore {
   widgetPosition: MusicWidgetPosition;
 
   init: () => void;
+  refreshLibrary: () => Promise<void>;
+  importFromTorrents: () => Promise<{ imported: number; scanned: number }>;
+  uploadTracks: (files: FileList | File[]) => Promise<number>;
   refreshRss: () => Promise<void>;
   seedAudioBroadcasts: () => Promise<void>;
   addRssFeed: (url: string) => Promise<void>;
@@ -288,6 +291,64 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
         });
       }
     })();
+  },
+
+  refreshLibrary: async () => {
+    try {
+      const seedTracks = await fetchSeedTracks();
+      const available = seedTracks.filter((track) => track.available);
+      const { activeTrackId, playing, nowPlaying } = get();
+      const stillActive = available.find((track) => track.id === activeTrackId);
+      set({
+        tracks: available,
+        error: null,
+        playbackQueue: available.map((track) => track.id),
+        ...(stillActive
+          ? {}
+          : {
+              activeTrackId: available[0]?.id,
+              nowPlaying: playing
+                ? nowPlaying
+                : buildNowPlaying(available[0], relatedTracksFor(available, available[0]?.id)),
+            }),
+      });
+    } catch (err: unknown) {
+      set({
+        error: err instanceof Error ? err.message : "Failed to refresh music library",
+      });
+    }
+  },
+
+  importFromTorrents: async () => {
+    const res = await fetch("/api/music/tracks/scan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ source: "torrents" }),
+    });
+    if (!res.ok) {
+      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      throw new Error(body.error ?? `Failed to import from downloads (${res.status})`);
+    }
+    const result = (await res.json()) as { imported: unknown[]; scanned: number };
+    await get().refreshLibrary();
+    return { imported: result.imported.length, scanned: result.scanned };
+  },
+
+  uploadTracks: async (files) => {
+    const list = Array.from(files);
+    let imported = 0;
+    for (const file of list) {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/music/tracks/upload", { method: "POST", body: form });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(body.error ?? `Failed to upload ${file.name}`);
+      }
+      imported += 1;
+    }
+    await get().refreshLibrary();
+    return imported;
   },
 
   refreshRss: async () => {
@@ -603,6 +664,9 @@ export function useMusicViewModel() {
     seedAudioBroadcasts: store.seedAudioBroadcasts,
     addRssFeed: store.addRssFeed,
     removeRssFeed: store.removeRssFeed,
+    refreshLibrary: store.refreshLibrary,
+    importFromTorrents: store.importFromTorrents,
+    uploadTracks: store.uploadTracks,
     navSection: store.navSection,
     setNavSection: store.setNavSection,
     selectedBroadcastFeed: store.selectedBroadcastFeed,

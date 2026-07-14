@@ -3,6 +3,7 @@
  * when the Music window is minimized or closed.
  */
 import { useEffect, useRef } from "react";
+import { onAppEvent } from "../../os/appEventBus";
 import { registerMusicSeekHandler } from "./musicAudio";
 import { formatMusicTime, useMusicStore } from "./musicStore";
 
@@ -13,6 +14,7 @@ function shouldBePlaying(): boolean {
 export function MusicEngine() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const init = useMusicStore((s) => s.init);
+  const refreshLibrary = useMusicStore((s) => s.refreshLibrary);
   const previewSrc = useMusicStore((s) => s.nowPlaying.track.previewSrc);
   const trackId = useMusicStore((s) => s.nowPlaying.track.id);
   const playing = useMusicStore((s) => s.playing);
@@ -24,6 +26,14 @@ export function MusicEngine() {
   useEffect(() => {
     init();
   }, [init]);
+
+  useEffect(() => {
+    return onAppEvent((detail) => {
+      if (detail.topic === "music.changed") {
+        void refreshLibrary();
+      }
+    });
+  }, [refreshLibrary]);
 
   useEffect(() => {
     registerMusicSeekHandler((progress) => {

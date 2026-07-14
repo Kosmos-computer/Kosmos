@@ -1164,6 +1164,39 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ path: targetPath }),
     }).then((r) => json<{ ok: true; path: string }>(r)),
+
+  musicImport: (body: {
+    path?: string;
+    driveFileId?: string;
+    torrentId?: string;
+    fileName?: string;
+    title?: string;
+    artists?: string;
+    album?: string;
+  }) =>
+    fetch("/api/music/tracks/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }).then((r) => json<unknown>(r)),
+  musicScan: (body?: { source?: "torrents" | "seed" | "path"; path?: string }) =>
+    fetch("/api/music/tracks/scan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body ?? {}),
+    }).then((r) =>
+      json<{ imported: unknown[]; skipped: number; scanned: number }>(r),
+    ),
+  musicUpload: async (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    const res = await fetch("/api/music/tracks/upload", { method: "POST", body: form });
+    return json<unknown>(res);
+  },
+  musicRemoveTrack: (id: string) =>
+    fetch(`/api/music/tracks/${encodeURIComponent(id)}`, { method: "DELETE" }).then((r) =>
+      json<{ ok: true }>(r),
+    ),
 };
 
 /**

@@ -10,7 +10,6 @@ import type {
   MusicUser,
 } from "./types";
 import {
-  MUSIC_SEED_ALBUM,
   MUSIC_SEED_ARTIST,
   musicStreamPath,
   type MusicSeedTrack,
@@ -61,11 +60,11 @@ export function buildFeatured(track: SeedTrackStatus | undefined): MusicFeatured
   return {
     id: track?.id ?? "featured",
     sectionTitle: "From your library",
-    label: "Local seed album",
+    label: "Your library",
     title: track?.title ?? "No tracks available",
     description: track
-      ? `${track.artists} · ${track.album} — imported from your tirufm folder.`
-      : "Set MUSIC_SEED_DIR or add MP3s to the default Music folder.",
+      ? `${track.artists} · ${track.album}`
+      : "Import MP3s from Downloads, or upload files into your library.",
     imageTone: track ? asImageTone(track.artTone) : "amber",
   };
 }
@@ -127,24 +126,40 @@ export function filterTracks(tracks: SeedTrackStatus[], query: string): SeedTrac
 }
 
 export function albumLibraryItems(tracks: SeedTrackStatus[]): MusicLibraryItem[] {
-  const artistTone = tracks[0] ? asImageTone(tracks[0].artTone) : "violet";
-  return [
-    {
-      id: "album-tirufm",
-      title: MUSIC_SEED_ALBUM,
-      subtitle: `Album · ${MUSIC_SEED_ARTIST} · ${tracks.length} tracks`,
-      kind: "album",
-      imageTone: artistTone,
-      coverTrackId: tracks[0]?.id,
-    },
-    {
-      id: "artist-tirufm",
-      title: MUSIC_SEED_ARTIST,
-      subtitle: `Artist · ${tracks.length} tracks`,
-      kind: "artist",
-      imageTone: artistTone,
-      coverTrackId: tracks[0]?.id,
-    },
-    ...buildLibraryItems(tracks),
-  ];
+  const albums = new Map<string, SeedTrackStatus[]>();
+  for (const track of tracks) {
+    const key = `${track.album}::${track.artists}`;
+    const list = albums.get(key) ?? [];
+    list.push(track);
+    albums.set(key, list);
+  }
+
+  const albumItems: MusicLibraryItem[] = [...albums.entries()].map(([key, albumTracks], index) => {
+    const sample = albumTracks[0];
+    return {
+      id: `album-${index}-${key.slice(0, 24)}`,
+      title: sample.album,
+      subtitle: `Album · ${sample.artists} · ${albumTracks.length} tracks`,
+      kind: "album" as const,
+      imageTone: asImageTone(sample.artTone),
+      coverTrackId: sample.id,
+    };
+  });
+
+  const artists = new Map<string, SeedTrackStatus[]>();
+  for (const track of tracks) {
+    const list = artists.get(track.artists) ?? [];
+    list.push(track);
+    artists.set(track.artists, list);
+  }
+  const artistItems: MusicLibraryItem[] = [...artists.entries()].map(([name, artistTracks], index) => ({
+    id: `artist-${index}-${name.slice(0, 24)}`,
+    title: name,
+    subtitle: `Artist · ${artistTracks.length} tracks`,
+    kind: "artist" as const,
+    imageTone: asImageTone(artistTracks[0].artTone),
+    coverTrackId: artistTracks[0].id,
+  }));
+
+  return [...albumItems, ...artistItems, ...buildLibraryItems(tracks)];
 }

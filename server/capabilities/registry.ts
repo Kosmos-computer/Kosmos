@@ -15,6 +15,8 @@ import { CALENDAR_CONTRACT_ID } from "../../shared/capabilities/calendar.js";
 import { DOCS_CONTRACT_ID, EMPTY_DOC_JSON } from "../../shared/capabilities/docs.js";
 import { DOWNLOADS_CONTRACT_ID } from "../../shared/capabilities/downloads.js";
 import { DOC_MIME, FILES_CONTRACT_ID, SHEET_MIME, SLIDES_MIME, type FileCreateInput } from "../../shared/capabilities/files.js";
+import { MUSIC_CONTRACT_ID } from "../../shared/capabilities/music.js";
+import type { MusicImportInput, MusicScanInput } from "../../shared/capabilities/music.js";
 import { EMPTY_SHEET_JSON, SHEETS_CONTRACT_ID } from "../../shared/capabilities/sheets.js";
 import { EMPTY_SLIDES_JSON, SLIDES_CONTRACT_ID, normalizeDeck } from "../../shared/capabilities/slides.js";
 import { VOICE_CONTRACT_ID } from "../../shared/capabilities/voice.js";
@@ -42,6 +44,13 @@ import { tasksService } from "../services/tasksService.js";
 import { filesService } from "../services/filesService.js";
 import { shareService } from "../services/shareService.js";
 import { torrentService } from "../services/torrentService.js";
+import {
+  getMusicTrack,
+  importMusicTrack,
+  listMusicTracks,
+  removeMusicTrack,
+  scanMusicLibrary,
+} from "../services/musicLibraryService.js";
 import { dataDirs } from "../env.js";
 
 const PROVIDERS_FILE = path.join(dataDirs.root, "capability-providers.json");
@@ -53,6 +62,7 @@ const DEFAULT_PROVIDERS: Record<string, string> = {
   [FILES_CONTRACT_ID]: "system",
   [DOCS_CONTRACT_ID]: "system",
   [DOWNLOADS_CONTRACT_ID]: "system",
+  [MUSIC_CONTRACT_ID]: "system",
   [SHEETS_CONTRACT_ID]: "system",
   [SLIDES_CONTRACT_ID]: "system",
   [VOICE_CONTRACT_ID]: "system",
@@ -506,6 +516,16 @@ const systemHandlers: Record<string, IntentHandler> = {
   "torrents.stop": async (p) => torrentService.stop(String(p.id ?? "")),
   "torrents.remove": async (p) =>
     torrentService.remove(String(p.id ?? ""), Boolean(p.deleteFiles)),
+
+  "music.tracks.list": () => listMusicTracks(),
+  "music.tracks.get": (p) => {
+    const track = getMusicTrack(String(p.id ?? ""));
+    if (!track) throw new Error("Track not found");
+    return track;
+  },
+  "music.tracks.import": (p) => importMusicTrack(p as unknown as MusicImportInput),
+  "music.tracks.scan": (p) => scanMusicLibrary(p as unknown as MusicScanInput),
+  "music.tracks.remove": (p) => removeMusicTrack(String(p.id ?? "")),
 };
 
 /**

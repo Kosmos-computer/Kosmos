@@ -29,7 +29,8 @@ for the feature matrix.
 - `sheets.import` / `sheets.export` / `sheets.query` / `sheets.write_range`
 - `slides.import` / `slides.export`
 
-Agent tools: `docs_export`, `sheets_query`, `sheets_write_range`, `slides_create`.
+Agent tools: `docs_export`, `sheets_query`, `sheets_write_range`, `slides_create`, `slides_open`, `slides_write`, `slides_export`.
+Presentations should be authored as full DeckDoc JSON (960×540 canvas with positioned boxes); see the `slides-authoring` skill.
 
 ## Conformance
 

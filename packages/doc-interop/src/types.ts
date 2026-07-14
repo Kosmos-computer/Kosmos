@@ -63,6 +63,8 @@ export interface WorkbookDoc {
   sheets: SheetTab[];
 }
 
+export type SlideShapeKind = "rect" | "ellipse" | "triangle" | "line" | "diamond";
+
 export interface SlideBox {
   id: string;
   kind: "text" | "image" | "shape";
@@ -70,10 +72,20 @@ export interface SlideBox {
   y: number;
   w: number;
   h: number;
-  /** TipTap JSON for text boxes; URL/file id for images; fill for shapes. */
+  /** TipTap JSON for text boxes; URL/data-URL for images. */
   content?: DocNode | string;
+  /** Fill color for shapes (and optional text-box background). */
   fill?: string;
+  /** Stroke/border color for shapes and text boxes. */
+  stroke?: string;
+  strokeWidth?: number;
+  /** Text color for text boxes. */
+  color?: string;
   textAlign?: "left" | "center" | "right";
+  /** Geometry for shape boxes; defaults to rect. */
+  shape?: SlideShapeKind;
+  /** Shared id when boxes are grouped together. */
+  groupId?: string;
 }
 
 export interface Slide {

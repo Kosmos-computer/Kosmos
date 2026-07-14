@@ -1136,7 +1136,7 @@ export const agentTools: AgentTool[] = [
   {
     name: "docs_read",
     description:
-      "Read a document's text content from the OS file store by id (get ids from docs_list).",
+      "Read a Drive file's content by id (get ids from docs_list). Works for text docs and for structured JSON like .slides.json / sheets — returns the raw string.",
     parameters: {
       type: "object",
       properties: { id: { type: "string" } },
@@ -1300,18 +1300,129 @@ export const agentTools: AgentTool[] = [
   },
   {
     name: "slides_create",
-    description: "Create a new presentation in Drive (os.slides@1).",
+    description:
+      "Create a designed presentation in Drive (os.slides@1) and open it. ALWAYS pass a full DeckDoc in content (multi-slide with positioned text/shape boxes on a 960×540 canvas) — never create an empty shell. Read the slides-authoring skill first.",
     parameters: {
       type: "object",
       properties: {
-        name: { type: "string" },
-        parentId: { type: "string" },
-        content: { type: "object" },
+        name: { type: "string", description: 'File name ending in .slides.json, e.g. "Q3 Review.slides.json"' },
+        parentId: { type: "string", description: "Drive folder id; omit for root" },
+        content: {
+          type: "object",
+          description:
+            'DeckDoc: { version:1, title, width:960, height:540, slides:[{ id, boxes:[{ id, kind:"text"|"shape"|"image", x,y,w,h, content?, fill?, stroke?, color?, shape?, textAlign? }] }] }. Text content may be a plain string or TipTap doc JSON.',
+        },
+        open: {
+          type: "boolean",
+          description: "Open the deck in Slides after create (default true)",
+          default: true,
+        },
       },
-      required: ["name"],
+      required: ["name", "content"],
+    },
+    execute: async (args, ctx) => {
+      const result = await agentInvokeIntent(
+        "slides.create",
+        {
+          name: args.name,
+          ...(typeof args.parentId === "string" ? { parentId: args.parentId } : {}),
+          content: args.content,
+        },
+        `Create presentation ${String(args.name ?? "")}`,
+        ctx,
+      );
+      const shouldOpen = args.open !== false;
+      const id =
+        result && typeof result === "object" && "id" in result
+          ? String((result as { id: unknown }).id ?? "")
+          : "";
+      if (shouldOpen && id && !("error" in (result as object))) {
+        ctx.emit({
+          type: "os_ui",
+          action: { action: "open_app", appId: "core.slides", fileId: id },
+        });
+      }
+      return result;
+    },
+  },
+  {
+    name: "slides_open",
+    description:
+      "Open/read a presentation by Drive file id. Returns { id, name, deck } with the full DeckDoc JSON so you can inspect or revise slides.",
+    parameters: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "Presentation file id from slides_create or docs_list" },
+        show: {
+          type: "boolean",
+          description: "Also open the deck in the Slides app window (default true)",
+          default: true,
+        },
+      },
+      required: ["id"],
+    },
+    execute: async (args, ctx) => {
+      const result = await agentInvokeIntent(
+        "slides.open",
+        { id: args.id },
+        `Open presentation ${String(args.id ?? "")}`,
+        ctx,
+      );
+      if (args.show !== false && result && typeof result === "object" && "id" in result) {
+        ctx.emit({
+          type: "os_ui",
+          action: {
+            action: "open_app",
+            appId: "core.slides",
+            fileId: String((result as { id: unknown }).id ?? args.id),
+          },
+        });
+      }
+      return result;
+    },
+  },
+  {
+    name: "slides_write",
+    description:
+      "Replace a presentation's full DeckDoc by id (after slides_open). Use to revise layouts, add slides/boxes, or restyle. Pass the complete deck object, not a patch.",
+    parameters: {
+      type: "object",
+      properties: {
+        id: { type: "string" },
+        content: {
+          type: "object",
+          description:
+            "Full DeckDoc JSON (version, width 960, height 540, slides with positioned boxes).",
+        },
+      },
+      required: ["id", "content"],
     },
     execute: async (args, ctx) =>
-      agentInvokeIntent("slides.create", args, `Create presentation ${String(args.name ?? "")}`, ctx),
+      agentInvokeIntent(
+        "slides.write",
+        { id: args.id, content: args.content },
+        `Update presentation ${String(args.id ?? "")}`,
+        ctx,
+      ),
+  },
+  {
+    name: "slides_export",
+    description: "Export a presentation to html, odp, pptx, pdf, or json.",
+    parameters: {
+      type: "object",
+      properties: {
+        id: { type: "string" },
+        format: { type: "string", enum: ["json", "html", "odp", "pptx", "pdf"] },
+      },
+      required: ["id"],
+    },
+    execute: async (args, ctx) =>
+      agentInvokeIntent(
+        "slides.export",
+        { id: args.id, format: args.format ?? "pptx" },
+        `Export presentation ${String(args.id ?? "")}`,
+        ctx,
+      ),
   },
 
   {
@@ -1450,7 +1561,7 @@ export const agentTools: AgentTool[] = [
   {
     name: "os_ui",
     description:
-      "Drive the Arco desktop and wait until the window settles. Actions: open_app / open_system / close_app / focus_app / minimize_app / restore_app / notify / open_workspace_tab. Prefer list_apps first. Result includes control mode — when control=tools use calendar_*/mail_* instead of the cursor; when control=open_only the window opens but content is not mouse-driveable (iframe). Use focus_app when a click reports a covered target.",
+      "Drive the Arco desktop and wait until the window settles. Actions: open_app / open_system / close_app / focus_app / minimize_app / restore_app / notify / open_workspace_tab. Prefer list_apps first. For Drive documents, pass fileId with open_app (e.g. appId core.slides + fileId) so the editor opens that file. Result includes control mode — when control=tools use calendar_*/mail_*/slides_* instead of the cursor; when control=open_only the window opens but content is not mouse-driveable (iframe). Use focus_app when a click reports a covered target.",
     parameters: {
       type: "object",
       properties: {
@@ -1470,7 +1581,12 @@ export const agentTools: AgentTool[] = [
         appId: {
           type: "string",
           description:
-            "App id (for open/close/focus/minimize/restore): system id, generated id, installed id like core.docs, or web app id — or a display title",
+            "App id (for open/close/focus/minimize/restore): system id, generated id, installed id like core.docs / core.slides, or web app id — or a display title",
+        },
+        fileId: {
+          type: "string",
+          description:
+            "Drive file id to open inside the app (Docs/Sheets/Slides). Use with open_app / open_system.",
         },
         app: { type: "string", description: "System app id (for open_system)" },
         message: { type: "string", description: "Notification text (for notify)" },
@@ -1506,15 +1622,22 @@ export const agentTools: AgentTool[] = [
           toolHint: resolved.toolHint,
           note: noteForControl(resolved.control, resolved.toolHint),
         };
-        action = {
-          action: args.action as
-            | "open_app"
-            | "close_app"
-            | "focus_app"
-            | "minimize_app"
-            | "restore_app",
-          appId: resolved.appId,
-        };
+        if (args.action === "open_app") {
+          action = {
+            action: "open_app",
+            appId: resolved.appId,
+            ...(typeof args.fileId === "string" ? { fileId: args.fileId } : {}),
+          };
+        } else {
+          action = {
+            action: args.action as
+              | "close_app"
+              | "focus_app"
+              | "minimize_app"
+              | "restore_app",
+            appId: resolved.appId,
+          };
+        }
       } else if (args.action === "open_system" && typeof args.app === "string") {
         const systemAppId = resolveSystemAppId(args.app);
         if (systemAppId) {
@@ -1525,7 +1648,11 @@ export const agentTools: AgentTool[] = [
             toolHint: resolved.toolHint,
             note: noteForControl(resolved.control, resolved.toolHint),
           };
-          action = { action: "open_system", app: systemAppId };
+          action = {
+            action: "open_system",
+            app: systemAppId,
+            ...(typeof args.fileId === "string" ? { fileId: args.fileId } : {}),
+          };
         } else {
           const resolved = await resolveAppId(args.app);
           if ("error" in resolved) return resolved;

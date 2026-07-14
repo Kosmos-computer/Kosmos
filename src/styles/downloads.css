@@ -332,6 +332,27 @@
   color: var(--arco-danger);
 }
 
+.arco-downloads-detail__general,
+.arco-downloads-detail__files {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-s);
+}
+
+.arco-downloads-detail__actions,
+.arco-downloads-detail__file-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--arco-space-xs);
+  align-items: center;
+}
+
+.arco-downloads-detail__file-actions .arco-btn {
+  min-height: 28px;
+  padding-inline: var(--arco-space-s);
+  font-size: var(--arco-text-xs);
+}
+
 .arco-downloads-detail__table {
   width: 100%;
   border-collapse: collapse;
@@ -408,4 +429,31 @@
   justify-content: flex-end;
   gap: var(--arco-space-s);
   margin-top: var(--arco-space-xs);
+}
+
+.arco-downloads__settings-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--arco-space-m);
+  padding: var(--arco-space-s) 0;
+}
+
+.arco-downloads__settings-copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-2xs, 4px);
+  min-width: 0;
+}
+
+.arco-downloads__settings-label {
+  font-size: var(--arco-text-sm);
+  font-weight: 600;
+  color: var(--arco-text-primary);
+}
+
+.arco-downloads__settings-desc {
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-secondary);
+  line-height: 1.4;
 }

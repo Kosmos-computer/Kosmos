@@ -27,9 +27,31 @@ export function exportSlidesHtml(deck: DeckDoc): ExportResult {
             return `<img class="box" data-id="${escapeHtml(box.id)}" src="${escapeHtml(String(box.content ?? ""))}" style="${style}" alt="" />`;
           }
           if (box.kind === "shape") {
-            return `<div class="box shape" data-id="${escapeHtml(box.id)}" style="${style}background:${escapeHtml(box.fill ?? "#6ea8fe")}"></div>`;
+            const shape = box.shape ?? "rect";
+            const stroke = box.stroke
+              ? `border:${box.strokeWidth ?? 2}px solid ${escapeHtml(box.stroke)};`
+              : "";
+            const fill = `background:${escapeHtml(box.fill ?? "#6ea8fe")};`;
+            const radius =
+              shape === "ellipse"
+                ? "border-radius:50%;"
+                : shape === "line"
+                  ? "border-radius:999px;"
+                  : "";
+            const clip =
+              shape === "triangle"
+                ? "clip-path:polygon(50% 0%,0% 100%,100% 100%);"
+                : shape === "diamond"
+                  ? "clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%);"
+                  : "";
+            return `<div class="box shape" data-id="${escapeHtml(box.id)}" data-shape="${shape}" style="${style}${fill}${stroke}${radius}${clip}"></div>`;
           }
-          return `<div class="box text" data-id="${escapeHtml(box.id)}" style="${style}text-align:${box.textAlign ?? "left"}">${escapeHtml(boxText(box))}</div>`;
+          const textColor = box.color ? `color:${escapeHtml(box.color)};` : "";
+          const textStroke = box.stroke
+            ? `outline:${box.strokeWidth ?? 1}px solid ${escapeHtml(box.stroke)};`
+            : "";
+          const textFill = box.fill ? `background:${escapeHtml(box.fill)};` : "";
+          return `<div class="box text" data-id="${escapeHtml(box.id)}" style="${style}text-align:${box.textAlign ?? "left"};${textColor}${textStroke}${textFill}">${escapeHtml(boxText(box))}</div>`;
         })
         .join("\n");
       return `<section class="slide" data-slide="${i}" style="width:${deck.width}px;height:${deck.height}px;position:relative;background:#111;color:#fff;margin:1rem auto;overflow:hidden">${boxes}</section>`;

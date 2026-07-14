@@ -1,11 +1,32 @@
 import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
-import { Filter, Radio, Search } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import {
+  Activity,
+  AlertCircle,
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  CheckCircle2,
+  Globe,
+  List,
+  PauseCircle,
+  Search,
+  Square,
+} from "lucide-react";
 import { NavSidebar } from "../../components/patterns";
 import { Input } from "../../components/ui";
-import type { CategoryFilter, TrackerGroup } from "./types";
-import type { TorrentCategory } from "./types";
-import { useTranslation } from "react-i18next";
+import type { CategoryFilter, TorrentCategory, TrackerGroup } from "./types";
+
+const CATEGORY_ICONS: Record<TorrentCategory, LucideIcon> = {
+  all: List,
+  downloading: ArrowDownToLine,
+  seeding: ArrowUpFromLine,
+  completed: CheckCircle2,
+  active: Activity,
+  inactive: PauseCircle,
+  stopped: Square,
+  error: AlertCircle,
+};
 
 export interface DownloadsSidebarProps {
   categories: CategoryFilter[];
@@ -28,7 +49,6 @@ export function DownloadsSidebar({
   searchQuery,
   onSearchChange,
 }: DownloadsSidebarProps) {
-  const { t } = useTranslation();
   return (
     <NavSidebar
       className="arco-downloads-sidebar"
@@ -48,17 +68,20 @@ export function DownloadsSidebar({
         {
           id: "categories",
           title: "Show",
-          items: categories.map((entry) => ({
-            id: entry.id,
-            label: entry.label,
-            trailing: <span className="arco-downloads-sidebar__count">{entry.count}</span>,
-            leading: <Filter size={14} strokeWidth={1.75} />,
-            active: category === entry.id && !trackerFilter,
-            onClick: () => {
-              onTrackerFilterChange(null);
-              onCategoryChange(entry.id);
-            },
-          })),
+          items: categories.map((entry) => {
+            const Icon = CATEGORY_ICONS[entry.id];
+            return {
+              id: entry.id,
+              label: entry.label,
+              trailing: <span className="arco-downloads-sidebar__count">{entry.count}</span>,
+              leading: <Icon size={14} strokeWidth={1.75} />,
+              active: category === entry.id && !trackerFilter,
+              onClick: () => {
+                onTrackerFilterChange(null);
+                onCategoryChange(entry.id);
+              },
+            };
+          }),
         },
         {
           id: "trackers",
@@ -71,7 +94,7 @@ export function DownloadsSidebar({
               </span>
             ),
             trailing: <span className="arco-downloads-sidebar__count">{entry.count}</span>,
-            leading: <Radio size={14} strokeWidth={1.75} />,
+            leading: <Globe size={14} strokeWidth={1.75} />,
             active: trackerFilter === entry.url,
             onClick: () =>
               onTrackerFilterChange(trackerFilter === entry.url ? null : entry.url),

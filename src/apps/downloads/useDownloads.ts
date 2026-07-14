@@ -15,6 +15,8 @@ function matchesCategory(torrent: TorrentItem, category: TorrentCategory): boole
       return true;
     case "downloading":
       return torrent.status === "downloading" || torrent.status === "checking";
+    case "seeding":
+      return torrent.status === "seeding";
     case "completed":
       return torrent.progress >= 1 || torrent.status === "seeding";
     case "active":
@@ -64,12 +66,21 @@ export function useDownloads() {
   const [addOpen, setAddOpen] = useState(false);
   const [addSource, setAddSource] = useState("");
   const [addError, setAddError] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [seedAfterDownload, setSeedAfterDownloadState] = useState(true);
+  const [settingsBusy, setSettingsBusy] = useState(false);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     try {
-      const [list, nextStats] = await Promise.all([api.downloadsList(), api.downloadsStats()]);
+      const [list, nextStats, settings] = await Promise.all([
+        api.downloadsList(),
+        api.downloadsStats(),
+        api.downloadsSettings(),
+      ]);
       setTorrents(list);
       setStats(nextStats);
+      setSeedAfterDownloadState(settings.seedAfterDownload);
       setLoadError(null);
       setSelectedIds((current) => {
         if (current.length === 0 && list[0]) return [list[0].id];
@@ -134,14 +145,49 @@ export function useDownloads() {
   );
 
   const runOnSelected = useCallback(
-    async (action: (id: string) => Promise<unknown>) => {
+    async (
+      action: (id: string) => Promise<TorrentDto | { ok: true }>,
+      optimisticStatus?: "paused" | "stopped" | "downloading" | "seeding",
+    ) => {
       if (selectedIds.length === 0) return;
+      const ids = [...selectedIds];
+      if (optimisticStatus) {
+        setTorrents((current) =>
+          current.map((torrent) => {
+            if (!ids.includes(torrent.id)) return torrent;
+            const idle = optimisticStatus === "paused" || optimisticStatus === "stopped";
+            return {
+              ...torrent,
+              status:
+                optimisticStatus === "downloading" || optimisticStatus === "seeding"
+                  ? torrent.progress >= 1
+                    ? "seeding"
+                    : "downloading"
+                  : optimisticStatus,
+              downSpeed: idle ? "0 B/s" : torrent.downSpeed,
+              upSpeed: idle ? "0 B/s" : torrent.upSpeed,
+              peers: idle ? { connected: 0, total: torrent.peers.total } : torrent.peers,
+              peersList: idle ? [] : torrent.peersList,
+              error: optimisticStatus === "paused" || optimisticStatus === "stopped" ? null : torrent.error,
+            };
+          }),
+        );
+      }
       setBusy(true);
+      setLoadError(null);
       try {
-        await Promise.all(selectedIds.map((id) => action(id)));
+        const results = await Promise.all(ids.map((id) => action(id)));
+        const updated = results.filter((entry): entry is TorrentDto => "id" in entry && "status" in entry);
+        if (updated.length > 0) {
+          setTorrents((current) => {
+            const byId = new Map(updated.map((torrent) => [torrent.id, torrent]));
+            return current.map((torrent) => byId.get(torrent.id) ?? torrent);
+          });
+        }
         await refresh();
       } catch (err) {
         setLoadError(err instanceof Error ? err.message : String(err));
+        await refresh();
       } finally {
         setBusy(false);
       }
@@ -149,13 +195,23 @@ export function useDownloads() {
     [selectedIds, refresh],
   );
 
-  const pauseSelected = useCallback(() => runOnSelected((id) => api.downloadsPause(id)), [runOnSelected]);
-  const resumeSelected = useCallback(() => runOnSelected((id) => api.downloadsResume(id)), [runOnSelected]);
-  const stopSelected = useCallback(() => runOnSelected((id) => api.downloadsStop(id)), [runOnSelected]);
+  const pauseSelected = useCallback(
+    () => runOnSelected((id) => api.downloadsPause(id), "paused"),
+    [runOnSelected],
+  );
+  const resumeSelected = useCallback(
+    () => runOnSelected((id) => api.downloadsResume(id), "downloading"),
+    [runOnSelected],
+  );
+  const stopSelected = useCallback(
+    () => runOnSelected((id) => api.downloadsStop(id), "stopped"),
+    [runOnSelected],
+  );
   const removeSelected = useCallback(
     () =>
       runOnSelected(async (id) => {
         await api.downloadsRemove(id, false);
+        return { ok: true as const };
       }),
     [runOnSelected],
   );
@@ -192,6 +248,36 @@ export function useDownloads() {
     }
   }, [addSource, refresh]);
 
+  const openSettings = useCallback(() => {
+    setSettingsError(null);
+    setSettingsOpen(true);
+  }, []);
+
+  const closeSettings = useCallback(() => {
+    setSettingsOpen(false);
+    setSettingsError(null);
+  }, []);
+
+  const setSeedAfterDownload = useCallback(
+    async (value: boolean) => {
+      setSettingsBusy(true);
+      setSettingsError(null);
+      const previous = seedAfterDownload;
+      setSeedAfterDownloadState(value);
+      try {
+        const settings = await api.downloadsUpdateSettings({ seedAfterDownload: value });
+        setSeedAfterDownloadState(settings.seedAfterDownload);
+        await refresh();
+      } catch (err) {
+        setSeedAfterDownloadState(previous);
+        setSettingsError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setSettingsBusy(false);
+      }
+    },
+    [seedAfterDownload, refresh],
+  );
+
   return {
     torrents: filteredTorrents,
     allTorrents: torrents,
@@ -227,6 +313,13 @@ export function useDownloads() {
     addError,
     busy,
     loadError,
+    settingsOpen,
+    openSettings,
+    closeSettings,
+    seedAfterDownload,
+    setSeedAfterDownload,
+    settingsBusy,
+    settingsError,
   };
 }
 

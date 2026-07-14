@@ -4,6 +4,7 @@ import { T } from "../../i18n/T";
 import { useCallback, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { SidebarPane } from "../../components/patterns";
 import { AddTorrentDialog } from "./AddTorrentDialog";
+import { DownloadsSettingsDialog } from "./DownloadsSettingsDialog";
 import { DownloadsSidebar } from "./DownloadsSidebar";
 import { DownloadsToolbar } from "./DownloadsToolbar";
 import { TorrentDetailPane } from "./TorrentDetailPane";
@@ -143,6 +144,7 @@ export function DownloadsWorkspace({ vm }: DownloadsWorkspaceProps) {
       </div>
 
       <AddTorrentDialog vm={vm} />
+      <DownloadsSettingsDialog vm={vm} />
     </div>
   );
 }

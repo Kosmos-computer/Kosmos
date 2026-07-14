@@ -135,9 +135,9 @@ export type AppControlMode = "cursor" | "tools" | "open_only";
 
 /** Shell actions the agent can drive through the `os_ui` tool. */
 export type OsUiAction =
-  /** appId is a system / generated / installed / web app id. */
-  | { action: "open_app"; appId: string }
-  | { action: "open_system"; app: string }
+  /** appId is a system / generated / installed / web app id. Optional fileId opens a Drive document in that app. */
+  | { action: "open_app"; appId: string; fileId?: string }
+  | { action: "open_system"; app: string; fileId?: string }
   /** Close a window by app id — any kind (system, generated, installed, web). */
   | { action: "close_app"; appId: string }
   /** Raise / un-minimize a window that is already open. */

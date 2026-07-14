@@ -23,6 +23,7 @@ export interface DownloadsToolbarProps {
     | "pauseSelected"
     | "stopSelected"
     | "removeSelected"
+    | "openSettings"
   >;
 }
 
@@ -85,7 +86,12 @@ export function DownloadsToolbar({ vm }: DownloadsToolbarProps) {
 
       <div className="arco-downloads__toolbar-spacer" aria-hidden="true" />
 
-      <Button variant="ghost" size="icon" aria-label={i18n.t(I18nKey.APPS$DOWNLOADS_CLIENT_SETTINGS)}>
+      <Button
+        variant="ghost"
+        size="icon"
+        aria-label={i18n.t(I18nKey.APPS$DOWNLOADS_CLIENT_SETTINGS)}
+        onClick={vm.openSettings}
+      >
         <Settings size={16} strokeWidth={1.75} />
       </Button>
     </div>

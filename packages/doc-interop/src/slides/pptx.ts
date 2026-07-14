@@ -32,12 +32,26 @@ export async function exportPptx(deck: DeckDoc): Promise<ExportResult> {
       const w = (box.w / deck.width) * 13.333;
       const h = (box.h / deck.height) * 7.5;
       if (box.kind === "shape") {
-        s.addShape(pptx.ShapeType.rect, {
+        const shapeMap = {
+          rect: pptx.ShapeType.rect,
+          ellipse: pptx.ShapeType.ellipse,
+          triangle: pptx.ShapeType.triangle,
+          line: pptx.ShapeType.line,
+          diamond: pptx.ShapeType.diamond,
+        } as const;
+        const shapeType = shapeMap[box.shape ?? "rect"] ?? pptx.ShapeType.rect;
+        s.addShape(shapeType, {
           x,
           y,
           w,
           h,
           fill: { color: (box.fill ?? "#6ea8fe").replace("#", "") },
+          line: box.stroke
+            ? {
+                color: box.stroke.replace("#", ""),
+                width: box.strokeWidth ?? 2,
+              }
+            : undefined,
         });
       } else if (box.kind === "image" && typeof box.content === "string") {
         try {
@@ -52,7 +66,7 @@ export async function exportPptx(deck: DeckDoc): Promise<ExportResult> {
           w,
           h,
           align: box.textAlign ?? "left",
-          color: "FFFFFF",
+          color: (box.color ?? "#FFFFFF").replace("#", ""),
           fontSize: 18,
         });
       }

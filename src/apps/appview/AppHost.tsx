@@ -85,9 +85,19 @@ export function AppHost({ appId }: { appId: string }) {
   const textScalePreset = useOsStore((s) => s.textScalePreset);
   const spacingPreset = useOsStore((s) => s.spacingPreset);
   const notify = useOsStore((s) => s.notify);
-  const [launchFileId] = useState(
+  const [launchFileId, setLaunchFileId] = useState(
     () => useDocumentLaunchStore.getState().consume(installedLaunchKey(appId)) ?? undefined,
   );
+
+  // Agent / Drive can request a different file while this host is already mounted.
+  useEffect(() => {
+    const key = installedLaunchKey(appId);
+    return useDocumentLaunchStore.subscribe((state) => {
+      if (!state.pendingByTarget[key]) return;
+      const consumed = useDocumentLaunchStore.getState().consume(key);
+      if (consumed) setLaunchFileId(consumed);
+    });
+  }, [appId]);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [token, setToken] = useState<string | null>(null);
   const [frameTick, setFrameTick] = useState(0);
@@ -325,7 +335,7 @@ export function AppHost({ appId }: { appId: string }) {
         </div>
       ) : token && src ? (
         <iframe
-          key={frameTick}
+          key={`${frameTick}:${launchFileId ?? ""}`}
           ref={iframeRef}
           className="arco-studio__frame"
           src={src}

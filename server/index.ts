@@ -1122,6 +1122,19 @@ app.get("/api/downloads/stats", requireCap("files:read"), async (c) => {
   }
 });
 
+app.get("/api/downloads/settings", requireCap("files:read"), (c) => {
+  return c.json(torrentService.getSettings());
+});
+
+app.put("/api/downloads/settings", requireCap("files:write"), async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as { seedAfterDownload?: boolean };
+  try {
+    return c.json(await torrentService.updateSettings(body));
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : String(err) }, 400);
+  }
+});
+
 app.post("/api/downloads/torrents", requireCap("files:write"), async (c) => {
   const body = (await c.req.json().catch(() => ({}))) as TorrentAddInput;
   try {
@@ -1162,6 +1175,25 @@ app.delete("/api/downloads/torrents/:id", requireCap("files:write"), async (c) =
     return c.json(await torrentService.remove(c.req.param("id"), deleteFiles));
   } catch (err) {
     return c.json({ error: err instanceof Error ? err.message : String(err) }, 404);
+  }
+});
+
+app.post("/api/downloads/torrents/:id/drive", requireCap("files:write"), async (c) => {
+  try {
+    return c.json(await torrentService.ensureInDrive(c.req.param("id")));
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : String(err) }, 400);
+  }
+});
+
+app.post("/api/downloads/reveal", requireCap("files:read"), async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as { path?: string };
+  const target = body.path?.trim();
+  if (!target) return c.json({ error: "path is required" }, 400);
+  try {
+    return c.json(await torrentService.revealPath(target));
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : String(err) }, 400);
   }
 });
 

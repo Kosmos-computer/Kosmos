@@ -197,21 +197,109 @@ export const DRIVE_SEED_FILES: DriveSeedFile[] = [
       {
         version: 1,
         title: "Launch Deck",
+        width: 960,
+        height: 540,
         slides: [
           {
             id: "slide-1",
-            title: "Arco OS",
-            boxes: [{ id: "b1", type: "text", text: "The AI-native desktop" }],
+            boxes: [
+              {
+                id: "b1",
+                kind: "text",
+                x: 60,
+                y: 180,
+                w: 840,
+                h: 100,
+                color: "#eef1f6",
+                textAlign: "center",
+                content: {
+                  type: "doc",
+                  content: [
+                    {
+                      type: "paragraph",
+                      content: [{ type: "text", text: "The AI-native desktop" }],
+                    },
+                  ],
+                },
+              },
+              {
+                id: "b1-bar",
+                kind: "shape",
+                shape: "rect",
+                x: 360,
+                y: 300,
+                w: 240,
+                h: 8,
+                fill: "#6ea8fe",
+              },
+            ],
           },
           {
             id: "slide-2",
-            title: "Office suite",
-            boxes: [{ id: "b2", type: "text", text: "Drive · Docs · Sheets · Slides" }],
+            boxes: [
+              {
+                id: "b2",
+                kind: "text",
+                x: 60,
+                y: 80,
+                w: 840,
+                h: 80,
+                color: "#eef1f6",
+                content: {
+                  type: "doc",
+                  content: [
+                    {
+                      type: "paragraph",
+                      content: [{ type: "text", text: "Office suite" }],
+                    },
+                  ],
+                },
+              },
+              {
+                id: "b2-body",
+                kind: "text",
+                x: 60,
+                y: 180,
+                w: 840,
+                h: 200,
+                color: "#a8b0bf",
+                content: {
+                  type: "doc",
+                  content: [
+                    {
+                      type: "paragraph",
+                      content: [{ type: "text", text: "Drive · Docs · Sheets · Slides" }],
+                    },
+                  ],
+                },
+              },
+            ],
           },
           {
             id: "slide-3",
-            title: "Agent-native",
-            boxes: [{ id: "b3", type: "text", text: "Every document is intent-addressable" }],
+            boxes: [
+              {
+                id: "b3",
+                kind: "text",
+                x: 60,
+                y: 180,
+                w: 840,
+                h: 120,
+                color: "#eef1f6",
+                textAlign: "center",
+                content: {
+                  type: "doc",
+                  content: [
+                    {
+                      type: "paragraph",
+                      content: [
+                        { type: "text", text: "Every document is intent-addressable" },
+                      ],
+                    },
+                  ],
+                },
+              },
+            ],
           },
         ],
       },

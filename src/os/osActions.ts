@@ -23,8 +23,22 @@ import { publishAppEvent } from "./appEventBus";
 import { focusShellWindow, openShellWindow } from "./shellNavigation";
 import { useStudioStore } from "../apps/studio/studioStore";
 import { systemAppTitle } from "./systemAppTitles";
+import { installedLaunchKey, systemLaunchKey, useDocumentLaunchStore } from "./documentLaunchStore";
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+/** Queue a Drive file so the target editor opens it on mount / reload. */
+function requestDocumentLaunch(_appId: string, fileId: string | undefined, kind: WindowKind) {
+  if (!fileId) return;
+  const launch = useDocumentLaunchStore.getState();
+  if (kind.type === "installed") {
+    launch.requestOpen(installedLaunchKey(kind.appId), fileId);
+    return;
+  }
+  if (kind.type === "system") {
+    launch.requestOpen(systemLaunchKey(kind.app), fileId);
+  }
+}
 
 /** Wait for paint + AppHost/iframe mount before answering the agent. */
 async function settleUi(ms = 220): Promise<void> {
@@ -82,7 +96,10 @@ function findOpenWindow(appId: string) {
 }
 
 /** Open any resolved app id — system, generated, installed, or web. */
-async function openAppById(appId: string): Promise<{ kind: WindowKind; title: string } | { error: string }> {
+async function openAppById(
+  appId: string,
+  fileId?: string,
+): Promise<{ kind: WindowKind; title: string } | { error: string }> {
   const os = useOsStore.getState();
   const wanted = appId.trim();
   const lower = wanted.toLowerCase();
@@ -92,6 +109,7 @@ async function openAppById(appId: string): Promise<{ kind: WindowKind; title: st
   if (sys) {
     const kind: WindowKind = { type: "system", app: sys.id };
     const title = systemAppTitle(sys.id);
+    requestDocumentLaunch(sys.id, fileId, kind);
     openShellWindow(kind, title);
     return { kind, title };
   }
@@ -115,6 +133,7 @@ async function openAppById(appId: string): Promise<{ kind: WindowKind; title: st
     state.installedApps.find((a) => a.manifest.name.toLowerCase().includes(lower));
   if (installed?.enabled) {
     const kind: WindowKind = { type: "installed", appId: installed.manifest.id };
+    requestDocumentLaunch(installed.manifest.id, fileId, kind);
     openShellWindow(kind, installed.manifest.name);
     return { kind, title: installed.manifest.name };
   }
@@ -129,7 +148,7 @@ async function openAppById(appId: string): Promise<{ kind: WindowKind; title: st
     return { kind, title: web.name };
   }
 
-  return { error: `App "${appId}" not found on the desktop.` };
+  return { error: `No app matches "${appId}".` };
 }
 
 function resultForWindow(
@@ -157,13 +176,20 @@ async function executeOsUiAction(action: OsUiAction): Promise<OsUiResult> {
 
   switch (action.action) {
     case "open_app": {
-      const opened = await openAppById(action.appId);
+      const opened = await openAppById(action.appId, action.fileId);
       if ("error" in opened) return { ok: false, error: opened.error, windows: windowSummaries() };
+      // If the window was already open, re-queue + focus so AppHost can pick up fileId.
+      if (action.fileId) {
+        requestDocumentLaunch(action.appId, action.fileId, opened.kind);
+        openShellWindow(opened.kind, opened.title);
+      }
       await settleUi(opened.kind.type === "installed" || opened.kind.type === "web" ? 320 : 220);
       const win = useWindowStore.getState().windows.find((w) => w.id === windowKey(opened.kind));
       const meta = controlMetaForKind(opened.kind);
       let note: string | undefined;
-      if (meta.control === "tools") {
+      if (action.fileId) {
+        note = `Opened "${opened.title}" with file ${action.fileId}.`;
+      } else if (meta.control === "tools") {
         note = `Opened "${opened.title}". Prefer domain tools${meta.toolHint ? ` (${meta.toolHint})` : ""} over the cursor.`;
       } else if (meta.control === "open_only") {
         note = `Opened "${opened.title}" but its content is opaque to the cursor (iframe/web). Do not retry mouse_click.`;
@@ -176,13 +202,18 @@ async function executeOsUiAction(action: OsUiAction): Promise<OsUiResult> {
       if (def) {
         const kind: WindowKind = { type: "system", app: def.id };
         const title = systemAppTitle(def.id);
+        if (action.fileId) requestDocumentLaunch(def.id, action.fileId, kind);
         openShellWindow(kind, title);
         await settleUi();
         const win = useWindowStore.getState().windows.find((w) => w.id === windowKey(kind));
         const meta = controlMetaForKind(kind);
-        return resultForWindow(win, meta);
+        return resultForWindow(
+          win,
+          meta,
+          action.fileId ? `Opened "${title}" with file ${action.fileId}.` : undefined,
+        );
       }
-      return executeOsUiAction({ action: "open_app", appId: action.app });
+      return executeOsUiAction({ action: "open_app", appId: action.app, fileId: action.fileId });
     }
 
     case "close_app": {

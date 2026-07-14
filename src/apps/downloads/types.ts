@@ -13,6 +13,7 @@ export type {
 export type TorrentCategory =
   | "all"
   | "downloading"
+  | "seeding"
   | "completed"
   | "active"
   | "inactive"

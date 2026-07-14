@@ -8,6 +8,7 @@ export type {
   SheetFormat,
   Slide,
   SlideBox,
+  SlideShapeKind,
   SlidesFormat,
   WorkbookDoc,
 } from "./types.js";

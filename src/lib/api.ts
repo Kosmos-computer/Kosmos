@@ -63,7 +63,7 @@ import type { CreateUseCaseSlotInput, EngineStatus, RegisteredModel, UseCaseSlot
 import type { CalendarEvent, CalendarEventInput } from "@shared/capabilities/calendar";
 import type { Task, TaskInput, TaskStatus } from "@shared/capabilities/tasks";
 import type { FileCreateInput, FileEntry } from "@shared/capabilities/files";
-import type { DownloadsStatsDto, TorrentDto } from "@shared/capabilities/downloads";
+import type { DownloadsSettingsDto, DownloadsStatsDto, TorrentDto } from "@shared/capabilities/downloads";
 import type { ShareCreateInput, ShareRecord } from "@shared/capabilities/shares";
 import type { InstalledAppInfo, GrantState } from "@shared/manifest";
 import type {
@@ -1123,6 +1123,14 @@ export const api = {
   downloadsGet: (id: string) =>
     fetch(`/api/downloads/torrents/${encodeURIComponent(id)}`).then((r) => json<TorrentDto>(r)),
   downloadsStats: () => fetch("/api/downloads/stats").then((r) => json<DownloadsStatsDto>(r)),
+  downloadsSettings: () =>
+    fetch("/api/downloads/settings").then((r) => json<DownloadsSettingsDto>(r)),
+  downloadsUpdateSettings: (settings: Partial<DownloadsSettingsDto>) =>
+    fetch("/api/downloads/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(settings),
+    }).then((r) => json<DownloadsSettingsDto>(r)),
   downloadsAdd: (source: string, paused?: boolean) =>
     fetch("/api/downloads/torrents", {
       method: "POST",
@@ -1146,6 +1154,16 @@ export const api = {
       `/api/downloads/torrents/${encodeURIComponent(id)}${deleteFiles ? "?deleteFiles=1" : ""}`,
       { method: "DELETE" },
     ).then((r) => json<{ ok: true }>(r)),
+  downloadsEnsureDrive: (id: string) =>
+    fetch(`/api/downloads/torrents/${encodeURIComponent(id)}/drive`, { method: "POST" }).then((r) =>
+      json<TorrentDto>(r),
+    ),
+  downloadsReveal: (targetPath: string) =>
+    fetch("/api/downloads/reveal", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path: targetPath }),
+    }).then((r) => json<{ ok: true; path: string }>(r)),
 };
 
 /**

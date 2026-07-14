@@ -73,6 +73,8 @@ export interface TorrentDto {
   addedAt: string;
   savePath: string;
   magnetUri?: string;
+  /** Drive folder created for this torrent (under Drive → Downloads). */
+  driveFolderId: string | null;
   /** Drive file ids created when this torrent finished (small enough to import). */
   driveFileIds: string[];
   trackers: TorrentTrackerDto[];
@@ -88,6 +90,12 @@ export interface DownloadsStatsDto {
   freeSpace: string;
   totalSize: string;
   torrentCount: number;
+}
+
+/** Client preferences for the Downloads app. */
+export interface DownloadsSettingsDto {
+  /** When true, finished torrents keep seeding. When false, they pause on complete. */
+  seedAfterDownload: boolean;
 }
 
 export interface TorrentAddInput {

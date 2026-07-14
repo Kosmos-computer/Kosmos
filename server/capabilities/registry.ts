@@ -16,7 +16,7 @@ import { DOCS_CONTRACT_ID, EMPTY_DOC_JSON } from "../../shared/capabilities/docs
 import { DOWNLOADS_CONTRACT_ID } from "../../shared/capabilities/downloads.js";
 import { DOC_MIME, FILES_CONTRACT_ID, SHEET_MIME, SLIDES_MIME, type FileCreateInput } from "../../shared/capabilities/files.js";
 import { EMPTY_SHEET_JSON, SHEETS_CONTRACT_ID } from "../../shared/capabilities/sheets.js";
-import { EMPTY_SLIDES_JSON, SLIDES_CONTRACT_ID } from "../../shared/capabilities/slides.js";
+import { EMPTY_SLIDES_JSON, SLIDES_CONTRACT_ID, normalizeDeck } from "../../shared/capabilities/slides.js";
 import { VOICE_CONTRACT_ID } from "../../shared/capabilities/voice.js";
 import { SHARES_CONTRACT_ID } from "../../shared/capabilities/shares.js";
 import type { ShareCreateInput } from "../../shared/capabilities/shares.js";
@@ -381,8 +381,9 @@ const systemHandlers: Record<string, IntentHandler> = {
   // os.slides@1
   "slides.create": (p) => {
     const name = ensureArcoName(String(p.name ?? "Untitled.slides.json"), ".slides.json");
-    const contentObj =
-      typeof p.content === "object" && p.content !== null ? p.content : EMPTY_SLIDES_JSON;
+    const contentObj = normalizeDeck(
+      typeof p.content === "object" && p.content !== null ? p.content : EMPTY_SLIDES_JSON,
+    );
     return filesService.create({
       name,
       kind: "file",
@@ -393,31 +394,29 @@ const systemHandlers: Record<string, IntentHandler> = {
   },
   "slides.open": async (p) => {
     const file = filesService.readContent(String(p.id ?? ""));
-    let deck: Record<string, unknown>;
+    let parsed: unknown;
     try {
-      const parsed = JSON.parse(file.content || "null");
-      deck =
-        parsed && typeof parsed === "object" && !Array.isArray(parsed)
-          ? (parsed as Record<string, unknown>)
-          : { ...EMPTY_SLIDES_JSON };
+      parsed = JSON.parse(file.content || "null");
     } catch {
       throw new Error("Presentation content is not valid JSON");
     }
-    if (typeof deck.width !== "number") deck.width = EMPTY_SLIDES_JSON.width;
-    if (typeof deck.height !== "number") deck.height = EMPTY_SLIDES_JSON.height;
-    if (!Array.isArray(deck.slides) || deck.slides.length === 0) {
-      deck.slides = [...EMPTY_SLIDES_JSON.slides];
-    }
+    const deck = normalizeDeck(parsed);
     return { id: file.id, name: file.name, mimeType: file.mimeType, deck };
+  },
+  "slides.write": (p) => {
+    const id = String(p.id ?? "");
+    const deck = normalizeDeck(p.content);
+    filesService.writeContent(id, JSON.stringify(deck));
+    return { id, ok: true, slideCount: deck.slides.length };
   },
   "slides.export": async (p) => {
     const file = filesService.readContent(String(p.id ?? ""));
     const format = String(p.format ?? "json") as SlidesFormat;
-    const deck = JSON.parse(file.content);
+    const deck = normalizeDeck(JSON.parse(file.content));
     if (format === "json") {
-      return { id: file.id, name: file.name, format, content: file.content };
+      return { id: file.id, name: file.name, format, content: JSON.stringify(deck) };
     }
-    const exported = await exportSlides(deck, format);
+    const exported = await exportSlides(deck as never, format);
     return {
       id: file.id,
       name: file.name,
@@ -440,7 +439,7 @@ const systemHandlers: Record<string, IntentHandler> = {
       kind: "file",
       mimeType: SLIDES_MIME,
       parentId,
-      content: JSON.stringify(imported.content),
+      content: JSON.stringify(normalizeDeck(imported.content)),
     });
     const sourceId = await retainSourceSibling(
       name,

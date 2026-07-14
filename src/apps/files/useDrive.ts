@@ -14,6 +14,7 @@ import { EMPTY_SLIDES_JSON } from "@shared/capabilities/slides";
 import { api } from "../../lib/api";
 import { onAppEvent } from "../../os/appEventBus";
 import { useAuthStore } from "../../os/auth/authStore";
+import { useDriveNavigateStore } from "../../os/driveNavigateStore";
 import { openDriveFile } from "../../os/openDriveFile";
 import {
   entryToDriveItem,
@@ -123,6 +124,42 @@ export function useDrive() {
       }
     });
   }, [refresh]);
+
+  useEffect(() => {
+    const applyNavigate = async (pending: {
+      folderId: string | null;
+      selectId?: string;
+    }) => {
+      try {
+        const crumbs: DriveCrumb[] = [{ id: null, label: "My Drive" }];
+        if (pending.folderId) {
+          const chain: DriveCrumb[] = [];
+          let current: string | null = pending.folderId;
+          while (current) {
+            const entry = await api.getDriveEntry(current);
+            chain.unshift({ id: entry.id, label: entry.name });
+            current = entry.parentId;
+          }
+          crumbs.push(...chain);
+        }
+        setLocation("drive");
+        setFolderPath(crumbs);
+        setSelectedId(pending.selectId ?? null);
+        setSearchQuery("");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Could not open Drive location");
+      }
+    };
+
+    const existing = useDriveNavigateStore.getState().consume();
+    if (existing) void applyNavigate(existing);
+
+    return useDriveNavigateStore.subscribe((state, prev) => {
+      if (!state.pending || state.pending === prev.pending) return;
+      const pending = useDriveNavigateStore.getState().consume();
+      if (pending) void applyNavigate(pending);
+    });
+  }, []);
 
   const files: DriveFileItem[] = useMemo(
     () => entries.map((entry) => entryToDriveItem(entry, ownerName)),

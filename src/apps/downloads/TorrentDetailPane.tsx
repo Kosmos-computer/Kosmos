@@ -1,9 +1,16 @@
 import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
 import { T } from "../../i18n/T";
-import { EmptyState } from "../../components/ui";
+import { Button, EmptyState } from "../../components/ui";
 import type { TorrentDetailTab, TorrentItem } from "./types";
 import { useTranslation } from "react-i18next";
+import { useState } from "react";
+import {
+  openTorrentFileInDrive,
+  openTorrentInDrive,
+  revealTorrentFileOnDisk,
+  revealTorrentOnDisk,
+} from "./openTorrentLocation";
 
 const TABS: { id: TorrentDetailTab; label: string }[] = [
   { id: "general", label: "General" },
@@ -20,41 +27,78 @@ export interface TorrentDetailPaneProps {
 }
 
 function GeneralTab({ torrent }: { torrent: TorrentItem }) {
+  const [busy, setBusy] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const run = async (action: () => Promise<void>) => {
+    setBusy(true);
+    setActionError(null);
+    try {
+      await action();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
-    <dl className="arco-downloads-detail__grid">
-      <dt><T k={I18nKey.APPS$DOWNLOADS_LOCATION} /></dt>
-      <dd className="arco-downloads-detail__mono">{torrent.savePath}</dd>
-      <dt><T k={I18nKey.APPS$DOWNLOADS_HASH} /></dt>
-      <dd className="arco-downloads-detail__mono">{torrent.id}</dd>
-      <dt><T k={I18nKey.APPS$DOWNLOADS_TRACKER} /></dt>
-      <dd>{torrent.tracker}</dd>
-      <dt><T k={I18nKey.APPS$DOWNLOADS_LAST_ACTIVE} /></dt>
-      <dd>{torrent.lastActive}</dd>
-      <dt><T k={I18nKey.APPS$DOWNLOADS_ADDED} /></dt>
-      <dd>{new Date(torrent.addedAt).toLocaleString()}</dd>
-      <dt><T k={I18nKey.APPS$DOWNLOADS_DOWNLOAD_SPEED} /></dt>
-      <dd>{torrent.downSpeed}</dd>
-      <dt><T k={I18nKey.APPS$DOWNLOADS_UPLOAD_SPEED} /></dt>
-      <dd>{torrent.upSpeed}</dd>
-      <dt><T k={I18nKey.APPS$DOWNLOADS_DOWNLOADED} /></dt>
-      <dd>{torrent.downloaded}</dd>
-      <dt><T k={I18nKey.APPS$DOWNLOADS_UPLOADED} /></dt>
-      <dd>{torrent.uploaded}</dd>
-      <dt><T k={I18nKey.APPS$DOWNLOADS_REMAINING} /></dt>
-      <dd>{torrent.remaining}</dd>
-      {torrent.driveFileIds.length > 0 ? (
-        <>
-          <dt>Drive</dt>
-          <dd>{torrent.driveFileIds.length} file(s) imported</dd>
-        </>
-      ) : null}
-      {torrent.error ? (
-        <>
-          <dt><T k={I18nKey.APPS$DOWNLOADS_ERROR} /></dt>
-          <dd className="arco-downloads-detail__error">{torrent.error}</dd>
-        </>
-      ) : null}
-    </dl>
+    <div className="arco-downloads-detail__general">
+      <div className="arco-downloads-detail__actions">
+        <Button
+          disabled={busy}
+          onClick={() => void run(() => openTorrentInDrive(torrent))}
+        >
+          Open in Drive
+        </Button>
+        <Button
+          variant="ghost"
+          disabled={busy}
+          onClick={() => void run(() => revealTorrentOnDisk(torrent))}
+        >
+          Show on disk
+        </Button>
+      </div>
+      {actionError ? <p className="arco-downloads-detail__error">{actionError}</p> : null}
+      <dl className="arco-downloads-detail__grid">
+        <dt><T k={I18nKey.APPS$DOWNLOADS_LOCATION} /></dt>
+        <dd className="arco-downloads-detail__mono">{torrent.savePath}</dd>
+        <dt><T k={I18nKey.APPS$DOWNLOADS_HASH} /></dt>
+        <dd className="arco-downloads-detail__mono">{torrent.id}</dd>
+        <dt><T k={I18nKey.APPS$DOWNLOADS_TRACKER} /></dt>
+        <dd>{torrent.tracker}</dd>
+        <dt><T k={I18nKey.APPS$DOWNLOADS_LAST_ACTIVE} /></dt>
+        <dd>{torrent.lastActive}</dd>
+        <dt><T k={I18nKey.APPS$DOWNLOADS_ADDED} /></dt>
+        <dd>{new Date(torrent.addedAt).toLocaleString()}</dd>
+        <dt><T k={I18nKey.APPS$DOWNLOADS_DOWNLOAD_SPEED} /></dt>
+        <dd>{torrent.downSpeed}</dd>
+        <dt><T k={I18nKey.APPS$DOWNLOADS_UPLOAD_SPEED} /></dt>
+        <dd>{torrent.upSpeed}</dd>
+        <dt><T k={I18nKey.APPS$DOWNLOADS_DOWNLOADED} /></dt>
+        <dd>{torrent.downloaded}</dd>
+        <dt><T k={I18nKey.APPS$DOWNLOADS_UPLOADED} /></dt>
+        <dd>{torrent.uploaded}</dd>
+        <dt><T k={I18nKey.APPS$DOWNLOADS_REMAINING} /></dt>
+        <dd>{torrent.remaining}</dd>
+        {torrent.driveFolderId || torrent.driveFileIds.length > 0 ? (
+          <>
+            <dt>Drive</dt>
+            <dd>
+              {torrent.driveFileIds.length > 0
+                ? `${torrent.driveFileIds.length} file(s) imported`
+                : "Folder ready"}
+            </dd>
+          </>
+        ) : null}
+        {torrent.error ? (
+          <>
+            <dt><T k={I18nKey.APPS$DOWNLOADS_ERROR} /></dt>
+            <dd className="arco-downloads-detail__error">{torrent.error}</dd>
+          </>
+        ) : null}
+      </dl>
+    </div>
   );
 }
 
@@ -119,29 +163,66 @@ function PeersTab({ torrent }: { torrent: TorrentItem }) {
 }
 
 function FilesTab({ torrent }: { torrent: TorrentItem }) {
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const run = async (id: string, action: () => Promise<void>) => {
+    setBusyId(id);
+    setActionError(null);
+    try {
+      await action();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   return (
-    <table className="arco-downloads-detail__table">
-      <thead>
-        <tr>
-          <th scope="col"><T k={I18nKey.APPS$DOWNLOADS_NAME} /></th>
-          <th scope="col"><T k={I18nKey.APPS$DOWNLOADS_SIZE} /></th>
-          <th scope="col"><T k={I18nKey.APPS$DOWNLOADS_PROGRESS} /></th>
-          <th scope="col"><T k={I18nKey.APPS$DOWNLOADS_PRIORITY} /></th>
-          <th scope="col"><T k={I18nKey.APPS$DOWNLOADS_WANTED} /></th>
-        </tr>
-      </thead>
-      <tbody>
-        {torrent.files.map((file) => (
-          <tr key={file.id}>
-            <td>{file.name}</td>
-            <td>{file.size}</td>
-            <td>{Math.round(file.progress * 100)}%</td>
-            <td>{file.priority}</td>
-            <td>{file.wanted ? "Yes" : "No"}</td>
+    <div className="arco-downloads-detail__files">
+      {actionError ? <p className="arco-downloads-detail__error">{actionError}</p> : null}
+      <table className="arco-downloads-detail__table">
+        <thead>
+          <tr>
+            <th scope="col"><T k={I18nKey.APPS$DOWNLOADS_NAME} /></th>
+            <th scope="col"><T k={I18nKey.APPS$DOWNLOADS_SIZE} /></th>
+            <th scope="col"><T k={I18nKey.APPS$DOWNLOADS_PROGRESS} /></th>
+            <th scope="col">Open</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {torrent.files.map((file) => (
+            <tr key={file.id}>
+              <td>{file.name}</td>
+              <td>{file.size}</td>
+              <td>{Math.round(file.progress * 100)}%</td>
+              <td>
+                <div className="arco-downloads-detail__file-actions">
+                  <Button
+                    variant="ghost"
+                    disabled={busyId === file.id || file.progress < 1}
+                    onClick={() =>
+                      void run(file.id, () => openTorrentFileInDrive(torrent, file.name))
+                    }
+                  >
+                    Drive
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    disabled={busyId === file.id || !file.path}
+                    onClick={() =>
+                      void run(file.id, () => revealTorrentFileOnDisk(file.path!))
+                    }
+                  >
+                    Disk
+                  </Button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 

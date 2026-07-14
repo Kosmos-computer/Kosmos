@@ -7,6 +7,7 @@ import type { CategoryFilter, TorrentItem, TrackerGroup } from "./types";
 export const CATEGORY_LABELS: Record<CategoryFilter["id"], string> = {
   all: "All",
   downloading: "Downloading",
+  seeding: "Seeding",
   completed: "Completed",
   active: "Active",
   inactive: "Inactive",
@@ -18,6 +19,7 @@ export function buildCategoryFilters(torrents: TorrentItem[]): CategoryFilter[] 
   const counts: Record<CategoryFilter["id"], number> = {
     all: torrents.length,
     downloading: 0,
+    seeding: 0,
     completed: 0,
     active: 0,
     inactive: 0,
@@ -27,6 +29,7 @@ export function buildCategoryFilters(torrents: TorrentItem[]): CategoryFilter[] 
 
   for (const torrent of torrents) {
     if (torrent.status === "downloading" || torrent.status === "checking") counts.downloading += 1;
+    if (torrent.status === "seeding") counts.seeding += 1;
     if (torrent.progress >= 1 || torrent.status === "seeding") counts.completed += 1;
     if (
       torrent.status === "downloading" ||

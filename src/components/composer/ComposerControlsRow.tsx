@@ -2,8 +2,8 @@ import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
 /**
  * ComposerControlsRow — the single row of controls under the textarea:
- * scrollable left cluster (attach, emoji, formatting toggle, mode, model)
- * and a docked right cluster (mic, send/stop).
+ * scrollable left cluster (attach, emoji, formatting toggle, mode, approval,
+ * model) and a docked right cluster (mic, send/stop).
  *
  * Narrow widths (the Studio chat pane is user-resizable) are handled the way
  * the design reference does: controls that no longer fit collapse, trailing
@@ -19,6 +19,7 @@ import {
   useState,
 } from "react";
 import { ChevronDown, MicOff, MoreHorizontal, Mic, Send, Square } from "lucide-react";
+import type { ApprovalMode } from "@shared/types";
 import { Menu, type MenuItem } from "../Menu";
 import {
   ComposerAttachMenu,
@@ -27,8 +28,12 @@ import {
 } from "./ComposerAttachMenu";
 import { ComposerEmojiPicker } from "./ComposerEmojiPicker";
 import { ComposerFormattingToggle } from "./ComposerFormattingToolbar";
+import {
+  APPROVAL_MODE_OPTIONS,
+  approvalModeLabel,
+} from "./approvalModes";
 
-type ControlId = "attach" | "emoji" | "formatting" | "mode" | "model";
+type ControlId = "attach" | "emoji" | "formatting" | "mode" | "approval" | "model";
 
 const CONTROL_GAP = 4;
 const OVERFLOW_DOCK_WIDTH = 36;
@@ -56,6 +61,9 @@ export interface ComposerControlsRowProps {
   modes?: ComposerModeItem[];
   activeModeId?: string;
   onModeChange?: (id: string) => void;
+  /** Agent approval posture (Ask / Approve / Full). Hidden when unset. */
+  approvalMode?: ApprovalMode;
+  onApprovalModeChange?: (mode: ApprovalMode) => void;
   model?: string;
   modelItems?: MenuItem[];
   /** Voice session wiring — when provided, the mic button toggles it. */
@@ -85,6 +93,8 @@ export function ComposerControlsRow({
   modes,
   activeModeId,
   onModeChange,
+  approvalMode,
+  onApprovalModeChange,
   model,
   modelItems,
   voiceActive,
@@ -102,15 +112,18 @@ export function ComposerControlsRow({
 
   const showModeMenu = Boolean(modes?.length && activeModeId && onModeChange);
   const activeModeLabel = modes?.find((m) => m.id === activeModeId)?.label;
+  const showApprovalMenu = Boolean(approvalMode && onApprovalModeChange);
+  const activeApprovalLabel = approvalMode ? approvalModeLabel(approvalMode) : undefined;
   const showModelMenu = Boolean(modelItems?.length);
   const modelLabel = model ?? "Model";
 
   const controlIds = useMemo<ControlId[]>(() => {
     const ids: ControlId[] = ["attach", "emoji", "formatting"];
     if (showModeMenu) ids.push("mode");
+    if (showApprovalMenu) ids.push("approval");
     if (showModelMenu) ids.push("model");
     return ids;
-  }, [showModeMenu, showModelMenu]);
+  }, [showModeMenu, showApprovalMenu, showModelMenu]);
 
   // ── Overflow measurement ─────────────────────────────────────────────────
   // Drop controls from the end until the visible set (plus the overflow dock,
@@ -150,7 +163,7 @@ export function ComposerControlsRow({
 
   useLayoutEffect(() => {
     measureOverflow();
-  }, [measureOverflow, formattingVisible, activeModeLabel, model, disabled]);
+  }, [measureOverflow, formattingVisible, activeModeLabel, activeApprovalLabel, model, disabled]);
 
   useEffect(() => {
     const row = rowRef.current;
@@ -213,6 +226,20 @@ export function ComposerControlsRow({
       });
     }
 
+    if (overflowIds.includes("approval") && approvalMode && onApprovalModeChange) {
+      APPROVAL_MODE_OPTIONS.forEach((option, i) => {
+        items.push({
+          id: `of-approval-${option.id}`,
+          label: option.label,
+          description: option.description,
+          icon: option.icon,
+          checked: option.id === approvalMode,
+          separatorAbove: items.length > 0 && i === 0,
+          onSelect: () => onApprovalModeChange(option.id),
+        });
+      });
+    }
+
     if (overflowIds.includes("model") && modelItems) {
       modelItems.forEach((item, i) => {
         items.push({
@@ -238,6 +265,8 @@ export function ComposerControlsRow({
     modes,
     activeModeId,
     onModeChange,
+    approvalMode,
+    onApprovalModeChange,
     modelItems,
   ]);
 
@@ -259,6 +288,19 @@ export function ComposerControlsRow({
         onSelect: () => onModeChange?.(mode.id),
       })) ?? [],
     [modes, activeModeId, onModeChange],
+  );
+
+  const approvalItems = useMemo<MenuItem[]>(
+    () =>
+      APPROVAL_MODE_OPTIONS.map((option) => ({
+        id: option.id,
+        label: option.label,
+        description: option.description,
+        icon: option.icon,
+        checked: option.id === approvalMode,
+        onSelect: () => onApprovalModeChange?.(option.id),
+      })),
+    [approvalMode, onApprovalModeChange],
   );
 
   return (
@@ -295,6 +337,24 @@ export function ComposerControlsRow({
                 trigger={
                   <button type="button" className="arco-composer__pickertrigger">
                     <span className="arco-composer__pickerlabel">{activeModeLabel}</span>
+                    <ChevronDown size={12} />
+                  </button>
+                }
+              />
+            </div>
+          )}
+          {showApprovalMenu && (
+            <div ref={setItemRef("approval")} className={controlClass("approval")} aria-hidden={overflowIds.includes("approval") || undefined}>
+              <Menu
+                side="top"
+                align="start"
+                heading="How should agent actions be approved?"
+                aria-label="Agent approval"
+                items={approvalItems}
+                searchable={false}
+                trigger={
+                  <button type="button" className="arco-composer__pickertrigger">
+                    <span className="arco-composer__pickerlabel">{activeApprovalLabel}</span>
                     <ChevronDown size={12} />
                   </button>
                 }

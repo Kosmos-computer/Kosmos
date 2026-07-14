@@ -128,7 +128,7 @@ export type SessionSummary = Omit<Session, "messages"> & { messageCount: number 
 // ── Agent SSE stream events ──────────────────────────────────────────────────
 
 /** Tabs available in the Studio's context drawer (agent-canvas pattern). */
-export type WorkspaceTab = "files" | "diffs" | "terminal" | "preview" | "browser";
+export type WorkspaceTab = "files" | "diffs" | "terminal" | "browser";
 
 /** How the agent should operate an opened app (mirrors shared/agentAppCatalog). */
 export type AppControlMode = "cursor" | "tools" | "open_only";
@@ -171,6 +171,16 @@ export interface OsUiResult {
 
 /** Choices a policy confirm card can offer beyond plain allow/deny. */
 export type ConfirmOption = "once" | "session" | "always" | "deny";
+
+/**
+ * Composer approval posture for one agent turn — how often the agent pauses
+ * for confirmation before mutating the workspace or calling write-class tools.
+ *
+ *   strict — ask before writes, shell, and other mutations
+ *   smart  — ask only when the action looks risky (default; today's posture)
+ *   full   — auto-approve confirms for this turn (policy denies still bind)
+ */
+export type ApprovalMode = "strict" | "smart" | "full";
 
 export type AgentEvent =
   | { type: "session"; sessionId: string }

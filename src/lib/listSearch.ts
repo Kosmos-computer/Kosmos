@@ -21,6 +21,7 @@ export function menuItemSearchText(label: ReactNode): string {
 export interface ListSearchableMenuItem {
   id: string;
   label: ReactNode;
+  description?: string;
   /** Extra strings matched by menu search (e.g. when label is a React element). */
   keywords?: string[];
   disabled?: boolean;
@@ -35,7 +36,12 @@ export function filterMenuItems<T extends ListSearchableMenuItem>(items: T[], qu
   const filtered = items.filter(
     (item) =>
       !item.disabled &&
-      matchesListSearch(normalized, menuItemSearchText(item.label), ...(item.keywords ?? [])),
+      matchesListSearch(
+        normalized,
+        menuItemSearchText(item.label),
+        item.description,
+        ...(item.keywords ?? []),
+      ),
   );
 
   return filtered.map((item, index) => ({

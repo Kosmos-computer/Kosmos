@@ -8,11 +8,13 @@ import { T } from "../../i18n/T";
  */
 import { useCallback, useEffect, useState } from "react";
 import { History, Plus, Trash2 } from "lucide-react";
+import type { ApprovalMode } from "@shared/types";
 import { useChat } from "./useChat";
 import { onPrimeComposer } from "./composerBus";
 import { VoiceBar } from "./VoiceBar";
 import { useVoice, voiceClient } from "../../voice";
 import { Composer } from "../../components/composer/Composer";
+import { DEFAULT_APPROVAL_MODE } from "../../components/composer/approvalModes";
 import { useComposerAttach } from "../../components/composer/useComposerAttach.tsx";
 import { ChatThread } from "../../components/chat/ChatThread";
 import { ScrollToLatestButton } from "../../components/chat/ScrollToLatestButton";
@@ -28,6 +30,7 @@ export function ChatApp() {
   const voice = useVoice();
   const { modelLabel, modelItems } = useModelSelection();
   const [draft, setDraft] = useState("");
+  const [approvalMode, setApprovalMode] = useState<ApprovalMode>(DEFAULT_APPROVAL_MODE);
   const [showSessions, setShowSessions] = useState(false);
   const { scrollRef, onScroll, showJump, scrollToLatest, pinToLatest } =
     useThreadScroll(chat.items);
@@ -45,9 +48,9 @@ export function ChatApp() {
       if (!value) return;
       setDraft("");
       pinToLatest();
-      void chat.send(value);
+      void chat.send(value, { approvalMode });
     },
-    [draft, chat, pinToLatest],
+    [draft, chat, approvalMode, pinToLatest],
   );
 
   useEffect(() => voiceClient.subscribe(chat.applyVoiceEvent), [chat.applyVoiceEvent]);
@@ -147,6 +150,8 @@ export function ChatApp() {
           streaming={chat.streaming}
           onStop={chat.stop}
           placeholder={i18n.t(I18nKey.APPS$CHAT_ASK_ARCO_TO_BUILD_AUTOMATE_OR_EXPLAIN)}
+          approvalMode={approvalMode}
+          onApprovalModeChange={setApprovalMode}
           model={modelLabel}
           modelItems={modelItems}
           onAddFile={attach.onAddFile}

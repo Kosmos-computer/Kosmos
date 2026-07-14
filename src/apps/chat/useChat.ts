@@ -343,7 +343,7 @@ export function useChat(opts?: { activeProjectId?: string | null }) {
   );
 
   const send = useCallback(
-    async (text: string, opts?: { mode?: "agent" | "ask" }) => {
+    async (text: string, opts?: { mode?: "agent" | "ask"; approvalMode?: "strict" | "smart" | "full" }) => {
       const trimmed = text.trim();
       const streamKey = activeKeyRef.current;
       const buffer = buffersRef.current.get(streamKey) ?? emptyBuffer();
@@ -390,6 +390,7 @@ export function useChat(opts?: { activeProjectId?: string | null }) {
           abort.signal,
           opts?.mode,
           activeProjectId,
+          opts?.approvalMode,
         );
       } catch (err) {
         if (!abort.signal.aborted) {

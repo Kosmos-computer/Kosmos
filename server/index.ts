@@ -304,11 +304,21 @@ app.post("/api/chat", requireCap("chat"), async (c) => {
     message: string;
     /** "ask" runs the turn with write tools removed (answer-only). */
     mode?: "agent" | "ask";
+    /**
+     * How the agent should pause for confirmation this turn.
+     * Defaults to "smart" when omitted.
+     */
+    approvalMode?: "strict" | "smart" | "full";
     /** Workspace folder for new sessions (null = sandbox). */
     projectId?: string | null;
   };
   const message = (body.message ?? "").trim();
   if (!message) return c.json({ error: "message is required" }, 400);
+
+  const approvalMode =
+    body.approvalMode === "strict" || body.approvalMode === "full" || body.approvalMode === "smart"
+      ? body.approvalMode
+      : "smart";
 
   let session = body.sessionId
     ? await sessionStore.get(body.sessionId)
@@ -348,6 +358,7 @@ app.post("/api/chat", requireCap("chat"), async (c) => {
         signal: c.req.raw.signal,
         interactive: true,
         readOnly: body.mode === "ask",
+        approvalMode,
         userId: currentUser(c).id,
       });
       emit({ type: "done" });

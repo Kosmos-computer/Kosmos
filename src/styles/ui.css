@@ -628,18 +628,19 @@
   cursor: col-resize;
   touch-action: none;
   z-index: 1;
+  background: transparent;
 }
 
 .arco-resize-handle:hover,
 .arco-resize-handle--active {
-  background: var(--arco-accent-soft);
+  background: transparent;
 }
 
 .arco-resize-handle__grip {
   width: 1px;
   align-self: stretch;
   border-radius: 999px;
-  background: var(--arco-border);
+  background: transparent;
   transition:
     background var(--arco-dur-fast),
     width var(--arco-dur-fast);

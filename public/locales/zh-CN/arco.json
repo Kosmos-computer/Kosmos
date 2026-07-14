@@ -1501,6 +1501,7 @@
   "APPS$STUDIO_RESIZE_WORKSPACE_DRAWER": "Resize workspace drawer",
   "APPS$STUDIO_WORKSPACE_2": "Workspace",
   "APPS$STUDIO_HIDE_WORKSPACE_DRAWER": "Hide workspace drawer",
+  "APPS$STUDIO_SHOW_WORKSPACE_DRAWER": "Show workspace drawer",
   "APPS$STUDIO_ASK_THE_AGENT_TO_BUILD_SCRIPT_OR_AUTOMATE": "Ask the agent to build, script, or automate…",
   "APPS$STUDIO_CONVERSATION_NAME": "Conversation name",
   "APPS$STUDIO_CONVERSATION_ACTIONS": "Conversation actions",

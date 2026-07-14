@@ -4,7 +4,7 @@ import i18n from "../../i18n/index";
  * Techno Studio — Arco's workbench surface (agent-canvas layout): a
  * conversation sidebar on the left, the chat thread + rich composer in the
  * middle, and a resizable context drawer on the right whose tabs
- * (Files / Diffs / Terminal / Preview) update live as the agent works.
+ * (Files / Git / Terminal / Browser) update live as the agent works.
  *
  * Chat state reuses the same useChat hook as the Chat app; workspace state
  * comes from the global studio store, which handleShellEvent feeds for every
@@ -12,7 +12,6 @@ import i18n from "../../i18n/index";
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  AppWindow,
   FileDiff,
   FolderTree,
   Globe,
@@ -21,7 +20,7 @@ import {
   SquareTerminal,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import type { WorkspaceTab } from "@shared/types";
+import type { ApprovalMode, WorkspaceTab } from "@shared/types";
 import { useChat } from "../chat/useChat";
 import { onPrimeComposer } from "../chat/composerBus";
 import { VoiceBar } from "../chat/VoiceBar";
@@ -32,6 +31,7 @@ import { useVoice, voiceClient } from "../../voice";
 import { FaceWidget } from "../../face-rig";
 import { Composer } from "../../components/composer/Composer";
 import { ComposerNotice } from "../../components/composer/ComposerNotice";
+import { DEFAULT_APPROVAL_MODE } from "../../components/composer/approvalModes";
 import { StudioLogoMark } from "../../components/StudioLogoMark";
 import { contextPercent, type UsageStats } from "../../components/composer/UsagePopover";
 import { useStudioStore, useSessionActivity } from "./studioStore";
@@ -44,7 +44,6 @@ import { FilesTab } from "./tabs/FilesTab";
 import { GitTab } from "./tabs/GitTab";
 import { TerminalTab } from "./tabs/TerminalTab";
 import { BrowserTab } from "./tabs/BrowserTab";
-import { PreviewTab } from "./tabs/PreviewTab";
 import { useComposerAttach } from "../../components/composer/useComposerAttach.tsx";
 
 // ---------------------------------------------------------------------------
@@ -56,7 +55,6 @@ const DRAWER_TABS: { id: WorkspaceTab; label: string; icon: LucideIcon }[] = [
   { id: "diffs", label: "Git", icon: FileDiff },
   { id: "terminal", label: "Terminal", icon: SquareTerminal },
   { id: "browser", label: "Browser", icon: Globe },
-  { id: "preview", label: "Preview", icon: AppWindow },
 ];
 
 /** Composer mode switch — Agent acts on the workspace, Ask just answers. */
@@ -101,10 +99,11 @@ export function StudioApp() {
   const voice = useVoice();
   const [draft, setDraft] = useState("");
   const [mode, setMode] = useState("agent");
+  const [approvalMode, setApprovalMode] = useState<ApprovalMode>(DEFAULT_APPROVAL_MODE);
   /** Session key whose near-limit notice the user dismissed. */
   const [noticeDismissedFor, setNoticeDismissedFor] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { onDividerPointerDown } = useResizableSplit(containerRef);
+  const { onDividerPointerDown, isResizing } = useResizableSplit(containerRef);
   const { modelLabel, modelItems } = useModelSelection();
   const { scrollRef, onScroll, showJump, scrollToLatest, pinToLatest } =
     useThreadScroll(chat.items);
@@ -145,9 +144,13 @@ export function StudioApp() {
       setDraft("");
       pinToLatest();
       // Ask mode runs the turn answer-only: the server strips write tools.
-      void chat.send(value, mode === "ask" ? { mode: "ask" } : undefined);
+      // Approval posture only applies when the agent can act.
+      void chat.send(value, {
+        ...(mode === "ask" ? { mode: "ask" as const } : {}),
+        ...(mode === "agent" ? { approvalMode } : {}),
+      });
     },
-    [draft, chat, mode, pinToLatest],
+    [draft, chat, mode, approvalMode, pinToLatest],
   );
 
   // ── Composer wiring ───────────────────────────────────────────────────────
@@ -237,6 +240,8 @@ export function StudioApp() {
         modes={COMPOSER_MODES}
         activeModeId={mode}
         onModeChange={setMode}
+        approvalMode={mode === "agent" ? approvalMode : undefined}
+        onApprovalModeChange={mode === "agent" ? setApprovalMode : undefined}
         model={modelLabel}
         modelItems={modelItems}
         onAddFile={attach.onAddFile}
@@ -272,7 +277,7 @@ export function StudioApp() {
 
   return (
     <div className="arco-studio">
-      <div className="arco-studio__body" ref={containerRef}>
+      <div className="arco-studio__body">
         {/* ── Left: conversations sidebar ──────────────────────────────── */}
         {navOpen ? (
           <StudioSidebar
@@ -300,138 +305,141 @@ export function StudioApp() {
           </div>
         )}
 
-        {/* ── Center: chat thread + composer ───────────────────────────── */}
-        <section
-          className="arco-studio__chat"
-          style={drawerOpen ? { width: `${chatWidthPct}%`, flex: "none" } : undefined}
-        >
-          {isEmpty ? (
-            <div className="arco-studio__empty">
-              {voice.active ? (
-                <VoiceBar voice={voice} placement="expanded" />
-              ) : (
-                <FaceWidget className="arco-studio__emptyface" />
-              )}
-              <div className="arco-studio__content-inner">
-                {voice.active && <VoiceBar voice={voice} placement="dock" />}
-                {composer}
-              </div>
-            </div>
-          ) : (
-            <>
-              <div className="arco-studio__convbar">
-                <StudioConversationHeader
-                  sessionId={chat.sessionId}
-                  title={activeSessionTitle}
-                  feedItems={chat.items}
-                  activity={sessionActivity}
-                  onRename={
-                    chat.sessionId
-                      ? (title) => chat.renameSession(chat.sessionId!, title)
-                      : undefined
-                  }
-                  onNewChat={chat.newChat}
-                  onDelete={
-                    chat.sessionId ? () => chat.removeSession(chat.sessionId!) : undefined
-                  }
-                />
-              </div>
-              {voice.active && <VoiceBar voice={voice} placement="expanded" />}
-              <div
-                ref={scrollRef}
-                className="arco-chat__thread arco-scroll"
-                onScroll={onScroll}
-              >
-                <div className="arco-studio__content-inner">
-                  <ChatThread
-                    items={chat.items}
-                    streaming={chat.streaming}
-                    turnMeta={chat.turnMeta}
-                    onFollowUp={submit}
-                  />
-                </div>
-              </div>
-              <div className="arco-composer-dock">
-                <ScrollToLatestButton visible={showJump} onClick={scrollToLatest} />
+        {/* Chat + drawer split — resize % is relative to this pane only. */}
+        <div className="arco-studio__split" ref={containerRef}>
+          {/* ── Center: chat thread + composer ───────────────────────────── */}
+          <section
+            className="arco-studio__chat"
+            style={drawerOpen ? { width: `${chatWidthPct}%`, flex: "none" } : undefined}
+          >
+            {isEmpty ? (
+              <div className="arco-studio__empty">
+                {voice.active ? (
+                  <VoiceBar voice={voice} placement="expanded" />
+                ) : (
+                  <FaceWidget className="arco-studio__emptyface" />
+                )}
                 <div className="arco-studio__content-inner">
                   {voice.active && <VoiceBar voice={voice} placement="dock" />}
                   {composer}
                 </div>
               </div>
-            </>
-          )}
-        </section>
+            ) : (
+              <>
+                <div className="arco-studio__convbar">
+                  <StudioConversationHeader
+                    sessionId={chat.sessionId}
+                    title={activeSessionTitle}
+                    feedItems={chat.items}
+                    activity={sessionActivity}
+                    onRename={
+                      chat.sessionId
+                        ? (title) => chat.renameSession(chat.sessionId!, title)
+                        : undefined
+                    }
+                    onNewChat={chat.newChat}
+                    onDelete={
+                      chat.sessionId ? () => chat.removeSession(chat.sessionId!) : undefined
+                    }
+                  />
+                </div>
+                {voice.active && <VoiceBar voice={voice} placement="expanded" />}
+                <div
+                  ref={scrollRef}
+                  className="arco-chat__thread arco-scroll"
+                  onScroll={onScroll}
+                >
+                  <div className="arco-studio__content-inner">
+                    <ChatThread
+                      items={chat.items}
+                      streaming={chat.streaming}
+                      turnMeta={chat.turnMeta}
+                      onFollowUp={submit}
+                    />
+                  </div>
+                </div>
+                <div className="arco-composer-dock">
+                  <ScrollToLatestButton visible={showJump} onClick={scrollToLatest} />
+                  <div className="arco-studio__content-inner">
+                    {voice.active && <VoiceBar voice={voice} placement="dock" />}
+                    {composer}
+                  </div>
+                </div>
+              </>
+            )}
+          </section>
 
-        {/* ── Divider + right drawer ───────────────────────────────────── */}
-        {drawerOpen ? (
-          <>
-            <div
-              className="arco-resize-handle"
-              role="separator"
-              aria-orientation="vertical"
-              aria-label={i18n.t(I18nKey.APPS$STUDIO_RESIZE_WORKSPACE_DRAWER)}
-              onPointerDown={onDividerPointerDown}
-            >
-              <span className="arco-resize-handle__grip" aria-hidden="true" />
-            </div>
-            <section className="arco-studio__drawer" aria-label={i18n.t(I18nKey.APPS$STUDIO_WORKSPACE_2)}>
-              <div className="arco-studio__tabbar">
-                <div className="arco-studio__tabs" role="tablist">
-                  {DRAWER_TABS.map(({ id, label, icon: Icon }) => (
+          {/* ── Divider + right drawer ───────────────────────────────────── */}
+          {drawerOpen ? (
+            <>
+              <div
+                className={[
+                  "arco-resize-handle",
+                  isResizing ? "arco-resize-handle--active" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                role="separator"
+                aria-orientation="vertical"
+                aria-label={i18n.t(I18nKey.APPS$STUDIO_RESIZE_WORKSPACE_DRAWER)}
+                onPointerDown={onDividerPointerDown}
+              >
+                <span className="arco-resize-handle__grip" aria-hidden="true" />
+              </div>
+              <section className="arco-studio__drawer" aria-label={i18n.t(I18nKey.APPS$STUDIO_WORKSPACE_2)}>
+                <div className="arco-studio__tabbar">
+                  <div className="arco-studio__tabs" role="tablist">
+                    {DRAWER_TABS.map(({ id, label, icon: Icon }) => (
+                      <button
+                        key={id}
+                        role="tab"
+                        aria-selected={activeTab === id}
+                        aria-label={label}
+                        className={`arco-studio__tab ${activeTab === id ? "arco-studio__tab--active" : ""}`}
+                        onClick={() => setActiveTab(id)}
+                      >
+                        <Icon size={13} />
+                        <span className="arco-studio__tablabel">{label}</span>
+                        {id === "diffs" && changeCount > 0 && (
+                          <span className="arco-studio__tabbadge">{changeCount}</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="arco-studio__tabactions">
                     <button
-                      key={id}
-                      role="tab"
-                      aria-selected={activeTab === id}
-                      className={`arco-studio__tab ${activeTab === id ? "arco-studio__tab--active" : ""}`}
-                      onClick={() => setActiveTab(id)}
+                      type="button"
+                      className="arco-btn arco-btn--icon"
+                      onClick={() => setDrawerOpen(false)}
+                      aria-pressed
+                      aria-label={i18n.t(I18nKey.APPS$STUDIO_HIDE_WORKSPACE_DRAWER)}
                     >
-                      <Icon size={13} />
-                      {label}
-                      {id === "diffs" && changeCount > 0 && (
-                        <span className="arco-studio__tabbadge">{changeCount}</span>
-                      )}
+                      <PanelRight size={14} />
                     </button>
-                  ))}
+                  </div>
                 </div>
-                <div className="arco-studio__tabactions">
-                  <button
-                    type="button"
-                    className="arco-btn arco-btn--icon"
-                    onClick={() => setDrawerOpen(false)}
-                    aria-pressed
-                    aria-label={i18n.t(I18nKey.APPS$STUDIO_HIDE_WORKSPACE_DRAWER)}
-                  >
-                    <PanelRight size={14} />
-                  </button>
+                <div className="arco-studio__tabcontent">
+                  {activeTab === "files" && <FilesTab />}
+                  {activeTab === "diffs" && <GitTab />}
+                  {activeTab === "terminal" && <TerminalTab />}
+                  {activeTab === "browser" && <BrowserTab />}
                 </div>
-              </div>
-              <div className="arco-studio__tabcontent">
-                {activeTab === "files" && <FilesTab />}
-                {activeTab === "diffs" && <GitTab />}
-                {activeTab === "terminal" && <TerminalTab />}
-                {activeTab === "browser" && <BrowserTab />}
-                {activeTab === "preview" && <PreviewTab />}
-              </div>
-            </section>
-          </>
-        ) : (
-          <div className="arco-studio__rail arco-studio__rail--right" aria-label={i18n.t(I18nKey.APPS$STUDIO_WORKSPACE_2)}>
-            {DRAWER_TABS.map(({ id, label, icon: Icon }) => (
+              </section>
+            </>
+          ) : (
+            <div className="arco-studio__rail arco-studio__rail--right">
               <button
-                key={id}
                 type="button"
                 className="arco-btn arco-btn--icon"
-                aria-label={label}
-                onClick={() => {
-                  setActiveTab(id);
-                  setDrawerOpen(true);
-                }}
+                onClick={() => setDrawerOpen(true)}
+                aria-pressed={false}
+                aria-label={i18n.t(I18nKey.APPS$STUDIO_SHOW_WORKSPACE_DRAWER)}
               >
-                <Icon size={14} />
+                <PanelRight size={14} />
               </button>
-            ))}
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

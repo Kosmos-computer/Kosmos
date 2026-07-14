@@ -30,6 +30,8 @@ import { ListSearch } from "./patterns/ListSearch";
 export interface MenuItem {
   id: string;
   label: ReactNode;
+  /** Secondary line under the label (approval posture, etc.). */
+  description?: string;
   icon?: LucideIcon;
   /** Extra strings matched when the menu is searchable. */
   keywords?: string[];
@@ -46,6 +48,8 @@ export interface MenuProps {
   /** The element that opens the menu; cloned with onClick + ARIA wiring. */
   trigger: ReactElement<Record<string, unknown>>;
   items: MenuItem[];
+  /** Optional title above the item list (e.g. approval posture menus). */
+  heading?: string;
   /** Panel edge alignment relative to the trigger. */
   align?: "start" | "end";
   /** Which side of the trigger the panel opens on. */
@@ -64,6 +68,7 @@ export interface MenuProps {
 export function Menu({
   trigger,
   items,
+  heading,
   align = "start",
   side = "bottom",
   "aria-label": ariaLabel,
@@ -127,6 +132,8 @@ export function Menu({
     "aria-expanded": open,
   });
 
+  const rich = Boolean(heading || items.some((item) => item.description));
+
   return (
     <div className={`arco-menu ${className ?? ""}`} ref={rootRef}>
       {triggerEl}
@@ -135,9 +142,10 @@ export function Menu({
           ref={panelRef}
           role="menu"
           aria-label={ariaLabel}
-          className={`arco-menu__panel arco-menu__panel--${side} arco-menu__panel--${align}${showSearch ? " arco-menu__panel--searchable" : ""}`}
+          className={`arco-menu__panel arco-menu__panel--${side} arco-menu__panel--${align}${showSearch ? " arco-menu__panel--searchable" : ""}${rich ? " arco-menu__panel--rich" : ""}`}
           onKeyDown={onPanelKeyDown}
         >
+          {heading ? <div className="arco-menu__heading">{heading}</div> : null}
           {showSearch ? (
             <div className="arco-menu__search">
               <ListSearch
@@ -173,7 +181,7 @@ function MenuRow({ item, onClose }: { item: MenuItem; onClose: () => void }) {
         type="button"
         role="menuitem"
         disabled={item.disabled}
-        className={`arco-menu__item ${item.danger ? "arco-menu__item--danger" : ""}`}
+        className={`arco-menu__item ${item.description ? "arco-menu__item--described" : ""} ${item.danger ? "arco-menu__item--danger" : ""}`}
         onClick={() => {
           item.onSelect?.();
           onClose();
@@ -184,7 +192,12 @@ function MenuRow({ item, onClose }: { item: MenuItem; onClose: () => void }) {
             <IconCmp size={14} />
           </span>
         )}
-        <span className="arco-menu__itemlabel">{item.label}</span>
+        <span className="arco-menu__itemlabel">
+          <span className="arco-menu__itemtitle">{item.label}</span>
+          {item.description ? (
+            <span className="arco-menu__itemdesc">{item.description}</span>
+          ) : null}
+        </span>
         {item.checked && (
           <span className="arco-menu__check" aria-hidden="true">
             <Check size={13} />

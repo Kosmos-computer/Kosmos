@@ -39,6 +39,7 @@ import type {
 } from "@shared/types";
 import type { FileEntry } from "@shared/capabilities/files";
 import { GitHubConnectCard } from "../../components/patterns";
+import { Input } from "../../components/ui/Input";
 import { api } from "../../lib/api";
 import { useGitHubConnection } from "../../connections/useGitHubConnection";
 import {
@@ -736,14 +737,13 @@ export function WorkspaceChrome() {
           {menu === "branch" && (
             <div className="arco-projectpicker__menu arco-workspacechrome__menu" role="listbox">
               <div className="arco-workspacechrome__branchsearch">
-                <Search size={12} aria-hidden="true" />
-                <input
+                <Input
                   ref={branchSearchRef}
-                  className="arco-input"
                   value={branchQuery}
                   onChange={(e) => setBranchQuery(e.target.value)}
                   placeholder="Search branches"
                   aria-label="Search branches"
+                  startSlot={<Search size={12} aria-hidden="true" />}
                 />
               </div>
               <div className="arco-projectpicker__dirs arco-scroll" style={{ maxHeight: 200 }}>

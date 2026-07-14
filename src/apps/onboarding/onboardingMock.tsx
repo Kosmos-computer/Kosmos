@@ -57,8 +57,8 @@ export const ONBOARDING_FLOWS: OnboardingFlowDef[] = [
       },
       {
         id: "editor",
-        title: "Edit and preview side by side",
-        description: "Split the editor with preview, diffs, or a browser tab without leaving Studio.",
+        title: "Edit and inspect side by side",
+        description: "Split the editor with diffs, terminal, or a browser tab without leaving Studio.",
         icon: LayoutGrid,
       },
       {

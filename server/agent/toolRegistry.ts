@@ -191,15 +191,29 @@ function describeCall(tool: RegisteredTool, args: Record<string, unknown>): stri
  * error string to hand the LLM instead of executing. Confirmation answers
  * can persist: "always" writes a policy rule, "session" allows the tool for
  * the rest of this chat session.
+ *
+ * Composer approvalMode overlays the stored rules for this turn:
+ *   strict — every write confirms (including system tools that usually auto)
+ *   smart  — stored rules + built-in defaults (unchanged)
+ *   full   — policy confirms become auto; denies still bind
  */
 export async function applyPolicy(
   tool: RegisteredTool,
   args: Record<string, unknown>,
   ctx: ToolContext,
 ): Promise<string | null> {
-  // System tools keep their internal gates unless an explicit rule overrides.
+  // System tools keep their internal gates unless an explicit rule overrides
+  // — except when approvalMode forces a write confirm or skips one.
   const caller = { kind: "agent" as const, sessionId: ctx.sessionId };
+  const mode = ctx.approvalMode ?? "smart";
   let decision = decide(tool.source, tool.name, tool.access, ctx.sessionId);
+
+  if (mode === "full" && decision === "confirm") {
+    decision = "auto";
+  } else if (mode === "strict" && tool.access === "write" && decision === "auto") {
+    decision = "confirm";
+  }
+
   if (tool.source.kind === "system" && decision === "auto") return null;
 
   // Headless runs can't answer a confirm card — degrade to deny, mirroring

@@ -21,6 +21,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   esbuildPlatformPackage,
+  findDatachannelNative,
   findSqliteNative,
   RUNTIME_REQUIRED,
 } from "./packaging-manifest.mjs";
@@ -70,7 +71,7 @@ function resolveRuntimeRoot(opts) {
     const appPath = path.isAbsolute(opts.app) ? opts.app : path.join(desktopRoot, opts.app);
     return {
       runtimeRoot: path.join(appPath, "Contents/Resources/arco"),
-      electronBin: path.join(appPath, "Contents/MacOS/Arco OS"),
+      electronBin: path.join(appPath, "Contents/MacOS/Kosmos"),
       label: appPath,
     };
   }
@@ -126,6 +127,20 @@ function checkRuntimeTree(runtimeRoot) {
     ]);
   }
   ok(sqliteNative);
+
+  const datachannelPkg = path.join(runtimeRoot, "node_modules/node-datachannel/package.json");
+  if (fs.existsSync(datachannelPkg)) {
+    const datachannelNative = findDatachannelNative(runtimeRoot, fs, path);
+    if (!datachannelNative) {
+      fail("node-datachannel native addon missing", [
+        {
+          path: "node_modules/node-datachannel/build/Release/node_datachannel.node",
+          hint: "stage-packaging must run prebuild-install -r napi in node_modules/node-datachannel.",
+        },
+      ]);
+    }
+    ok(datachannelNative);
+  }
 }
 
 function findFreePort(start = 4700) {

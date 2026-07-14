@@ -12,6 +12,7 @@ import {
   APP_DIRS,
   COPY_PATHS,
   esbuildPlatformPackage,
+  findDatachannelNative,
   findSqliteNative,
   RUNTIME_REQUIRED,
 } from "./packaging-manifest.mjs";
@@ -82,6 +83,14 @@ run("npm", ["ci", "--omit=dev", "--ignore-scripts"], stageRoot);
 console.log("  • npm install tsx esbuild (server bootstrap)");
 run("npm", ["install", "tsx", "esbuild", "--no-save"], stageRoot);
 
+// node-datachannel ships no prebuilds in the tarball — install scripts download
+// the N-API binary. We used --ignore-scripts above, so fetch it explicitly.
+const datachannelRoot = path.join(stageRoot, "node_modules/node-datachannel");
+if (fs.existsSync(datachannelRoot)) {
+  console.log("  • prebuild-install node-datachannel (WebTorrent / WebRTC)");
+  run("npx", ["prebuild-install", "-r", "napi"], datachannelRoot);
+}
+
 console.log(`  • electron-rebuild better-sqlite3 for Electron ${ELECTRON_VERSION}`);
 run("npx", ["electron-rebuild", "-f", "-w", "better-sqlite3", "--version", ELECTRON_VERSION], stageRoot);
 
@@ -104,6 +113,11 @@ if (esbuildPkg) {
 
 if (!findSqliteNative(stageRoot, fs, path)) {
   console.error("Stage packaging failed: better-sqlite3 native addon not built");
+  process.exit(1);
+}
+
+if (fs.existsSync(datachannelRoot) && !findDatachannelNative(stageRoot, fs, path)) {
+  console.error("Stage packaging failed: node-datachannel native addon not installed");
   process.exit(1);
 }
 

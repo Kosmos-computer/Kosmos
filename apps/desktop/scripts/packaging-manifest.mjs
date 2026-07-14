@@ -53,3 +53,16 @@ export function findSqliteNative(root, fs, path) {
   }
   return null;
 }
+
+/** Known locations for the node-datachannel N-API addon (WebTorrent dependency). */
+export function findDatachannelNative(root, fs, path) {
+  const candidates = [
+    "node_modules/node-datachannel/build/Release/node_datachannel.node",
+    "node_modules/node-datachannel/build/node_datachannel.node",
+  ];
+  for (const relative of candidates) {
+    const full = path.join(root, relative);
+    if (fs.existsSync(full)) return relative;
+  }
+  return null;
+}

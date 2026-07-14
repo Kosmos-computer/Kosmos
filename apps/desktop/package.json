@@ -44,7 +44,15 @@
     "extraResources": [
       {
         "from": "pack-staging/arco",
-        "to": "arco"
+        "to": "arco",
+        "filter": [
+          "**/*",
+          "!node_modules{,/**/*}"
+        ]
+      },
+      {
+        "from": "pack-staging/arco/node_modules",
+        "to": "arco/node_modules"
       },
       {
         "from": "build/update-gh-token",

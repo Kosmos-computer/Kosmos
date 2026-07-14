@@ -40,6 +40,7 @@ import { UsageSection } from "./UsageSection";
 import { BillingSection } from "./BillingSection";
 import { KosmosCloudSection } from "./KosmosCloudSection";
 import { PlatformDownloadsSection } from "./PlatformDownloadsSection";
+import { DesktopUpdatesSection } from "./DesktopUpdatesSection";
 import { ToolsSection } from "./ToolsSection";
 import { WALLPAPER_GROUPS, type WallpaperId } from "../../os/wallpaper/wallpapers";
 import { AUTH_WALLPAPER_GROUPS, type AuthWallpaperId } from "../../os/wallpaper/authWallpapers";

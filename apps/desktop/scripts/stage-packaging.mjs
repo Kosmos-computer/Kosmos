@@ -19,7 +19,15 @@ import {
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const stageRoot = path.join(repoRoot, "apps/desktop/pack-staging/arco");
-const ELECTRON_VERSION = "35.7.5";
+const desktopPackage = JSON.parse(
+  fs.readFileSync(path.join(repoRoot, "apps/desktop/package.json"), "utf8"),
+);
+const ELECTRON_VERSION = desktopPackage.build?.electronVersion;
+
+if (typeof ELECTRON_VERSION !== "string" || !ELECTRON_VERSION.trim()) {
+  console.error("Stage packaging failed: apps/desktop/package.json is missing build.electronVersion");
+  process.exit(1);
+}
 
 function copyTree(from, to) {
   fs.cpSync(from, to, {

@@ -1,6 +1,7 @@
 import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
 import { Search, X } from "lucide-react";
+import type { KeyboardEventHandler, Ref } from "react";
 import { Input } from "../ui";
 
 export interface ListSearchProps {
@@ -12,6 +13,8 @@ export interface ListSearchProps {
   /** Compact variant for menu panels and tight modals. */
   compact?: boolean;
   autoFocus?: boolean;
+  onKeyDown?: KeyboardEventHandler<HTMLInputElement>;
+  inputRef?: Ref<HTMLInputElement>;
 }
 
 /** Shared search field for lists, menus, and modals. */
@@ -23,6 +26,8 @@ export function ListSearch({
   className = "",
   compact = false,
   autoFocus = false,
+  onKeyDown,
+  inputRef,
 }: ListSearchProps) {
   return (
     <div
@@ -36,6 +41,7 @@ export function ListSearch({
     >
       <Search size={compact ? 13 : 14} aria-hidden="true" className="arco-list-search__icon" />
       <Input
+        ref={inputRef}
         type="search"
         value={value}
         onChange={(event) => onChange(event.target.value)}
@@ -43,7 +49,10 @@ export function ListSearch({
         aria-label={ariaLabel}
         className="arco-list-search__input"
         autoFocus={autoFocus}
-        onKeyDown={(event) => event.stopPropagation()}
+        onKeyDown={(event) => {
+          onKeyDown?.(event);
+          event.stopPropagation();
+        }}
       />
       {value ? (
         <button

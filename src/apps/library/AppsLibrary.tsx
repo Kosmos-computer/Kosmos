@@ -1,13 +1,12 @@
 import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
 import { T } from "../../i18n/T";
-import { useTranslation } from "react-i18next";
 /**
  * Apps library — launcher for every app on the shell (system, installed,
  * generated, and web) plus generated-app lifecycle actions (refine, version
  * history, restore, delete).
  */
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
   Clock,
   EllipsisVertical,
@@ -51,7 +50,6 @@ function iconHue(seed: string): number {
 }
 
 function iconMarkStyle(seed: string): CSSProperties {
-  const { t } = useTranslation();
   const hue = iconHue(seed);
   return {
     background: `hsl(${hue} 68% 52%)`,
@@ -137,10 +135,26 @@ export function AppsLibrary() {
   const shellApps = useShellApps();
   const openWindow = useWindowStore((s) => s.open);
   const closeWindow = useWindowStore((s) => s.close);
+  const appsWindowFocused = useWindowStore((s) => {
+    const focused = s.windows
+      .filter((window) => !window.minimized)
+      .reduce<(typeof s.windows)[number] | null>(
+        (top, window) => (!top || window.z > top.z ? window : top),
+        null,
+      );
+    return focused?.id === "system:apps";
+  });
+  const appsWindowLayout = useWindowStore((s) => {
+    const window = s.windows.find((entry) => entry.id === "system:apps");
+    return window ? `${window.w}:${window.h}:${window.maximized}` : "closed";
+  });
   const [historyApp, setHistoryApp] = useState<StoredApp | null>(null);
   const [view, setView] = useLibraryView();
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
   const [versionSearch, setVersionSearch] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const appItemRefs = useRef(new Map<string, HTMLDivElement>());
 
   useEffect(() => {
     void refreshApps();
@@ -281,6 +295,96 @@ export function AppsLibrary() {
       }),
     [shellApps, searchQuery, apps, webApps],
   );
+  const activeAppId = filteredShellApps.some((entry) => entry.id === selectedAppId)
+    ? selectedAppId
+    : filteredShellApps[0]?.id ?? null;
+
+  useEffect(() => {
+    if (!appsWindowFocused || historyApp) return;
+    const frame = requestAnimationFrame(() => searchInputRef.current?.focus());
+    return () => cancelAnimationFrame(frame);
+  }, [appsWindowFocused, appsWindowLayout, historyApp]);
+
+  useEffect(() => {
+    if (!activeAppId) return;
+    appItemRefs.current.get(activeAppId)?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [activeAppId]);
+
+  const onAppSearchKeyDown = useCallback(
+    (event: { key: string; preventDefault: () => void }) => {
+      if (event.key === "Enter") {
+        const entry = filteredShellApps.find((app) => app.id === activeAppId);
+        if (!entry) return;
+        event.preventDefault();
+        openWindow(entry.kind, entry.title);
+        return;
+      }
+
+      const navigationKeys = view === "icons"
+        ? ["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight"]
+        : ["ArrowDown", "ArrowUp"];
+      if (!navigationKeys.includes(event.key)) return;
+      if (filteredShellApps.length === 0) return;
+      event.preventDefault();
+      const currentIndex = filteredShellApps.findIndex((entry) => entry.id === activeAppId);
+      let nextIndex = currentIndex;
+
+      if (view === "icons") {
+        const currentNode = activeAppId ? appItemRefs.current.get(activeAppId) : undefined;
+        if (currentNode) {
+          const currentRect = currentNode.getBoundingClientRect();
+          const currentX = currentRect.left + currentRect.width / 2;
+          const currentY = currentRect.top + currentRect.height / 2;
+          const vertical = event.key === "ArrowDown" || event.key === "ArrowUp";
+          const forward = event.key === "ArrowDown" || event.key === "ArrowRight";
+          let best: { index: number; score: number } | null = null;
+
+          for (const [index, entry] of filteredShellApps.entries()) {
+            if (index === currentIndex) continue;
+            const node = appItemRefs.current.get(entry.id);
+            if (!node) continue;
+            const rect = node.getBoundingClientRect();
+            const deltaX = rect.left + rect.width / 2 - currentX;
+            const deltaY = rect.top + rect.height / 2 - currentY;
+            const primary = vertical ? deltaY : deltaX;
+            const cross = vertical ? Math.abs(deltaX) : Math.abs(deltaY);
+            if ((forward && primary <= 1) || (!forward && primary >= -1)) continue;
+            if (!vertical && cross > currentRect.height / 2) continue;
+
+            const score = Math.abs(primary) * 1_000 + cross;
+            if (!best || score < best.score) best = { index, score };
+          }
+
+          if (best) nextIndex = best.index;
+        }
+      } else if (event.key === "ArrowDown" && currentIndex + 1 < filteredShellApps.length) {
+        nextIndex = currentIndex + 1;
+      } else if (event.key === "ArrowUp" && currentIndex > 0) {
+        nextIndex = currentIndex - 1;
+      }
+
+      setSelectedAppId(filteredShellApps[nextIndex]?.id ?? null);
+    },
+    [activeAppId, filteredShellApps, openWindow, view],
+  );
+
+  useEffect(() => {
+    if (!appsWindowFocused || historyApp) return;
+    const onDocumentKeyDown = (event: KeyboardEvent) => {
+      if (event.target === searchInputRef.current) return;
+      const interactiveTarget = event.target instanceof Element
+        ? event.target.closest("button, a, textarea, select, [contenteditable='true'], [role='menu']")
+        : null;
+      if (interactiveTarget?.closest(".arco-menu__panel")) return;
+      if (event.key === "Enter" && interactiveTarget) return;
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      if (!["Enter", "ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight"].includes(event.key)) return;
+      searchInputRef.current?.focus({ preventScroll: true });
+      onAppSearchKeyDown(event);
+    };
+    document.addEventListener("keydown", onDocumentKeyDown, true);
+    return () => document.removeEventListener("keydown", onDocumentKeyDown, true);
+  }, [appsWindowFocused, historyApp, onAppSearchKeyDown]);
 
   if (historyApp) {
     const reversedVersions = [...historyApp.versions].reverse().map((v, revIdx) => ({
@@ -333,9 +437,16 @@ export function AppsLibrary() {
       <div className="arco-panel__search">
         <ListSearch
           value={searchQuery}
-          onChange={setSearchQuery}
+          onChange={(value) => {
+            setSearchQuery(value);
+            setSelectedAppId(null);
+          }}
           placeholder={i18n.t(I18nKey.APPS$LIBRARY_SEARCH_APPS)}
           ariaLabel="Search apps"
+          className="arco-apps-picker__search"
+          autoFocus
+          inputRef={searchInputRef}
+          onKeyDown={onAppSearchKeyDown}
         />
       </div>
 
@@ -346,7 +457,16 @@ export function AppsLibrary() {
               {filteredShellApps.map((entry) => {
                 const Icon = entry.icon;
                 return (
-                  <div key={entry.id} className="arco-apps-home__tile">
+                  <div
+                    key={entry.id}
+                    ref={(node) => {
+                      if (node) appItemRefs.current.set(entry.id, node);
+                      else appItemRefs.current.delete(entry.id);
+                    }}
+                    className={`arco-apps-home__tile${entry.id === activeAppId ? " arco-apps-home__tile--active" : ""}`}
+                    onMouseEnter={() => setSelectedAppId(entry.id)}
+                    onFocusCapture={() => setSelectedAppId(entry.id)}
+                  >
                     <AppIconGlyph
                       Icon={Icon}
                       seed={entry.id}
@@ -377,7 +497,16 @@ export function AppsLibrary() {
             const generated = kind.type === "generated" ? apps.find((a) => a.id === kind.appId) : undefined;
             const web = kind.type === "web" ? webApps.find((a) => a.id === kind.webAppId) : undefined;
             return (
-              <div key={entry.id} className="arco-listrow">
+              <div
+                key={entry.id}
+                ref={(node) => {
+                  if (node) appItemRefs.current.set(entry.id, node);
+                  else appItemRefs.current.delete(entry.id);
+                }}
+                className={`arco-listrow${entry.id === activeAppId ? " arco-listrow--active" : ""}`}
+                onMouseEnter={() => setSelectedAppId(entry.id)}
+                onFocusCapture={() => setSelectedAppId(entry.id)}
+              >
                 <Icon size={16} style={{ color: "var(--arco-accent)", flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600, fontSize: "var(--arco-text-sm)" }}>{entry.title}</div>

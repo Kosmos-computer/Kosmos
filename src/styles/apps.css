@@ -46,6 +46,10 @@
 .arco-listrow--button:hover {
   background: var(--arco-bg-hover);
 }
+.arco-listrow--active {
+  background: var(--arco-bg-hover);
+  box-shadow: inset 0 0 0 2px var(--arco-accent);
+}
 .arco-listrow__sub {
   font-size: var(--arco-text-xs);
   color: var(--arco-text-tertiary);
@@ -96,6 +100,17 @@
 }
 
 /* ── Apps library — launcher grid with neutral wells + colored marks ─────── */
+
+.arco-apps-picker__search {
+  min-height: 44px;
+}
+
+.arco-apps-picker__search .arco-input {
+  padding-top: 11px;
+  padding-bottom: 11px;
+  font-size: var(--arco-text-md);
+  font-weight: 600;
+}
 
 .arco-apps-home {
   flex: 1;
@@ -151,6 +166,12 @@
 
 .arco-apps-home__glyph:hover {
   background: var(--arco-app-icon-well-hover);
+}
+
+.arco-apps-home__tile--active .arco-apps-home__glyph {
+  background: var(--arco-app-icon-well-hover);
+  outline: 2px solid var(--arco-accent);
+  outline-offset: 2px;
 }
 
 .arco-apps-home__glyph:active {

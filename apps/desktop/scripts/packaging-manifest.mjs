@@ -8,6 +8,7 @@ export const COPY_PATHS = [
   "skills",
   "package.json",
   "package-lock.json",
+  ".npmrc",
 ];
 
 export const APP_DIRS = ["calculator", "calendar", "docs", "drive", "menubar-tasks", "timer"];

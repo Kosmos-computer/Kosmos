@@ -20,6 +20,7 @@ on:
       - "index.html"
       - "package.json"
       - "package-lock.json"
+      - ".npmrc"
   workflow_dispatch:
     inputs:
       bump:

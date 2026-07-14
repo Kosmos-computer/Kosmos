@@ -10,7 +10,7 @@ RUN apt-get update \
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+COPY package.json package-lock.json .npmrc ./
 COPY model-manager/package.json model-manager/
 COPY packages/app-sdk/package.json packages/app-sdk/
 COPY packages/editor-kit/package.json packages/editor-kit/

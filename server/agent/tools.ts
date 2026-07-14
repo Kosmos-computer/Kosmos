@@ -1012,7 +1012,11 @@ export const agentTools: AgentTool[] = [
             : typeof args.driveFileId === "string"
               ? `Import music from Drive ${args.driveFileId}`
               : "Import music";
-      return agentInvokeIntent("music.tracks.import", args, label, ctx);
+      const result = await agentInvokeIntent("music.tracks.import", args, label, ctx);
+      if (!(result && typeof result === "object" && "error" in result)) {
+        ctx.emit({ type: "os_ui", action: { action: "open_system", app: "music" } });
+      }
+      return result;
     },
   },
   {
@@ -1030,8 +1034,8 @@ export const agentTools: AgentTool[] = [
         path: { type: "string", description: "Required when source=path (must be under torrents/seed/workspace)" },
       },
     },
-    execute: async (args, ctx) =>
-      agentInvokeIntent(
+    execute: async (args, ctx) => {
+      const result = await agentInvokeIntent(
         "music.tracks.scan",
         {
           ...(typeof args.source === "string" ? { source: args.source } : {}),
@@ -1039,7 +1043,12 @@ export const agentTools: AgentTool[] = [
         },
         "Scan for music to import",
         ctx,
-      ),
+      );
+      if (!(result && typeof result === "object" && "error" in result)) {
+        ctx.emit({ type: "os_ui", action: { action: "open_system", app: "music" } });
+      }
+      return result;
+    },
   },
   {
     name: "music_remove_track",

@@ -946,6 +946,18 @@ app.get("/api/music/stream/:id", (c) => {
   const resolved = statAnyMusicTrack(c.req.param("id"));
   if (!resolved) return c.json({ error: "Track not found" }, 404);
 
+  const ext = path.extname(resolved.absPath).toLowerCase();
+  const contentType =
+    ext === ".m4a" || ext === ".aac"
+      ? "audio/mp4"
+      : ext === ".wav"
+        ? "audio/wav"
+        : ext === ".ogg"
+          ? "audio/ogg"
+          : ext === ".flac"
+            ? "audio/flac"
+            : "audio/mpeg";
+
   const range = c.req.header("range");
   if (range) {
     const match = /^bytes=(\d+)-(\d*)$/i.exec(range.trim());
@@ -963,7 +975,7 @@ app.get("/api/music/stream/:id", (c) => {
       "Content-Range": `bytes ${start}-${end}/${resolved.size}`,
       "Accept-Ranges": "bytes",
       "Content-Length": String(end - start + 1),
-      "Content-Type": "audio/mpeg",
+      "Content-Type": contentType,
     });
   }
 
@@ -971,7 +983,7 @@ app.get("/api/music/stream/:id", (c) => {
   attachStreamAbort(stream, c.req.raw.signal);
   return c.body(stream, 200, {
     "Content-Length": String(resolved.size),
-    "Content-Type": "audio/mpeg",
+    "Content-Type": contentType,
     "Accept-Ranges": "bytes",
   });
 });

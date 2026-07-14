@@ -290,7 +290,11 @@ function importFromResolvedPath(
   const manifest = loadManifest();
   const sourceHash = hashFile(absPath);
   const existing = findBySourceHash(manifest, sourceHash);
-  if (existing) return recordToDto(existing);
+  if (existing) {
+    // Still announce so clients that missed the original import refresh.
+    announceChange();
+    return recordToDto(existing);
+  }
 
   const tags = readId3Tags(absPath);
   const fileName = sanitizeFileName(path.basename(absPath));
@@ -551,6 +555,8 @@ export async function scanMusicLibrary(input: MusicScanInput = {}): Promise<{
       skipped += 1;
     }
   }
+  // Always notify the Music UI after a scan, even when everything was already imported.
+  announceChange();
   return { imported, skipped, scanned: files.length };
 }
 

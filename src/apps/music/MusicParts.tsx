@@ -30,6 +30,7 @@ import {
   MusicSongDetail,
 } from "./MusicBroadcasts";
 import { MusicBroadcastCover } from "./MusicBroadcastCover";
+import { seedTrackToMusicTrack } from "./musicCatalog";
 import { MediaPlayerBar, ListItem, NavSidebar, NavSidebarSectionHeader } from "../../components/patterns";
 import { EmptyState } from "../../components/ui";
 import { useOsStore } from "../../os/osStore";
@@ -246,7 +247,13 @@ export function MusicLibrarySidebar({ vm }: MusicLibrarySidebarProps) {
                     label={item.title}
                     description={item.subtitle}
                     active={vm.activeLibraryItemId === item.id}
-                    onClick={() => vm.setActiveLibraryItemId(item.id)}
+                    onClick={() => {
+                      const trackId = item.coverTrackId ?? item.id;
+                      vm.setActiveLibraryItemId(item.id);
+                      if (vm.tracks.some((track) => track.id === trackId)) {
+                        vm.playTrack(trackId, true);
+                      }
+                    }}
                   />
                 ))}
               </div>
@@ -274,11 +281,14 @@ function MusicHomeFeed({
   quickAccess,
   featured,
   mixes,
+  tracks,
   contentFilter,
   onContentFilterChange,
   onPlayFeatured,
   onPlayTrack,
-}: MusicHomeContentProps) {
+}: MusicHomeContentProps & {
+  tracks: MusicTrack[];
+}) {
   return (
     <main className="arco-music__main">
       <div className="arco-music__main-scroll arco-music__scrollable">
@@ -308,6 +318,41 @@ function MusicHomeFeed({
             </button>
           ))}
         </div>
+
+        <section className="arco-music__section" aria-labelledby="songs-heading">
+          <div className="arco-music__section-header">
+            <h2 id="songs-heading" className="arco-music__section-title">
+              Songs
+            </h2>
+            <p className="arco-music__section-subtitle">
+              {tracks.length} {tracks.length === 1 ? "track" : "tracks"} in your library
+            </p>
+          </div>
+          {tracks.length === 0 ? (
+            <EmptyState title="No songs yet">
+              Use + to upload audio, or Import from Downloads.
+            </EmptyState>
+          ) : (
+            <div className="arco-music__library-list" role="list" aria-label="Songs">
+              {tracks.map((track) => (
+                <button
+                  key={track.id}
+                  type="button"
+                  role="listitem"
+                  className="arco-music__library-row"
+                  onClick={() => onPlayTrack(track.id)}
+                >
+                  <TrackArtwork track={track} size="md" />
+                  <span className="arco-music__library-row-meta">
+                    <strong>{track.title}</strong>
+                    <span>{track.artists}</span>
+                  </span>
+                  <Play size={16} aria-hidden="true" />
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
 
         <section className="arco-music__section" aria-labelledby="featured-heading">
           <div className="arco-music__section-header">
@@ -413,7 +458,13 @@ function MusicLibraryDirectory({ vm }: { vm: MusicViewModel }) {
                 className={`arco-music__library-row${
                   vm.activeLibraryItemId === item.id ? " arco-music__library-row--active" : ""
                 }`}
-                onClick={() => vm.setActiveLibraryItemId(item.id)}
+                onClick={() => {
+                  const trackId = item.coverTrackId ?? item.id;
+                  vm.setActiveLibraryItemId(item.id);
+                  if (vm.tracks.some((track) => track.id === trackId)) {
+                    vm.playTrack(trackId, true);
+                  }
+                }}
               >
                 <AlbumArt
                   trackId={item.coverTrackId ?? item.id}
@@ -425,6 +476,7 @@ function MusicLibraryDirectory({ vm }: { vm: MusicViewModel }) {
                   <strong>{item.title}</strong>
                   <span>{item.subtitle}</span>
                 </span>
+                <Play size={16} aria-hidden="true" />
               </button>
             ))}
           </div>
@@ -457,6 +509,7 @@ export function MusicMainContent({ vm }: MusicMainContentProps) {
       quickAccess={vm.quickAccess}
       featured={vm.featured}
       mixes={vm.mixes}
+      tracks={vm.visibleTracks.map(seedTrackToMusicTrack)}
       contentFilter={vm.contentFilter}
       onContentFilterChange={vm.setContentFilter}
       onPlayFeatured={() => vm.playTrack(vm.featured.id, true)}

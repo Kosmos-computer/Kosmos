@@ -377,6 +377,12 @@ html[data-theme="light"] .arco-music {
   line-height: 1.2;
 }
 
+.arco-music__section-subtitle {
+  margin: 0;
+  color: var(--music-text-subtle);
+  font-size: var(--arco-text-sm);
+}
+
 .arco-music__featured-card {
   display: flex;
   align-items: stretch;

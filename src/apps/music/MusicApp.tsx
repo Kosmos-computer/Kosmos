@@ -3,6 +3,7 @@ import i18n from "../../i18n/index";
 import { T } from "../../i18n/T";
 import { EmptyState } from "../../components/ui";
 import { useTranslation } from "react-i18next";
+import { useEffect } from "react";
 import {
   MusicLibrarySidebar,
   MusicMainContent,
@@ -14,6 +15,10 @@ import { useMusicStub } from "./useMusicStub";
 export function MusicApp() {
   const { t } = useTranslation();
   const vm = useMusicStub();
+
+  useEffect(() => {
+    void vm.refreshLibrary();
+  }, [vm.refreshLibrary]);
 
   if (vm.loading) {
     return (

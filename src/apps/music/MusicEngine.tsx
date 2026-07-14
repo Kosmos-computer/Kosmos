@@ -25,7 +25,10 @@ export function MusicEngine() {
 
   useEffect(() => {
     init();
-  }, [init]);
+    // Always re-fetch on mount — init() is one-shot, so agent imports after
+    // shell boot (or missed music.changed events) would otherwise stay invisible.
+    void refreshLibrary();
+  }, [init, refreshLibrary]);
 
   useEffect(() => {
     return onAppEvent((detail) => {
@@ -33,6 +36,14 @@ export function MusicEngine() {
         void refreshLibrary();
       }
     });
+  }, [refreshLibrary]);
+
+  useEffect(() => {
+    const onFocus = () => {
+      void refreshLibrary();
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
   }, [refreshLibrary]);
 
   useEffect(() => {

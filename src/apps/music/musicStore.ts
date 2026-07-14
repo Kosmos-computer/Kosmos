@@ -297,24 +297,28 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
     try {
       const seedTracks = await fetchSeedTracks();
       const available = seedTracks.filter((track) => track.available);
-      const { activeTrackId, playing, nowPlaying } = get();
+      const { activeTrackId, playing, nowPlaying, initialized } = get();
       const stillActive = available.find((track) => track.id === activeTrackId);
+      const nextActive = stillActive ?? available[0];
       set({
         tracks: available,
         error: null,
+        loading: false,
+        initialized: true,
         playbackQueue: available.map((track) => track.id),
-        ...(stillActive
-          ? {}
-          : {
-              activeTrackId: available[0]?.id,
-              nowPlaying: playing
-                ? nowPlaying
-                : buildNowPlaying(available[0], relatedTracksFor(available, available[0]?.id)),
-            }),
+        activeTrackId: nextActive?.id,
+        // Keep the current now-playing card if audio is already going; otherwise
+        // surface the newest library track so imports are obvious immediately.
+        nowPlaying:
+          playing && stillActive
+            ? nowPlaying
+            : buildNowPlaying(nextActive, relatedTracksFor(available, nextActive?.id)),
+        ...(initialized ? {} : { activeLibraryItemId: nextActive?.id ?? "album-tirufm" }),
       });
     } catch (err: unknown) {
       set({
         error: err instanceof Error ? err.message : "Failed to refresh music library",
+        loading: false,
       });
     }
   },

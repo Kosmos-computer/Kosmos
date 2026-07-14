@@ -2,6 +2,17 @@ import type { ApiIntegration } from "./types";
 
 export const APIS_MOCK: ApiIntegration[] = [
   {
+    id: "api-kosmos-ops",
+    name: "Kosmos Ops",
+    description: "Folders, Docker builds, Coolify app scaffolding (builtin + ACP agents).",
+    author: "Arco",
+    version: "0.1.0",
+    installed: false,
+    icon: "server",
+    category: "Automation",
+    rating: 4.8,
+  },
+  {
     id: "api-github",
     name: "GitHub",
     description: "Issues, pull requests, checks, and repository operations from the workspace.",

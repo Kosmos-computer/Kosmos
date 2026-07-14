@@ -26,6 +26,8 @@ import { useChat } from "../chat/useChat";
 import { onPrimeComposer } from "../chat/composerBus";
 import { VoiceBar } from "../chat/VoiceBar";
 import { ChatThread } from "../../components/chat/ChatThread";
+import { ScrollToLatestButton } from "../../components/chat/ScrollToLatestButton";
+import { useThreadScroll } from "../../components/chat/useThreadScroll";
 import { useVoice, voiceClient } from "../../voice";
 import { FaceWidget } from "../../face-rig";
 import { Composer } from "../../components/composer/Composer";
@@ -35,7 +37,7 @@ import { contextPercent, type UsageStats } from "../../components/composer/Usage
 import { useStudioStore, useSessionActivity } from "./studioStore";
 import { useResizableSplit } from "./useResizableSplit";
 import { useModelSelection } from "./useModelSelection";
-import { ProjectPicker } from "./ProjectPicker";
+import { WorkspaceChrome } from "./WorkspaceChrome";
 import { StudioSidebar } from "./StudioSidebar";
 import { StudioConversationHeader } from "./StudioConversationHeader";
 import { FilesTab } from "./tabs/FilesTab";
@@ -43,6 +45,7 @@ import { GitTab } from "./tabs/GitTab";
 import { TerminalTab } from "./tabs/TerminalTab";
 import { BrowserTab } from "./tabs/BrowserTab";
 import { PreviewTab } from "./tabs/PreviewTab";
+import { useComposerAttach } from "../../components/composer/useComposerAttach.tsx";
 
 // ---------------------------------------------------------------------------
 // Drawer tab registry — adding a tab is one entry here plus its component.
@@ -101,9 +104,10 @@ export function StudioApp() {
   /** Session key whose near-limit notice the user dismissed. */
   const [noticeDismissedFor, setNoticeDismissedFor] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
   const { onDividerPointerDown } = useResizableSplit(containerRef);
   const { modelLabel, modelItems } = useModelSelection();
+  const { scrollRef, onScroll, showJump, scrollToLatest, pinToLatest } =
+    useThreadScroll(chat.items);
 
   const navOpen = useStudioStore((s) => s.navOpen);
   const setNavOpen = useStudioStore((s) => s.setNavOpen);
@@ -118,13 +122,6 @@ export function StudioApp() {
     s.gitChangeCount > 0 ? s.gitChangeCount : Object.keys(sessionActivity.changes).length,
   );
 
-  // Follow the stream unless the user scrolled up (same pattern as ChatApp).
-  const followRef = useRef(true);
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (el && followRef.current) el.scrollTop = el.scrollHeight;
-  }, [chat.items]);
-
   // Voice conversations land in the thread like typed ones (same as ChatApp):
   // final transcripts as user items, bot speech as streaming assistant text.
   useEffect(() => voiceClient.subscribe(chat.applyVoiceEvent), [chat.applyVoiceEvent]);
@@ -134,11 +131,11 @@ export function StudioApp() {
       onPrimeComposer(({ text, submit: shouldSubmit }) => {
         setDraft(text);
         if (shouldSubmit) {
-          followRef.current = true;
+          pinToLatest();
           void chat.send(text);
         }
       }),
-    [chat],
+    [chat, pinToLatest],
   );
 
   const submit = useCallback(
@@ -146,11 +143,11 @@ export function StudioApp() {
       const value = (text ?? draft).trim();
       if (!value) return;
       setDraft("");
-      followRef.current = true;
+      pinToLatest();
       // Ask mode runs the turn answer-only: the server strips write tools.
       void chat.send(value, mode === "ask" ? { mode: "ask" } : undefined);
     },
-    [draft, chat, mode],
+    [draft, chat, mode, pinToLatest],
   );
 
   // ── Composer wiring ───────────────────────────────────────────────────────
@@ -179,6 +176,14 @@ export function StudioApp() {
     setActiveTab("files");
     setDrawerOpen(true);
   }, [setActiveTab, setDrawerOpen]);
+
+  const openFolder = useStudioStore((s) => s.openFolder);
+  const attach = useComposerAttach({
+    onOpenFilesPanel: openFilesPanel,
+    onOpenFolder: (path) => openFolder(path),
+    onInsertDraft: (text) =>
+      setDraft((current) => (current.trim() ? `${current.trim()}\n\n${text}` : text)),
+  });
 
   const usage = useMemo(() => estimateUsage(chat.items), [chat.items]);
   const usagePercent = contextPercent(usage);
@@ -219,40 +224,50 @@ export function StudioApp() {
   );
 
   const composer = (
-    <Composer
-      value={draft}
-      onChange={setDraft}
-      onSubmit={() => submit()}
-      streaming={chat.streaming}
-      onStop={chat.stop}
-      placeholder={i18n.t(I18nKey.APPS$STUDIO_ASK_THE_AGENT_TO_BUILD_SCRIPT_OR_AUTOMATE)}
-      modes={COMPOSER_MODES}
-      activeModeId={mode}
-      onModeChange={setMode}
-      model={modelLabel}
-      modelItems={modelItems}
-      onAddFile={openFilesPanel}
-      panelToggles={panelToggles}
-      voiceActive={voice.active}
-      voiceAvailable={voice.available}
-      onVoiceToggle={() => void voice.toggle().catch(() => {})}
-      usage={usage}
-      statusStart={<ProjectPicker compact />}
-      notice={
-        showLimitNotice ? (
-          <ComposerNotice
-            tone={usagePercent >= 100 ? "danger" : "warning"}
-            actionLabel="New session"
-            onAction={chat.newChat}
-            onDismiss={() => setNoticeDismissedFor(noticeKey)}
-          >
-            {usagePercent >= 100
-              ? "Context is over the limit — start a new session to keep responses sharp"
-              : "This session is close to the context limit"}
-          </ComposerNotice>
-        ) : undefined
-      }
-    />
+    <>
+      {attach.fileInput}
+      {attach.githubModal}
+      <Composer
+        value={draft}
+        onChange={setDraft}
+        onSubmit={() => submit()}
+        streaming={chat.streaming}
+        onStop={chat.stop}
+        placeholder={i18n.t(I18nKey.APPS$STUDIO_ASK_THE_AGENT_TO_BUILD_SCRIPT_OR_AUTOMATE)}
+        modes={COMPOSER_MODES}
+        activeModeId={mode}
+        onModeChange={setMode}
+        model={modelLabel}
+        modelItems={modelItems}
+        onAddFile={attach.onAddFile}
+        onAddFolder={attach.onAddFolder}
+        onImportGitHubIssue={attach.onImportGitHubIssue}
+        onAddPlugins={attach.onAddPlugins}
+        onManageConnectors={attach.onManageConnectors}
+        onBrowseConnectors={attach.onBrowseConnectors}
+        connectors={attach.connectors}
+        panelToggles={panelToggles}
+        voiceActive={voice.active}
+        voiceAvailable={voice.available}
+        onVoiceToggle={() => void voice.toggle().catch(() => {})}
+        usage={usage}
+        statusStart={<WorkspaceChrome />}
+        notice={
+          showLimitNotice ? (
+            <ComposerNotice
+              tone={usagePercent >= 100 ? "danger" : "warning"}
+              actionLabel="New session"
+              onAction={chat.newChat}
+              onDismiss={() => setNoticeDismissedFor(noticeKey)}
+            >
+              {usagePercent >= 100
+                ? "Context is over the limit — start a new session to keep responses sharp"
+                : "This session is close to the context limit"}
+            </ComposerNotice>
+          ) : undefined
+        }
+      />
+    </>
   );
 
   return (
@@ -325,10 +340,7 @@ export function StudioApp() {
               <div
                 ref={scrollRef}
                 className="arco-chat__thread arco-scroll"
-                onScroll={() => {
-                  const el = scrollRef.current;
-                  if (el) followRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
-                }}
+                onScroll={onScroll}
               >
                 <div className="arco-studio__content-inner">
                   <ChatThread
@@ -340,6 +352,7 @@ export function StudioApp() {
                 </div>
               </div>
               <div className="arco-composer-dock">
+                <ScrollToLatestButton visible={showJump} onClick={scrollToLatest} />
                 <div className="arco-studio__content-inner">
                   {voice.active && <VoiceBar voice={voice} placement="dock" />}
                   {composer}

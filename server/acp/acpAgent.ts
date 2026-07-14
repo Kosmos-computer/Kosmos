@@ -51,7 +51,7 @@ import { dataDirs, loadSettings } from "../env.js";
 import { requestConfirmation } from "../agent/confirmations.js";
 import type { RunTurnOptions } from "../agent/loop.js";
 import { mcpServerStore } from "../mcp/serverStore.js";
-import { getActiveRoot } from "../stores/projectStore.js";
+import { getActiveRoot } from "../stores/workspaceStore.js";
 import { sessionStore } from "../stores/sessionStore.js";
 
 // ── Run registry ─────────────────────────────────────────────────────────────

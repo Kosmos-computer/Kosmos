@@ -54,7 +54,18 @@ import { runAutomationNow, startScheduler } from "./automations/scheduler.js";
 import { eventTriggerMatches, verifyWebhookSecret } from "./automations/eventMatcher.js";
 import { describeSchedule } from "./automations/scheduleUtils.js";
 import { dataDirs, ensureDataDirs, loadSettings, maskSettings, saveSettings } from "./env.js";
-import { gitCommit, gitFileDiff, gitInfo, gitPull, gitPush } from "./git.js";
+import {
+  gitBranches,
+  gitCheckout,
+  gitCommit,
+  gitFileDiff,
+  gitInfo,
+  gitPull,
+  gitPush,
+  gitWorktreeAdd,
+  gitWorktreeRemove,
+  gitWorktrees,
+} from "./git.js";
 import { listRuns, runLog, startRun, stopRun } from "./runManager.js";
 import { appStore } from "./stores/appStore.js";
 import { modelStore } from "./stores/modelStore.js";
@@ -63,7 +74,12 @@ import { llamaEngine } from "./services/llamaEngine.js";
 import { bitsocialDaemon } from "./services/bitsocialDaemon.js";
 import { LOCAL_ENGINE_BASE_URL } from "../shared/models.js";
 import { automationStore } from "./stores/automationStore.js";
-import { getActiveRoot, projectStore, resolveProjectPath } from "./stores/projectStore.js";
+import { projectStore } from "./stores/projectStore.js";
+import {
+  resolveProjectPath,
+  toWorkspaceRelative,
+  workspaceStore,
+} from "./stores/workspaceStore.js";
 import { sessionStore } from "./stores/sessionStore.js";
 import { generatorCatalogStore } from "./stores/generatorCatalogStore.js";
 import { generateUiFromPrompt } from "./services/generatorService.js";
@@ -712,6 +728,28 @@ app.post("/api/webhooks/automations/:id", async (c) => {
 
 app.get("/api/files", requireCap("files:read"), async (c) => {
   const rel = c.req.query("path") ?? ".";
+  const ws = workspaceStore.get();
+  if (ws.backend === "drive") {
+    try {
+      const { listDriveWorkspace } = await import("./stores/driveWorkspace.js");
+      return c.json(listDriveWorkspace(rel));
+    } catch (err) {
+      return c.json({ error: err instanceof Error ? err.message : "Drive list failed" }, 400);
+    }
+  }
+  // Multi-root virtual listing at workspace top.
+  if ((rel === "." || rel === "") && ws.roots.length > 1) {
+    const now = new Date().toISOString();
+    return c.json(
+      ws.roots.map((r) => ({
+        name: r.name,
+        path: r.name,
+        type: "dir" as const,
+        size: 0,
+        modifiedAt: now,
+      })),
+    );
+  }
   const abs = resolveProjectPath(rel);
   const entries = await fs.readdir(abs, { withFileTypes: true });
   const out = await Promise.all(
@@ -723,7 +761,7 @@ app.get("/api/files", requireCap("files:read"), async (c) => {
       const stat = await fs.stat(full);
       return {
         name: e.name,
-        path: path.relative(getActiveRoot(), full),
+        path: toWorkspaceRelative(full),
         type: e.isDirectory() ? ("dir" as const) : ("file" as const),
         size: stat.size,
         modifiedAt: stat.mtime.toISOString(),
@@ -737,12 +775,29 @@ app.get("/api/files", requireCap("files:read"), async (c) => {
 app.get("/api/files/content", requireCap("files:read"), async (c) => {
   const rel = c.req.query("path");
   if (!rel) return c.json({ error: "path is required" }, 400);
+  if (workspaceStore.get().backend === "drive") {
+    try {
+      const { readDriveWorkspace } = await import("./stores/driveWorkspace.js");
+      return c.json(readDriveWorkspace(rel));
+    } catch (err) {
+      return c.json({ error: err instanceof Error ? err.message : "Drive read failed" }, 400);
+    }
+  }
   const content = await fs.readFile(resolveProjectPath(rel), "utf-8");
   return c.json({ path: rel, content });
 });
 
 app.put("/api/files/content", requireCap("files:write"), async (c) => {
   const body = (await c.req.json()) as { path: string; content: string };
+  if (workspaceStore.get().backend === "drive") {
+    try {
+      const { writeDriveWorkspace } = await import("./stores/driveWorkspace.js");
+      writeDriveWorkspace(body.path, body.content);
+      return c.json({ ok: true });
+    } catch (err) {
+      return c.json({ error: err instanceof Error ? err.message : "Drive write failed" }, 400);
+    }
+  }
   const abs = resolveProjectPath(body.path);
   await fs.mkdir(path.dirname(abs), { recursive: true });
   await fs.writeFile(abs, body.content, "utf-8");
@@ -1728,6 +1783,10 @@ app.post("/api/projects", requireCap("files:write"), async (c) => {
   const body = (await c.req.json()) as { path: string };
   try {
     const project = projectStore.add(body.path);
+    if (workspaceStore.get().backend !== "local") {
+      workspaceStore.setBackend("local");
+    }
+    workspaceStore.setPrimary(body.path);
     return c.json(project);
   } catch (err) {
     return c.json({ error: err instanceof Error ? err.message : "Invalid path" }, 400);
@@ -1743,6 +1802,8 @@ app.post("/api/projects/clone-git", requireCap("files:write"), async (c) => {
     const token = githubGateway.accessTokenFor(user.id);
     const dest = await cloneGitRepo(body.repo, body.branch, token);
     const project = projectStore.add(dest);
+    workspaceStore.setBackend("local");
+    workspaceStore.setPrimary(dest);
     return c.json(project);
   } catch (err) {
     return c.json({ error: err instanceof Error ? err.message : "Clone failed" }, 400);
@@ -1753,6 +1814,17 @@ app.post("/api/projects/active", requireCap("files:write"), async (c) => {
   const body = (await c.req.json()) as { id: string | null };
   try {
     projectStore.setActive(body.id);
+    if (body.id === null) {
+      workspaceStore.clearToSandbox();
+    } else {
+      const project = projectStore.list().projects.find((p) => p.id === body.id);
+      if (project) {
+        if (workspaceStore.get().backend !== "local") {
+          workspaceStore.setBackend("local");
+        }
+        workspaceStore.setPrimary(project.path);
+      }
+    }
     return c.json(projectStore.list());
   } catch (err) {
     return c.json({ error: err instanceof Error ? err.message : "Unknown project" }, 400);
@@ -1841,6 +1913,132 @@ app.post("/api/git/pull", requireCap("git:write"), async (c) => {
   } catch (err) {
     return c.json({ error: err instanceof Error ? err.message : "Pull failed" }, 400);
   }
+});
+
+app.get("/api/git/branches", async (c) => {
+  try {
+    return c.json(await gitBranches());
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Branches failed" }, 400);
+  }
+});
+
+app.post("/api/git/checkout", requireCap("git:write"), async (c) => {
+  const body = (await c.req.json()) as { branch: string; create?: boolean };
+  try {
+    return c.json(await gitCheckout(body.branch, body.create === true));
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Checkout failed" }, 400);
+  }
+});
+
+app.get("/api/git/worktrees", async (c) => {
+  try {
+    return c.json(await gitWorktrees());
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Worktrees failed" }, 400);
+  }
+});
+
+app.post("/api/git/worktrees", requireCap("git:write"), async (c) => {
+  const body = (await c.req.json()) as { path: string; branch: string };
+  if (!body.path?.trim() || !body.branch?.trim()) {
+    return c.json({ error: "path and branch are required" }, 400);
+  }
+  try {
+    return c.json(await gitWorktreeAdd(body.path, body.branch));
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Worktree add failed" }, 400);
+  }
+});
+
+app.delete("/api/git/worktrees", requireCap("git:write"), async (c) => {
+  const body = (await c.req.json()) as { path: string };
+  if (!body.path?.trim()) return c.json({ error: "path is required" }, 400);
+  try {
+    return c.json(await gitWorktreeRemove(body.path));
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Worktree remove failed" }, 400);
+  }
+});
+
+// ── Studio workspace (multi-root) ───────────────────────────────────────────
+
+app.get("/api/workspace", (c) => c.json(workspaceStore.get()));
+
+app.put("/api/workspace", requireCap("files:write"), async (c) => {
+  const body = (await c.req.json()) as Partial<import("../shared/types.js").WorkspaceState>;
+  try {
+    return c.json(
+      workspaceStore.set({
+        backend: body.backend ?? "local",
+        remoteProfileId: body.remoteProfileId ?? null,
+        roots: body.roots ?? [],
+        worktreePath: body.worktreePath ?? null,
+      }),
+    );
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Invalid workspace" }, 400);
+  }
+});
+
+app.post("/api/workspace/backend", requireCap("files:write"), async (c) => {
+  const body = (await c.req.json()) as {
+    backend: "local" | "drive" | "remote";
+    remoteProfileId?: string | null;
+  };
+  try {
+    return c.json(workspaceStore.setBackend(body.backend, body.remoteProfileId ?? null));
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Backend switch failed" }, 400);
+  }
+});
+
+app.post("/api/workspace/roots", requireCap("files:write"), async (c) => {
+  const body = (await c.req.json()) as {
+    location: string;
+    name?: string;
+    asPrimary?: boolean;
+  };
+  if (!body.location?.trim()) return c.json({ error: "location is required" }, 400);
+  try {
+    if (body.asPrimary || workspaceStore.get().roots.length === 0) {
+      return c.json(workspaceStore.setPrimary(body.location, body.name));
+    }
+    return c.json(workspaceStore.addRoot(body.location, body.name));
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Add root failed" }, 400);
+  }
+});
+
+app.delete("/api/workspace/roots/:id", requireCap("files:write"), (c) => {
+  try {
+    return c.json(workspaceStore.removeRoot(c.req.param("id")));
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Remove root failed" }, 400);
+  }
+});
+
+app.post("/api/workspace/primary", requireCap("files:write"), async (c) => {
+  const body = (await c.req.json()) as { id: string };
+  try {
+    return c.json(workspaceStore.setPrimaryId(body.id));
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Set primary failed" }, 400);
+  }
+});
+
+app.post("/api/workspace/worktree", requireCap("files:write"), async (c) => {
+  const body = (await c.req.json()) as { path: string | null };
+  try {
+    return c.json(workspaceStore.setWorktreePath(body.path));
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Set worktree failed" }, 400);
+  }
+});
+
+app.post("/api/workspace/sandbox", requireCap("files:write"), (c) => {
+  return c.json(workspaceStore.clearToSandbox());
 });
 
 // ── Web apps (dock-mounted user projects) ────────────────────────────────────
@@ -2271,6 +2469,19 @@ app.get("/api/github/repos", async (c) => {
     );
   } catch (err) {
     return c.json({ error: err instanceof Error ? err.message : "Could not list repos" }, 400);
+  }
+});
+
+app.get("/api/github/issue", async (c) => {
+  const ref = c.req.query("ref") ?? c.req.query("url") ?? "";
+  const accountId = c.req.query("accountId") ?? undefined;
+  if (!ref.trim()) {
+    return c.json({ error: "Missing issue ref (url or owner/repo#n)" }, 400);
+  }
+  try {
+    return c.json(await githubGateway.fetchIssue(currentUser(c).id, ref, accountId));
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Could not fetch issue" }, 400);
   }
 });
 

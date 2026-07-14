@@ -13,8 +13,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { projectStore } from "../stores/projectStore.js";
 import { skillStore } from "../skills/skillStore.js";
+import {
+  getPrimaryRoot,
+  listWorkspaceRoots,
+  workspaceStore,
+} from "../stores/workspaceStore.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const generatedDir = path.join(__dirname, "..", "generated");
@@ -72,11 +76,34 @@ ${lines.join("\n")}`;
  * generative-OS framing otherwise.
  */
 function workspaceContext(): string {
-  const active = projectStore.getActive();
-  if (!active) {
+  const state = workspaceStore.get();
+  const roots = listWorkspaceRoots();
+  if (roots.length === 0) {
     return "\n\nACTIVE WORKSPACE: the Arco sandbox (data/workspace). No user folder is open.";
   }
-  return `\n\nACTIVE WORKSPACE: the user has opened the folder "${active.name}" (${active.path}). All file tools and exec commands run inside it. Treat it as a real codebase: read before you edit, keep changes minimal and consistent with the project's style, and use git via exec (status/diff/commit) for version control. Commit only when the user asks. Destructive commands (push, hard reset) will pause for the user's approval.`;
+  const primary = roots.find((r) => r.role === "primary") ?? roots[0];
+  const effective = getPrimaryRoot();
+  const backendNote =
+    state.backend === "drive"
+      ? " Backend: Kosmos Drive (file tools use Drive entries; exec/git are unavailable)."
+      : state.backend === "remote"
+        ? " Backend: remote Arco server."
+        : "";
+  const worktreeNote =
+    state.worktreePath && state.backend === "local"
+      ? ` Active git worktree: ${state.worktreePath}.`
+      : "";
+  const rootLines = roots
+    .map((r) => {
+      const role = r.role === "primary" ? "primary" : "additional";
+      const tip =
+        roots.length > 1
+          ? ` Address files as "${r.name}/..." when not under the primary cwd.`
+          : "";
+      return `- ${role}: "${r.name}" (${r.location})${tip}`;
+    })
+    .join("\n");
+  return `\n\nACTIVE WORKSPACE (${state.backend}): primary cwd is "${primary.name}" (${effective}).${backendNote}${worktreeNote}\nAttached roots:\n${rootLines}\nAll file tools resolve inside these roots. Treat them as a real codebase: read before you edit, keep changes minimal and consistent with the project's style, and use git via exec (status/diff/commit) for version control on Local workspaces. Commit only when the user asks. Destructive commands (push, hard reset) will pause for the user's approval.`;
 }
 
 export function buildSystemPrompt(): string {

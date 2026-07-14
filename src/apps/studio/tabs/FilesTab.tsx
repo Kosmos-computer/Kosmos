@@ -27,6 +27,7 @@ export function FilesTab() {
   const { filesVersion, changes } = useSessionActivity();
   const requestedPath = useStudioStore((s) => s.requestedPath);
   const requestFile = useStudioStore((s) => s.requestFile);
+  const workspace = useStudioStore((s) => s.workspace);
 
   const [dirs, setDirs] = useState<Record<string, WorkspaceEntry[]>>({});
   const [expanded, setExpanded] = useState<Set<string>>(new Set(["."]));
@@ -55,8 +56,11 @@ export function FilesTab() {
   }, []);
 
   useEffect(() => {
+    setDirs({});
+    setExpanded(new Set(["."]));
+    setFile(null);
     void loadDir(".");
-  }, [loadDir]);
+  }, [loadDir, workspace.backend, workspace.roots.map((r) => r.id).join(","), workspace.worktreePath]);
 
   // Agent wrote files → refresh every directory currently on screen.
   useEffect(() => {

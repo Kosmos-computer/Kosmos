@@ -389,6 +389,38 @@
   padding: var(--arco-space-l);
 }
 
+/* Jump-to-latest — circular arrow that appears above the composer when the
+   user has scrolled up away from the newest message. */
+.arco-chat__jump-latest {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin-bottom: var(--arco-space-s);
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--arco-border);
+  background: var(--arco-bg-surface-solid);
+  color: var(--arco-text-secondary);
+  box-shadow: var(--arco-shadow-chrome);
+  transform: translateX(-50%);
+  transition:
+    background var(--arco-dur-fast),
+    color var(--arco-dur-fast),
+    border-color var(--arco-dur-fast),
+    opacity var(--arco-dur-fast);
+}
+.arco-chat__jump-latest:hover {
+  background: var(--arco-bg-elevated);
+  color: var(--arco-text-primary);
+  border-color: var(--arco-border-strong);
+}
+
 .arco-chat__user-row {
   align-self: flex-end;
   max-width: 82%;

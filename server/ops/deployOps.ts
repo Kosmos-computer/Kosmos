@@ -9,7 +9,7 @@ import fsp from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 import { dataDirs } from "../env.js";
-import { getActiveRoot } from "../stores/projectStore.js";
+import { getActiveRoot } from "../stores/workspaceStore.js";
 
 const execFileAsync = promisify(execFile);
 

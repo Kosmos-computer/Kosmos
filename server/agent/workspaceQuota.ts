@@ -11,7 +11,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { dataDirs } from "../env.js";
-import { getActiveRoot } from "../stores/projectStore.js";
+import { getActiveRoot } from "../stores/workspaceStore.js";
 
 const DEFAULT_QUOTA_MB = 512;
 const CACHE_MS = 15_000;

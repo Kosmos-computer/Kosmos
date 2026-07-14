@@ -19,7 +19,7 @@ import { CURSOR_DEFAULT_MODEL } from "../../shared/types.js";
 import { loadSettings, resolveCursorApiKey } from "../env.js";
 import type { RunTurnOptions } from "../agent/loop.js";
 import { mcpServerStore, slugify } from "../mcp/serverStore.js";
-import { getActiveRoot } from "../stores/projectStore.js";
+import { getActiveRoot } from "../stores/workspaceStore.js";
 import { sessionStore } from "../stores/sessionStore.js";
 
 // ── Run registry ─────────────────────────────────────────────────────────────

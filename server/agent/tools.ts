@@ -38,7 +38,13 @@ import { automationStore } from "../stores/automationStore.js";
 import { invokeIntent } from "../capabilities/registry.js";
 import { appendAudit } from "../platform/grantStore.js";
 import { intentMeta } from "../../shared/capabilities/index.js";
-import { getActiveRoot, resolveProjectPath } from "../stores/projectStore.js";
+import {
+  getActiveRoot,
+  getWorkspaceBackend,
+  listWorkspaceRoots,
+  resolveProjectPath,
+  toWorkspaceRelative,
+} from "../stores/workspaceStore.js";
 import { resolveSystemAppId } from "../../shared/systemApps.js";
 import { dbExecute, dbQuery } from "../stores/db.js";
 import { skillStore } from "../skills/skillStore.js";
@@ -100,6 +106,13 @@ export async function runExec(command: string): Promise<{
   stderr: string;
   exitCode: number;
 }> {
+  if (getWorkspaceBackend() === "drive") {
+    return {
+      stdout: "",
+      stderr: "Exec is unavailable while the Studio workspace backend is Drive.",
+      exitCode: 1,
+    };
+  }
   try {
     const { stdout, stderr } = await execAsync(command, {
       cwd: getActiveRoot(),
@@ -510,6 +523,10 @@ export const agentTools: AgentTool[] = [
       required: ["path"],
     },
     execute: async (args) => {
+      if (getWorkspaceBackend() === "drive") {
+        const { readDriveWorkspace } = await import("../stores/driveWorkspace.js");
+        return readDriveWorkspace(String(args.path ?? ""));
+      }
       const abs = resolveProjectPath(String(args.path ?? ""));
       const content = await fs.readFile(abs, "utf-8");
       return { path: args.path, content };
@@ -528,6 +545,20 @@ export const agentTools: AgentTool[] = [
       required: ["path", "content"],
     },
     execute: async (args, ctx) => {
+      if (getWorkspaceBackend() === "drive") {
+        const { writeDriveWorkspace, readDriveWorkspace } = await import("../stores/driveWorkspace.js");
+        const pathStr = String(args.path ?? "");
+        const content = String(args.content ?? "");
+        let before: string | null = null;
+        try {
+          before = readDriveWorkspace(pathStr).content;
+        } catch {
+          before = null;
+        }
+        const result = writeDriveWorkspace(pathStr, content);
+        ctx.emit({ type: "file_changed", path: pathStr, before, after: content });
+        return result;
+      }
       const abs = resolveProjectPath(String(args.path ?? ""));
       const content = String(args.content ?? "");
       // Capture the previous content before overwriting — the file_changed
@@ -556,7 +587,23 @@ export const agentTools: AgentTool[] = [
       properties: { path: { type: "string", description: "Workspace-relative directory path" } },
     },
     execute: async (args) => {
-      const abs = resolveProjectPath(String(args.path ?? "."));
+      if (getWorkspaceBackend() === "drive") {
+        const { listDriveWorkspace } = await import("../stores/driveWorkspace.js");
+        return listDriveWorkspace(String(args.path ?? "."));
+      }
+      const rel = String(args.path ?? ".");
+      const roots = listWorkspaceRoots();
+      if ((rel === "." || rel === "") && roots.length > 1) {
+        const now = new Date().toISOString();
+        return roots.map((r) => ({
+          name: r.name,
+          path: r.name,
+          type: "dir" as const,
+          size: 0,
+          modifiedAt: now,
+        }));
+      }
+      const abs = resolveProjectPath(rel);
       const entries = await fs.readdir(abs, { withFileTypes: true });
       const out: WorkspaceEntry[] = [];
       for (const e of entries) {
@@ -564,7 +611,7 @@ export const agentTools: AgentTool[] = [
         const stat = await fs.stat(full);
         out.push({
           name: e.name,
-          path: path.relative(getActiveRoot(), full),
+          path: toWorkspaceRelative(full),
           type: e.isDirectory() ? "dir" : "file",
           size: stat.size,
           modifiedAt: stat.mtime.toISOString(),

@@ -15,7 +15,7 @@ import path from "node:path";
 import crypto from "node:crypto";
 import type { RunEntry } from "../shared/types.js";
 import { dataDirs } from "./env.js";
-import { getActiveRoot } from "./stores/projectStore.js";
+import { getActiveRoot } from "./stores/workspaceStore.js";
 
 const LOG_DIR = path.join(dataDirs.root, "run-logs");
 

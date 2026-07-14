@@ -1211,3 +1211,129 @@
 .arco-btn--icon {
   padding: 5px 6px;
 }
+
+/* ── Workspace chrome (composer status chip row) ──────────────────────────── */
+
+.arco-workspacechrome {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.arco-workspacechrome__chipwrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.arco-workspacechrome__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  font-size: var(--arco-text-xs);
+  font-weight: 500;
+  color: var(--arco-text-secondary);
+  background: var(--arco-bg-elevated);
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-s);
+  white-space: nowrap;
+}
+
+.arco-workspacechrome__chip:hover {
+  background: var(--arco-bg-hover);
+  color: var(--arco-text-primary);
+}
+
+.arco-workspacechrome__chip--git {
+  gap: 0;
+  padding: 0;
+}
+
+.arco-workspacechrome__chip--extra {
+  padding-right: 4px;
+}
+
+.arco-workspacechrome__chip--icon {
+  padding: 4px 6px;
+}
+
+.arco-workspacechrome__chipseg {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: var(--arco-radius-s);
+  white-space: nowrap;
+}
+
+.arco-workspacechrome__chipseg:hover {
+  background: var(--arco-bg-hover);
+  color: var(--arco-text-primary);
+}
+
+.arco-workspacechrome__chipseg:disabled {
+  opacity: 0.6;
+}
+
+.arco-workspacechrome__chipseg[aria-pressed="true"] {
+  color: var(--arco-text-primary);
+}
+
+.arco-workspacechrome__name {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.arco-workspacechrome__sep {
+  width: 1px;
+  height: 12px;
+  background: var(--arco-border-strong);
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.arco-workspacechrome__remove {
+  display: inline-flex;
+  padding: 2px;
+  color: var(--arco-text-tertiary);
+  border-radius: var(--arco-radius-s);
+}
+
+.arco-workspacechrome__remove:hover {
+  color: var(--arco-danger);
+}
+
+.arco-workspacechrome__menu {
+  top: auto;
+  bottom: calc(100% + 4px);
+  left: 0;
+  right: auto;
+  min-width: 280px;
+}
+
+.arco-workspacechrome__branchsearch {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px 4px;
+  color: var(--arco-text-tertiary);
+}
+
+.arco-workspacechrome__branchsearch .arco-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.arco-workspacechrome__inlineerror {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--arco-text-xs);
+  color: var(--arco-danger);
+}

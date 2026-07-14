@@ -176,6 +176,31 @@ select {
   color: var(--arco-accent);
 }
 
+.arco-menu__shortcut {
+  flex-shrink: 0;
+  margin-left: auto;
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.arco-menu__chevron {
+  display: flex;
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--arco-text-tertiary);
+}
+
+.arco-menu__item--active,
+.arco-menu__item--active:hover {
+  background: var(--arco-bg-hover);
+  color: var(--arco-text-primary);
+}
+.arco-menu__item--active .arco-menu__icon,
+.arco-menu__item--active .arco-menu__chevron {
+  color: inherit;
+}
+
 .arco-menu__separator {
   height: 1px;
   margin: 4px 6px;

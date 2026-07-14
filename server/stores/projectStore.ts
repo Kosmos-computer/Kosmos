@@ -1,10 +1,9 @@
 /**
- * Project registry — the "Open Folder" concept. A project is any directory
- * on disk the user has opened; the active project becomes the root for all
- * agent file tools, exec commands, and the /api/files browser.
+ * Project registry — recent folders the user has opened. The active Studio
+ * workspace (multi-root) lives in workspaceStore; this registry backs the
+ * picker history and session.projectId bindings.
  *
- * activeId === null means the built-in sandbox (data/workspace) is active —
- * the safe default that preserves Arco's original behavior.
+ * activeId === null means the built-in sandbox is the implied Local primary.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -29,7 +28,7 @@ function load(): ProjectsState {
 }
 
 function save(state: ProjectsState): void {
-  fs.writeFileSync(PROJECTS_FILE, JSON.stringify(state, null, 2), "utf-8");
+  fs.writeFileSync(PROJECTS_FILE, JSON.stringify(state, null, 2));
 }
 
 export const projectStore = {
@@ -87,30 +86,3 @@ export const projectStore = {
     return state.projects.find((p) => p.id === state.activeId) ?? null;
   },
 };
-
-// ---------------------------------------------------------------------------
-// Active-root path resolution
-//
-// These replace env.ts's sandbox-only resolveWorkspacePath: same containment
-// guarantee (no escaping via ".."), but rooted at whichever folder is open.
-// ---------------------------------------------------------------------------
-
-/** Absolute root all agent file/exec operations resolve against. */
-export function getActiveRoot(): string {
-  const active = projectStore.getActive();
-  // A project deleted from disk falls back to the sandbox instead of erroring
-  // on every tool call.
-  if (active && fs.existsSync(active.path)) return active.path;
-  return dataDirs.workspace;
-}
-
-/** Resolve a root-relative path, refusing escapes above the active root. */
-export function resolveProjectPath(p: string): string {
-  const root = getActiveRoot();
-  const cleaned = p.replace(/^~\//, "").replace(/^\/+/, "");
-  const abs = path.resolve(root, cleaned);
-  if (abs !== root && !abs.startsWith(root + path.sep)) {
-    throw new Error(`Path escapes the project root: ${p}`);
-  }
-  return abs;
-}

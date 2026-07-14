@@ -185,9 +185,6 @@ export function buildSettingsNavGroups(): SettingsNavGroup[] {
   ];
 }
 
-/** @deprecated Use buildSettingsNavGroups() for locale-aware labels. */
-export const SETTINGS_NAV_GROUPS: SettingsNavGroup[] = buildSettingsNavGroups();
-
 export function filterSettingsNavGroups(groups: SettingsNavGroup[], query: string): SettingsNavGroup[] {
   const normalized = query.trim().toLowerCase();
   if (!normalized) return groups;

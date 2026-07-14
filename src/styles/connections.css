@@ -74,6 +74,12 @@
   line-height: 1.45;
 }
 
+.arco-connect-modal__error {
+  margin: 0;
+  font-size: var(--arco-text-sm);
+  color: var(--arco-danger);
+}
+
 .arco-connect-modal__chips {
   display: flex;
   flex-wrap: wrap;

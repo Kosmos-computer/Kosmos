@@ -24,9 +24,13 @@ import type {
   DirListing,
   ExternalAccessInfo,
   ExternalClientScope,
+  GitBranchInfo,
   GitInfo,
+  GitWorktreeInfo,
   InstallStatus,
   WorkspaceFeatures,
+  WorkspaceState,
+  WorkspaceBackendKind,
   McpServerInfo,
   McpTransport,
   Project,
@@ -75,7 +79,7 @@ import type {
   MailThread,
   MailThreadDetail,
 } from "@shared/mail";
-import type { GitHubAccountInfo, GitHubRepoSummary } from "@shared/github";
+import type { GitHubAccountInfo, GitHubIssueDetail, GitHubRepoSummary } from "@shared/github";
 import type {
   SocialAccountInfo,
   SocialBitsocialConnectInput,
@@ -558,7 +562,7 @@ export const api = {
       body: JSON.stringify({ command }),
     }).then((r) => json<{ stdout: string; stderr: string; exitCode: number }>(r)),
 
-  // Projects (open folders)
+  // Projects (open folders / recent registry)
   listProjects: () => fetch("/api/projects").then((r) => json<ProjectsInfo>(r)),
   addProject: (path: string) =>
     fetch("/api/projects", {
@@ -584,6 +588,49 @@ export const api = {
     fetch(`/api/fs/browse${path ? `?path=${encodeURIComponent(path)}` : ""}`).then((r) =>
       json<DirListing>(r),
     ),
+
+  // Studio workspace (multi-root)
+  getWorkspace: () => fetch("/api/workspace").then((r) => json<WorkspaceState>(r)),
+  setWorkspace: (state: WorkspaceState) =>
+    fetch("/api/workspace", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(state),
+    }).then((r) => json<WorkspaceState>(r)),
+  setWorkspaceBackend: (backend: WorkspaceBackendKind, remoteProfileId?: string | null) =>
+    fetch("/api/workspace/backend", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ backend, remoteProfileId: remoteProfileId ?? null }),
+    }).then((r) => json<WorkspaceState>(r)),
+  addWorkspaceRoot: (location: string, opts?: { name?: string; asPrimary?: boolean }) =>
+    fetch("/api/workspace/roots", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        location,
+        name: opts?.name,
+        asPrimary: opts?.asPrimary,
+      }),
+    }).then((r) => json<WorkspaceState>(r)),
+  removeWorkspaceRoot: (id: string) =>
+    fetch(`/api/workspace/roots/${encodeURIComponent(id)}`, { method: "DELETE" }).then((r) =>
+      json<WorkspaceState>(r),
+    ),
+  setWorkspacePrimary: (id: string) =>
+    fetch("/api/workspace/primary", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    }).then((r) => json<WorkspaceState>(r)),
+  setWorkspaceWorktree: (path: string | null) =>
+    fetch("/api/workspace/worktree", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path }),
+    }).then((r) => json<WorkspaceState>(r)),
+  clearWorkspaceSandbox: () =>
+    fetch("/api/workspace/sandbox", { method: "POST" }).then((r) => json<WorkspaceState>(r)),
   // Web apps (dock-mounted user projects)
   listWebApps: () => fetch("/api/webapps").then((r) => json<WebApp[]>(r)),
   addWebApp: (data: { name: string; url: string; command?: string; projectPath?: string }) =>
@@ -662,6 +709,26 @@ export const api = {
     }).then((r) => json<{ ok: true; output: string }>(r)),
   gitPush: () => fetch("/api/git/push", { method: "POST" }).then((r) => json<{ ok: true; output: string }>(r)),
   gitPull: () => fetch("/api/git/pull", { method: "POST" }).then((r) => json<{ ok: true; output: string }>(r)),
+  gitBranches: () => fetch("/api/git/branches").then((r) => json<GitBranchInfo[]>(r)),
+  gitCheckout: (branch: string, create?: boolean) =>
+    fetch("/api/git/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ branch, create }),
+    }).then((r) => json<{ ok: true; branch: string }>(r)),
+  gitWorktrees: () => fetch("/api/git/worktrees").then((r) => json<GitWorktreeInfo[]>(r)),
+  gitWorktreeAdd: (path: string, branch: string) =>
+    fetch("/api/git/worktrees", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path, branch }),
+    }).then((r) => json<{ ok: true; path: string }>(r)),
+  gitWorktreeRemove: (path: string) =>
+    fetch("/api/git/worktrees", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path }),
+    }).then((r) => json<{ ok: true }>(r)),
 
   // Exec / policy confirmations — `remember` scopes an extended answer
   // ("session" allows for the rest of the chat, "always" persists a rule).
@@ -819,6 +886,11 @@ export const api = {
     return fetch(`/api/github/repos${suffix ? `?${suffix}` : ""}`).then((r) =>
       json<GitHubRepoSummary[]>(r),
     );
+  },
+  fetchGitHubIssue: (ref: string, accountId?: string) => {
+    const params = new URLSearchParams({ ref });
+    if (accountId) params.set("accountId", accountId);
+    return fetch(`/api/github/issue?${params.toString()}`).then((r) => json<GitHubIssueDetail>(r));
   },
   disconnectGitHubAccount: (id: string) =>
     fetch(`/api/github/accounts/${encodeURIComponent(id)}`, { method: "DELETE" }).then((r) =>

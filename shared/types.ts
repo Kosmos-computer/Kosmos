@@ -969,6 +969,48 @@ export interface ProjectsInfo {
   activeId: string | null;
 }
 
+// ── Studio workspace (multi-root) ────────────────────────────────────────────
+
+/** Where Studio resolves coding roots from. */
+export type WorkspaceBackendKind = "local" | "drive" | "remote";
+
+/** One attached folder in the active Studio workspace. */
+export interface WorkspaceRoot {
+  id: string;
+  name: string;
+  /**
+   * local/remote: absolute filesystem path.
+   * drive: Drive folder entry id.
+   */
+  location: string;
+  role: "primary" | "additional";
+}
+
+/**
+ * Active Studio workspace — multi-root, with optional git worktree override
+ * for the primary Local repo.
+ */
+export interface WorkspaceState {
+  backend: WorkspaceBackendKind;
+  /** Client server-profile id when backend is remote (informational on server). */
+  remoteProfileId: string | null;
+  roots: WorkspaceRoot[];
+  /** Active git worktree path for primary; null = primary.location itself. */
+  worktreePath: string | null;
+}
+
+export interface GitBranchInfo {
+  name: string;
+  current: boolean;
+  remote: boolean;
+}
+
+export interface GitWorktreeInfo {
+  path: string;
+  branch: string;
+  bare: boolean;
+}
+
 /** One directory level for the folder-picker browser. */
 export interface DirListing {
   path: string;

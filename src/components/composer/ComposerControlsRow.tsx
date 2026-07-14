@@ -20,7 +20,11 @@ import {
 } from "react";
 import { ChevronDown, MicOff, MoreHorizontal, Mic, Send, Square } from "lucide-react";
 import { Menu, type MenuItem } from "../Menu";
-import { ComposerAttachMenu, type ComposerPanelToggle } from "./ComposerAttachMenu";
+import {
+  ComposerAttachMenu,
+  type ComposerConnector,
+  type ComposerPanelToggle,
+} from "./ComposerAttachMenu";
 import { ComposerEmojiPicker } from "./ComposerEmojiPicker";
 import { ComposerFormattingToggle } from "./ComposerFormattingToolbar";
 
@@ -38,6 +42,13 @@ export interface ComposerControlsRowProps {
   disabled?: boolean;
   streaming?: boolean;
   onAddFile?: () => void;
+  onAddFolder?: () => void;
+  onImportGitHubIssue?: () => void;
+  onSlashCommands?: () => void;
+  onAddPlugins?: () => void;
+  onManageConnectors?: () => void;
+  onBrowseConnectors?: () => void;
+  connectors?: ComposerConnector[];
   panelToggles?: ComposerPanelToggle[];
   onInsertEmoji: (emoji: string) => void;
   formattingVisible: boolean;
@@ -60,6 +71,13 @@ export function ComposerControlsRow({
   disabled,
   streaming,
   onAddFile,
+  onAddFolder,
+  onImportGitHubIssue,
+  onSlashCommands,
+  onAddPlugins,
+  onManageConnectors,
+  onBrowseConnectors,
+  connectors,
   panelToggles,
   onInsertEmoji,
   formattingVisible,
@@ -149,7 +167,21 @@ export function ComposerControlsRow({
     const items: MenuItem[] = [];
 
     if (overflowIds.includes("attach")) {
-      if (onAddFile) items.push({ id: "of-attach", label: "Add file", onSelect: onAddFile });
+      items.push(
+        { id: "of-attach", label: "Add files or photos", onSelect: () => onAddFile?.() },
+        { id: "of-folder", label: "Add folder", onSelect: () => onAddFolder?.() },
+        { id: "of-github", label: "Import GitHub issue", onSelect: () => onImportGitHubIssue?.() },
+        { id: "of-slash", label: "Slash commands", onSelect: () => onSlashCommands?.() },
+        { id: "of-plugins", label: "Add plugins…", onSelect: () => onAddPlugins?.() },
+      );
+      connectors?.forEach((connector) => {
+        items.push({
+          id: `of-connector-${connector.id}`,
+          label: connector.label,
+          checked: connector.enabled,
+          onSelect: () => connector.onEnabledChange(!connector.enabled),
+        });
+      });
       panelToggles?.forEach((toggle) => {
         items.push({
           id: `of-panel-${toggle.id}`,
@@ -192,7 +224,22 @@ export function ComposerControlsRow({
     }
 
     return items;
-  }, [overflowIds, onAddFile, panelToggles, formattingVisible, onToggleFormatting, modes, activeModeId, onModeChange, modelItems]);
+  }, [
+    overflowIds,
+    onAddFile,
+    onAddFolder,
+    onImportGitHubIssue,
+    onSlashCommands,
+    onAddPlugins,
+    connectors,
+    panelToggles,
+    formattingVisible,
+    onToggleFormatting,
+    modes,
+    activeModeId,
+    onModeChange,
+    modelItems,
+  ]);
 
   const showOverflowDock = overflowIds.length > 0 && overflowItems.length > 0;
 
@@ -219,7 +266,18 @@ export function ComposerControlsRow({
       <div className="arco-composer__controlsleft">
         <div className="arco-composer__track">
           <div ref={setItemRef("attach")} className={controlClass("attach")} aria-hidden={overflowIds.includes("attach") || undefined}>
-            <ComposerAttachMenu disabled={disabled} onAddFile={onAddFile} panelToggles={panelToggles} />
+            <ComposerAttachMenu
+              disabled={disabled}
+              onAddFile={onAddFile}
+              onAddFolder={onAddFolder}
+              onImportGitHubIssue={onImportGitHubIssue}
+              onSlashCommands={onSlashCommands}
+              onAddPlugins={onAddPlugins}
+              onManageConnectors={onManageConnectors}
+              onBrowseConnectors={onBrowseConnectors}
+              connectors={connectors}
+              panelToggles={panelToggles}
+            />
           </div>
           <div ref={setItemRef("emoji")} className={controlClass("emoji")} aria-hidden={overflowIds.includes("emoji") || undefined}>
             <ComposerEmojiPicker disabled={disabled} onSelect={onInsertEmoji} />

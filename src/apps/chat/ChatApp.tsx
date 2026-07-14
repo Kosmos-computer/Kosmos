@@ -6,17 +6,22 @@ import { T } from "../../i18n/T";
  * tool activity as compact metadata cards, inline generative UI rendered
  * from fenced openui-lang via the chat component library.
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { History, Plus, Trash2 } from "lucide-react";
 import { useChat } from "./useChat";
 import { onPrimeComposer } from "./composerBus";
 import { VoiceBar } from "./VoiceBar";
 import { useVoice, voiceClient } from "../../voice";
 import { Composer } from "../../components/composer/Composer";
+import { useComposerAttach } from "../../components/composer/useComposerAttach.tsx";
 import { ChatThread } from "../../components/chat/ChatThread";
+import { ScrollToLatestButton } from "../../components/chat/ScrollToLatestButton";
+import { useThreadScroll } from "../../components/chat/useThreadScroll";
 import { MasterDetail } from "../../components/patterns";
 import { EmptyState } from "../../components/ui";
 import { useModelSelection } from "../studio/useModelSelection";
+import { openShellWindow } from "../../os/shellNavigation";
+import { systemAppTitle } from "../../os/systemAppTitles";
 
 export function ChatApp() {
   const chat = useChat();
@@ -24,23 +29,25 @@ export function ChatApp() {
   const { modelLabel, modelItems } = useModelSelection();
   const [draft, setDraft] = useState("");
   const [showSessions, setShowSessions] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const { scrollRef, onScroll, showJump, scrollToLatest, pinToLatest } =
+    useThreadScroll(chat.items);
 
-  const followRef = useRef(true);
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (el && followRef.current) el.scrollTop = el.scrollHeight;
-  }, [chat.items]);
+  const attach = useComposerAttach({
+    onOpenFilesPanel: () =>
+      openShellWindow({ type: "system", app: "files" }, systemAppTitle("files")),
+    onInsertDraft: (text) =>
+      setDraft((current) => (current.trim() ? `${current.trim()}\n\n${text}` : text)),
+  });
 
   const submit = useCallback(
     (text?: string) => {
       const value = (text ?? draft).trim();
       if (!value) return;
       setDraft("");
-      followRef.current = true;
+      pinToLatest();
       void chat.send(value);
     },
-    [draft, chat],
+    [draft, chat, pinToLatest],
   );
 
   useEffect(() => voiceClient.subscribe(chat.applyVoiceEvent), [chat.applyVoiceEvent]);
@@ -111,10 +118,7 @@ export function ChatApp() {
             <div
               ref={scrollRef}
               className="arco-chat__thread arco-scroll"
-              onScroll={() => {
-                const el = scrollRef.current;
-                if (el) followRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
-              }}
+              onScroll={onScroll}
             >
               {chat.items.length === 0 && (
                 <EmptyState title={i18n.t(I18nKey.APPS$CHAT_ASK_ARCO_TO_BUILD_SOMETHING)}><T k={I18nKey.APPS$CHAT_BUILD_ME_A_SYSTEM_MONITOR_TRACK_MY_READING_LIST_DASHBOAR} /></EmptyState>
@@ -133,6 +137,9 @@ export function ChatApp() {
       {voice.active && <VoiceBar voice={voice} placement="dock" />}
 
       <div className="arco-composer-dock">
+        <ScrollToLatestButton visible={showJump} onClick={scrollToLatest} />
+        {attach.fileInput}
+        {attach.githubModal}
         <Composer
           value={draft}
           onChange={setDraft}
@@ -142,6 +149,13 @@ export function ChatApp() {
           placeholder={i18n.t(I18nKey.APPS$CHAT_ASK_ARCO_TO_BUILD_AUTOMATE_OR_EXPLAIN)}
           model={modelLabel}
           modelItems={modelItems}
+          onAddFile={attach.onAddFile}
+          onAddFolder={attach.onAddFolder}
+          onImportGitHubIssue={attach.onImportGitHubIssue}
+          onAddPlugins={attach.onAddPlugins}
+          onManageConnectors={attach.onManageConnectors}
+          onBrowseConnectors={attach.onBrowseConnectors}
+          connectors={attach.connectors}
           voiceActive={voice.active}
           voiceAvailable={voice.available}
           onVoiceToggle={() => void voice.toggle().catch(() => {})}

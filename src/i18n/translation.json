@@ -1693,6 +1693,13 @@
     "ja": "New",
     "zh-CN": "New"
   },
+  "APPS$CHAT_SCROLL_TO_LATEST": {
+    "en": "Scroll to latest message",
+    "es": "Ir al mensaje más reciente",
+    "de": "Zur neuesten Nachricht scrollen",
+    "ja": "最新のメッセージへスクロール",
+    "zh-CN": "滚动到最新消息"
+  },
   "APPS$CHAT_HISTORY": {
     "en": "History",
     "es": "History",
@@ -6844,6 +6851,62 @@
     "de": "Add file",
     "ja": "Add file",
     "zh-CN": "Add file"
+  },
+  "COMPONENTS$COMPOSER_ADD_FILES_OR_PHOTOS": {
+    "en": "Add files or photos",
+    "es": "Add files or photos",
+    "de": "Add files or photos",
+    "ja": "Add files or photos",
+    "zh-CN": "Add files or photos"
+  },
+  "COMPONENTS$COMPOSER_ADD_FOLDER": {
+    "en": "Add folder",
+    "es": "Add folder",
+    "de": "Add folder",
+    "ja": "Add folder",
+    "zh-CN": "Add folder"
+  },
+  "COMPONENTS$COMPOSER_IMPORT_GITHUB_ISSUE": {
+    "en": "Import GitHub issue",
+    "es": "Import GitHub issue",
+    "de": "Import GitHub issue",
+    "ja": "Import GitHub issue",
+    "zh-CN": "Import GitHub issue"
+  },
+  "COMPONENTS$COMPOSER_SLASH_COMMANDS": {
+    "en": "Slash commands",
+    "es": "Slash commands",
+    "de": "Slash commands",
+    "ja": "Slash commands",
+    "zh-CN": "Slash commands"
+  },
+  "COMPONENTS$COMPOSER_CONNECTORS": {
+    "en": "Connectors",
+    "es": "Connectors",
+    "de": "Connectors",
+    "ja": "Connectors",
+    "zh-CN": "Connectors"
+  },
+  "COMPONENTS$COMPOSER_MANAGE_CONNECTORS": {
+    "en": "Manage connectors",
+    "es": "Manage connectors",
+    "de": "Manage connectors",
+    "ja": "Manage connectors",
+    "zh-CN": "Manage connectors"
+  },
+  "COMPONENTS$COMPOSER_BROWSE_CONNECTORS": {
+    "en": "Browse connectors",
+    "es": "Browse connectors",
+    "de": "Browse connectors",
+    "ja": "Browse connectors",
+    "zh-CN": "Browse connectors"
+  },
+  "COMPONENTS$COMPOSER_ADD_PLUGINS": {
+    "en": "Add plugins…",
+    "es": "Add plugins…",
+    "de": "Add plugins…",
+    "ja": "Add plugins…",
+    "zh-CN": "Add plugins…"
   },
   "COMPONENTS$COMPOSER_NO_EMOJI_MATCH_YOUR_SEARCH": {
     "en": "No emoji match your search.",

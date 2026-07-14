@@ -6,7 +6,7 @@ import { T } from "../../i18n/T";
  * Longformer Plugins view and Arco's Skills dashboard: search, tab filter
  * (Installed vs Marketplace), card grid, and a detail overlay with install.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ExternalLink, Plus, Star, Trash2, X } from "lucide-react";
 import {
   ModuleCardGrid,
@@ -18,8 +18,9 @@ import {
 import { Button, Chip, EmptyState } from "../../components/ui";
 import { appIcon } from "../appview/appIcon";
 import { filterApis } from "./apisFilters";
+import { useApisNavStore } from "./apisNavStore";
 import type { ApiCatalogTab, ApiIntegration } from "./types";
-import { useApisStub } from "./useApisStub";
+import { useApis } from "./useApisStub";
 
 const TAB_FILTERS: { id: ApiCatalogTab; label: string }[] = [
   { id: "installed", label: "Installed" },
@@ -67,8 +68,8 @@ function ApiDetailOverlay({
 }: {
   api: ApiIntegration;
   onClose: () => void;
-  onInstall: () => void;
-  onUninstall: () => void;
+  onInstall: () => void | Promise<void>;
+  onUninstall: () => void | Promise<void>;
 }) {
   const Icon = appIcon(api.icon);
 
@@ -113,11 +114,11 @@ function ApiDetailOverlay({
           {api.installed ? (
             <>
               <Button disabled><T k={I18nKey.APPS$APIS_INSTALLED} /></Button>
-              <Button variant="danger" onClick={onUninstall}>
+              <Button variant="danger" onClick={() => void onUninstall()}>
                 <Trash2 size={13} /><T k={I18nKey.COMMON$REMOVE} /></Button>
             </>
           ) : (
-            <Button variant="primary" onClick={onInstall}>
+            <Button variant="primary" onClick={() => void onInstall()}>
               <Plus size={13} /><T k={I18nKey.COMMON$INSTALL} /></Button>
           )}
           {api.docsUrl ? (
@@ -135,9 +136,15 @@ function ApiDetailOverlay({
 }
 
 export function ApisApp() {
-  const { apis, selected, select, install, uninstall, installedCount } = useApisStub();
+  const { apis, selected, select, install, uninstall, installedCount } = useApis();
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<ApiCatalogTab>("installed");
+  const consumeInitialTab = useApisNavStore((s) => s.consumeInitialTab);
+
+  useEffect(() => {
+    const initial = consumeInitialTab();
+    if (initial) setTab(initial);
+  }, [consumeInitialTab]);
 
   const filtered = useMemo(() => filterApis(apis, search, tab), [apis, search, tab]);
 
@@ -195,8 +202,8 @@ export function ApisApp() {
         <ApiDetailOverlay
           api={selected}
           onClose={() => select(null)}
-          onInstall={() => install(selected.id)}
-          onUninstall={() => uninstall(selected.id)}
+          onInstall={() => void install(selected.id)}
+          onUninstall={() => void uninstall(selected.id)}
         />
       ) : null}
     </ModulePage>

@@ -19,6 +19,7 @@ import type {
 import { MCP_PRESETS } from "@shared/types";
 import { api } from "../../lib/api";
 import { useCan } from "../../os/auth/authStore";
+import { useSettingsStore } from "./settingsStore";
 import {
   SettingsAlert,
   SettingsEmpty,
@@ -146,12 +147,14 @@ function ServerCard({
   const setEnabled = async (enabled: boolean) => {
     await api.updateMcpServer(cfg.id, { enabled });
     onChanged();
+    useSettingsStore.getState().bumpSettingsRevision();
   };
 
   const remove = async () => {
     if (!window.confirm(`Remove MCP server "${cfg.name}"? Its tools leave the agent.`)) return;
     await api.removeMcpServer(cfg.id);
     onChanged();
+    useSettingsStore.getState().bumpSettingsRevision();
   };
 
   const restart = async () => {
@@ -269,6 +272,7 @@ export function McpServersSection() {
     try {
       await api.addMcpServer({ name: preset.label, transport: preset.transport });
       await refresh();
+      useSettingsStore.getState().bumpSettingsRevision();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to add preset");
     } finally {
@@ -299,6 +303,7 @@ export function McpServersSection() {
       setUrl("");
       setSecrets("");
       await refresh();
+      useSettingsStore.getState().bumpSettingsRevision();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to add server");
     } finally {

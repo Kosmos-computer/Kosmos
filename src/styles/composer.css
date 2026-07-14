@@ -14,8 +14,10 @@
   min-width: 0;
 }
 
-/* Dock wrapper used by app layouts to float the card over the thread edge. */
+/* Dock wrapper used by app layouts to float the card over the thread edge.
+   Relative so the jump-to-latest control can sit centered above the composer. */
 .arco-composer-dock {
+  position: relative;
   flex-shrink: 0;
   padding: 0 var(--arco-space-l) var(--arco-space-m);
 }
@@ -69,6 +71,62 @@
   scrollbar-color: var(--arco-border-strong) transparent;
 }
 .arco-composer__textarea::placeholder {
+  color: var(--arco-text-tertiary);
+}
+
+.arco-composer__inputwrap {
+  position: relative;
+  min-width: 0;
+}
+
+.arco-composer-slash {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 6px);
+  z-index: var(--arco-z-overlay);
+  display: flex;
+  flex-direction: column;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 4px;
+  background: var(--arco-bg-elevated);
+  border: 1px solid var(--arco-border-strong);
+  border-radius: var(--arco-radius-m);
+  box-shadow: var(--arco-shadow-chrome);
+}
+
+.arco-composer-slash__item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 8px 10px;
+  text-align: left;
+  border-radius: var(--arco-radius-s);
+  color: var(--arco-text-secondary);
+}
+
+.arco-composer-slash__item:hover,
+.arco-composer-slash__item--active {
+  background: var(--arco-bg-hover);
+  color: var(--arco-text-primary);
+}
+
+.arco-composer-slash__label {
+  font-size: var(--arco-text-sm);
+  font-weight: 600;
+  font-family: var(--arco-font-mono, ui-monospace, monospace);
+}
+
+.arco-composer-slash__desc {
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+}
+
+.arco-composer-slash__empty {
+  padding: 10px 12px;
+  font-size: var(--arco-text-sm);
   color: var(--arco-text-tertiary);
 }
 
@@ -157,7 +215,19 @@
 /* ── Attach menu extras ───────────────────────────────────────────────────── */
 
 .arco-attach__panel {
-  width: 230px;
+  width: 240px;
+}
+
+.arco-attach__submenu {
+  position: relative;
+}
+
+.arco-attach__flyout {
+  position: absolute;
+  left: calc(100% + 4px);
+  top: -4px;
+  width: 220px;
+  z-index: calc(var(--arco-z-overlay) + 1);
 }
 
 .arco-attach__togglerow {
@@ -166,19 +236,30 @@
   justify-content: space-between;
   gap: var(--arco-space-m);
   min-height: 32px;
-  padding: 4px 10px;
+  padding: 7px 10px;
   border-radius: var(--arco-radius-s);
   cursor: pointer;
+  color: var(--arco-text-secondary);
 }
 .arco-attach__togglerow:hover {
   background: var(--arco-bg-hover);
+  color: var(--arco-text-primary);
+}
+.arco-attach__togglerow .arco-menu__icon {
+  color: var(--arco-text-tertiary);
+}
+.arco-attach__togglerow:hover .arco-menu__icon {
+  color: inherit;
 }
 
 .arco-attach__togglelabel {
   flex: 1;
   min-width: 0;
   font-size: var(--arco-text-sm);
-  color: var(--arco-text-primary);
+  color: inherit;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ── Emoji picker ─────────────────────────────────────────────────────────── */

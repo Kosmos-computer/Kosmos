@@ -5,8 +5,15 @@
  * terminal log, diffs, and file tree version.
  */
 import { create } from "zustand";
-import type { AgentEvent, ProjectsInfo, WorkspaceTab } from "@shared/types";
+import type { AgentEvent, ProjectsInfo, WorkspaceState, WorkspaceTab } from "@shared/types";
 import { api } from "../../lib/api";
+
+const EMPTY_WORKSPACE: WorkspaceState = {
+  backend: "local",
+  remoteProfileId: null,
+  roots: [],
+  worktreePath: null,
+};
 
 // ---------------------------------------------------------------------------
 // Entry shapes
@@ -123,6 +130,8 @@ interface StudioStore extends PersistedStudioLayout {
   requestedPath: string | null;
   /** Registry of opened folders + which one is active (null = sandbox). */
   projectsInfo: ProjectsInfo;
+  /** Multi-root Studio workspace (backend, roots, worktree). */
+  workspace: WorkspaceState;
   /** Working-tree change count (written by the Git tab; drives the badge). */
   gitChangeCount: number;
   /** URL the Browser tab shows — settable by the user or the agent. */
@@ -141,8 +150,10 @@ interface StudioStore extends PersistedStudioLayout {
   clearActivity: () => void;
   ingestAgentEvent: (event: AgentEvent, sessionKey?: string | null) => void;
   refreshProjects: () => Promise<void>;
+  refreshWorkspace: () => Promise<void>;
   openFolder: (path: string) => Promise<void>;
   switchProject: (id: string | null) => Promise<void>;
+  setWorkspaceState: (workspace: WorkspaceState) => void;
   setPreviewAppId: (appId: string) => void;
 }
 
@@ -164,6 +175,7 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
   sessionActivity: {},
   requestedPath: null,
   projectsInfo: { projects: [], activeId: null },
+  workspace: EMPTY_WORKSPACE,
   gitChangeCount: 0,
   browserUrl: "",
 
@@ -260,22 +272,46 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
     }
   },
 
+  refreshWorkspace: async () => {
+    try {
+      const [workspace, projectsInfo] = await Promise.all([
+        api.getWorkspace(),
+        api.listProjects(),
+      ]);
+      set({ workspace, projectsInfo });
+    } catch {
+      // Server unreachable — keep the stale workspace.
+    }
+  },
+
   openFolder: async (path) => {
     await api.addProject(path);
-    const projectsInfo = await api.listProjects();
+    const [projectsInfo, workspace] = await Promise.all([
+      api.listProjects(),
+      api.getWorkspace(),
+    ]);
     set((s) => ({
       projectsInfo,
+      workspace,
       sessionActivity: patchActivity(s.sessionActivity, s.activeSessionKey, emptyActivity()),
     }));
   },
 
   switchProject: async (id) => {
     const projectsInfo = await api.setActiveProject(id);
+    const workspace = await api.getWorkspace();
     set((s) => ({
       projectsInfo,
+      workspace,
       sessionActivity: patchActivity(s.sessionActivity, s.activeSessionKey, emptyActivity()),
     }));
   },
+
+  setWorkspaceState: (workspace) =>
+    set((s) => ({
+      workspace,
+      sessionActivity: patchActivity(s.sessionActivity, s.activeSessionKey, emptyActivity()),
+    })),
 
   setPreviewAppId: (appId) =>
     set((s) => ({

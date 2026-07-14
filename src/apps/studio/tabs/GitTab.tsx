@@ -100,12 +100,18 @@ export function GitTab() {
   const theme = useOsStore((s) => s.theme);
   const github = useGitHubConnection();
   const { filesVersion } = useSessionActivity();
+  const workspace = useStudioStore((s) => s.workspace);
   const [info, setInfo] = useState<GitInfo | null>(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState<"commit" | "push" | "pull" | null>(null);
   const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null);
 
   const refresh = useCallback(async () => {
+    if (workspace.backend === "drive") {
+      setInfo({ isRepo: false, branch: "", ahead: 0, behind: 0, upstream: "", changes: [] });
+      useStudioStore.setState({ gitChangeCount: 0 });
+      return;
+    }
     try {
       const next = await api.gitInfo();
       setInfo(next);
@@ -114,11 +120,11 @@ export function GitTab() {
     } catch {
       // Server unreachable — keep the last known state.
     }
-  }, []);
+  }, [workspace.backend]);
 
   useEffect(() => {
     void refresh();
-  }, [refresh, filesVersion]);
+  }, [refresh, filesVersion, workspace.worktreePath, workspace.roots]);
 
   // Wraps commit/push/pull with busy state, feedback, and a status refresh.
   const runAction = useCallback(
@@ -138,6 +144,14 @@ export function GitTab() {
     },
     [refresh],
   );
+
+  if (workspace.backend === "drive") {
+    return (
+      <div className="arco-empty" style={{ padding: "var(--arco-space-m)" }}>
+        Git is unavailable while the workspace backend is Drive.
+      </div>
+    );
+  }
 
   if (!info) return <div className="arco-empty"><T k={I18nKey.APPS$STUDIO_CHECKING_GIT_STATUS} /></div>;
 

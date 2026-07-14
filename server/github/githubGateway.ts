@@ -1,7 +1,11 @@
 /**
- * GitHub gateway — account status, repo listing, and disconnect.
+ * GitHub gateway — account status, repo listing, issue fetch, and disconnect.
  */
-import type { GitHubAccountInfo, GitHubRepoSummary } from "../../shared/github.js";
+import type {
+  GitHubAccountInfo,
+  GitHubIssueDetail,
+  GitHubRepoSummary,
+} from "../../shared/github.js";
 import { isGitHubOAuthConfigured, resolveGitHubLogin } from "./githubOAuth.js";
 import { githubStore } from "./githubStore.js";
 
@@ -20,7 +24,7 @@ async function withAccessToken<T>(
   }
 }
 
-export async function listGitHubRepos(
+async function listGitHubRepos(
   accessToken: string,
   query?: string,
 ): Promise<GitHubRepoSummary[]> {
@@ -69,6 +73,78 @@ export async function listGitHubRepos(
     }));
 }
 
+/** Parse `https://github.com/o/r/issues/1` or `o/r#1` / `o/r/issues/1`. */
+export function parseGitHubIssueRef(input: string): { owner: string; repo: string; number: number } {
+  const trimmed = input.trim();
+  const urlMatch =
+    /^https?:\/\/github\.com\/([^/]+)\/([^/#]+)\/(?:issues|pull)\/(\d+)(?:#.*)?$/i.exec(trimmed);
+  if (urlMatch) {
+    return { owner: urlMatch[1]!, repo: urlMatch[2]!, number: Number(urlMatch[3]) };
+  }
+  const shortMatch = /^([^/\s]+)\/([^/#\s]+)(?:#|\/issues\/|\/pull\/)(\d+)$/i.exec(trimmed);
+  if (shortMatch) {
+    return { owner: shortMatch[1]!, repo: shortMatch[2]!, number: Number(shortMatch[3]) };
+  }
+  throw new Error("Expected a GitHub issue URL or owner/repo#123");
+}
+
+async function fetchGitHubIssue(
+  accessToken: string,
+  owner: string,
+  repo: string,
+  number: number,
+): Promise<GitHubIssueDetail> {
+  const res = await fetch(
+    `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/issues/${number}`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+    },
+  );
+  const data = (await res.json()) as
+    | {
+        number?: number;
+        title?: string;
+        body?: string | null;
+        state?: string;
+        html_url?: string;
+        user?: { login?: string };
+        labels?: Array<{ name?: string } | string>;
+      }
+    | { message?: string };
+  if (!res.ok) {
+    const message = "message" in data ? data.message : undefined;
+    throw new Error(message ?? `GitHub API error (${res.status})`);
+  }
+  const issue = data as {
+    number?: number;
+    title?: string;
+    body?: string | null;
+    state?: string;
+    html_url?: string;
+    user?: { login?: string };
+    labels?: Array<{ name?: string } | string>;
+  };
+  if (!issue.number || !issue.title || !issue.html_url) {
+    throw new Error("Unexpected GitHub issue response");
+  }
+  return {
+    number: issue.number,
+    title: issue.title,
+    body: issue.body ?? null,
+    state: issue.state ?? "open",
+    htmlUrl: issue.html_url,
+    userLogin: issue.user?.login ?? "unknown",
+    labels: (issue.labels ?? [])
+      .map((label) => (typeof label === "string" ? label : label.name ?? ""))
+      .filter(Boolean),
+    repositoryFullName: `${owner}/${repo}`,
+  };
+}
+
 export const githubGateway = {
   oauthConfigured(): boolean {
     return isGitHubOAuthConfigured();
@@ -84,6 +160,13 @@ export const githubGateway = {
 
   listRepos(userId: string, query?: string, accountId?: string): Promise<GitHubRepoSummary[]> {
     return withAccessToken(userId, accountId, (token) => listGitHubRepos(token, query));
+  },
+
+  fetchIssue(userId: string, ref: string, accountId?: string): Promise<GitHubIssueDetail> {
+    const { owner, repo, number } = parseGitHubIssueRef(ref);
+    return withAccessToken(userId, accountId, (token) =>
+      fetchGitHubIssue(token, owner, repo, number),
+    );
   },
 
   accessTokenFor(userId: string, accountId?: string): string | undefined {

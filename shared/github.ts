@@ -16,3 +16,14 @@ export interface GitHubRepoSummary {
   cloneUrl: string;
   defaultBranch: string;
 }
+
+export interface GitHubIssueDetail {
+  number: number;
+  title: string;
+  body: string | null;
+  state: string;
+  htmlUrl: string;
+  userLogin: string;
+  labels: string[];
+  repositoryFullName: string;
+}

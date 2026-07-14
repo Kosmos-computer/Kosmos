@@ -4,6 +4,8 @@
 
 FROM --platform=$BUILDPLATFORM node:22-bookworm-slim AS build
 
+RUN npm install --global npm@12.0.1
+
 RUN apt-get update \
   && apt-get install -y --no-install-recommends python3 make g++ git ca-certificates \
   && rm -rf /var/lib/apt/lists/*
@@ -28,6 +30,8 @@ RUN npm run setup -- --skip-npm && npm run build
 
 # ── runtime (target platform, e.g. linux/amd64 on Fly) ───────────────────────
 FROM node:22-bookworm-slim AS runtime
+
+RUN npm install --global npm@12.0.1
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends python3 make g++ git ca-certificates \

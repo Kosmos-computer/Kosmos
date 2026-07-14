@@ -16,6 +16,10 @@
   overflow: hidden;
 }
 
+.arco-panel--apps-library {
+  padding-inline: var(--arco-space-xl);
+}
+
 .arco-panel__header {
   display: flex;
   align-items: center;
@@ -115,7 +119,7 @@
 .arco-apps-home {
   flex: 1;
   min-height: 0;
-  padding: var(--arco-space-xl) var(--arco-space-l) var(--arco-space-2xl);
+  padding: var(--arco-space-xl) 0 var(--arco-space-2xl);
   border-radius: var(--arco-radius-l);
   background: var(--arco-bg-surface);
 }

@@ -428,7 +428,7 @@ export function AppsLibrary() {
   const noUserApps = apps.length === 0 && webApps.length === 0;
 
   return (
-    <div className={`arco-panel${view === "icons" ? " arco-panel--apps-launcher" : " arco-scroll"}`}>
+    <div className={`arco-panel arco-panel--apps-library${view === "icons" ? " arco-panel--apps-launcher" : " arco-scroll"}`}>
       <div className="arco-panel__header">
         <strong><T k={I18nKey.APPS$LIBRARY_APPS} /></strong>
         <ViewToggle view={view} onChange={setView} />

@@ -1,6 +1,6 @@
 /**
  * Wallpaper catalog — static gradient presets plus live canvas/CSS effects.
- * IDs persist in localStorage via osStore; unknown values fall back to starfield.
+ * IDs persist in localStorage via osStore; unknown values use a static fallback.
  */
 
 export type WallpaperId =
@@ -49,7 +49,7 @@ const WALLPAPER_SET = new Set<string>(WALLPAPER_IDS);
 /** Coerce persisted/localStorage values to a known wallpaper id. */
 export function normalizeWallpaper(value: string | null | undefined): WallpaperId {
   if (value && WALLPAPER_SET.has(value)) return value as WallpaperId;
-  return "starfield";
+  return "aurora";
 }
 
 export function isAnimatedWallpaper(id: string): boolean {

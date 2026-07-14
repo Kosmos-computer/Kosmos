@@ -41,8 +41,7 @@ import { BillingSection } from "./BillingSection";
 import { KosmosCloudSection } from "./KosmosCloudSection";
 import { PlatformDownloadsSection } from "./PlatformDownloadsSection";
 import { ToolsSection } from "./ToolsSection";
-import { WALLPAPER_GROUPS, type WallpaperId } from "../../os/wallpaper/wallpapers";
-import { AUTH_WALLPAPER_GROUPS, type AuthWallpaperId } from "../../os/wallpaper/authWallpapers";
+import { WallpaperSettings } from "./WallpaperSettings";
 import { FACE_BG_OPTIONS, FACE_RIG_OPTIONS, isCustomFaceBg, useFacePreferencesStore } from "../../face-rig";
 import { FacePreviewWidget } from "./FacePreviewWidget";
 import {
@@ -55,6 +54,7 @@ import {
   SettingsSaveBar,
   SettingsSection,
   SettingsStack,
+  SettingsSubhead,
   SidebarPane,
 } from "../../components/patterns";
 import { useWindowStore } from "../../os/windowStore";
@@ -105,10 +105,6 @@ export function SettingsApp() {
     setWindowControlStyle,
     windowControlAlign,
     setWindowControlAlign,
-    wallpaper,
-    setWallpaper,
-    authWallpaper,
-    setAuthWallpaper,
     navBrandImage,
     setNavBrandImage,
     appWindowHost,
@@ -249,6 +245,7 @@ export function SettingsApp() {
                   : [activeSection]
               }
               stub={settingsStub}
+              showNotice={activeSection !== "wallpaper"}
             />
           ) : null}
 
@@ -676,53 +673,8 @@ export function SettingsApp() {
                       </div>
                     </div>
                   </SettingsFieldRow>
-                  {WALLPAPER_GROUPS.map((group) => (
-                    <SettingsFieldRow key={group.label} label={group.label} alignTop>
-                      <div className="arco-wallpaper-grid">
-                        {group.options.map((option) => (
-                          <button
-                            key={option.id}
-                            type="button"
-                            className={`arco-wallpaper-swatch ${wallpaper === option.id ? "arco-wallpaper-swatch--active" : ""}`}
-                            onClick={() => setWallpaper(option.id as WallpaperId)}
-                            aria-pressed={wallpaper === option.id}
-                            aria-label={`${option.label} background${option.animated ? " (animated)" : ""}`}
-                          >
-                            <span className={`arco-wallpaper-swatch__preview arco-wallpaper-${option.id}`} />
-                            <span className="arco-wallpaper-swatch__label">{option.label}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </SettingsFieldRow>
-                  ))}
-                  {AUTH_WALLPAPER_GROUPS.map((group) => (
-                    <SettingsFieldRow key={group.label} label={group.label} alignTop>
-                      <div className="arco-wallpaper-grid">
-                        {group.options.map((option) => (
-                          <button
-                            key={option.id}
-                            type="button"
-                            className={`arco-wallpaper-swatch ${authWallpaper === option.id ? "arco-wallpaper-swatch--active" : ""}`}
-                            onClick={() => setAuthWallpaper(option.id as AuthWallpaperId)}
-                            aria-pressed={authWallpaper === option.id}
-                            aria-label={`${option.label} sign-in background${option.animated ? " (animated)" : ""}`}
-                          >
-                            <span
-                              className={`arco-wallpaper-swatch__preview ${
-                                option.imageUrl
-                                  ? "arco-auth-wallpaper-swatch__preview--photo"
-                                  : option.id === "desktop"
-                                    ? `arco-wallpaper-${wallpaper}`
-                                    : `arco-wallpaper-${option.id}`
-                              }`}
-                              style={option.imageUrl ? { backgroundImage: `url(${option.imageUrl})` } : undefined}
-                            />
-                            <span className="arco-wallpaper-swatch__label">{option.label}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </SettingsFieldRow>
-                  ))}
+                  <SettingsSubhead>{settingsSectionLabel("wallpaper", navGroups)}</SettingsSubhead>
+                  <WallpaperSettings />
                 </SettingsStack>
               </SettingsSection>
             </SettingsPage>

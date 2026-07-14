@@ -1282,6 +1282,7 @@ export async function streamChat(
   signal?: AbortSignal,
   mode?: "agent" | "ask",
   projectId?: string | null,
+  approvalMode?: "strict" | "smart" | "full",
 ): Promise<void> {
   const res = await fetch("/api/chat", {
     method: "POST",
@@ -1290,6 +1291,7 @@ export async function streamChat(
       message,
       sessionId,
       ...(mode ? { mode } : {}),
+      ...(approvalMode ? { approvalMode } : {}),
       projectId: projectId ?? null,
     }),
     signal,

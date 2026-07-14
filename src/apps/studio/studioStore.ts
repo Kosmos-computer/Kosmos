@@ -88,10 +88,19 @@ interface PersistedStudioLayout {
   navOpen: boolean;
 }
 
+const WORKSPACE_TABS: WorkspaceTab[] = ["files", "diffs", "terminal", "browser"];
+
 function loadLayout(): PersistedStudioLayout {
   try {
     const raw = localStorage.getItem(LAYOUT_KEY);
-    if (raw) return { ...DEFAULT_LAYOUT, ...(JSON.parse(raw) as Partial<PersistedStudioLayout>) };
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<PersistedStudioLayout>;
+      const activeTab =
+        parsed.activeTab && WORKSPACE_TABS.includes(parsed.activeTab as WorkspaceTab)
+          ? (parsed.activeTab as WorkspaceTab)
+          : DEFAULT_LAYOUT.activeTab;
+      return { ...DEFAULT_LAYOUT, ...parsed, activeTab };
+    }
   } catch {
     // Corrupt layout — fall through to defaults.
   }

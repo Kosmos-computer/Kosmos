@@ -9,6 +9,7 @@
  * presentation state (toolbar visibility, textarea height, slash menu).
  */
 import { useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import type { ApprovalMode } from "@shared/types";
 import type { MenuItem } from "../Menu";
 import { ComposerControlsRow, type ComposerModeItem } from "./ComposerControlsRow";
 import { ComposerFormattingToolbar } from "./ComposerFormattingToolbar";
@@ -38,6 +39,9 @@ export interface ComposerProps {
   modes?: ComposerModeItem[];
   activeModeId?: string;
   onModeChange?: (id: string) => void;
+  /** Approval posture (Ask / Approve / Full). Shown when both are set. */
+  approvalMode?: ApprovalMode;
+  onApprovalModeChange?: (mode: ApprovalMode) => void;
   /** Current model label + menu of alternatives. */
   model?: string;
   modelItems?: MenuItem[];
@@ -76,6 +80,8 @@ export function Composer({
   modes,
   activeModeId,
   onModeChange,
+  approvalMode,
+  onApprovalModeChange,
   model,
   modelItems,
   onAddFile,
@@ -226,6 +232,8 @@ export function Composer({
           modes={modes}
           activeModeId={activeModeId}
           onModeChange={onModeChange}
+          approvalMode={approvalMode}
+          onApprovalModeChange={onApprovalModeChange}
           model={model}
           modelItems={modelItems}
           voiceActive={voiceActive}

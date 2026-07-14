@@ -14,6 +14,13 @@
   display: flex;
 }
 
+.arco-studio__split {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+}
+
 /* ── Left sidebar: conversations (StudioSidebar) ──────────────────────────
    Header (new chat + quick links) → scrollable Recent/Grouped list →
    user footer. Generic .arco-sidenav__* naming so Chat can adopt it. */
@@ -545,7 +552,9 @@
 }
 
 .arco-studio__rail--right {
-  border-left: 1px solid var(--arco-border);
+  background: transparent;
+  border-left: none;
+  padding-top: var(--arco-space-s);
 }
 
 /* ── Right drawer ─────────────────────────────────────────────────────────── */
@@ -555,56 +564,76 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  background: var(--arco-bg-sunk);
+  background: transparent;
 }
 
 .arco-studio__tabbar {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: var(--arco-space-xs);
-  padding: var(--arco-space-xs) var(--arco-space-s) 0;
-  border-bottom: 1px solid var(--arco-border);
+  padding: var(--arco-space-s) var(--arco-space-s) 0;
   flex-shrink: 0;
 }
 
 .arco-studio__tabs {
-  flex: 1;
   min-width: 0;
-  display: flex;
+  display: inline-flex;
+  align-items: center;
   gap: 2px;
-  padding: 0;
-  border-bottom: none;
-  flex-shrink: 1;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--arco-bg-elevated);
+  border: 1px solid var(--arco-border);
+  width: fit-content;
+  max-width: 100%;
 }
 
 .arco-studio__tabactions {
+  margin-left: auto;
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  padding-bottom: var(--arco-space-xs);
 }
 
 .arco-studio__tab {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 6px 10px;
+  justify-content: center;
+  gap: 6px;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
   font-size: var(--arco-text-sm);
+  font-weight: 500;
   color: var(--arco-text-tertiary);
-  border: 1px solid transparent;
-  border-bottom: none;
-  border-radius: var(--arco-radius-s) var(--arco-radius-s) 0 0;
-  transition: color var(--arco-dur-fast), background var(--arco-dur-fast);
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  white-space: nowrap;
+  transition:
+    color var(--arco-dur-fast),
+    background var(--arco-dur-fast),
+    padding var(--arco-dur-fast);
 }
+
 .arco-studio__tab:hover {
   color: var(--arco-text-secondary);
   background: var(--arco-bg-hover);
 }
+
 .arco-studio__tab--active {
   color: var(--arco-text-primary);
   background: var(--arco-bg-surface-solid);
-  border-color: var(--arco-border);
-  margin-bottom: -1px;
+  box-shadow: 0 0 0 1px var(--arco-border);
+  padding: 0 10px;
+}
+
+.arco-studio__tablabel {
+  display: none;
+}
+
+.arco-studio__tab--active .arco-studio__tablabel {
+  display: inline;
 }
 
 .arco-studio__tabbadge {
@@ -616,6 +645,7 @@
   font-size: var(--arco-text-xs);
   font-weight: 600;
   text-align: center;
+  line-height: 16px;
 }
 
 .arco-studio__tabcontent {
@@ -623,7 +653,11 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
+  margin: var(--arco-space-s);
+  border-radius: var(--arco-radius-m);
   background: var(--arco-bg-surface-solid);
+  border: 1px solid var(--arco-border);
+  overflow: hidden;
 }
 
 /* ── Files tab: tree + editor ─────────────────────────────────────────────── */
@@ -881,22 +915,6 @@
   min-height: 0;
   border: none;
   background: #fff;
-}
-
-/* ── Preview tab ──────────────────────────────────────────────────────────── */
-
-.arco-studio__preview {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.arco-studio__previewhost {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
 }
 
 /* ── Project picker ───────────────────────────────────────────────────────── */
@@ -1318,16 +1336,7 @@
 }
 
 .arco-workspacechrome__branchsearch {
-  display: flex;
-  align-items: center;
-  gap: 6px;
   padding: 8px 10px 4px;
-  color: var(--arco-text-tertiary);
-}
-
-.arco-workspacechrome__branchsearch .arco-input {
-  flex: 1;
-  min-width: 0;
 }
 
 .arco-workspacechrome__inlineerror {

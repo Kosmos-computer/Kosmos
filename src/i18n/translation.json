@@ -10513,6 +10513,13 @@
     "ja": "Hide workspace drawer",
     "zh-CN": "Hide workspace drawer"
   },
+  "APPS$STUDIO_SHOW_WORKSPACE_DRAWER": {
+    "en": "Show workspace drawer",
+    "es": "Show workspace drawer",
+    "de": "Show workspace drawer",
+    "ja": "Show workspace drawer",
+    "zh-CN": "Show workspace drawer"
+  },
   "APPS$STUDIO_ASK_THE_AGENT_TO_BUILD_SCRIPT_OR_AUTOMATE": {
     "en": "Ask the agent to build, script, or automate…",
     "es": "Ask the agent to build, script, or automate…",

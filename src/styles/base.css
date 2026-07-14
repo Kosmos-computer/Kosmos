@@ -170,6 +170,53 @@ select {
   white-space: nowrap;
 }
 
+.arco-menu__item--described {
+  align-items: flex-start;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.arco-menu__item--described .arco-menu__icon {
+  margin-top: 2px;
+}
+
+.arco-menu__item--described .arco-menu__check {
+  margin-top: 2px;
+}
+
+.arco-menu__item--described .arco-menu__itemlabel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: visible;
+  text-overflow: unset;
+  white-space: normal;
+}
+
+.arco-menu__itemtitle {
+  color: inherit;
+  font-weight: 500;
+}
+
+.arco-menu__itemdesc {
+  color: var(--arco-text-tertiary);
+  font-size: var(--arco-text-xs);
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+.arco-menu__heading {
+  padding: 8px 10px 6px;
+  color: var(--arco-text-tertiary);
+  font-size: var(--arco-text-xs);
+  line-height: 1.35;
+}
+
+.arco-menu__panel--rich {
+  min-width: 280px;
+  max-width: 340px;
+}
+
 .arco-menu__check {
   display: flex;
   flex-shrink: 0;

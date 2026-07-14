@@ -6,7 +6,7 @@
  * The same loop serves interactive chat (SSE events streamed to the shell)
  * and headless automation runs (events discarded, transcript persisted).
  */
-import type { AgentEvent, ChatMessage, Session } from "../../shared/types.js";
+import type { AgentEvent, ApprovalMode, ChatMessage, Session } from "../../shared/types.js";
 import { loadSettings } from "../env.js";
 import { modelStore } from "../stores/modelStore.js";
 import { sessionStore } from "../stores/sessionStore.js";
@@ -65,6 +65,11 @@ export interface RunTurnOptions {
    */
   readOnly?: boolean;
   /**
+   * Composer approval posture for this turn (strict / smart / full).
+   * Built-in loop enforces it via applyPolicy + internal tool gates.
+   */
+  approvalMode?: ApprovalMode;
+  /**
    * Model-registry use-case slot this turn resolves its LLM through
    * (shared/models.ts USE_CASE_SLOTS). Defaults to "agent.chat"; automations
    * pass "automations.chat", the voice brain "voice.brain".
@@ -106,6 +111,7 @@ export async function runAgentTurn(opts: RunTurnOptions): Promise<string> {
     emit: opts.emit,
     interactive: opts.interactive ?? false,
     userId: opts.userId,
+    approvalMode: opts.approvalMode ?? "smart",
   };
   let finalText = "";
   const usage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };

@@ -17,6 +17,7 @@ import path from "node:path";
 import { mergeStatements } from "@openuidev/lang-core";
 import type {
   AgentEvent,
+  ApprovalMode,
   CursorCommand,
   CursorResult,
   OsUiAction,
@@ -74,6 +75,22 @@ export interface ToolContext {
   interactive?: boolean;
   /** Authenticated Kosmos user (mail, github, …). Optional for headless. */
   userId?: string;
+  /**
+   * Composer approval posture for this turn. Defaults to "smart". Strict
+   * write confirms are enforced in applyPolicy; internal gates (risky exec,
+   * intent writes, skill save) only prompt when this is "smart" so we don't
+   * double-confirm.
+   */
+  approvalMode?: ApprovalMode;
+}
+
+/**
+ * Internal tool gates (risky exec, capability writes, skill save) only run
+ * their own confirm cards in smart mode. Strict already paused in applyPolicy
+ * for write tools; full skips confirms entirely.
+ */
+function shouldConfirmInternally(ctx: ToolContext): boolean {
+  return (ctx.approvalMode ?? "smart") === "smart";
 }
 
 export interface AgentTool extends LlmToolDef {
@@ -357,17 +374,21 @@ async function agentInvokeIntent(
   const caller = { kind: "agent" as const, sessionId: ctx.sessionId };
   const isWrite = intentMeta(intentId)?.access === "write";
   if (isWrite) {
+    // Headless never auto-writes via intents, even in full approval mode.
     if (!ctx.interactive) {
       appendAudit({ caller, method: `intent.invoke:${intentId}`, detail: description, allowed: false });
       return { error: "This action requires user approval and no user is attached. Skipped." };
     }
-    const { confirmId, verdict } = requestConfirmation();
-    ctx.emit({ type: "confirm_required", confirmId, command: description });
-    const { approved } = await verdict;
-    ctx.emit({ type: "confirm_resolved", confirmId, approved });
-    if (!approved) {
-      appendAudit({ caller, method: `intent.invoke:${intentId}`, detail: description, allowed: false });
-      return { error: "User denied this action. Do not retry it; ask what they'd like instead." };
+    // Smart mode shows the confirm card; strict already paused in applyPolicy.
+    if (shouldConfirmInternally(ctx)) {
+      const { confirmId, verdict } = requestConfirmation();
+      ctx.emit({ type: "confirm_required", confirmId, command: description });
+      const { approved } = await verdict;
+      ctx.emit({ type: "confirm_resolved", confirmId, approved });
+      if (!approved) {
+        appendAudit({ caller, method: `intent.invoke:${intentId}`, detail: description, allowed: false });
+        return { error: "User denied this action. Do not retry it; ask what they'd like instead." };
+      }
     }
   }
   appendAudit({ caller, method: `intent.invoke:${intentId}`, detail: description, allowed: true });
@@ -479,9 +500,10 @@ export const agentTools: AgentTool[] = [
     },
     execute: async (args, ctx) => {
       const command = String(args.command ?? "");
-      // Risky commands pause here until the user clicks Allow/Deny in the
-      // chat. Headless contexts skip the wait and deny outright.
-      if (isRiskyCommand(command)) {
+      // Risky commands pause here in smart mode until the user clicks
+      // Allow/Deny. Strict already confirmed via applyPolicy; full skips.
+      // Headless contexts skip the wait and deny outright.
+      if (shouldConfirmInternally(ctx) && isRiskyCommand(command)) {
         if (!ctx.interactive) {
           return { error: "Command requires user approval and no user is attached. Skipped." };
         }
@@ -1686,17 +1708,20 @@ export const agentTools: AgentTool[] = [
       if (!name || !description || !body) {
         return { error: "name, description, and body are all required" };
       }
-      // Additions to the user's standing instructions need their sign-off —
-      // same internal gate as calendar writes and risky exec commands.
+      // Additions to the user's standing instructions need sign-off when a
+      // user is attached. Smart mode shows a confirm card; strict already
+      // paused in applyPolicy; full skips the card. Headless always denies.
       if (!ctx.interactive) {
         return { error: "Saving a skill requires user approval and no user is attached. Skipped." };
       }
-      const { confirmId, verdict } = requestConfirmation();
-      ctx.emit({ type: "confirm_required", confirmId, command: `Save skill "${name}" — ${description}` });
-      const { approved } = await verdict;
-      ctx.emit({ type: "confirm_resolved", confirmId, approved });
-      if (!approved) {
-        return { error: "User declined to save this skill. Do not retry; ask what they'd like instead." };
+      if (shouldConfirmInternally(ctx)) {
+        const { confirmId, verdict } = requestConfirmation();
+        ctx.emit({ type: "confirm_required", confirmId, command: `Save skill "${name}" — ${description}` });
+        const { approved } = await verdict;
+        ctx.emit({ type: "confirm_resolved", confirmId, approved });
+        if (!approved) {
+          return { error: "User declined to save this skill. Do not retry; ask what they'd like instead." };
+        }
       }
       const skill = skillStore.create({ name, description, body, source: "user" });
       return { id: skill.id, name: skill.name, saved: true };
@@ -1738,7 +1763,7 @@ export const agentTools: AgentTool[] = [
         message: { type: "string", description: "Notification text (for notify)" },
         tab: {
           type: "string",
-          enum: ["files", "diffs", "terminal", "preview", "browser"],
+          enum: ["files", "diffs", "terminal", "browser"],
           description: "Studio drawer tab (for open_workspace_tab)",
         },
         path: {
@@ -1816,7 +1841,6 @@ export const agentTools: AgentTool[] = [
         (args.tab === "files" ||
           args.tab === "diffs" ||
           args.tab === "terminal" ||
-          args.tab === "preview" ||
           args.tab === "browser")
       ) {
         action = {

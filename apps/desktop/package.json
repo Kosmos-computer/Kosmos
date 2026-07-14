@@ -24,7 +24,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "build": {
-    "electronVersion": "39.8.10",
+    "electronVersion": "40.10.6",
     "appId": "com.arco.os",
     "productName": "Kosmos",
     "directories": {
@@ -100,7 +100,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.15.0",
-    "electron": "^39.0.0",
+    "electron": "^40.0.0",
     "electron-builder": "^26.15.3",
     "typescript": "^5.8.0"
   }

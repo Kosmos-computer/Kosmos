@@ -45,6 +45,7 @@ function DockItem({
   onRemove: () => void;
 }) {
   const Icon = entry.icon;
+  const label = entry.title;
   const [ctxOpen, setCtxOpen] = useState(false);
 
   return (
@@ -66,11 +67,14 @@ function DockItem({
       <button
         className={["arco-dock__item", entry.generated && "arco-dock__item--generated"].filter(Boolean).join(" ")}
         onClick={onSelect}
-        aria-label={entry.title}
+        aria-label={label}
+        title={label}
       >
-        <Icon size={22} strokeWidth={1.8} />
+        <span aria-hidden="true">
+          <Icon size={22} strokeWidth={1.8} />
+        </span>
         {open && <span className="arco-dock__indicator" />}
-        <span className="arco-dock__tooltip">{entry.title}</span>
+        <span className="arco-dock__tooltip">{label}</span>
         {isDragging && isUndocking && (
           <span className="arco-dock__undock-badge" aria-hidden="true">
             <Trash2 size={12} />
@@ -82,7 +86,7 @@ function DockItem({
         onOpenChange={setCtxOpen}
         trigger={<span aria-hidden="true" />}
         className="arco-itemctx"
-        aria-label={i18n.t(I18nKey.OS$DOCK_OPTIONS, { title: entry.title })}
+        aria-label={i18n.t(I18nKey.OS$DOCK_OPTIONS, { title: label })}
         side="top"
         items={[
           { id: "remove", label: i18n.t(I18nKey.OS$DOCK_REMOVE), icon: Trash2, danger: true, onSelect: onRemove },

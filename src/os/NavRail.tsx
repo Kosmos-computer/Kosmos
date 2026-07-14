@@ -48,6 +48,7 @@ function NavItem({
   onRemove: () => void;
 }) {
   const Icon = entry.icon;
+  const label = entry.title;
   const [ctxOpen, setCtxOpen] = useState(false);
 
   return (
@@ -75,20 +76,21 @@ function NavItem({
           .filter(Boolean)
           .join(" ")}
         onClick={onSelect}
-        aria-label={entry.title}
+        aria-label={label}
+        title={label}
         aria-current={active ? "true" : undefined}
       >
-        <span className="arco-navrail__item-icon">
+        <span className="arco-navrail__item-icon" aria-hidden="true">
           <Icon size={18} strokeWidth={1.8} />
           {open && !expanded && <span className="arco-navrail__indicator" />}
         </span>
         {expanded ? (
           <>
-            <span className="arco-navrail__item-label">{entry.title}</span>
+            <span className="arco-navrail__item-label">{label}</span>
             {open && <span className="arco-navrail__indicator arco-navrail__indicator--inline" />}
           </>
         ) : (
-          <span className="arco-navrail__tooltip">{entry.title}</span>
+          <span className="arco-navrail__tooltip">{label}</span>
         )}
         {isDragging && isUndocking && (
           <span className="arco-navrail__undock-badge" aria-hidden="true">
@@ -101,7 +103,7 @@ function NavItem({
         onOpenChange={setCtxOpen}
         trigger={<span aria-hidden="true" />}
         className="arco-itemctx"
-        aria-label={`${entry.title} options`}
+        aria-label={`${label} options`}
         items={[
           { id: "remove", label: "Remove from Nav", icon: Trash2, danger: true, onSelect: onRemove },
         ]}

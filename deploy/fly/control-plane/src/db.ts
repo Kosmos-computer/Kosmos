@@ -14,6 +14,7 @@ export interface OrderRow {
   stripe_subscription_id: string | null;
   status: OrderStatus;
   tenant_url: string | null;
+  entry_url: string | null;
   error: string | null;
   created_at: string;
   updated_at: string;
@@ -37,6 +38,7 @@ export class Store {
         stripe_subscription_id TEXT,
         status TEXT NOT NULL,
         tenant_url TEXT,
+        entry_url TEXT,
         error TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
@@ -44,6 +46,10 @@ export class Store {
       CREATE INDEX IF NOT EXISTS idx_orders_session ON orders(stripe_session_id);
       CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
     `);
+    const columns = this.db.prepare("PRAGMA table_info(orders)").all() as Array<{ name: string }>;
+    if (!columns.some((column) => column.name === "entry_url")) {
+      this.db.exec("ALTER TABLE orders ADD COLUMN entry_url TEXT");
+    }
   }
 
   getBySession(sessionId: string): OrderRow | undefined {
@@ -103,13 +109,13 @@ export class Store {
       .run(stripeCustomerId, stripeSubscriptionId, now, sessionId);
   }
 
-  markReady(sessionId: string, tenantUrl: string): void {
+  markReady(sessionId: string, tenantUrl: string, entryUrl: string): void {
     const now = new Date().toISOString();
     this.db
       .prepare(
-        `UPDATE orders SET status = 'ready', tenant_url = ?, error = NULL, updated_at = ? WHERE stripe_session_id = ?`,
+        `UPDATE orders SET status = 'ready', tenant_url = ?, entry_url = ?, error = NULL, updated_at = ? WHERE stripe_session_id = ?`,
       )
-      .run(tenantUrl, now, sessionId);
+      .run(tenantUrl, entryUrl, now, sessionId);
   }
 
   markFailed(sessionId: string, error: string): void {

@@ -15,6 +15,7 @@
  * Optional env: FLY_BIN (defaults to "fly").
  */
 import { execFileSync } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -150,6 +151,7 @@ async function gatewayPost(gateway: string, route: string, body: unknown): Promi
 interface TenantRecord {
   app: string;
   url: string;
+  entryUrl: string;
   virtualKey: string;
   budgetUsd: number;
   model: string;
@@ -161,6 +163,8 @@ interface TenantRecord {
 
 async function provision(opts: Options): Promise<void> {
   const app = `${opts.prefix}-${opts.name}`;
+  const url = `https://${app}.fly.dev`;
+  const entryKey = randomBytes(32).toString("hex");
   const recordPath = path.join(TENANTS_DIR, `${app}.json`);
   const tomlPath = path.join(TENANTS_DIR, `${app}.toml`);
   if (fs.existsSync(recordPath)) {
@@ -201,6 +205,7 @@ async function provision(opts: Options): Promise<void> {
     `LLM_API_KEY=${virtualKey}`,
     `LLM_MODEL=${opts.model}`,
     "ARCO_SECURE_COOKIES=1",
+    `ARCO_ENTRY_MAGIC_KEY=${entryKey}`,
     `ARCO_WORKSPACE_QUOTA_MB=${opts.quotaMb}`,
   ];
   if (opts.billingManaged) {
@@ -224,7 +229,8 @@ async function provision(opts: Options): Promise<void> {
 
   const record: TenantRecord = {
     app,
-    url: `https://${app}.fly.dev`,
+    url,
+    entryUrl: `${url}/entry/${entryKey}`,
     virtualKey,
     budgetUsd: opts.budget,
     model: opts.model,
@@ -236,7 +242,8 @@ async function provision(opts: Options): Promise<void> {
   fs.writeFileSync(recordPath, JSON.stringify(record, null, 2), "utf-8");
 
   console.log(`\n✔ Tenant ready: ${record.url}`);
-  console.log("  First visit shows Arco's first-run setup — the customer creates their owner account there.");
+  console.log(`  Private entry URL: ${record.entryUrl}`);
+  console.log("  The customer must use the private entry URL before creating their owner account.");
   console.log(`  Record (contains the virtual key): ${path.relative(REPO_ROOT, recordPath)}`);
 }
 

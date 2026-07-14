@@ -96,7 +96,7 @@ export function scheduleProvision(
   void (async () => {
     try {
       const result = await provisionTenant(config, tenantName);
-      store.markReady(sessionId, result.url);
+      store.markReady(sessionId, result.url, result.entryUrl);
       console.log(`provisioned ${result.app} -> ${result.url}`);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

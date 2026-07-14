@@ -145,7 +145,7 @@ CHROMEBOOK_IP=10.0.0.47 npm run mobile:chromebook:install   # Wi‑Fi ADB to Chr
 
 **First run on device:** Connect to Arco → enter server URL (e.g. `https://your-coolify-domain`, `https://macbook.tailnet.ts.net:4600`, `http://10.0.0.12:4600`) → optional **Find on this network** (detects your Wi‑Fi subnet on Android and Chromebook) → sign in or complete setup wizard on that server.
 
-**Hosted server:** deploy with `ARCO_SECURE_COOKIES=1` and CORS enabled (included in `server/cors.ts`). See [`deploy/coolify/README.md`](deploy/coolify/README.md).
+**Hosted server:** deploy with `ARCO_SECURE_COOKIES=1` and CORS enabled (included in `server/cors.ts`). Set `ARCO_ENTRY_MAGIC_KEY` to a random secret of at least 32 characters to require a one-time visit to `/entry/<key>` before the instance exposes its shell or API. See [`deploy/coolify/README.md`](deploy/coolify/README.md).
 
 #### Local embedded backend (Android prototype)
 

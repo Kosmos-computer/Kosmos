@@ -1,7 +1,6 @@
 import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
 import { T } from "../../i18n/T";
-import { useTranslation } from "react-i18next";
 /**
  * Auth screens — boot splash, first-run setup, login, and lock.
  *
@@ -13,6 +12,7 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "rea
 import { ArcoLogo } from "../../components/ArcoLogo";
 import { PasswordInput } from "../../components/ui/PasswordInput";
 import { SpriteWorkingMark } from "../../components/SpriteWorkingMark";
+import { useDeployment } from "../../hooks/useDeployment";
 import { useAuthStore } from "./authStore";
 import { AuthWallpaperBackdrop } from "../wallpaper/AuthWallpaperBackdrop";
 
@@ -33,7 +33,6 @@ function AuthRainbowCorner() {
 
 /** Logo + loading bar; the bar's CSS animation is timed to MIN_BOOT_MS. */
 export function BootScreen() {
-  const { t } = useTranslation();
   return (
     <div className="arco-boot" role="status" aria-label={i18n.t(I18nKey.OS_AUTH_ARCO_OS_IS_STARTING)}>
       <div className="arco-boot__logo">
@@ -173,6 +172,7 @@ export function SetupScreen() {
 export function LoginScreen() {
   const login = useAuthStore((s) => s.login);
   const clearError = useAuthStore((s) => s.clearError);
+  const { deployment } = useDeployment();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -218,6 +218,11 @@ export function LoginScreen() {
           {busy ? "Signing in…" : "Sign in"}
         </button>
       </form>
+      <div className="arco-authscreen__footer">
+        <a className="arco-authscreen__link" href={deployment.signupUrl}>
+          <T k={I18nKey.INSTALL$KOSMOS_CREATE_ACCOUNT} />
+        </a>
+      </div>
     </AuthCard>
   );
 }

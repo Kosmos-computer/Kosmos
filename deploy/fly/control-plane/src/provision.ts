@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -31,6 +32,7 @@ primary_region = "__REGION__"
 export interface ProvisionResult {
   app: string;
   url: string;
+  entryUrl: string;
   virtualKey: string;
 }
 
@@ -62,6 +64,8 @@ async function gatewayPost(config: Config, route: string, body: unknown): Promis
 
 export async function provisionTenant(config: Config, tenantName: string): Promise<ProvisionResult> {
   const app = `${config.tenantPrefix}-${tenantName}`;
+  const url = `https://${app}.fly.dev`;
+  const entryKey = randomBytes(32).toString("hex");
   const workDir = fs.mkdtempSync(path.join(os.tmpdir(), "kosmos-provision-"));
   const tomlPath = path.join(workDir, `${app}.toml`);
 
@@ -100,6 +104,7 @@ export async function provisionTenant(config: Config, tenantName: string): Promi
     `LLM_API_KEY=${virtualKey}`,
     `LLM_MODEL=${config.tenantModel}`,
     "ARCO_SECURE_COOKIES=1",
+    `ARCO_ENTRY_MAGIC_KEY=${entryKey}`,
     `ARCO_WORKSPACE_QUOTA_MB=${config.tenantQuotaMb}`,
   ]);
 
@@ -107,7 +112,7 @@ export async function provisionTenant(config: Config, tenantName: string): Promi
   fs.writeFileSync(tomlPath, toml, "utf-8");
   fly(config, ["deploy", "--config", tomlPath, "--image", config.tenantImage, "--ha=false"]);
 
-  return { app, url: `https://${app}.fly.dev`, virtualKey };
+  return { app, url, entryUrl: `${url}/entry/${entryKey}`, virtualKey };
 }
 
 export async function suspendTenant(config: Config, appName: string, virtualKey?: string): Promise<void> {

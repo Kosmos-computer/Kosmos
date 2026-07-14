@@ -69,7 +69,7 @@ Docker/Colima running).
 ```bash
 export LITELLM_MASTER_KEY=sk-master-...
 npx tsx scripts/provision-tenant.ts acme --budget 5
-# → https://kosmos-acme.fly.dev  (first visit = Kosmos first-run owner setup)
+# → private https://kosmos-acme.fly.dev/entry/<key> URL
 ```
 
 Teardown: `npx tsx scripts/provision-tenant.ts acme --destroy`
@@ -77,7 +77,7 @@ Teardown: `npx tsx scripts/provision-tenant.ts acme --destroy`
 ## 4. Demo script (~2 min)
 
 1. Provision live in the terminal — five numbered steps, ends with the URL.
-2. Open the URL, create the owner account, chat with the agent.
+2. Open the private entry URL, create the owner account, chat with the agent.
 3. Settings → **Usage & credits**: spend/remaining against the $5 budget,
    refreshed from the gateway (`/key/info`).
 4. Ask the agent to write a multi-hundred-MB file — the workspace quota
@@ -95,4 +95,4 @@ Teardown: `npx tsx scripts/provision-tenant.ts acme --destroy`
 - Cron automations don't fire while a machine is stopped. Keep automation
   demos off, or keep that tenant warm (`min_machines_running = 1`).
 - The tenant record in `deploy/fly/tenants/` (gitignored) holds the virtual
-  key — treat the directory as secrets.
+  key and private entry URL; treat the directory as secrets.

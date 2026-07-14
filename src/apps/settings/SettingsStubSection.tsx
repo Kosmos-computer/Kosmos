@@ -1,5 +1,4 @@
 import { I18nKey } from "../../i18n/declaration";
-import i18n from "../../i18n/index";
 import { T } from "../../i18n/T";
 /**
  * STUB: Renders Longformer SettingsWorkspace section content using Arco patterns.
@@ -9,7 +8,6 @@ import { ListItem } from "../../components/patterns";
 import {
   SettingsDivider,
   SettingsEmpty,
-  SettingsFieldRow,
   SettingsPage,
   SettingsRow,
   SettingsRowActions,
@@ -17,15 +15,15 @@ import {
   SettingsStack,
   SettingsSubhead,
 } from "../../components/patterns";
-import { Button, Input, Switch } from "../../components/ui";
+import { Button, Switch } from "../../components/ui";
 import { SettingsStubNotice } from "./SettingsStubNotice";
+import { WallpaperSettings } from "./WallpaperSettings";
 import type {
   StubSettingsContentSection,
   StubSettingsFieldRow,
   StubSettingsLinkRow,
   StubSettingsStanding,
   StubSettingsToggleRow,
-  StubSettingsWallpaperPreset,
 } from "./settingsStubTypes";
 import type { SettingsStubViewModel } from "./useSettingsStub";
 
@@ -141,65 +139,6 @@ function StubStandingCard({ standing }: { standing: StubSettingsStanding }) {
   );
 }
 
-function StubWallpaperPanel({
-  presets,
-  activeUrl,
-  onSelect,
-}: {
-  presets: StubSettingsWallpaperPreset[];
-  activeUrl: string;
-  onSelect: (url: string) => void;
-}) {
-  const presetUrls = new Set(presets.map((preset) => preset.url));
-  const usingCustom = !presetUrls.has(activeUrl);
-
-  return (
-    <div className="arco-settings-stub-wallpaper">
-      <div className="arco-settings-stub-wallpaper__grid" role="listbox" aria-label={i18n.t(I18nKey.APPS$SETTINGS_WALLPAPER_PRESETS)}>
-        {presets.map((preset) => {
-          const selected = activeUrl === preset.url;
-          return (
-            <button
-              key={preset.id}
-              type="button"
-              role="option"
-              aria-selected={selected}
-              className={`arco-settings-stub-wallpaper__option ${selected ? "arco-settings-stub-wallpaper__option--active" : ""}`}
-              onClick={() => onSelect(preset.url)}
-            >
-              <span
-                className="arco-settings-stub-wallpaper__preview"
-                style={{ backgroundImage: `url("${preset.url}")` }}
-                aria-hidden="true"
-              >
-                {selected ? (
-                  <span className="arco-settings-stub-wallpaper__check" aria-hidden="true">
-                    <Check size={14} strokeWidth={2.5} />
-                  </span>
-                ) : null}
-              </span>
-              <span className="arco-settings-stub-wallpaper__label">{preset.label}</span>
-              {preset.credit ? <span className="arco-settings-stub-wallpaper__credit">{preset.credit}</span> : null}
-            </button>
-          );
-        })}
-      </div>
-      <SettingsFieldRow label={i18n.t(I18nKey.APPS$SETTINGS_CUSTOM_IMAGE_URL)} htmlFor="stub-wallpaper-url">
-        <Input
-          id="stub-wallpaper-url"
-          width="auto"
-          value={activeUrl}
-          placeholder="https://…"
-          onChange={(event) => onSelect(event.target.value)}
-        />
-      </SettingsFieldRow>
-      {usingCustom ? (
-        <p className="arco-settings-stub-wallpaper__custom-note"><T k={I18nKey.APPS$SETTINGS_USING_A_CUSTOM_WALLPAPER_NOT_IN_THE_PRESET_LIST} /></p>
-      ) : null}
-    </div>
-  );
-}
-
 export interface SettingsStubSectionProps {
   section: StubSettingsContentSection;
   stub: SettingsStubViewModel;
@@ -225,13 +164,7 @@ export function SettingsStubSection({
       {showNotice ? <SettingsStubNotice /> : null}
       <SettingsSection intro={section.intro}>
         {showTitle ? <SettingsSubhead>{section.title}</SettingsSubhead> : null}
-        {section.id === "wallpaper" ? (
-          <StubWallpaperPanel
-            presets={stub.wallpaperPresets}
-            activeUrl={stub.wallpaperUrl}
-            onSelect={stub.setWallpaperUrl}
-          />
-        ) : null}
+        {section.id === "wallpaper" ? <WallpaperSettings /> : null}
         {section.fields?.length || section.links?.length || section.toggles?.length ? (
           <SettingsStack>
             {section.fields?.map((row) => (

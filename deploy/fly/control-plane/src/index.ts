@@ -183,10 +183,10 @@ app.get("/success", async (c) => {
         const data = await res.json();
         const status = document.getElementById('status');
         const link = document.getElementById('link');
-        if (data.status === 'ready' && data.tenantUrl) {
+        if (data.status === 'ready' && data.entryUrl) {
           status.innerHTML = '<span class="ok">Your instance is ready.</span>';
           link.style.display = 'block';
-          link.innerHTML = 'Open <a href="' + data.tenantUrl + '">' + data.tenantUrl + '</a> and create your owner account.';
+          link.innerHTML = 'Open your <a href="' + data.entryUrl + '">private Kosmos entry link</a> and create your owner account.';
           return;
         }
         if (data.status === 'failed') {
@@ -206,6 +206,7 @@ app.get("/api/order/:sessionId", (c) => {
   return c.json({
     status: order.status,
     tenantUrl: order.tenant_url,
+    entryUrl: order.entry_url,
     tenantName: order.tenant_name,
     error: order.error,
   });

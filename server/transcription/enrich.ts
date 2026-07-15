@@ -178,7 +178,9 @@ async function summarizeWithLlm(detail: TranscriptDetail): Promise<string> {
       },
       { role: "user", content: excerpt },
     ],
-    max_tokens: 600,
+    ...(settings.provider === "openai" && /^(gpt-5(?:\.|$)|o\d)/i.test(settings.model)
+      ? { max_completion_tokens: 600 }
+      : { max_tokens: 600 }),
   });
 
   return completion.choices[0]?.message?.content?.trim() || summarizeLocally(detail.segments, 500);

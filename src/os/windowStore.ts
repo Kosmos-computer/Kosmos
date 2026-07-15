@@ -184,11 +184,14 @@ const DEFAULT_SIZES: Record<string, { w: number; h: number }> = {
 };
 
 const MENUBAR_HEIGHT = 34;
-const MIN_VISIBLE = 80;
+const WINDOW_MARGIN = 12;
+const MIN_W = 320;
+const MIN_H = 220;
 
 function navWidth(): number {
   if (typeof window === "undefined") return 56;
-  const raw = getComputedStyle(document.documentElement).getPropertyValue("--arco-nav-width").trim();
+  const shell = document.querySelector<HTMLElement>(".arco-desktop") ?? document.documentElement;
+  const raw = getComputedStyle(shell).getPropertyValue("--arco-nav-width").trim();
   const parsed = parseInt(raw, 10);
   return Number.isFinite(parsed) ? parsed : 56;
 }
@@ -198,17 +201,20 @@ function ensureVisibleRect(key: string, rect: WindowRect, index: number): Window
   if (typeof window === "undefined") return rect;
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  const leftBound = navWidth() + 12;
+  const leftBound = navWidth() + WINDOW_MARGIN;
+  const topBound = MENUBAR_HEIGHT + 2;
+  const maxW = Math.max(MIN_W, vw - leftBound - WINDOW_MARGIN);
+  const maxH = Math.max(MIN_H, vh - topBound - WINDOW_MARGIN);
   let { x, y, w, h } = rect;
-  const visibleW = Math.max(0, Math.min(x + w, vw) - Math.max(x, leftBound));
-  const visibleH = Math.max(0, Math.min(y + h, vh) - Math.max(y, MENUBAR_HEIGHT));
-  if (visibleW < MIN_VISIBLE || visibleH < MIN_VISIBLE) {
+
+  if (![x, y, w, h].every(Number.isFinite)) {
     return defaultRect(key, index);
   }
-  w = Math.min(w, vw - leftBound - 12);
-  h = Math.min(h, vh - MENUBAR_HEIGHT - 12);
-  x = Math.max(leftBound, Math.min(x, vw - w - 12));
-  y = Math.max(MENUBAR_HEIGHT + 2, Math.min(y, vh - h - 12));
+
+  w = Math.min(Math.max(MIN_W, w), maxW);
+  h = Math.min(Math.max(MIN_H, h), maxH);
+  x = Math.max(leftBound, Math.min(x, vw - w - WINDOW_MARGIN));
+  y = Math.max(topBound, Math.min(y, vh - h - WINDOW_MARGIN));
   return { x, y, w, h };
 }
 
@@ -223,12 +229,22 @@ function defaultRect(key: string, index: number): WindowRect {
   const size = DEFAULT_SIZES[key] ?? fallback;
   const vw = typeof window !== "undefined" ? window.innerWidth : 1440;
   const vh = typeof window !== "undefined" ? window.innerHeight : 900;
+  const leftBound = typeof window !== "undefined" ? navWidth() + WINDOW_MARGIN : WINDOW_MARGIN;
+  const topBound = MENUBAR_HEIGHT + 2;
+  const w = Math.min(size.w, Math.max(MIN_W, vw - leftBound - WINDOW_MARGIN));
+  const h = Math.min(size.h, Math.max(MIN_H, vh - topBound - WINDOW_MARGIN));
   const offset = (index % 6) * 32;
   return {
-    x: Math.max(12, Math.round(vw / 2 - size.w / 2) + offset),
-    y: Math.max(44, Math.round(vh / 2 - size.h / 2 - 40) + offset),
-    w: Math.min(size.w, vw - 24),
-    h: Math.min(size.h, vh - 100),
+    x: Math.max(
+      leftBound,
+      Math.min(Math.round(leftBound + (vw - leftBound - w) / 2) + offset, vw - w - WINDOW_MARGIN),
+    ),
+    y: Math.max(
+      topBound,
+      Math.min(Math.round(topBound + (vh - topBound - h) / 2) + offset, vh - h - WINDOW_MARGIN),
+    ),
+    w,
+    h,
   };
 }
 
@@ -243,6 +259,7 @@ interface WindowStore {
   toggleMinimize: (id: string) => void;
   toggleMaximize: (id: string) => void;
   setRect: (id: string, rect: Partial<WindowRect>) => void;
+  constrainToViewport: () => void;
   setTitle: (id: string, title: string) => void;
   focusedId: () => string | null;
 }
@@ -265,7 +282,8 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
           nextZ: state.nextZ + 1,
         } as WindowStore;
       } else {
-        const rect = state.closedGeometry[id] ?? defaultRect(id, state.windows.length);
+        const remembered = state.closedGeometry[id] ?? defaultRect(id, state.windows.length);
+        const rect = ensureVisibleRect(id, remembered, state.windows.length);
         const win: OsWindow = {
           id,
           kind,
@@ -349,10 +367,38 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
 
   setRect: (id, rect) => {
     set((state) => {
+      const current = state.windows.find((w) => w.id === id);
+      if (!current) return state;
+      const boundedPatch = { ...rect };
+      if (typeof window !== "undefined") {
+        if (boundedPatch.w != null) {
+          boundedPatch.w = Math.min(boundedPatch.w, window.innerWidth - current.x - WINDOW_MARGIN);
+        }
+        if (boundedPatch.h != null) {
+          boundedPatch.h = Math.min(boundedPatch.h, window.innerHeight - current.y - WINDOW_MARGIN);
+        }
+      }
+      const nextRect = ensureVisibleRect(id, { ...current, ...boundedPatch }, state.windows.indexOf(current));
       const next = {
         ...state,
-        windows: state.windows.map((w) => (w.id === id ? { ...w, ...rect } : w)),
+        windows: state.windows.map((w) => (w.id === id ? { ...w, ...nextRect } : w)),
       } as WindowStore;
+      persist(next);
+      return next;
+    });
+  },
+
+  constrainToViewport: () => {
+    set((state) => {
+      let changed = false;
+      const windows = state.windows.map((win, index) => {
+        const rect = ensureVisibleRect(win.id, win, index);
+        if (rect.x === win.x && rect.y === win.y && rect.w === win.w && rect.h === win.h) return win;
+        changed = true;
+        return { ...win, ...rect };
+      });
+      if (!changed) return state;
+      const next = { ...state, windows } as WindowStore;
       persist(next);
       return next;
     });

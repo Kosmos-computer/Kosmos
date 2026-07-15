@@ -27,6 +27,12 @@ export default defineConfig({
     port: 4610,
     strictPort: true,
     https,
+    watch: {
+      // Arco writes live runtime state under ./data (sessions, settings,
+      // workspace, generated apps). Those writes are app state, not source,
+      // and should not trigger a Vite full reload.
+      ignored: ["**/data/**", "**/.codex/**"],
+    },
     proxy: {
       "/api": {
         target: apiOrigin,

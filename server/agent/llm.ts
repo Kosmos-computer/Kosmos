@@ -27,6 +27,11 @@ export type LlmMessage = ChatCompletionMessageParam;
  */
 const MAX_COMPLETION_TOKENS = 4096;
 
+function usesCompletionTokens(provider: Settings["provider"], model: string): boolean {
+  if (provider !== "openai") return false;
+  return /^(gpt-5(?:\.|$)|o\d)/i.test(model);
+}
+
 export interface LlmToolDef {
   name: string;
   description: string;
@@ -92,7 +97,9 @@ async function apiTurn(opts: StreamTurnOptions): Promise<LlmTurn> {
         messages: opts.messages,
         ...(tools.length > 0 ? { tools } : {}),
         stream: true,
-        max_tokens: MAX_COMPLETION_TOKENS,
+        ...(usesCompletionTokens(opts.settings.provider, opts.settings.model)
+          ? { max_completion_tokens: MAX_COMPLETION_TOKENS }
+          : { max_tokens: MAX_COMPLETION_TOKENS }),
         // Ask OpenAI-compatible backends to append a final usage-only chunk
         // so the UI can show live token counts alongside the elapsed timer.
         stream_options: { include_usage: true },

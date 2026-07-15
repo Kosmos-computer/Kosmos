@@ -872,6 +872,13 @@
   max-width: calc(100vw - 24px);
   /* Visible so dock tooltips and top-anchored menus can extend above the pill. */
   overflow: visible;
+  /* Tooltip headroom must not turn into an invisible input-blocking shelf. */
+  pointer-events: none;
+}
+
+.arco-dock__items-track,
+.arco-dock__actions > .arco-menu {
+  pointer-events: auto;
 }
 
 .arco-dock__items {
@@ -1048,7 +1055,7 @@
 }
 
 .arco-hover-dock--open {
-  inset: 0;
+  height: 112px;
   z-index: var(--arco-z-overlay);
 }
 
@@ -1057,14 +1064,8 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 28px;
+  height: 4px;
   pointer-events: auto;
-}
-
-.arco-hover-dock--peaked .arco-hover-dock__zone,
-.arco-hover-dock--open .arco-hover-dock__zone {
-  inset: 0;
-  height: auto;
 }
 
 .arco-hover-dock__tray {

@@ -219,4 +219,31 @@ echo "Running image:"
 docker inspect kosmos-os-4600 --format '{{.Config.Image}}'
 EOF
 
+wait_for_public_health() {
+  local attempts=18
+  local consecutive_successes=0
+  local attempt
+
+  for ((attempt = 1; attempt <= attempts; attempt++)); do
+    if curl --fail --silent --show-error --max-time 10 \
+      "https://kosmos.tiru.fm/health" | grep -q '"ok":true'; then
+      consecutive_successes=$((consecutive_successes + 1))
+      if [[ "${consecutive_successes}" -ge 3 ]]; then
+        return 0
+      fi
+    else
+      consecutive_successes=0
+    fi
+    sleep 5
+  done
+
+  return 1
+}
+
+echo "Verifying public route https://kosmos.tiru.fm/health …"
+if ! wait_for_public_health; then
+  echo "Public Kosmos health check failed after deployment" >&2
+  exit 1
+fi
+
 echo "Done. https://kosmos.tiru.fm"

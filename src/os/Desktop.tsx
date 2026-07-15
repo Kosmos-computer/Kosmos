@@ -27,7 +27,6 @@ import { VideoShell } from "../apps/video/VideoShell";
 import { PodcastShell } from "../apps/podcast/PodcastShell";
 import { ConfirmCard } from "../apps/chat/ConfirmCard";
 import { WallpaperBackdrop } from "./wallpaper/WallpaperBackdrop";
-import { useTranslation } from "react-i18next";
 import {
   initNativeAppWindowBridge,
   migrateAppWindowHost,
@@ -57,7 +56,6 @@ function Notifications() {
 /** Approval cards for agent turns without a chat stream (voice) — same
  *  ConfirmCard as the chat thread, floated above the desktop. */
 function ShellConfirms() {
-  const { t } = useTranslation();
   const confirms = useOsStore((s) => s.shellConfirms);
   if (confirms.length === 0) return null;
   return (
@@ -94,6 +92,7 @@ export function Desktop() {
   const refreshApps = useOsStore((s) => s.refreshApps);
   const notify = useOsStore((s) => s.notify);
   const windows = useWindowStore((s) => s.windows);
+  const constrainWindowsToViewport = useWindowStore((s) => s.constrainToViewport);
   const [menuBarOpen, setMenuBarOpen] = useState(false);
   const nativeHost = shouldUseNativeAppWindows();
   const embeddedWindows = nativeHost ? [] : windows;
@@ -130,6 +129,12 @@ export function Desktop() {
   useEffect(() => {
     if (!appView) setMenuBarOpen(false);
   }, [appView]);
+
+  useEffect(() => {
+    constrainWindowsToViewport();
+    window.addEventListener("resize", constrainWindowsToViewport);
+    return () => window.removeEventListener("resize", constrainWindowsToViewport);
+  }, [constrainWindowsToViewport, navExpanded]);
 
   const focusedId = [...embeddedWindows.filter((w) => !w.minimized)].sort((a, b) => b.z - a.z)[0]?.id;
 

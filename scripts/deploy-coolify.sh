@@ -168,6 +168,17 @@ docker pull "\${IMAGE}"
 sed -i "s|image: ghcr.io/kosmos-computer/kosmos:[^[:space:]]*|image: \${IMAGE}|" "\${COMPOSE_DIR}/docker-compose.yaml"
 sed -i "s|^SOURCE_COMMIT=.*|SOURCE_COMMIT=\$(docker inspect --format='{{index .RepoDigests 0}}' "\${IMAGE}" 2>/dev/null || echo "${SHORT_SHA}")|" "\${COMPOSE_DIR}/.env" || true
 
+SECRETS_ENV="\${COMPOSE_DIR}/.env"
+ARCO_SECRETS_KEK="\$(sed -n 's/^ARCO_SECRETS_KEK=//p' "\${SECRETS_ENV}" 2>/dev/null | tail -n 1)"
+if [[ -z "\${ARCO_SECRETS_KEK}" ]]; then
+  umask 077
+  ARCO_SECRETS_KEK="\$(openssl rand -hex 32)"
+  printf '\nARCO_SECRETS_KEK=%s\n' "\${ARCO_SECRETS_KEK}" >> "\${SECRETS_ENV}"
+  chmod 600 "\${SECRETS_ENV}"
+  echo "Generated persistent ARCO_SECRETS_KEK for the deployment"
+fi
+export ARCO_SECRETS_KEK
+
 cd "\${COMPOSE_DIR}"
 LOGGING_OVERRIDE="\${COMPOSE_DIR}/docker-compose.logging.yaml"
 {
@@ -180,6 +191,8 @@ LOGGING_OVERRIDE="\${COMPOSE_DIR}/docker-compose.logging.yaml"
     printf '      options:\n'
     printf '        max-size: "10m"\n'
     printf '        max-file: "3"\n'
+    printf '    environment:\n'
+    printf '      ARCO_SECRETS_KEK: "\${ARCO_SECRETS_KEK}"\n'
   done < <(docker compose -f docker-compose.yaml config --services)
 } > "\${LOGGING_OVERRIDE}"
 

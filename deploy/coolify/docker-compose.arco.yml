@@ -39,6 +39,7 @@ services:
       PORT: "4600"
       ARCO_DATA_DIR: /data
       ARCO_SECURE_COOKIES: "1"
+      ARCO_SECRETS_KEK: ${ARCO_SECRETS_KEK:?set ARCO_SECRETS_KEK in Coolify}
       # Set this in Coolify's secret environment UI; do not commit its value.
       ARCO_ENTRY_MAGIC_KEY: ${ARCO_ENTRY_MAGIC_KEY:-}
       ARCO_OPS_ENABLED: "1"

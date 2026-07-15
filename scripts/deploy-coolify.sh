@@ -83,8 +83,10 @@ ensure_docker_headroom() {
 
   available="\$(available_root_bytes)"
   if [[ "\${available}" -lt "\${minimum_bytes}" ]]; then
-    echo "Unable to free the 16 MiB required for Docker metadata updates" >&2
-    exit 1
+    # ext4 excludes root-reserved blocks from df's available count. Cache and
+    # log cleanup can therefore make Docker metadata writes possible while df
+    # continues to report zero; let the targeted Docker cleanup be the test.
+    echo "df still reports less than 16 MiB free; attempting Docker cleanup using reserved headroom"
   fi
 }
 

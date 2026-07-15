@@ -25,7 +25,7 @@ RUN npm ci --ignore-scripts
 COPY . .
 
 ENV NODE_OPTIONS=--max-old-space-size=4096
-RUN npm rebuild better-sqlite3
+RUN npm rebuild better-sqlite3 node-datachannel
 RUN npm run setup -- --skip-npm && npm run build
 
 # ── runtime (target platform, e.g. linux/amd64 on Fly) ───────────────────────
@@ -43,7 +43,7 @@ COPY --from=build /app /app
 
 ENV ARCO_SKIP_POSTINSTALL=1
 # Native addons from the build stage are host-arch; rebuild for the target.
-RUN npm rebuild better-sqlite3
+RUN npm rebuild better-sqlite3 node-datachannel
 
 ENV NODE_ENV=production
 ENV PORT=4600

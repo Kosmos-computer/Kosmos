@@ -141,7 +141,11 @@ wait_for_kosmos_health() {
       return 0
     fi
     container_status="\$(docker inspect --format '{{.State.Status}}' kosmos-os-4600 2>/dev/null || true)"
+    restart_count="\$(docker inspect --format '{{.RestartCount}}' kosmos-os-4600 2>/dev/null || echo 0)"
     if [[ "\${container_status}" == "exited" || "\${container_status}" == "dead" ]]; then
+      break
+    fi
+    if [[ "\${restart_count}" =~ ^[0-9]+$ && "\${restart_count}" -ge 3 ]]; then
       break
     fi
     sleep 5

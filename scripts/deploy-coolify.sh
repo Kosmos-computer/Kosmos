@@ -99,7 +99,11 @@ prune_old_kosmos_images() {
     elif [[ -n "\$(docker ps -aq --filter "ancestor=\${image_id}")" ]]; then
       echo "Keeping in-use image \${image_ref}"
     else
-      docker image rm "\${image_ref}"
+      remove_ref="\${image_ref}"
+      if [[ "\${image_ref}" == *'<none>'* ]]; then
+        remove_ref="\${image_id}"
+      fi
+      docker image rm "\${remove_ref}"
     fi
   done < <(docker image ls "\${IMAGE_REPO}" --format '{{.ID}} {{.Repository}}:{{.Tag}}')
   docker image prune --force

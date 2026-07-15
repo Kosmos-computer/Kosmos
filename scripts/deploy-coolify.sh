@@ -30,14 +30,20 @@ GHCR_TOKEN="${REMOTE_GHCR_TOKEN}"
 GHCR_USER="${REMOTE_GHCR_USER}"
 
 TARGET_IMAGE_ID="\$(docker image inspect --format '{{.Id}}' "\${IMAGE}" 2>/dev/null || true)"
+CURRENT_IMAGE_ID="\$(docker inspect --format '{{.Image}}' kosmos-os-4600 2>/dev/null || true)"
+CURRENT_HEALTH="\$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' kosmos-os-4600 2>/dev/null || true)"
 PRIOR_IMAGE_ID=""
-while read -r image_id; do
+PRIOR_IMAGE_REF=""
+while read -r image_id image_ref; do
   full_id="\$(docker image inspect --format '{{.Id}}' "\${image_id}" 2>/dev/null || true)"
-  if [[ -n "\${full_id}" && "\${full_id}" != "\${TARGET_IMAGE_ID}" ]]; then
+  if [[ "\${CURRENT_HEALTH}" == "unhealthy" && "\${full_id}" == "\${CURRENT_IMAGE_ID}" ]]; then
+    echo "Skipping unhealthy current image \${image_ref} as rollback candidate"
+  elif [[ -n "\${full_id}" && "\${full_id}" != "\${TARGET_IMAGE_ID}" && "\${image_ref}" != *'<none>'* ]]; then
     PRIOR_IMAGE_ID="\${full_id}"
+    PRIOR_IMAGE_REF="\${image_ref}"
     break
   fi
-done < <(docker image ls "\${IMAGE_REPO}" --format '{{.ID}}')
+done < <(docker image ls "\${IMAGE_REPO}" --format '{{.ID}} {{.Repository}}:{{.Tag}}')
 
 available_root_bytes() {
   df --output=avail -B1 / | tail -n 1 | tr -d ' '
@@ -127,6 +133,22 @@ prune_old_kosmos_images() {
   docker image prune --force
 }
 
+wait_for_kosmos_health() {
+  local attempts=36
+  local attempt
+  for ((attempt = 1; attempt <= attempts; attempt++)); do
+    if docker exec kosmos-os-4600 node -e "fetch('http://127.0.0.1:4600/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" >/dev/null 2>&1; then
+      return 0
+    fi
+    container_status="\$(docker inspect --format '{{.State.Status}}' kosmos-os-4600 2>/dev/null || true)"
+    if [[ "\${container_status}" == "exited" || "\${container_status}" == "dead" ]]; then
+      break
+    fi
+    sleep 5
+  done
+  return 1
+}
+
 configure_journal_limits
 ensure_docker_headroom
 echo "Disk usage before Docker cleanup:"
@@ -158,6 +180,22 @@ LOGGING_OVERRIDE="\${COMPOSE_DIR}/docker-compose.logging.yaml"
 } > "\${LOGGING_OVERRIDE}"
 
 docker compose -f docker-compose.yaml -f "\${LOGGING_OVERRIDE}" up -d --remove-orphans
+if ! wait_for_kosmos_health; then
+  echo "New Kosmos container failed its health check" >&2
+  docker logs --tail 200 kosmos-os-4600 >&2 || true
+  if [[ -n "\${PRIOR_IMAGE_REF}" ]]; then
+    echo "Rolling back to \${PRIOR_IMAGE_REF}" >&2
+    sed -i "s|image: ghcr.io/kosmos-computer/kosmos:[^[:space:]]*|image: \${PRIOR_IMAGE_REF}|" "\${COMPOSE_DIR}/docker-compose.yaml"
+    docker compose -f docker-compose.yaml -f "\${LOGGING_OVERRIDE}" up -d --remove-orphans
+    if wait_for_kosmos_health; then
+      echo "Rollback is healthy; marking deployment failed" >&2
+    else
+      echo "Rollback also failed its health check" >&2
+      docker logs --tail 200 kosmos-os-4600 >&2 || true
+    fi
+  fi
+  exit 1
+fi
 prune_old_kosmos_images
 
 echo "Running image:"

@@ -39,6 +39,39 @@ while read -r image_id; do
   fi
 done < <(docker image ls "\${IMAGE_REPO}" --format '{{.ID}}')
 
+available_root_bytes() {
+  df --output=avail -B1 / | tail -n 1 | tr -d ' '
+}
+
+ensure_docker_headroom() {
+  local minimum_bytes=268435456
+  local available
+  available="\$(available_root_bytes)"
+  [[ "\${available}" -ge "\${minimum_bytes}" ]] && return
+
+  echo "Root filesystem has less than 256 MiB free; clearing safe caches"
+  apt-get clean || true
+  if command -v journalctl >/dev/null 2>&1; then
+    journalctl --vacuum-size=100M || true
+  fi
+
+  available="\$(available_root_bytes)"
+  while [[ "\${available}" -lt "\${minimum_bytes}" ]]; do
+    largest_log="\$(find /var/lib/docker/containers -type f -name '*-json.log' -printf '%s %p\n' 2>/dev/null | sort -nr | sed -n '1p')"
+    read -r log_size log_path <<< "\${largest_log}"
+    [[ -n "\${log_size:-}" && "\${log_size}" -gt 0 && -n "\${log_path:-}" ]] || break
+    echo "Truncating oversized Docker log \${log_path} (\${log_size} bytes)"
+    truncate --size=0 "\${log_path}"
+    available="\$(available_root_bytes)"
+  done
+
+  available="\$(available_root_bytes)"
+  if [[ "\${available}" -lt "\${minimum_bytes}" ]]; then
+    echo "Unable to free the 256 MiB required for Docker metadata updates" >&2
+    exit 1
+  fi
+}
+
 prune_old_kosmos_images() {
   while read -r image_id image_ref; do
     [[ -n "\${image_id}" && "\${image_ref}" != "\${IMAGE}" ]] || continue
@@ -54,6 +87,7 @@ prune_old_kosmos_images() {
   docker image prune --force
 }
 
+ensure_docker_headroom
 echo "Disk usage before Docker cleanup:"
 df -h /
 prune_old_kosmos_images

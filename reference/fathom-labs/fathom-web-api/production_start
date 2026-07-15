@@ -1,4 +1,0 @@
-#!/bin/sh
-
-cd src
-gunicorn start:web --bind 0.0.0.0:7000 --worker-class uvicorn.workers.UvicornWorker --workers 3 --timeout 1800

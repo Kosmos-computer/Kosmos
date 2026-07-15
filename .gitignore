@@ -31,3 +31,6 @@ __pycache__/
 # Menubar tasks (Swift) build artifacts
 apps/menubar-tasks/.build/
 apps/menubar-tasks/ArcoMenubarTasks.app/
+
+# Local read-only upstream clones for evaluation/porting (not part of the build)
+reference/

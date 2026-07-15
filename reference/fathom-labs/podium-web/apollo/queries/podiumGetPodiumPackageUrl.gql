@@ -1,5 +1,0 @@
-query($guid: String!){
-  podiumGetPodiumPackage(guid: $guid) {
-    signedUrl
-  }
-}

@@ -1,3 +1,0 @@
-query($purchaseGuid: String!, $successUrl: String!, $cancelUrl: String!, $priceId: String!, $quantity: Int, $couponId: String) {
-  podiumCheckoutLink(purchaseGuid: $purchaseGuid, successUrl: $successUrl, cancelUrl: $cancelUrl, priceId: $priceId, quantity: $quantity, couponId: $couponId)
-}

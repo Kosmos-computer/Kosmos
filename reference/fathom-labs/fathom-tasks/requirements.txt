@@ -1,9 +1,0 @@
--e git+https://2c362d5f4c48f0ee727f26f7c87a7dad014242fb:x-oauth-basic@github.com/fathom-app/fathom-core.git@main#egg=fathom-core
-
-numpy
-prefect==0.15.6
-dask
-boto3
-grpcio==1.22.0
-grpcio-tools==1.22.0
-sentry-sdk

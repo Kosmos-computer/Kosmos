@@ -43,6 +43,16 @@ available_root_bytes() {
   df --output=avail -B1 / | tail -n 1 | tr -d ' '
 }
 
+report_largest_docker_logs() {
+  echo "Largest Docker container logs:"
+  while read -r log_size log_path; do
+    [[ -n "\${log_size:-}" && -n "\${log_path:-}" ]] || continue
+    container_id="\$(basename "\$(dirname "\${log_path}")")"
+    container_details="\$(docker inspect --format '{{.Name}} {{.Config.Image}}' "\${container_id}" 2>/dev/null || echo unknown)"
+    echo "  \${log_size} bytes  \${container_details}  \${log_path}"
+  done < <(find /var/lib/docker/containers -type f -name '*-json.log' -printf '%s %p\n' 2>/dev/null | sort -nr | sed -n '1,10p')
+}
+
 ensure_docker_headroom() {
   # Docker only needs a small amount of working space before the targeted image
   # cleanup below can reclaim the bulk of the disk. Requiring hundreds of MiB
@@ -53,6 +63,7 @@ ensure_docker_headroom() {
   [[ "\${available}" -ge "\${minimum_bytes}" ]] && return
 
   echo "Root filesystem has less than 16 MiB free; clearing safe caches"
+  report_largest_docker_logs
   apt-get clean || true
   if command -v journalctl >/dev/null 2>&1; then
     journalctl --rotate || true
@@ -107,7 +118,21 @@ sed -i "s|image: ghcr.io/kosmos-computer/kosmos:[^[:space:]]*|image: \${IMAGE}|"
 sed -i "s|^SOURCE_COMMIT=.*|SOURCE_COMMIT=\$(docker inspect --format='{{index .RepoDigests 0}}' "\${IMAGE}" 2>/dev/null || echo "${SHORT_SHA}")|" "\${COMPOSE_DIR}/.env" || true
 
 cd "\${COMPOSE_DIR}"
-docker compose up -d --remove-orphans
+LOGGING_OVERRIDE="\${COMPOSE_DIR}/docker-compose.logging.yaml"
+{
+  echo "services:"
+  while read -r service_name; do
+    [[ -n "\${service_name}" ]] || continue
+    printf '  %s:\n' "\${service_name}"
+    printf '    logging:\n'
+    printf '      driver: json-file\n'
+    printf '      options:\n'
+    printf '        max-size: "10m"\n'
+    printf '        max-file: "3"\n'
+  done < <(docker compose -f docker-compose.yaml config --services)
+} > "\${LOGGING_OVERRIDE}"
+
+docker compose -f docker-compose.yaml -f "\${LOGGING_OVERRIDE}" up -d --remove-orphans
 prune_old_kosmos_images
 
 echo "Running image:"

@@ -23,6 +23,11 @@ services:
     # Or pin a registry image after CI builds:
     # image: ghcr.io/kosmos-computer/kosmos:latest
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     expose:
       - "4600"
     networks:

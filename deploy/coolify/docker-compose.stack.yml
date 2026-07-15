@@ -11,6 +11,11 @@ services:
     image: ollama/ollama:latest
     container_name: arco-ollama
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     volumes:
       - ollama_data:/root/.ollama
     expose:

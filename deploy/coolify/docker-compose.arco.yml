@@ -14,6 +14,11 @@
 #   ARCO_OPS_ENABLED=1
 #   ARCO_SELF_HEAL=1
 #   ARCO_COOLIFY_APPS_DIR=/host-coolify/applications
+#
+# Optional Git-over-SSH:
+#   Place a deploy key at /data/.ssh/id_ed25519 on the persistent volume.
+#   The container entrypoint chmods /data/.ssh to 700, private keys to 600,
+#   and sets GIT_SSH_COMMAND automatically when a key is present.
 
 services:
   arco-os:

@@ -5,7 +5,7 @@ RUN npm install --global npm@12.0.1
 # Native deps for better-sqlite3/node-datachannel; git for workspace tools; bubblewrap for Codex ACP.
 # Docker CLI comes from the host mount (/usr/bin/docker) when ops mode is enabled.
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends python3 make g++ git ca-certificates bubblewrap \
+  && apt-get install -y --no-install-recommends python3 make g++ git openssh-client ca-certificates bubblewrap \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -24,6 +24,7 @@ RUN npm ci --ignore-scripts
 COPY . .
 
 RUN npm rebuild better-sqlite3 node-datachannel
+RUN chmod +x scripts/docker-entrypoint.sh
 
 ENV NODE_ENV=production
 ENV PORT=4600
@@ -36,4 +37,5 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=90s --retries=3 \
 
 VOLUME ["/data"]
 
+ENTRYPOINT ["scripts/docker-entrypoint.sh"]
 CMD ["node", "--import", "tsx/esm", "server/index.ts"]

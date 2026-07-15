@@ -7,7 +7,7 @@ FROM --platform=$BUILDPLATFORM node:22-bookworm-slim AS build
 RUN npm install --global npm@12.0.1
 
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends python3 make g++ git ca-certificates \
+  && apt-get install -y --no-install-recommends python3 make g++ git openssh-client ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -34,7 +34,7 @@ FROM node:22-bookworm-slim AS runtime
 RUN npm install --global npm@12.0.1
 
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends python3 make g++ git ca-certificates \
+  && apt-get install -y --no-install-recommends python3 make g++ git openssh-client ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -44,6 +44,7 @@ COPY --from=build /app /app
 ENV ARCO_SKIP_POSTINSTALL=1
 # Native addons from the build stage are host-arch; rebuild for the target.
 RUN npm rebuild better-sqlite3 node-datachannel
+RUN chmod +x scripts/docker-entrypoint.sh
 
 ENV NODE_ENV=production
 ENV PORT=4600
@@ -56,4 +57,5 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=90s --retries=3 \
 
 VOLUME ["/data"]
 
+ENTRYPOINT ["scripts/docker-entrypoint.sh"]
 CMD ["npm", "start"]

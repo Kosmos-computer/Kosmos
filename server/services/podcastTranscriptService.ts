@@ -242,7 +242,7 @@ async function transcribeWithVoiceServer(audio: Buffer, ext: string): Promise<st
 async function transcribeAudioSegment(
   audio: Buffer,
   ext: string,
-  title: string,
+  _title: string,
 ): Promise<{ text: string; engine: PodcastTranscriptEngine }> {
   if (!(await voiceServerSupportsStt())) {
     throw new Error(

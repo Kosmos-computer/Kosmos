@@ -10,7 +10,6 @@ import crypto from "node:crypto";
 const ALGO = "aes-256-gcm";
 const IV_LEN = 12;
 const KEY_LEN = 32;
-const AUTH_TAG_LEN = 16;
 
 /** Version tag so we can rotate algorithms later. */
 export const VAULT_CRYPTO_VERSION = 1;

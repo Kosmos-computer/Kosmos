@@ -19,7 +19,7 @@ export function FloatingKeyboard() {
     if (!open) return;
 
     const onFocusIn = (event: FocusEvent) => {
-      const target = event.target;
+      const target = event.target as Element | null;
       if (isEditableElement(target)) rememberTarget(target);
     };
 

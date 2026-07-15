@@ -71,7 +71,7 @@ export function PodcastDirectoryShowDetail({ vm }: PodcastDirectoryProps) {
                   <Play size={18} /><T k={I18nKey.APPS$PODCAST_PLAY_LATEST} /></button>
               ) : null}
               <Button
-                variant={subscribed ? "secondary" : "primary"}
+                variant={subscribed ? "default" : "primary"}
                 className="arco-podcast__directory-follow-btn"
                 disabled={pending || vm.feedsLoading}
                 onClick={() => void toggleFollow()}
@@ -274,7 +274,7 @@ function DirectoryCard({
         <p className="arco-podcast__directory-card-publisher">{show.publisher}</p>
         <p className="arco-podcast__directory-card-description">{show.description}</p>
         <Button
-          variant={subscribed ? "secondary" : "primary"}
+          variant={subscribed ? "default" : "primary"}
           className="arco-podcast__directory-follow-btn"
           disabled={pending || vm.feedsLoading}
           onClick={toggleFollow}

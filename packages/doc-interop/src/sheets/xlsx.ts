@@ -4,7 +4,7 @@ import { columnLabel } from "./delimited.js";
 
 export async function importXlsx(bytes: Uint8Array): Promise<ImportResult<WorkbookDoc>> {
   const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.load(Buffer.from(bytes));
+  await workbook.xlsx.load(Buffer.from(bytes) as unknown as Parameters<typeof workbook.xlsx.load>[0]);
   const sheets = workbook.worksheets.map((ws, index) => {
     const cells: Record<string, SheetCell> = {};
     ws.eachRow((row, rowNumber) => {

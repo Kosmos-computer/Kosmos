@@ -7,7 +7,7 @@ import { T } from "../../i18n/T";
  * Settings → Skills.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BookOpen, Layers, Plus, Trash2, X } from "lucide-react";
+import { BookOpen, Plus, Trash2, X } from "lucide-react";
 import type { SkillMeta } from "@shared/types";
 import { api } from "../../lib/api";
 import { useCan } from "../../os/auth/authStore";

@@ -46,7 +46,6 @@ function InstallCard({ children }: { children: React.ReactNode }) {
 }
 
 function StepProgress({ step, total }: { step: number; total: number }) {
-  const { t } = useTranslation();
   return (
     <div className="arco-install__progress" aria-label={i18n.t(I18nKey.INSTALL$STEP_PROGRESS, { step, total })}>
       {Array.from({ length: total }, (_, index) => (

@@ -7,7 +7,6 @@ import { Button } from "../../components/ui/Button";
 import { Chip } from "../../components/ui/Chip";
 import { useDismiss } from "../../components/useDismiss";
 import type { NoteAiApplyMode } from "./useNoteAiAssist";
-import { useTranslation } from "react-i18next";
 
 const APPLY_MODES: { id: NoteAiApplyMode; label: string }[] = [
   { id: "selection", label: "Selection" },
@@ -44,7 +43,6 @@ export function NoteAiComposer({
   if (!open) return null;
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
-  const { t } = useTranslation();
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       if (prompt.trim() && !streaming) onSubmit();

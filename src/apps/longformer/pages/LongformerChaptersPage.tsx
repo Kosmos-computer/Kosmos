@@ -5,7 +5,6 @@ import { ArtifactPageLayout } from "../ArtifactPageLayout";
 import type { LongformerViewModel } from "../longformerStore";
 import type { TranscriptDetail } from "../types";
 import { formatTimecode } from "../types";
-import { useTranslation } from "react-i18next";
 
 interface LongformerChaptersPageProps {
   vm: LongformerViewModel;
@@ -14,7 +13,6 @@ interface LongformerChaptersPageProps {
 
 /** Chapter markers with timestamps — from pipeline or regenerate. */
 export function LongformerChaptersPage({ vm, detail }: LongformerChaptersPageProps) {
-  const { t } = useTranslation();
   const artifact = detail.artifacts.find((a) => a.kind === "chapters");
 
   const copyAll = () => {

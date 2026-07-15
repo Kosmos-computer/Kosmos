@@ -1,7 +1,6 @@
 import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
 import { T } from "../../i18n/T";
-import { useTranslation } from "react-i18next";
 /**
  * Embeddable onboarding widget — drop into empty states, banners, side panels,
  * or full cards. Controlled or uncontrolled step index.
@@ -12,7 +11,6 @@ import { Button } from "../ui";
 import type { OnboardingStep, OnboardingWidgetProps } from "./onboardingTypes";
 
 function clampStepIndex(index: number, length: number) {
-  const { t } = useTranslation();
   return Math.max(0, Math.min(length - 1, index));
 }
 
@@ -25,7 +23,6 @@ function ProgressDots({
   active: number;
   completeBefore: number;
 }) {
-  const { t } = useTranslation();
   return (
     <div className="arco-onboard__dots" role="tablist" aria-label={i18n.t(I18nKey.COMPONENTS$PATTERNS_ONBOARDING_PROGRESS)}>
       {Array.from({ length: count }, (_, index) => (

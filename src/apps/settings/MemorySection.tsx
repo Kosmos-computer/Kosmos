@@ -1,7 +1,6 @@
 import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
 import { T } from "../../i18n/T";
-import { useTranslation } from "react-i18next";
 /**
  * Settings → Memory — backends, embedders, and agent grant matrix (Phase 0 stub).
  */
@@ -21,7 +20,6 @@ import {
 import { Chip } from "../../components/ui";
 
 export function MemorySection() {
-  const { t } = useTranslation();
   const { backends, embedders, grants } = MEMORY_WORKSPACE_MOCK;
 
   return (

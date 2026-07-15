@@ -1,7 +1,6 @@
 import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
 import { T } from "../../i18n/T";
-import { useTranslation } from "react-i18next";
 import {
   Download,
   ExternalLink,
@@ -193,7 +192,6 @@ export function FilePreviewPane({
 }
 
 export function FilePreviewEmpty() {
-  const { t } = useTranslation();
   return (
     <div className="arco-drive-preview arco-drive-preview--empty">
       <EmptyState title={i18n.t(I18nKey.APPS$FILES_SELECT_A_FILE)}><T k={I18nKey.APPS$FILES_CHOOSE_A_FILE_FROM_THE_LIST_TO_PREVIEW_IT_HERE_LIKE_FIND} /></EmptyState>

@@ -33,7 +33,7 @@ export const transcriptionService = {
 
   updateTranscript(
     jobId: string,
-    patch: Pick<TranscriptDetail, "segments" | "speakers" | "chapters" | "tracks" | "title" | "artifacts">,
+    patch: Partial<Pick<TranscriptDetail, "segments" | "speakers" | "chapters" | "tracks" | "title" | "artifacts">>,
   ) {
     const updated = transcriptStore.update(jobId, patch);
     if (!updated) throw new Error("Transcript not found");

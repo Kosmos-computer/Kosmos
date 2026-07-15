@@ -10,9 +10,7 @@
  * Required env: FLY_API_TOKEN (or fly auth login).
  */
 import { execFileSync } from "node:child_process";
-import path from "node:path";
 
-const FLY = process.env.FLY_BIN ?? "fly";
 const MACHINES = "https://api.machines.dev/v1";
 
 interface Options {

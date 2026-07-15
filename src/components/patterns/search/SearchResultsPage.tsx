@@ -11,7 +11,6 @@ import { SearchKnowledgePanel as KnowledgePanel } from "./SearchKnowledgePanel";
 import { SearchPagination } from "./SearchPagination";
 import { SearchResultItem as ResultItem } from "./SearchResultItem";
 import { SearchTabs } from "./SearchTabs";
-import { useTranslation } from "react-i18next";
 
 export interface SearchResultsPageProps {
   query: string;
@@ -68,7 +67,6 @@ export function SearchResultsPage({
   loading = false,
   error = null,
 }: SearchResultsPageProps) {
-  const { t } = useTranslation();
   return (
     <div className="arco-search-results">
       <header className="arco-search-results__header">

@@ -20,5 +20,6 @@
       "@arco/platform-bridge": ["./packages/platform-bridge/src/index.ts"]
     }
   },
-  "include": ["src", "shared", "packages/platform-bridge/src"]
+  "include": ["src", "shared", "packages/platform-bridge/src"],
+  "exclude": ["**/*.test.ts", "**/*.test.tsx"]
 }

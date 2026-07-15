@@ -6,7 +6,6 @@ import { Breadcrumb } from "../../components/patterns";
 import { Button } from "../../components/ui";
 import type { LongformerViewModel } from "./longformerStore";
 import type { TranscriptDetail } from "./types";
-import { useTranslation } from "react-i18next";
 
 interface LongformerJobHeaderProps {
   vm: LongformerViewModel;
@@ -15,7 +14,6 @@ interface LongformerJobHeaderProps {
 
 /** Job workspace header — back to library, title, and download. */
 export function LongformerJobHeader({ vm, detail }: LongformerJobHeaderProps) {
-  const { t } = useTranslation();
   return (
     <header className="arco-longformer-job-header">
       <div className="arco-longformer-job-header__left">

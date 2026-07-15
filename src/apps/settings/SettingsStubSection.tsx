@@ -74,7 +74,7 @@ function StubFieldRow({
               }
               if (action.type === "edit") {
                 return (
-                  <Button key={`${row.id}-edit`} variant="secondary">
+                  <Button key={`${row.id}-edit`} variant="default">
                     {action.label ?? "Edit"}
                   </Button>
                 );

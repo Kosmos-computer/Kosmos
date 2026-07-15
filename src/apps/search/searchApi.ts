@@ -1,4 +1,4 @@
-import type { SearchResultItem } from "../../components/patterns/search";
+import type { SearchResultItemData as SearchResultItem } from "../../components/patterns/search";
 
 export interface WebSearchHit {
   title: string;

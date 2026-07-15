@@ -5,7 +5,6 @@ import { ArtifactPageLayout } from "../ArtifactPageLayout";
 import { linesFromArtifact } from "../artifactContent";
 import type { LongformerViewModel } from "../longformerStore";
 import type { TranscriptDetail } from "../types";
-import { useTranslation } from "react-i18next";
 
 interface LongformerQuotesPageProps {
   vm: LongformerViewModel;
@@ -14,7 +13,6 @@ interface LongformerQuotesPageProps {
 
 /** Pull quotes as a card list. */
 export function LongformerQuotesPage({ vm, detail }: LongformerQuotesPageProps) {
-  const { t } = useTranslation();
   const artifact = detail.artifacts.find((a) => a.kind === "quotes");
   const quotes = linesFromArtifact(artifact);
 

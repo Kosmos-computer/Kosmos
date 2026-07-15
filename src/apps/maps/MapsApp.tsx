@@ -1,7 +1,6 @@
 import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
 import { T } from "../../i18n/T";
-import { useTranslation } from "react-i18next";
 import {
   ArrowLeftRight,
   ExternalLink,
@@ -18,7 +17,6 @@ import { MapsHistoryNav } from "./MapsHistoryNav";
 import { useMaps } from "./useMaps";
 
 export function MapsApp() {
-  const { t } = useTranslation();
   const maps = useMaps();
   const selected = maps.results.find((p) => p.id === maps.selectedId) ?? null;
 

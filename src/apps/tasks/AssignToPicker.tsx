@@ -6,7 +6,6 @@ import { Bot, ChevronDown, User, UserRound } from "lucide-react";
 import { useContactsStore } from "../contacts/contactsStore";
 import { Avatar, Chip, Input } from "../../components/ui";
 import type { PhoneContact } from "../contacts/types";
-import { useTranslation } from "react-i18next";
 import {
   TASK_ASSIGNEE_AGENT_NAME,
   type TaskAssignee,
@@ -102,7 +101,6 @@ export function AssignToPicker({ value, selfName, onChange }: AssignToPickerProp
   }
 
   function selectCustomName(name: string) {
-  const { t } = useTranslation();
     setPersonQuery(name);
     setPersonOpen(false);
     onChange({ kind: "custom", name });

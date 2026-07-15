@@ -1,5 +1,4 @@
 import { I18nKey } from "../i18n/declaration";
-import i18n from "../i18n/index";
 import { T } from "../i18n/T";
 /**
  * Mobile shell — the same windows become full-screen sheets: a home grid of

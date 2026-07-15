@@ -4,16 +4,11 @@
  * matching gives instant rich results for common prompts; an LLM handles
  * the long tail with a compact few-shot prompt and falls back locally on failure.
  */
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { extractOpenUiCode, titleFromPrompt } from "../../shared/generator/extractOpenUi.js";
 import { lintOpenUICode } from "../lint/lint-openui.js";
 import { streamTurn } from "../agent/llm.js";
 import { loadSettings } from "../env.js";
 import { fallbackLocalUiGenerate, tryLocalUiGenerate } from "./localUiGenerate.js";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /** Compact few-shot prompt — the full chat-prompt.md is too large for small local models. */
 const GENERATOR_LLM_SYSTEM = `You generate openui-lang for Arco's INLINE CHAT UI surface.

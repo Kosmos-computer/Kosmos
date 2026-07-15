@@ -4,7 +4,6 @@ import { T } from "../../i18n/T";
 import { Clapperboard, UserRound } from "lucide-react";
 import { Button } from "../../components/ui";
 import type { Speaker } from "./types";
-import { useTranslation } from "react-i18next";
 
 export interface TranscriptSelection {
   text: string;
@@ -30,7 +29,6 @@ export function LongformerSelectionToolbar({
   onCreateClip,
   onClose,
 }: LongformerSelectionToolbarProps) {
-  const { t } = useTranslation();
   return (
     <div
       className="arco-longformer-selection-toolbar"

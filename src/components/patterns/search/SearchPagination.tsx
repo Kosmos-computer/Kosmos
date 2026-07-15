@@ -1,7 +1,6 @@
 import { I18nKey } from "../../../i18n/declaration";
 import i18n from "../../../i18n/index";
 import { T } from "../../../i18n/T";
-import { useTranslation } from "react-i18next";
 export interface SearchPaginationProps {
   page: number;
   totalPages: number;
@@ -9,7 +8,6 @@ export interface SearchPaginationProps {
 }
 
 export function SearchPagination({ page, totalPages, onPageChange }: SearchPaginationProps) {
-  const { t } = useTranslation();
   if (totalPages <= 1) return null;
 
   const pages = Array.from({ length: Math.min(totalPages, 10) }, (_, i) => i + 1);

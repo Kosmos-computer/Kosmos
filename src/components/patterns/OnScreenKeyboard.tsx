@@ -1,4 +1,3 @@
-import i18n from "../../i18n/index";
 import { useMemo, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import { AvailableLanguages, DEFAULT_LOCALE } from "../../i18n";
@@ -42,7 +41,7 @@ function keyStyle(key: KeyboardKey): CSSProperties | undefined {
 }
 
 export function OnScreenKeyboard({ className }: OnScreenKeyboardProps) {
-  const { t, i18n } = useTranslation();
+  const { i18n } = useTranslation();
   const shift = useInputMethodStore((s) => s.shift);
   const toggleShift = useInputMethodStore((s) => s.toggleShift);
   const setShift = useInputMethodStore((s) => s.setShift);

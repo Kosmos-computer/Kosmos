@@ -15,7 +15,7 @@ import { VoiceBar } from "./VoiceBar";
 import { useVoice, voiceClient } from "../../voice";
 import { Composer } from "../../components/composer/Composer";
 import { DEFAULT_APPROVAL_MODE } from "../../components/composer/approvalModes";
-import { useComposerAttach } from "../../components/composer/useComposerAttach.tsx";
+import { useComposerAttach } from "../../components/composer/useComposerAttach";
 import { ChatThread } from "../../components/chat/ChatThread";
 import { ScrollToLatestButton } from "../../components/chat/ScrollToLatestButton";
 import { useThreadScroll } from "../../components/chat/useThreadScroll";

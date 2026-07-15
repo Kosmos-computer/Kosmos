@@ -1,5 +1,4 @@
 import { I18nKey } from "../../i18n/declaration";
-import i18n from "../../i18n/index";
 import { T } from "../../i18n/T";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";

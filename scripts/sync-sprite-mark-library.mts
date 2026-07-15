@@ -6,11 +6,9 @@
 import { writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createRequire } from "node:module";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, "..");
-const require = createRequire(import.meta.url);
 
 // tsx registers TypeScript — import the library exporter directly.
 const { exportSpriteMarkLibraryJson } = await import(

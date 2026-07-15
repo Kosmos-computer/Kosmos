@@ -2,7 +2,6 @@ import { I18nKey } from "../../../i18n/declaration";
 import i18n from "../../../i18n/index";
 import { T } from "../../../i18n/T";
 import type { SearchKnowledgePanel as SearchKnowledgePanelType } from "./searchTypes";
-import { useTranslation } from "react-i18next";
 
 export interface SearchKnowledgePanelProps {
   panel: SearchKnowledgePanelType;
@@ -10,7 +9,6 @@ export interface SearchKnowledgePanelProps {
 }
 
 export function SearchKnowledgePanel({ panel, onRelatedClick }: SearchKnowledgePanelProps) {
-  const { t } = useTranslation();
   return (
     <aside className="arco-search-knowledge" aria-label={i18n.t(I18nKey.COMPONENTS$PATTERNS_KNOWLEDGE_PANEL)}>
       {panel.imageUrl ? (

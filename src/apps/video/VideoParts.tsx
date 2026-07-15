@@ -1,7 +1,6 @@
 import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
 import { T } from "../../i18n/T";
-import { useTranslation } from "react-i18next";
 import {
   Clock,
   Compass,
@@ -57,7 +56,6 @@ export interface VideoSidebarProps {
 }
 
 export function VideoSidebar({ vm, connectOpen, onOpenConnect, onCloseConnect }: VideoSidebarProps) {
-  const { t } = useTranslation();
   const connections = useConnectionStore((s) => s.connections);
   const addConnection = useConnectionStore((s) => s.addConnection);
   const videoConnections = connections.filter((c) => c.domain === "video");
@@ -168,7 +166,6 @@ export interface VideoFeedProps {
 }
 
 export function VideoFeed({ vm }: VideoFeedProps) {
-  const { t } = useTranslation();
   const active = vm.nowPlaying.video;
   const isRemote = vm.sourceFilter === "remote";
   const connection = useConnectionStore((s) =>
@@ -320,7 +317,6 @@ export interface VideoPlayerBarProps {
 }
 
 export function VideoPlayerBar({ vm }: VideoPlayerBarProps) {
-  const { t } = useTranslation();
   const { video, progress, elapsed, duration } = vm.nowPlaying;
   if (!video.id || video.source === "remote") return null;
 

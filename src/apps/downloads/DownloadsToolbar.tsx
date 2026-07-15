@@ -1,6 +1,5 @@
 import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
-import { useTranslation } from "react-i18next";
 import {
   ArrowDown,
   ArrowUp,
@@ -28,7 +27,6 @@ export interface DownloadsToolbarProps {
 }
 
 export function DownloadsToolbar({ vm }: DownloadsToolbarProps) {
-  const { t } = useTranslation();
   const hasSelection = vm.selectedIds.length > 0;
 
   return (

@@ -3,7 +3,6 @@
  * in desktop view or inside a swipe-reveal tray in app (fullscreen) view.
  */
 import { I18nKey } from "../i18n/declaration";
-import i18n from "../i18n/index";
 import { T } from "../i18n/T";
 import { Globe } from "lucide-react";
 import { useMemo, useState } from "react";

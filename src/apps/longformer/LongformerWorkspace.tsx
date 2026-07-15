@@ -7,7 +7,6 @@ import { LongformerPlaceholderView } from "./LongformerPlaceholderView";
 import { LongformerSidebar } from "./LongformerSidebar";
 import { SidebarPane } from "../../components/patterns";
 import type { LongformerViewModel } from "./longformerStore";
-import { useTranslation } from "react-i18next";
 
 interface LongformerWorkspaceProps {
   vm: LongformerViewModel;
@@ -15,7 +14,6 @@ interface LongformerWorkspaceProps {
 
 /** Longformer — transcription library and editor workbench. */
 export function LongformerWorkspace({ vm }: LongformerWorkspaceProps) {
-  const { t } = useTranslation();
   const renderMain = () => {
     if (vm.isJobMode) {
       return vm.activeDetail ? (

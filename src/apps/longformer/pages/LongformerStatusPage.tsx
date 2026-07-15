@@ -4,7 +4,6 @@ import { TRANSCRIPTION_STEPS } from "@shared/transcription/steps";
 import { ArtifactPageLayout } from "../ArtifactPageLayout";
 import type { LongformerViewModel } from "../longformerStore";
 import type { TranscriptDetail } from "../types";
-import { useTranslation } from "react-i18next";
 
 const STEP_LABELS: Record<(typeof TRANSCRIPTION_STEPS)[number], string> = {
   media_resolved: "Resolve media",
@@ -24,7 +23,6 @@ interface LongformerStatusPageProps {
 
 /** Pipeline progress for the open transcription job. */
 export function LongformerStatusPage({ vm, detail }: LongformerStatusPageProps) {
-  const { t } = useTranslation();
   const job = vm.activeJob;
   const steps = job?.steps;
 

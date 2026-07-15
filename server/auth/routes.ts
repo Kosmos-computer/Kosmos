@@ -14,7 +14,7 @@
  */
 import { Hono, type Context } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
-import type { AuthStatus, AuthSessionResponse, Role, Settings } from "../../shared/types.js";
+import type { AuthStatus, AuthSessionResponse, AuthUser, Role, Settings } from "../../shared/types.js";
 import { saveSettings } from "../env.js";
 import { AUTH_COOKIE, type AuthEnv } from "./middleware.js";
 import { authSessionStore } from "./sessionStore.js";

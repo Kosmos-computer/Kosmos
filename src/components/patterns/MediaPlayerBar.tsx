@@ -1,7 +1,6 @@
 import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
 import { T } from "../../i18n/T";
-import { useTranslation } from "react-i18next";
 import {
   Pause,
   Play,
@@ -54,7 +53,6 @@ export function MediaPlayerBar({
   showVolume = false,
   live = false,
 }: MediaPlayerBarProps) {
-  const { t } = useTranslation();
   return (
     <footer className="arco-media-player__bar" aria-label={i18n.t(I18nKey.COMPONENTS$PATTERNS_PLAYBACK_CONTROLS)}>
       <div className="arco-media-player__track">

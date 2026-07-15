@@ -32,7 +32,8 @@ export interface NavSidebarProps {
   primarySlot?: ReactNode;
   primaryAction?: { label: string; icon?: LucideIcon; onClick?: () => void };
   quickLinks?: NavSidebarQuickLink[];
-  sections: NavSidebarSection[];
+  /** Grouped section list. Optional when `scrollContent` replaces the scroll area. */
+  sections?: NavSidebarSection[];
   /** When set, replaces the default section list in the scroll area. */
   scrollContent?: ReactNode;
   footer?: ReactNode;
@@ -54,7 +55,7 @@ export function NavSidebar({
   primarySlot,
   primaryAction,
   quickLinks,
-  sections,
+  sections = [],
   scrollContent,
   footer,
   className = "",

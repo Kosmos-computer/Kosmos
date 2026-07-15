@@ -2,7 +2,6 @@ import { I18nKey } from "../../../i18n/declaration";
 import i18n from "../../../i18n/index";
 import { Clock, Search, TrendingUp } from "lucide-react";
 import type { SearchSuggestion } from "./searchTypes";
-import { useTranslation } from "react-i18next";
 
 export interface SearchSuggestListProps {
   suggestions: SearchSuggestion[];
@@ -10,7 +9,6 @@ export interface SearchSuggestListProps {
 }
 
 export function SearchSuggestList({ suggestions, onSelect }: SearchSuggestListProps) {
-  const { t } = useTranslation();
   return (
     <ul className="arco-search-suggest" role="listbox" aria-label={i18n.t(I18nKey.COMPONENTS$PATTERNS_SEARCH_SUGGESTIONS)}>
       {suggestions.map((item) => (

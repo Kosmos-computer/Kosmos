@@ -2,7 +2,6 @@ import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
 import { T } from "../../i18n/T";
 import { useState } from "react";
-import { useTranslation } from "react-i18next";
 import {
   BookOpen,
   Captions,
@@ -55,7 +54,6 @@ export interface PodcastSidebarProps {
 }
 
 export function PodcastSidebar({ vm, connectOpen, onOpenConnect, onCloseConnect }: PodcastSidebarProps) {
-  const { t } = useTranslation();
   const connections = useConnectionStore((s) => s.connections);
   const addConnection = useConnectionStore((s) => s.addConnection);
   const podcastConnections = connections.filter((c) => c.domain === "podcast");
@@ -724,7 +722,6 @@ function PodcastShowDetail({ vm, show }: { vm: PodcastViewModel; show: PodcastSh
 }
 
 export function PodcastHomeContent({ vm }: PodcastHomeContentProps) {
-  const { t } = useTranslation();
   if (vm.loading) {
     return <EmptyState title={i18n.t(I18nKey.OS_BENTO_LOADING_LIBRARY)}><T k={I18nKey.APPS$PODCAST_IMPORTING_LOCAL_EPISODES_AND_RSS_FEEDS} /></EmptyState>;
   }
@@ -765,7 +762,6 @@ export function PodcastHomeContent({ vm }: PodcastHomeContentProps) {
 }
 
 function PodcastHomeFeed({ vm }: PodcastHomeContentProps) {
-  const { t } = useTranslation();
   if (vm.followedShowCount === 0) {
     return (
       <main className="arco-podcast__main">

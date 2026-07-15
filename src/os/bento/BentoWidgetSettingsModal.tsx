@@ -84,7 +84,7 @@ export function BentoWidgetSettingsModal({ itemId, onClose }: BentoWidgetSetting
   }
 
   function handleApplyCode() {
-    if (!itemId) return;
+    if (!itemId || !item) return;
     try {
       const parsed = JSON.parse(codeText) as BentoItem;
       if (!parsed.id || !parsed.content?.kind) {

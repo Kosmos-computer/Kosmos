@@ -18,7 +18,7 @@ const PEAK_DELAY_MS = 480;
 
 export function HoverDock({ enabled = true, children }: HoverDockProps) {
   const [phase, setPhase] = useState<DockPhase>("idle");
-  const openTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const openTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const trayRef = useRef<HTMLDivElement>(null);
 
   function clearOpenTimer() {

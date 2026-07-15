@@ -11,7 +11,7 @@ import { ChatBubbleFooter } from "../../components/chat/ChatBubbleFooter";
 interface Props {
   item: Extract<ChatItem, { kind: "assistant" }>;
   /** Invoked when an inline UI action wants to continue the conversation. */
-  onFollowUp: (text: string) => void;
+  onFollowUp?: (text: string) => void;
 }
 
 export function AssistantBlock({ item, onFollowUp }: Props) {
@@ -19,7 +19,7 @@ export function AssistantBlock({ item, onFollowUp }: Props) {
     (event: ActionEvent) => {
       const contextText = typeof event.params?.context === "string" ? event.params.context : "";
       const text = contextText || event.humanFriendlyMessage || "";
-      if (text) onFollowUp(text);
+      if (text) onFollowUp?.(text);
     },
     [onFollowUp],
   );

@@ -6,7 +6,6 @@ import { Renderer } from "@openuidev/react-lang";
 import { ThemeProvider } from "@openuidev/react-ui";
 import { openuiChatLibrary } from "@openuidev/react-ui/genui-lib";
 import { Search, Sparkles } from "lucide-react";
-import { SidebarPane } from "../../components/patterns";
 import { Badge, Button, Chip, EmptyState, Input } from "../../components/ui";
 import { useOsStore } from "../../os/osStore";
 import { CATALOG_TIER_LABELS } from "./catalog";

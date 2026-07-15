@@ -3,7 +3,6 @@ import i18n from "../../../i18n/index";
 import { ArtifactPageLayout } from "../ArtifactPageLayout";
 import type { LongformerViewModel } from "../longformerStore";
 import type { TranscriptDetail } from "../types";
-import { useTranslation } from "react-i18next";
 
 interface LongformerSummariesPageProps {
   vm: LongformerViewModel;
@@ -12,7 +11,6 @@ interface LongformerSummariesPageProps {
 
 /** Editable show-notes summary — persists on change. */
 export function LongformerSummariesPage({ vm, detail }: LongformerSummariesPageProps) {
-  const { t } = useTranslation();
   const artifact = detail.artifacts.find((a) => a.kind === "summaries");
   const content = artifact?.content ?? "";
 

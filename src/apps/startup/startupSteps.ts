@@ -6,7 +6,6 @@ import {
   HardDrive,
   KeyRound,
   Rocket,
-  Sparkles,
   UserPlus,
   Zap,
 } from "lucide-react";

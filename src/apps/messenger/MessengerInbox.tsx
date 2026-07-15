@@ -3,7 +3,6 @@ import i18n from "../../i18n/index";
 import { T } from "../../i18n/T";
 import { Phone, Plus, Search, Users, Video } from "lucide-react";
 import { useEffect, useRef } from "react";
-import { ConnectServiceModal } from "../../components/patterns/ConnectServiceModal";
 import { SidebarPane } from "../../components/patterns";
 import { Avatar, Button, EmptyState, Input } from "../../components/ui";
 import { PRESENCE_LABEL, type MessengerContact, type MessengerMessage } from "./types";

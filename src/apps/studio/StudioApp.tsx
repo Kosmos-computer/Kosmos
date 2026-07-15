@@ -44,7 +44,7 @@ import { FilesTab } from "./tabs/FilesTab";
 import { GitTab } from "./tabs/GitTab";
 import { TerminalTab } from "./tabs/TerminalTab";
 import { BrowserTab } from "./tabs/BrowserTab";
-import { useComposerAttach } from "../../components/composer/useComposerAttach.tsx";
+import { useComposerAttach } from "../../components/composer/useComposerAttach";
 
 // ---------------------------------------------------------------------------
 // Drawer tab registry — adding a tab is one entry here plus its component.

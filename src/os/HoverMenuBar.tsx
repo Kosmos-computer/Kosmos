@@ -21,7 +21,7 @@ const PEAK_DELAY_MS = 520;
 
 export function HoverMenuBar({ enabled = true, onOpenChange, children }: HoverMenuBarProps) {
   const [phase, setPhase] = useState<BarPhase>("idle");
-  const openTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const openTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const barRef = useRef<HTMLDivElement>(null);
 
   function clearOpenTimer() {

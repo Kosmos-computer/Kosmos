@@ -3,7 +3,6 @@ import i18n from "../../i18n/index";
 import { T } from "../../i18n/T";
 import { Button, EmptyState } from "../../components/ui";
 import type { TorrentDetailTab, TorrentItem } from "./types";
-import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import {
   openTorrentFileInDrive,
@@ -139,7 +138,6 @@ function TrackersTab({ torrent }: { torrent: TorrentItem }) {
 }
 
 function PeersTab({ torrent }: { torrent: TorrentItem }) {
-  const { t } = useTranslation();
   if (torrent.peersList.length === 0) {
     return <EmptyState title={i18n.t(I18nKey.APPS$DOWNLOADS_NO_PEERS)}><T k={I18nKey.APPS$DOWNLOADS_CONNECTED_PEERS_WILL_APPEAR_HERE} /></EmptyState>;
   }
@@ -271,7 +269,6 @@ function StatisticsTab({ torrent }: { torrent: TorrentItem }) {
 }
 
 export function TorrentDetailPane({ torrent, tab, onTabChange }: TorrentDetailPaneProps) {
-  const { t } = useTranslation();
   return (
     <section className="arco-downloads-detail" aria-label={i18n.t(I18nKey.APPS$DOWNLOADS_TORRENT_INSPECTOR)}>
       <div className="arco-downloads-detail__tabs" role="tablist" aria-label={i18n.t(I18nKey.APPS$DOWNLOADS_TORRENT_DETAIL)}>

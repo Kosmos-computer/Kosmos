@@ -694,6 +694,7 @@ app.delete("/api/automations/:id", requireCap("automations:manage"), async (c) =
 
 async function dispatchAutomation(c: import("hono").Context) {
   const id = c.req.param("id");
+  if (!id) return c.json({ error: "Not found" }, 404);
   const automation = await automationStore.get(id);
   if (!automation) return c.json({ error: "Not found" }, 404);
   const run = await runAutomationNow(id);
@@ -1044,7 +1045,7 @@ app.get("/api/music/stream/:id", (c) => {
 
     const stream = createSafeReadStream(resolved.absPath, { start, end });
     attachStreamAbort(stream, c.req.raw.signal);
-    return c.body(stream, 206, {
+    return c.body(stream as unknown as ReadableStream, 206, {
       "Content-Range": `bytes ${start}-${end}/${resolved.size}`,
       "Accept-Ranges": "bytes",
       "Content-Length": String(end - start + 1),
@@ -1054,7 +1055,7 @@ app.get("/api/music/stream/:id", (c) => {
 
   const stream = createSafeReadStream(resolved.absPath);
   attachStreamAbort(stream, c.req.raw.signal);
-  return c.body(stream, 200, {
+  return c.body(stream as unknown as ReadableStream, 200, {
     "Content-Length": String(resolved.size),
     "Content-Type": contentType,
     "Accept-Ranges": "bytes",
@@ -1067,7 +1068,7 @@ app.get("/api/music/art/:id", (c) => {
 
   const stream = createSafeReadStream(art.absPath);
   attachStreamAbort(stream, c.req.raw.signal);
-  return c.body(stream, 200, {
+  return c.body(stream as unknown as ReadableStream, 200, {
     "Content-Type": art.mime,
     "Cache-Control": "public, max-age=86400",
   });
@@ -1238,7 +1239,7 @@ app.get("/api/video/stream/:id", (c) => {
 
     const stream = createSafeReadStream(resolved.absPath, { start, end });
     attachStreamAbort(stream, c.req.raw.signal);
-    return c.body(stream, 206, {
+    return c.body(stream as unknown as ReadableStream, 206, {
       "Content-Range": `bytes ${start}-${end}/${resolved.size}`,
       "Accept-Ranges": "bytes",
       "Content-Length": String(end - start + 1),
@@ -1248,7 +1249,7 @@ app.get("/api/video/stream/:id", (c) => {
 
   const stream = createSafeReadStream(resolved.absPath);
   attachStreamAbort(stream, c.req.raw.signal);
-  return c.body(stream, 200, {
+  return c.body(stream as unknown as ReadableStream, 200, {
     "Content-Length": String(resolved.size),
     "Content-Type": resolved.video.mimeType,
     "Accept-Ranges": "bytes",
@@ -1541,7 +1542,7 @@ app.get("/api/podcast/stream/:id", async (c) => {
 
     const stream = createSafeReadStream(resolved.absPath, { start, end });
     attachStreamAbort(stream, c.req.raw.signal);
-    return c.body(stream, 206, {
+    return c.body(stream as unknown as ReadableStream, 206, {
       "Content-Range": `bytes ${start}-${end}/${resolved.size}`,
       "Accept-Ranges": "bytes",
       "Content-Length": String(end - start + 1),
@@ -1551,7 +1552,7 @@ app.get("/api/podcast/stream/:id", async (c) => {
 
   const stream = createSafeReadStream(resolved.absPath);
   attachStreamAbort(stream, c.req.raw.signal);
-  return c.body(stream, 200, {
+  return c.body(stream as unknown as ReadableStream, 200, {
     "Content-Length": String(resolved.size),
     "Content-Type": resolved.mimeType,
     "Accept-Ranges": "bytes",
@@ -1577,7 +1578,7 @@ app.get("/api/podcast/art/:id", async (c) => {
     if (!trackArt) return c.json({ error: "Artwork not found" }, 404);
     const stream = createSafeReadStream(trackArt.absPath);
     attachStreamAbort(stream, c.req.raw.signal);
-    return c.body(stream, 200, {
+    return c.body(stream as unknown as ReadableStream, 200, {
       "Content-Type": trackArt.mime,
       "Cache-Control": "public, max-age=86400",
     });
@@ -1585,7 +1586,7 @@ app.get("/api/podcast/art/:id", async (c) => {
 
   const stream = createSafeReadStream(art.absPath);
   attachStreamAbort(stream, c.req.raw.signal);
-  return c.body(stream, 200, {
+  return c.body(stream as unknown as ReadableStream, 200, {
     "Content-Type": art.mime,
     "Cache-Control": "public, max-age=86400",
   });

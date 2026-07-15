@@ -8,7 +8,6 @@ import { SidebarPane } from "../../components/patterns";
 import { Avatar, Button, EmptyState, Input } from "../../components/ui";
 import { useGroupsStub } from "./useGroupsStub";
 import type { TeamChannel, TeamDirectMessage, TeamMessage } from "./types";
-import { useTranslation } from "react-i18next";
 
 const NAV_ICONS = {
   home: Home,
@@ -76,7 +75,6 @@ function DmRow({ dm, active, onSelect }: { dm: TeamDirectMessage; active: boolea
 }
 
 export function GroupsApp() {
-  const { t } = useTranslation();
   const vm = useGroupsStub();
   const user = useAuthStore((s) => s.user);
   const userName = user?.displayName ?? user?.username ?? "You";

@@ -2,7 +2,6 @@ import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
 import { T } from "../../i18n/T";
 import { EmptyState } from "../../components/ui";
-import { useTranslation } from "react-i18next";
 import { useEffect } from "react";
 import {
   MusicLibrarySidebar,
@@ -13,7 +12,6 @@ import {
 import { useMusicStub } from "./useMusicStub";
 
 export function MusicApp() {
-  const { t } = useTranslation();
   const vm = useMusicStub();
 
   useEffect(() => {

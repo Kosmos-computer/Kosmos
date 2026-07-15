@@ -82,7 +82,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     name: t.name,
     description: t.description,
     inputSchema: t.inputSchema,
-    ...(t.readOnly ? { annotations: { readOnlyHint: true } } : {}),
+    ...("readOnly" in t && t.readOnly ? { annotations: { readOnlyHint: true } } : {}),
   })),
 }));
 

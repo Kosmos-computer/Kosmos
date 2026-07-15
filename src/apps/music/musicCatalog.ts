@@ -5,7 +5,6 @@ import type {
   MusicMixCard,
   MusicNowPlaying,
   MusicQuickAccess,
-  MusicRelatedVideo,
   MusicTrack,
   MusicUser,
 } from "./types";

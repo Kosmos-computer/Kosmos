@@ -258,7 +258,9 @@ export const bitsocialDaemon = {
 
     // Give ENOENT a tick to surface before we wait on health.
     await new Promise((r) => setTimeout(r, 250));
-    if (spawnFailed || phase === "error") {
+    // `phase` may have been reassigned by the spawn/exit callbacks above during
+    // the tick; cast so TS doesn't narrow it to the "starting" literal set below.
+    if (spawnFailed || (phase as BitsocialDaemonPhase) === "error") {
       return this.status();
     }
 

@@ -99,7 +99,12 @@ export type EdgeRelation =
   | "contradicts"
   | "derived_from"
   | "mentions"
-  | "related";
+  | "related"
+  | "uses"
+  | "stores"
+  | "feeds"
+  | "queries"
+  | "indexes";
 
 export interface MemoryEdge {
   id: string;

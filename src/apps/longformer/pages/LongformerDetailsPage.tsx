@@ -5,7 +5,6 @@ import { ArtifactPageLayout } from "../ArtifactPageLayout";
 import type { LongformerViewModel } from "../longformerStore";
 import type { TranscriptDetail } from "../types";
 import { formatDuration } from "../types";
-import { useTranslation } from "react-i18next";
 
 interface LongformerDetailsPageProps {
   vm: LongformerViewModel;
@@ -14,7 +13,6 @@ interface LongformerDetailsPageProps {
 
 /** File metadata for the open transcript job. */
 export function LongformerDetailsPage({ vm, detail }: LongformerDetailsPageProps) {
-  const { t } = useTranslation();
   const job = vm.activeJob;
   const media = detail.mediaFiles[0];
 

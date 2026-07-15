@@ -1,7 +1,6 @@
 import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
 import { T } from "../../i18n/T";
-import { useTranslation } from "react-i18next";
 import { useRef, useState } from "react";
 import {
   Disc3,
@@ -524,7 +523,6 @@ export interface MusicNowPlayingPanelProps {
 }
 
 export function MusicNowPlayingPanel({ nowPlaying, onPlayTrack }: MusicNowPlayingPanelProps) {
-  const { t } = useTranslation();
   const { track, queueTitle, relatedVideos } = nowPlaying;
 
   return (

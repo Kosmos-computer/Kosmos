@@ -11,7 +11,6 @@ import { FileRow } from "./FileRow";
 import { FilesSidebar } from "./FilesSidebar";
 import { FilesToolbar } from "./FilesToolbar";
 import type { DriveFileItem, DriveNewItemType, FilesLocation, FilesViewMode } from "./types";
-import { useTranslation } from "react-i18next";
 
 const LOCATION_LABELS: Record<FilesLocation, string> = {
   home: "Home",
@@ -114,7 +113,6 @@ export function FilesWorkspace({
   const trashSelection = location === "trash" ? selectedFile : null;
 
   function openEntry(file: DriveFileItem) {
-  const { t } = useTranslation();
     if (file.kind === "folder") onOpenFile(file);
     else onOpenFileEditor(file);
   }

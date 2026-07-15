@@ -9,10 +9,8 @@ import { SheetsSidebar } from "./SheetsSidebar";
 import { FormulaBar, SheetsToolbar } from "./SheetsToolbar";
 import { SHEETS_MENU_ITEMS } from "./types";
 import { useSheets } from "./useSheets";
-import { useTranslation } from "react-i18next";
 
 export function SheetsApp() {
-  const { t } = useTranslation();
   const sheets = useSheets();
 
   return (

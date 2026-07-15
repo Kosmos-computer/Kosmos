@@ -1,7 +1,6 @@
 import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
 import { T } from "../../i18n/T";
-import { useTranslation } from "react-i18next";
 import {
   Eye,
   Grid2x2,
@@ -36,7 +35,7 @@ const LAYOUT_OPTIONS: { id: MeetLayoutId; label: string; icon: typeof LayoutGrid
 ];
 
 function AudioMeter({ level }: { level: number }) {
-  const bars = [0.35, 0.55, 0.75, 0.95].map((threshold, i) => level >= threshold);
+  const bars = [0.35, 0.55, 0.75, 0.95].map((threshold, _i) => level >= threshold);
   return (
     <span className="arco-meet__audio-meter" aria-hidden="true">
       {bars.map((active, i) => (
@@ -103,7 +102,6 @@ export function MeetHeader({ vm }: { vm: MeetViewModel }) {
 }
 
 export function MeetVideoGrid({ vm }: { vm: MeetViewModel }) {
-  const { t } = useTranslation();
   return (
     <section className={`arco-meet__grid arco-meet__grid--${vm.layout}`} aria-label={i18n.t(I18nKey.APPS$MEET_VIDEO_FEEDS)}>
       {vm.participants.map((participant) => (
@@ -114,7 +112,6 @@ export function MeetVideoGrid({ vm }: { vm: MeetViewModel }) {
 }
 
 export function MeetControlBar({ vm }: { vm: MeetViewModel }) {
-  const { t } = useTranslation();
   return (
     <footer className="arco-meet__controls" aria-label={i18n.t(I18nKey.APPS$MEET_CALL_CONTROLS)}>
       <button type="button" className="arco-meet__control" aria-label={i18n.t(I18nKey.OS$APP_SETTINGS)}>
@@ -177,7 +174,6 @@ export function MeetControlBar({ vm }: { vm: MeetViewModel }) {
 }
 
 export function MeetSidebar({ vm }: { vm: MeetViewModel }) {
-  const { t } = useTranslation();
   return (
     <aside className="arco-meet__sidebar" aria-label={i18n.t(I18nKey.APPS$MEET_STUDIO_PANEL)}>
       <div className="arco-meet__tabs" role="tablist" aria-label={i18n.t(I18nKey.APPS$MEET_SIDEBAR_SECTIONS)}>

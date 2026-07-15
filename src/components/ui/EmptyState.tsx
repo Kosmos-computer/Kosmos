@@ -2,7 +2,7 @@ import type { HTMLAttributes, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { I18nKey } from "../../i18n/declaration";
 
-export interface EmptyStateProps extends HTMLAttributes<HTMLDivElement> {
+export interface EmptyStateProps extends Omit<HTMLAttributes<HTMLDivElement>, "title"> {
   title?: ReactNode;
   titleKey?: I18nKey;
   children?: ReactNode;

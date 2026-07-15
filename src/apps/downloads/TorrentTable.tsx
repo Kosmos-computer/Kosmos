@@ -3,7 +3,6 @@ import i18n from "../../i18n/index";
 import { T } from "../../i18n/T";
 import { EmptyState } from "../../components/ui";
 import type { TorrentItem } from "./types";
-import { useTranslation } from "react-i18next";
 
 const STATUS_LABELS: Record<TorrentItem["status"], string> = {
   downloading: "Downloading",
@@ -22,7 +21,6 @@ export interface TorrentTableProps {
 }
 
 export function TorrentTable({ torrents, selectedIds, onSelect }: TorrentTableProps) {
-  const { t } = useTranslation();
   if (torrents.length === 0) {
     return (
       <div className="arco-downloads__table-empty">

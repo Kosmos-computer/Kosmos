@@ -1,6 +1,5 @@
 import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
-import { useTranslation } from "react-i18next";
 import {
   BrowserShell,
   SearchAttribution,
@@ -10,7 +9,6 @@ import {
 import { useSearch } from "./useSearch";
 
 export function SearchApp() {
-  const { t } = useTranslation();
   const vm = useSearch();
 
   if (vm.view === "browse") {

@@ -76,7 +76,7 @@ function setupVoiceVenv(): boolean {
   return true;
 }
 
-function printStatus(): boolean {
+function printStatus(): Promise<boolean> {
   return collectInstallStatus().then((status) => {
     log("\nInstall status");
     log("──────────────");

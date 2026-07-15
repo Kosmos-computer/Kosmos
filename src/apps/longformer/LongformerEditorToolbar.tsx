@@ -1,7 +1,6 @@
 import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
 import { T } from "../../i18n/T";
-import { useTranslation } from "react-i18next";
 import {
   Bold,
   ChevronLeft,
@@ -33,7 +32,6 @@ interface LongformerEditorToolbarProps {
 
 /** Editor chrome — breadcrumbs, playback, formatting, and publish actions. */
 export function LongformerEditorToolbar({ vm, detail }: LongformerEditorToolbarProps) {
-  const { t } = useTranslation();
   const { seekTo, togglePlayback } = useLongformerPlayback();
   const skip = (delta: number) => seekTo(detail.currentMs + delta);
 

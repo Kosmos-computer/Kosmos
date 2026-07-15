@@ -53,6 +53,24 @@ report_largest_docker_logs() {
   done < <(find /var/lib/docker/containers -type f -name '*-json.log' -printf '%s %p\n' 2>/dev/null | sort -nr | sed -n '1,10p')
 }
 
+configure_journal_limits() {
+  local config_dir=/etc/systemd/journald.conf.d
+  local config_file="\${config_dir}/kosmos-disk-limits.conf"
+
+  install -d -m 0755 "\${config_dir}"
+  if [[ ! -f "\${config_file}" ]] || ! grep -q '^SystemKeepFree=1G$' "\${config_file}"; then
+    printf '%s\n' \
+      '[Journal]' \
+      'SystemMaxUse=100M' \
+      'SystemKeepFree=1G' \
+      'SystemMaxFileSize=10M' \
+      'RuntimeMaxUse=50M' \
+      'RuntimeKeepFree=256M' \
+      'MaxRetentionSec=7day' > "\${config_file}"
+    systemctl restart systemd-journald || true
+  fi
+}
+
 ensure_docker_headroom() {
   # Docker only needs a small amount of working space before the targeted image
   # cleanup below can reclaim the bulk of the disk. Requiring hundreds of MiB
@@ -109,6 +127,7 @@ prune_old_kosmos_images() {
   docker image prune --force
 }
 
+configure_journal_limits
 ensure_docker_headroom
 echo "Disk usage before Docker cleanup:"
 df -h /

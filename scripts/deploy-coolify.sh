@@ -44,30 +44,35 @@ available_root_bytes() {
 }
 
 ensure_docker_headroom() {
-  local minimum_bytes=268435456
+  # Docker only needs a small amount of working space before the targeted image
+  # cleanup below can reclaim the bulk of the disk. Requiring hundreds of MiB
+  # here can prevent that cleanup from ever running on a completely full host.
+  local minimum_bytes=16777216
   local available
   available="\$(available_root_bytes)"
   [[ "\${available}" -ge "\${minimum_bytes}" ]] && return
 
-  echo "Root filesystem has less than 256 MiB free; clearing safe caches"
+  echo "Root filesystem has less than 16 MiB free; clearing safe caches"
   apt-get clean || true
   if command -v journalctl >/dev/null 2>&1; then
-    journalctl --vacuum-size=100M || true
+    journalctl --rotate || true
+    journalctl --vacuum-size=50M || true
   fi
+  sync
 
   available="\$(available_root_bytes)"
-  while [[ "\${available}" -lt "\${minimum_bytes}" ]]; do
-    largest_log="\$(find /var/lib/docker/containers -type f -name '*-json.log' -printf '%s %p\n' 2>/dev/null | sort -nr | sed -n '1p')"
-    read -r log_size log_path <<< "\${largest_log}"
-    [[ -n "\${log_size:-}" && "\${log_size}" -gt 0 && -n "\${log_path:-}" ]] || break
+  while read -r log_size log_path; do
+    [[ "\${available}" -lt "\${minimum_bytes}" ]] || break
+    [[ -n "\${log_size:-}" && "\${log_size}" -gt 0 && -n "\${log_path:-}" ]] || continue
     echo "Truncating oversized Docker log \${log_path} (\${log_size} bytes)"
     truncate --size=0 "\${log_path}"
+    sync
     available="\$(available_root_bytes)"
-  done
+  done < <(find /var/lib/docker/containers -type f -name '*-json.log' -printf '%s %p\n' 2>/dev/null | sort -nr)
 
   available="\$(available_root_bytes)"
   if [[ "\${available}" -lt "\${minimum_bytes}" ]]; then
-    echo "Unable to free the 256 MiB required for Docker metadata updates" >&2
+    echo "Unable to free the 16 MiB required for Docker metadata updates" >&2
     exit 1
   fi
 }

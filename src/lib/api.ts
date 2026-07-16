@@ -275,6 +275,8 @@ export const api = {
   // Sessions
   listSessions: () => fetch("/api/sessions").then((r) => json<SessionSummary[]>(r)),
   getSession: (id: string) => fetch(`/api/sessions/${id}`).then((r) => json<Session>(r)),
+  chatTurnStatus: (id: string) =>
+    fetch(`/api/chat/${encodeURIComponent(id)}/status`).then((r) => json<{ active: boolean }>(r)),
   deleteSession: (id: string) =>
     fetch(`/api/sessions/${id}`, { method: "DELETE" }).then((r) => json<{ ok: true }>(r)),
   updateSessionTitle: (id: string, title: string) =>

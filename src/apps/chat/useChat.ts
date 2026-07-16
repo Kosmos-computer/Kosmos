@@ -218,7 +218,7 @@ function collectStreamingSessions(buffers: Map<string, SessionBuffer>): string[]
   return ids;
 }
 
-export function useChat(opts?: { activeProjectId?: string | null }) {
+export function useChat(opts?: { activeProjectId?: string | null; persistedSessionKey?: string }) {
   const [items, setItems] = useState<ChatItem[]>([]);
   const [sessionId, setSessionId] = useState<string | undefined>(undefined);
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
@@ -227,10 +227,22 @@ export function useChat(opts?: { activeProjectId?: string | null }) {
   const [turnMeta, setTurnMeta] = useState<TurnMeta | null>(null);
   const buffersRef = useRef<Map<string, SessionBuffer>>(new Map());
   const abortControllersRef = useRef<Map<string, AbortController>>(new Map());
+  const detachedPollsRef = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());
   const activeKeyRef = useRef<string>(DRAFT_KEY);
   const setAgentBusy = useOsStore((s) => s.setAgentBusy);
 
   const activeProjectId = opts?.activeProjectId ?? null;
+  const persistedSessionKey = opts?.persistedSessionKey;
+
+  const persistActiveSession = useCallback((id?: string) => {
+    if (!persistedSessionKey) return;
+    try {
+      if (id) localStorage.setItem(persistedSessionKey, id);
+      else localStorage.removeItem(persistedSessionKey);
+    } catch {
+      // Storage can be unavailable in private/restricted browser contexts.
+    }
+  }, [persistedSessionKey]);
 
   const syncActive = useCallback((key: string) => {
     const buf = buffersRef.current.get(key) ?? emptyBuffer();
@@ -291,6 +303,7 @@ export function useChat(opts?: { activeProjectId?: string | null }) {
   const loadSession = useCallback(
     async (id: string) => {
       activeKeyRef.current = id;
+      persistActiveSession(id);
       useStudioStore.getState().setActiveSession(id);
       const session = await api.getSession(id);
       if (!buffersRef.current.has(id)) {
@@ -301,10 +314,40 @@ export function useChat(opts?: { activeProjectId?: string | null }) {
         });
       }
       syncActive(id);
+
+      const status = await api.chatTurnStatus(id).catch(() => ({ active: false }));
+      if (status.active && !detachedPollsRef.current.has(id)) {
+        updateBuffer(id, (buf) => { buf.streaming = true; });
+        const poll = setInterval(() => {
+          void Promise.all([api.getSession(id), api.chatTurnStatus(id)]).then(([next, turn]) => {
+            updateBuffer(id, (buf) => {
+              buf.items = sessionToFeed(next);
+              buf.streaming = turn.active;
+            });
+            if (!turn.active) {
+              clearInterval(poll);
+              detachedPollsRef.current.delete(id);
+              void refreshSessions();
+            }
+          }).catch(() => {});
+        }, 1_000);
+        detachedPollsRef.current.set(id, poll);
+      }
       return session;
     },
-    [syncActive],
+    [persistActiveSession, refreshSessions, syncActive, updateBuffer],
   );
+
+  useEffect(() => {
+    if (!persistedSessionKey) return;
+    let id: string | null = null;
+    try { id = localStorage.getItem(persistedSessionKey); } catch { /* ignore */ }
+    if (id) void loadSession(id).catch(() => persistActiveSession());
+    return () => {
+      for (const poll of detachedPollsRef.current.values()) clearInterval(poll);
+      detachedPollsRef.current.clear();
+    };
+  }, [loadSession, persistedSessionKey, persistActiveSession]);
 
   const newChat = useCallback(() => {
     const draft = buffersRef.current.get(DRAFT_KEY);
@@ -314,9 +357,10 @@ export function useChat(opts?: { activeProjectId?: string | null }) {
     buffersRef.current.set(DRAFT_KEY, emptyBuffer());
     activeKeyRef.current = DRAFT_KEY;
     useStudioStore.getState().setActiveSession(null);
+    persistActiveSession();
     syncActive(DRAFT_KEY);
     refreshStreamingSessions();
-  }, [syncActive, refreshStreamingSessions]);
+  }, [persistActiveSession, syncActive, refreshStreamingSessions]);
 
   const removeSession = useCallback(
     async (id: string) => {
@@ -377,6 +421,7 @@ export function useChat(opts?: { activeProjectId?: string | null }) {
             targetKey = event.sessionId;
           }
           useStudioStore.getState().setActiveSession(event.sessionId);
+          persistActiveSession(event.sessionId);
           return;
         }
         updateBuffer(targetKey, (buf) => applyAgentEvent(buf, event));
@@ -416,7 +461,7 @@ export function useChat(opts?: { activeProjectId?: string | null }) {
         void refreshSessions();
       }
     },
-    [activeProjectId, migrateBuffer, refreshSessions, updateBuffer],
+    [activeProjectId, migrateBuffer, persistActiveSession, refreshSessions, updateBuffer],
   );
 
   const stop = useCallback(() => {

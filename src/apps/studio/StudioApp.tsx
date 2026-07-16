@@ -95,7 +95,10 @@ function estimateUsage(items: ReturnType<typeof useChat>["items"]): UsageStats {
 export function StudioApp() {
   const projectsInfo = useStudioStore((s) => s.projectsInfo);
   const switchProject = useStudioStore((s) => s.switchProject);
-  const chat = useChat({ activeProjectId: projectsInfo.activeId });
+  const chat = useChat({
+    activeProjectId: projectsInfo.activeId,
+    persistedSessionKey: "arco:studio:active-session:v1",
+  });
   const voice = useVoice();
   const [draft, setDraft] = useState("");
   const [mode, setMode] = useState("agent");
@@ -197,6 +200,14 @@ export function StudioApp() {
     if (!chat.sessionId) return "New chat";
     return chat.sessions.find((s) => s.id === chat.sessionId)?.title ?? "New chat";
   }, [chat.sessionId, chat.sessions]);
+
+  useEffect(() => {
+    if (!chat.sessionId) return;
+    const restored = chat.sessions.find((session) => session.id === chat.sessionId);
+    if (restored && (restored.projectId ?? null) !== projectsInfo.activeId) {
+      void switchProject(restored.projectId ?? null).catch(() => {});
+    }
+  }, [chat.sessionId, chat.sessions, projectsInfo.activeId, switchProject]);
 
   const selectSession = useCallback(
     (id: string) => {

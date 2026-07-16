@@ -298,6 +298,12 @@ app.route("/api/storage", storageRoutes);
 
 // ── Chat ─────────────────────────────────────────────────────────────────────
 
+const activeChatTurns = new Map<string, AbortController>();
+
+app.get("/api/chat/:sessionId/status", requireCap("chat"), (c) =>
+  c.json({ active: activeChatTurns.has(c.req.param("sessionId")) }),
+);
+
 app.post("/api/chat", requireCap("chat"), async (c) => {
   const body = (await c.req.json()) as {
     sessionId?: string;
@@ -327,13 +333,18 @@ app.post("/api/chat", requireCap("chat"), async (c) => {
   if (body.sessionId && session.projectId == null) {
     session = await sessionStore.tagProjectIfMissing(session, body.projectId ?? null);
   }
+  if (activeChatTurns.has(session.id)) {
+    return c.json({ error: "A turn is already running for this session" }, 409);
+  }
+  const turnController = new AbortController();
+  activeChatTurns.set(session.id, turnController);
 
   return streamSSE(c, async (stream) => {
     // Queue writes so terminal events (error/done) flush before close — a bare
     // void writeSSE can be dropped when the stream closes immediately after.
     const pending: Promise<void>[] = [];
     const emit = (event: AgentEvent) => {
-      pending.push(stream.writeSSE({ data: JSON.stringify(event) }));
+      pending.push(stream.writeSSE({ data: JSON.stringify(event) }).catch(() => {}));
     };
     emit({ type: "session", sessionId: session.id });
     try {
@@ -355,7 +366,7 @@ app.post("/api/chat", requireCap("chat"), async (c) => {
         sessionId: session.id,
         userMessage: message,
         emit,
-        signal: c.req.raw.signal,
+        signal: turnController.signal,
         interactive: true,
         readOnly: body.mode === "ask",
         approvalMode,
@@ -372,8 +383,9 @@ app.post("/api/chat", requireCap("chat"), async (c) => {
           : {}),
       });
     }
+    activeChatTurns.delete(session.id);
     await Promise.all(pending);
-    await stream.close();
+    await stream.close().catch(() => {});
   });
 });
 

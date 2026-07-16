@@ -128,6 +128,17 @@ export function StudioApp() {
   // final transcripts as user items, bot speech as streaming assistant text.
   useEffect(() => voiceClient.subscribe(chat.applyVoiceEvent), [chat.applyVoiceEvent]);
 
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || !chat.streaming) return;
+      event.preventDefault();
+      event.stopPropagation();
+      chat.stop();
+    };
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
+  }, [chat.stop, chat.streaming]);
+
   useEffect(
     () =>
       onPrimeComposer(({ text, submit: shouldSubmit }) => {

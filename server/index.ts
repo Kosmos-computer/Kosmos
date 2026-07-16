@@ -304,6 +304,12 @@ app.get("/api/chat/:sessionId/status", requireCap("chat"), (c) =>
   c.json({ active: activeChatTurns.has(c.req.param("sessionId")) }),
 );
 
+app.post("/api/chat/:sessionId/cancel", requireCap("chat"), (c) => {
+  const controller = activeChatTurns.get(c.req.param("sessionId"));
+  controller?.abort();
+  return c.json({ cancelled: Boolean(controller) });
+});
+
 app.post("/api/chat", requireCap("chat"), async (c) => {
   const body = (await c.req.json()) as {
     sessionId?: string;

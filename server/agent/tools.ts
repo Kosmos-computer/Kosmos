@@ -82,6 +82,8 @@ export interface ToolContext {
    * double-confirm.
    */
   approvalMode?: ApprovalMode;
+  /** Cancels long-running tools and pending confirmations with the turn. */
+  signal?: AbortSignal;
 }
 
 /**
@@ -118,7 +120,7 @@ const EXEC_ENV = {
  * is open). Also backs the app runtime's exec queries. The 2-minute timeout
  * accommodates installs and builds in real repos.
  */
-export async function runExec(command: string): Promise<{
+export async function runExec(command: string, signal?: AbortSignal): Promise<{
   stdout: string;
   stderr: string;
   exitCode: number;
@@ -136,6 +138,7 @@ export async function runExec(command: string): Promise<{
       timeout: 120_000,
       maxBuffer: 10 * 1024 * 1024,
       env: EXEC_ENV,
+      signal,
     });
     return { stdout, stderr, exitCode: 0 };
   } catch (err) {
@@ -381,7 +384,7 @@ async function agentInvokeIntent(
     }
     // Smart mode shows the confirm card; strict already paused in applyPolicy.
     if (shouldConfirmInternally(ctx)) {
-      const { confirmId, verdict } = requestConfirmation();
+      const { confirmId, verdict } = requestConfirmation(ctx.signal);
       ctx.emit({ type: "confirm_required", confirmId, command: description });
       const { approved } = await verdict;
       ctx.emit({ type: "confirm_resolved", confirmId, approved });
@@ -507,7 +510,7 @@ export const agentTools: AgentTool[] = [
         if (!ctx.interactive) {
           return { error: "Command requires user approval and no user is attached. Skipped." };
         }
-        const { confirmId, verdict } = requestConfirmation();
+        const { confirmId, verdict } = requestConfirmation(ctx.signal);
         ctx.emit({ type: "confirm_required", confirmId, command });
         const { approved } = await verdict;
         ctx.emit({ type: "confirm_resolved", confirmId, approved });
@@ -515,7 +518,7 @@ export const agentTools: AgentTool[] = [
           return { error: "User denied this command. Do not retry it; ask what they'd like instead." };
         }
       }
-      const result = await runExec(command);
+      const result = await runExec(command, ctx.signal);
       // Commands can write arbitrary files — re-measure and surface an
       // over-quota state so the model stops piling on before write_file
       // starts refusing.
@@ -1715,7 +1718,7 @@ export const agentTools: AgentTool[] = [
         return { error: "Saving a skill requires user approval and no user is attached. Skipped." };
       }
       if (shouldConfirmInternally(ctx)) {
-        const { confirmId, verdict } = requestConfirmation();
+        const { confirmId, verdict } = requestConfirmation(ctx.signal);
         ctx.emit({ type: "confirm_required", confirmId, command: `Save skill "${name}" — ${description}` });
         const { approved } = await verdict;
         ctx.emit({ type: "confirm_resolved", confirmId, approved });

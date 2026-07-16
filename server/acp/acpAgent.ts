@@ -71,6 +71,8 @@ interface AcpRun {
   turnText: string;
   /** toolCallId → display name, so tool_end can echo what tool_start named. */
   toolNames: Map<string, string>;
+  /** Current turn cancellation, also releases pending permission cards. */
+  signal?: AbortSignal;
   /** Rejects when the subprocess dies — raced against prompt() so a crashed
    * agent fails the turn instead of hanging the SSE stream forever. */
   exited: Promise<never>;
@@ -264,7 +266,7 @@ function makeClient(run: AcpRun): Client {
 
     async requestPermission(params: RequestPermissionRequest): Promise<RequestPermissionResponse> {
       const title = params.toolCall.title ?? params.toolCall.toolCallId ?? "agent action";
-      const { confirmId, verdict } = requestConfirmation();
+      const { confirmId, verdict } = requestConfirmation(run.signal);
       run.emit({ type: "confirm_required", confirmId, command: title });
       const answer = await verdict;
       // Translate our Allow/Deny to the closest ACP option. Blanket options
@@ -335,6 +337,7 @@ async function spawnRun(
     emit,
     turnText: "",
     toolNames: new Map(),
+    signal: undefined,
     exited: new Promise<never>((_, reject) => {
       child.on("exit", (code) => {
         runs.delete(arcoSessionId);
@@ -420,11 +423,13 @@ export async function runAcpTurn(opts: RunTurnOptions): Promise<string> {
   const run = await ensureRun(opts.sessionId, settings, opts.emit);
   run.emit = opts.emit;
   run.turnText = "";
+  run.signal = opts.signal;
 
   const onAbort = () => {
     void run.conn.cancel({ sessionId: run.acpSessionId }).catch(() => {});
   };
   opts.signal?.addEventListener("abort", onAbort, { once: true });
+  if (opts.signal?.aborted) onAbort();
 
   try {
     const response = await Promise.race([
@@ -449,6 +454,7 @@ export async function runAcpTurn(opts: RunTurnOptions): Promise<string> {
     throw err;
   } finally {
     opts.signal?.removeEventListener("abort", onAbort);
+    run.signal = undefined;
   }
 }
 

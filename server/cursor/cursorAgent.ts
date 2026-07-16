@@ -305,6 +305,7 @@ export async function runCursorTurn(opts: RunTurnOptions): Promise<string> {
     if (run.supports("cancel")) void run.cancel();
   };
   opts.signal?.addEventListener("abort", onAbort, { once: true });
+  if (opts.signal?.aborted) onAbort();
 
   const streamTask = consumeStream(run, state);
 

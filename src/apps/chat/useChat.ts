@@ -466,6 +466,7 @@ export function useChat(opts?: { activeProjectId?: string | null; persistedSessi
 
   const stop = useCallback(() => {
     const key = activeKeyRef.current;
+    if (key !== DRAFT_KEY) void api.cancelChatTurn(key).catch(() => {});
     abortControllersRef.current.get(key)?.abort();
   }, []);
 

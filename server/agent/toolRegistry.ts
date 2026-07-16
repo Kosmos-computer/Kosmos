@@ -231,7 +231,7 @@ export async function applyPolicy(
   }
 
   if (decision === "confirm") {
-    const { confirmId, verdict } = requestConfirmation();
+    const { confirmId, verdict } = requestConfirmation(ctx.signal);
     const emit: (event: AgentEvent) => void = ctx.emit;
     emit({
       type: "confirm_required",

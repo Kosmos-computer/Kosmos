@@ -46,19 +46,34 @@ export interface ConfirmAnswer {
 interface PendingConfirmation {
   resolve: (answer: ConfirmAnswer) => void;
   timer: ReturnType<typeof setTimeout>;
+  cleanup: () => void;
 }
 
 const pending = new Map<string, PendingConfirmation>();
 
 /** Park until the user answers (or the timeout denies). Returns the verdict. */
-export function requestConfirmation(): { confirmId: string; verdict: Promise<ConfirmAnswer> } {
+export function requestConfirmation(signal?: AbortSignal): { confirmId: string; verdict: Promise<ConfirmAnswer> } {
   const confirmId = crypto.randomUUID();
   const verdict = new Promise<ConfirmAnswer>((resolve) => {
-    const timer = setTimeout(() => {
+    const finish = (answer: ConfirmAnswer) => {
+      const entry = pending.get(confirmId);
+      if (!entry) return;
+      clearTimeout(entry.timer);
+      entry.cleanup();
       pending.delete(confirmId);
-      resolve({ approved: false });
+      resolve(answer);
+    };
+    const timer = setTimeout(() => {
+      finish({ approved: false });
     }, TIMEOUT_MS);
-    pending.set(confirmId, { resolve, timer });
+    const onAbort = () => finish({ approved: false });
+    signal?.addEventListener("abort", onAbort, { once: true });
+    pending.set(confirmId, {
+      resolve,
+      timer,
+      cleanup: () => signal?.removeEventListener("abort", onAbort),
+    });
+    if (signal?.aborted) finish({ approved: false });
   });
   return { confirmId, verdict };
 }
@@ -68,6 +83,7 @@ export function resolveConfirmation(confirmId: string, answer: ConfirmAnswer): b
   const entry = pending.get(confirmId);
   if (!entry) return false;
   clearTimeout(entry.timer);
+  entry.cleanup();
   pending.delete(confirmId);
   entry.resolve(answer);
   return true;

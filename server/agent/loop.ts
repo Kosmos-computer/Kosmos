@@ -112,6 +112,7 @@ export async function runAgentTurn(opts: RunTurnOptions): Promise<string> {
     interactive: opts.interactive ?? false,
     userId: opts.userId,
     approvalMode: opts.approvalMode ?? "smart",
+    signal: opts.signal,
   };
   let finalText = "";
   const usage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
@@ -167,6 +168,7 @@ export async function runAgentTurn(opts: RunTurnOptions): Promise<string> {
 
     const toolMessages: ChatMessage[] = [];
     for (const call of turn.toolCalls) {
+      if (opts.signal?.aborted) throw new DOMException("Agent turn cancelled", "AbortError");
       let args: Record<string, unknown> = {};
       try {
         args = JSON.parse(call.arguments || "{}") as Record<string, unknown>;

@@ -30,7 +30,7 @@ export function I18nLocaleSync() {
     return () => {
       cancelled = true;
     };
-  }, [phase, settingsRevision, i18n.language]);
+  }, [phase, settingsRevision, i18n]);
 
   return null;
 }

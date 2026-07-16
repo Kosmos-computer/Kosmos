@@ -1,7 +1,53 @@
 /**
  * Token-native react-markdown element mapping for Arco prose surfaces.
  */
+import { isValidElement, useEffect, useRef, useState, type ReactNode } from "react";
+import { Check, Copy } from "lucide-react";
 import type { Components } from "react-markdown";
+
+function textFromNode(node: ReactNode): string {
+  if (node == null || typeof node === "boolean") return "";
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(textFromNode).join("");
+  if (isValidElement<{ children?: ReactNode }>(node)) return textFromNode(node.props.children);
+  return "";
+}
+
+export function CopyablePre({ children }: { children: ReactNode }) {
+  const [copied, setCopied] = useState(false);
+  const resetRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const text = textFromNode(children).replace(/\n$/, "");
+
+  useEffect(() => {
+    return () => {
+      if (resetRef.current) clearTimeout(resetRef.current);
+    };
+  }, []);
+
+  const copy = async () => {
+    if (!text) return;
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    if (resetRef.current) clearTimeout(resetRef.current);
+    resetRef.current = setTimeout(() => setCopied(false), 1200);
+  };
+
+  return (
+    <div className="arco-richmd__prewrap">
+      <pre className="arco-richmd__pre">{children}</pre>
+      <button
+        type="button"
+        className="arco-richmd__copy"
+        aria-label={copied ? "Copied" : "Copy code"}
+        title={copied ? "Copied" : "Copy code"}
+        disabled={!text}
+        onClick={() => void copy()}
+      >
+        {copied ? <Check size={13} /> : <Copy size={13} />}
+      </button>
+    </div>
+  );
+}
 
 export const markdownComponents: Components = {
   h1: ({ children }) => <h1 className="arco-richmd__h1">{children}</h1>,
@@ -37,7 +83,7 @@ export const markdownComponents: Components = {
     }
     return <code className="arco-richmd__code-inline">{children}</code>;
   },
-  pre: ({ children }) => <pre className="arco-richmd__pre">{children}</pre>,
+  pre: ({ children }) => <CopyablePre>{children}</CopyablePre>,
   input: ({ checked, disabled, type }) => {
     if (type === "checkbox") {
       return (

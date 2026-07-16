@@ -12,7 +12,7 @@ import { ThemeProvider } from "@openuidev/react-ui";
 import { openuiChatLibrary } from "@openuidev/react-ui/genui-lib";
 import { validateWidgetSource } from "@shared/widgets/validate";
 import { parseSegments, splitInlineWidgets } from "./parseSegments";
-import { markdownComponents } from "./markdownComponents";
+import { CopyablePre, markdownComponents } from "./markdownComponents";
 import { useOsStore } from "../../os/osStore";
 import { WidgetFallback, WidgetView } from "./WidgetView";
 
@@ -112,9 +112,9 @@ export function RichMarkdown({ text, className = "arco-richmd", openui }: Props)
             }
             return (
               <div key={i} className="arco-richmd__chunk">
-                <pre className="arco-richmd__pre">
+                <CopyablePre>
                   <code className="language-openui-lang">{segment.content.trim()}</code>
-                </pre>
+                </CopyablePre>
               </div>
             );
           default:

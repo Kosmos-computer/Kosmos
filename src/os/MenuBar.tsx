@@ -2,7 +2,7 @@ import { I18nKey } from "../i18n/declaration";
 import i18n from "../i18n/index";
 /** Top chrome: settings menu, focused window title, shell view toggle, bento drawer, clock, theme toggle, lock. */
 import { useEffect, useMemo, useState } from "react";
-import { AppWindow, LayoutGrid, Lock, Monitor, Moon, Search, Settings, Sun } from "lucide-react";
+import { AppWindow, LayoutGrid, Lock, LogOut, Monitor, Moon, Search, Settings, Sun } from "lucide-react";
 import { Menu, type MenuItem } from "../components/Menu";
 import { openSettingsApp } from "../apps/settings/settingsStore";
 import { visibleSettingsNavGroups } from "../apps/settings/settingsSections";
@@ -38,6 +38,7 @@ export function MenuBar() {
   const toggleBento = useBentoStore((s) => s.toggleOpen);
   const user = useAuthStore((s) => s.user);
   const lock = useAuthStore((s) => s.lock);
+  const logout = useAuthStore((s) => s.logout);
   const canManageUsers = useCan("users:manage");
   const canWriteSettings = useCan("settings:write");
   const windows = useWindowStore((s) => s.windows);
@@ -136,6 +137,14 @@ export function MenuBar() {
           title={i18n.t(I18nKey.OS_MENUBAR_LOCK)}
         >
           <Lock size={14} />
+        </button>
+        <button
+          className="arco-menubar__icon-btn"
+          onClick={() => void logout()}
+          aria-label="Sign out"
+          title="Sign out"
+        >
+          <LogOut size={14} />
         </button>
         <button
           className="arco-menubar__icon-btn"

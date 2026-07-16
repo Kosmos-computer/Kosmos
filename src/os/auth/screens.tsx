@@ -9,6 +9,7 @@ import { T } from "../../i18n/T";
  * like one surface morphing between states rather than separate pages.
  */
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { RefreshCw, ServerCrash } from "lucide-react";
 import { ArcoLogo } from "../../components/ArcoLogo";
 import { PasswordInput } from "../../components/ui/PasswordInput";
 import { SpriteWorkingMark } from "../../components/SpriteWorkingMark";
@@ -223,6 +224,38 @@ export function LoginScreen() {
           <T k={I18nKey.INSTALL$KOSMOS_CREATE_ACCOUNT} />
         </a>
       </div>
+    </AuthCard>
+  );
+}
+
+// ── Offline ─────────────────────────────────────────────────────────────────
+
+export function OfflineScreen() {
+  const init = useAuthStore((s) => s.init);
+  const error = useAuthStore((s) => s.error);
+  const [busy, setBusy] = useState(false);
+
+  const retry = async () => {
+    setBusy(true);
+    await init();
+    setBusy(false);
+  };
+
+  return (
+    <AuthCard branding={<ArcoLogo className="arco-authscreen__logo" />}>
+      <div className="arco-authscreen__header">
+        <div className="arco-authscreen__offline-mark" aria-hidden>
+          <ServerCrash size={22} />
+        </div>
+        <div className="arco-authscreen__lead">Server unavailable</div>
+        <div className="arco-authscreen__subtitle">
+          {error ?? "Kosmos could not connect to the local server."}
+        </div>
+      </div>
+      <button className="arco-btn arco-btn--primary" type="button" disabled={busy} onClick={() => void retry()}>
+        <RefreshCw size={14} />
+        {busy ? "Checking..." : "Try again"}
+      </button>
     </AuthCard>
   );
 }

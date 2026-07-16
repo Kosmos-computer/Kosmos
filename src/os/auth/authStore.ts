@@ -20,7 +20,7 @@ import {
   setMobileSessionToken,
 } from "../server/mobileSessionStore";
 
-export type AuthPhase = "booting" | "setup" | "login" | "locked" | "ready";
+export type AuthPhase = "booting" | "setup" | "login" | "locked" | "ready" | "offline";
 
 interface AuthStore {
   phase: AuthPhase;
@@ -58,6 +58,11 @@ function readableError(err: unknown): string {
   return raw;
 }
 
+function isReachabilityError(err: unknown): boolean {
+  const raw = err instanceof Error ? err.message : String(err);
+  return /failed to fetch|networkerror|load failed|cannot reach|connection refused|econnrefused/i.test(raw);
+}
+
 function persistMobileSession(token?: string): void {
   if (!token) return;
   const serverUrl = getActiveServerUrl();
@@ -77,6 +82,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
   error: null,
 
   init: async () => {
+    set({ phase: "booting", error: null });
     try {
       const status = await api.authStatus();
       if (status.needsSetup) set({ phase: "setup" });
@@ -84,8 +90,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
       else if (status.authenticated && status.user) set({ phase: "ready", user: status.user });
       else set({ phase: "login" });
     } catch {
-      // Server unreachable — fall to login; retries happen on submit.
-      set({ phase: "login", error: "Cannot reach the Kosmos server" });
+      set({ phase: "offline", error: "Cannot reach the Kosmos server" });
     }
   },
 
@@ -95,7 +100,8 @@ export const useAuthStore = create<AuthStore>((set) => ({
       persistMobileSession(sessionToken);
       set({ phase: "ready", user, error: null });
     } catch (err) {
-      set({ error: readableError(err) });
+      if (isReachabilityError(err)) set({ phase: "offline", error: "Cannot reach the Kosmos server" });
+      else set({ error: readableError(err) });
     }
   },
 
@@ -105,7 +111,8 @@ export const useAuthStore = create<AuthStore>((set) => ({
       persistMobileSession(sessionToken);
       set({ phase: "ready", user, error: null });
     } catch (err) {
-      set({ error: readableError(err) });
+      if (isReachabilityError(err)) set({ phase: "offline", error: "Cannot reach the Kosmos server" });
+      else set({ error: readableError(err) });
     }
   },
 
@@ -115,7 +122,8 @@ export const useAuthStore = create<AuthStore>((set) => ({
       persistMobileSession(sessionToken);
       set({ phase: "ready", user, error: null });
     } catch (err) {
-      set({ error: readableError(err) });
+      if (isReachabilityError(err)) set({ phase: "offline", error: "Cannot reach the Kosmos server" });
+      else set({ error: readableError(err) });
     }
   },
 

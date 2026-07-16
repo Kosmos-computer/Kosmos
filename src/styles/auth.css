@@ -161,6 +161,17 @@
   box-shadow: 0 0 24px var(--arco-accent-soft);
 }
 
+.arco-authscreen__offline-mark {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--arco-danger);
+  background: color-mix(in srgb, var(--arco-danger) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--arco-danger) 30%, transparent);
+}
+
 .arco-authscreen__logo {
   width: min(180px, 72vw);
   height: auto;

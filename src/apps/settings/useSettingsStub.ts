@@ -5,6 +5,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { SETTINGS_STUB_DATA } from "./settingsStubMock";
 import type { StubSettingsContentSection, StubSettingsSectionId } from "./settingsStubTypes";
+import { useAuthStore } from "../../os/auth/authStore";
 
 function initialToggleStates(): Record<string, boolean> {
   const entries: [string, boolean][] = [];
@@ -17,6 +18,7 @@ function initialToggleStates(): Record<string, boolean> {
 }
 
 export function useSettingsStub() {
+  const user = useAuthStore((state) => state.user);
   const [revealedFields, setRevealedFields] = useState<Set<string>>(() => new Set());
   const [toggleStates, setToggleStates] = useState<Record<string, boolean>>(initialToggleStates);
   const [wallpaperUrl, setWallpaperUrl] = useState(
@@ -26,10 +28,23 @@ export function useSettingsStub() {
   const sectionsById = useMemo(() => {
     const map = new Map<StubSettingsSectionId, StubSettingsContentSection>();
     for (const section of SETTINGS_STUB_DATA.sections) {
-      map.set(section.id, section);
+      if (section.id === "account-info") {
+        map.set(section.id, {
+          ...section,
+          fields: user
+            ? [
+                { id: "username", label: "Username", value: user.username },
+                { id: "display-name", label: "Display name", value: user.displayName },
+                { id: "role", label: "Role", value: user.role },
+              ]
+            : [],
+        });
+      } else {
+        map.set(section.id, section);
+      }
     }
     return map;
-  }, []);
+  }, [user]);
 
   const revealField = useCallback((fieldId: string) => {
     setRevealedFields((prev) => new Set([...prev, fieldId]));

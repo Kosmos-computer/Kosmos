@@ -421,6 +421,18 @@ export function ComposerControlsRow({
         >
           {voiceActive ? <MicOff size={15} /> : <Mic size={15} />}
         </button>
+        {streaming && canSubmit ? (
+          <button
+            type="button"
+            className="arco-btn arco-btn--primary arco-btn--icon"
+            aria-label={i18n.t(I18nKey.COMPONENTS$COMPOSER_SEND_MESSAGE)}
+            title={i18n.t(I18nKey.COMPONENTS$COMPOSER_SEND_MESSAGE)}
+            disabled={disabled || !canSubmit}
+            onClick={onSubmit}
+          >
+            <Send size={15} />
+          </button>
+        ) : null}
         {streaming ? (
           <button
             type="button"

@@ -69,6 +69,11 @@ interface SessionBuffer {
   turnMeta: TurnMeta | null;
 }
 
+interface QueuedTurn {
+  text: string;
+  opts?: { mode?: "agent" | "ask"; approvalMode?: "strict" | "smart" | "full" };
+}
+
 function emptyBuffer(): SessionBuffer {
   return { items: [], streaming: false, turnMeta: null };
 }
@@ -226,6 +231,7 @@ export function useChat(opts?: { activeProjectId?: string | null; persistedSessi
   const [streamingSessions, setStreamingSessions] = useState<string[]>([]);
   const [turnMeta, setTurnMeta] = useState<TurnMeta | null>(null);
   const buffersRef = useRef<Map<string, SessionBuffer>>(new Map());
+  const queuedTurnsRef = useRef<Map<string, QueuedTurn[]>>(new Map());
   const abortControllersRef = useRef<Map<string, AbortController>>(new Map());
   const detachedPollsRef = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());
   const activeKeyRef = useRef<string>(DRAFT_KEY);
@@ -278,6 +284,12 @@ export function useChat(opts?: { activeProjectId?: string | null; persistedSessi
       if (ctrl) {
         abortControllersRef.current.delete(from);
         abortControllersRef.current.set(to, ctrl);
+      }
+      const queued = queuedTurnsRef.current.get(from);
+      if (queued) {
+        queuedTurnsRef.current.delete(from);
+        const existing = queuedTurnsRef.current.get(to) ?? [];
+        queuedTurnsRef.current.set(to, [...existing, ...queued]);
       }
       if (activeKeyRef.current === from) {
         activeKeyRef.current = to;
@@ -355,6 +367,7 @@ export function useChat(opts?: { activeProjectId?: string | null; persistedSessi
       abortControllersRef.current.get(DRAFT_KEY)?.abort();
     }
     buffersRef.current.set(DRAFT_KEY, emptyBuffer());
+    queuedTurnsRef.current.delete(DRAFT_KEY);
     activeKeyRef.current = DRAFT_KEY;
     useStudioStore.getState().setActiveSession(null);
     persistActiveSession();
@@ -367,6 +380,7 @@ export function useChat(opts?: { activeProjectId?: string | null; persistedSessi
       abortControllersRef.current.get(id)?.abort();
       abortControllersRef.current.delete(id);
       buffersRef.current.delete(id);
+      queuedTurnsRef.current.delete(id);
       useStudioStore.getState().removeSessionActivity(id);
       await api.deleteSession(id);
       if (activeKeyRef.current === id) newChat();
@@ -391,74 +405,101 @@ export function useChat(opts?: { activeProjectId?: string | null; persistedSessi
       const trimmed = text.trim();
       const streamKey = activeKeyRef.current;
       const buffer = buffersRef.current.get(streamKey) ?? emptyBuffer();
-      if (!trimmed || buffer.streaming) return;
+      if (!trimmed) return;
 
-      updateBuffer(streamKey, (buf) => {
-        buf.items = [
-          ...buf.items,
-          { kind: "user", id: nextId(), text: trimmed, timestamp: new Date().toISOString() },
-        ];
-        buf.streaming = true;
-        buf.turnMeta = { startedAt: Date.now(), totalTokens: 0 };
-      });
+      if (buffer.streaming) {
+        const queue = queuedTurnsRef.current.get(streamKey) ?? [];
+        queuedTurnsRef.current.set(streamKey, [...queue, { text: trimmed, opts }]);
+        updateBuffer(streamKey, (buf) => {
+          buf.items = [
+            ...buf.items,
+            { kind: "user", id: nextId(), text: trimmed, timestamp: new Date().toISOString() },
+          ];
+        });
+        return;
+      }
 
-      const abort = new AbortController();
-      abortControllersRef.current.set(streamKey, abort);
+      let nextTurn: QueuedTurn | undefined = { text: trimmed, opts };
+      let appendUser = true;
+      let nextKey = streamKey;
 
-      let targetKey = streamKey;
-      let resolvedSessionId = streamKey === DRAFT_KEY ? undefined : streamKey;
+      while (nextTurn) {
+        const currentTurn = nextTurn;
+        let targetKey = nextKey;
+        let resolvedSessionId = targetKey === DRAFT_KEY ? undefined : targetKey;
 
-      const onEvent = (event: AgentEvent) => {
-        handleShellEvent(
-          event,
-          targetKey === DRAFT_KEY ? null : targetKey,
-        );
-        if (event.type === "session") {
-          resolvedSessionId = event.sessionId;
-          if (targetKey === DRAFT_KEY) {
-            migrateBuffer(DRAFT_KEY, event.sessionId);
-            useStudioStore.getState().migrateSessionActivity(DRAFT_SESSION_KEY, event.sessionId);
-            targetKey = event.sessionId;
-          }
-          useStudioStore.getState().setActiveSession(event.sessionId);
-          persistActiveSession(event.sessionId);
-          return;
-        }
-        updateBuffer(targetKey, (buf) => applyAgentEvent(buf, event));
-      };
-
-      try {
-        await streamChat(
-          trimmed,
-          resolvedSessionId,
-          onEvent,
-          abort.signal,
-          opts?.mode,
-          activeProjectId,
-          opts?.approvalMode,
-        );
-      } catch (err) {
-        if (!abort.signal.aborted) {
-          updateBuffer(targetKey, (buf) => {
+        updateBuffer(targetKey, (buf) => {
+          if (appendUser) {
             buf.items = [
               ...buf.items,
-              {
-                kind: "error",
-                id: nextId(),
-                text: err instanceof Error ? err.message : "Chat request failed",
-              },
+              { kind: "user", id: nextId(), text: currentTurn.text, timestamp: new Date().toISOString() },
             ];
-          });
-        }
-      } finally {
-        abortControllersRef.current.delete(targetKey);
-        updateBuffer(targetKey, (buf) => {
-          buf.streaming = false;
-          buf.items = buf.items.map((it) =>
-            it.kind === "assistant" && it.streaming ? { ...it, streaming: false } : it,
-          );
+          }
+          buf.streaming = true;
+          buf.turnMeta = { startedAt: Date.now(), totalTokens: 0 };
         });
-        void refreshSessions();
+
+        const abort = new AbortController();
+        abortControllersRef.current.set(targetKey, abort);
+
+        const onEvent = (event: AgentEvent) => {
+          handleShellEvent(
+            event,
+            targetKey === DRAFT_KEY ? null : targetKey,
+          );
+          if (event.type === "session") {
+            resolvedSessionId = event.sessionId;
+            if (targetKey === DRAFT_KEY) {
+              migrateBuffer(DRAFT_KEY, event.sessionId);
+              useStudioStore.getState().migrateSessionActivity(DRAFT_SESSION_KEY, event.sessionId);
+              targetKey = event.sessionId;
+            }
+            useStudioStore.getState().setActiveSession(event.sessionId);
+            persistActiveSession(event.sessionId);
+            return;
+          }
+          updateBuffer(targetKey, (buf) => applyAgentEvent(buf, event));
+        };
+
+        try {
+          await streamChat(
+            currentTurn.text,
+            resolvedSessionId,
+            onEvent,
+            abort.signal,
+            currentTurn.opts?.mode,
+            activeProjectId,
+            currentTurn.opts?.approvalMode,
+          );
+        } catch (err) {
+          if (!abort.signal.aborted) {
+            updateBuffer(targetKey, (buf) => {
+              buf.items = [
+                ...buf.items,
+                {
+                  kind: "error",
+                  id: nextId(),
+                  text: err instanceof Error ? err.message : "Chat request failed",
+                },
+              ];
+            });
+          }
+        } finally {
+          abortControllersRef.current.delete(targetKey);
+          updateBuffer(targetKey, (buf) => {
+            buf.streaming = false;
+            buf.items = buf.items.map((it) =>
+              it.kind === "assistant" && it.streaming ? { ...it, streaming: false } : it,
+            );
+          });
+          void refreshSessions();
+        }
+
+        nextKey = targetKey;
+        const queue = queuedTurnsRef.current.get(nextKey);
+        nextTurn = queue?.shift();
+        if (queue && queue.length === 0) queuedTurnsRef.current.delete(nextKey);
+        appendUser = false;
       }
     },
     [activeProjectId, migrateBuffer, persistActiveSession, refreshSessions, updateBuffer],

@@ -8,7 +8,7 @@
  * value, submission, and every menu's wiring; the composer owns only its
  * presentation state (toolbar visibility, textarea height, slash menu).
  */
-import { useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { ApprovalMode } from "@shared/types";
 import type { MenuItem } from "../Menu";
 import { ComposerControlsRow, type ComposerModeItem } from "./ComposerControlsRow";
@@ -25,6 +25,26 @@ import { UsagePopover, type UsageStats } from "./UsagePopover";
 import { applyMarkdownFormat, insertAtCursor, type MarkdownFormat } from "./markdownFormatting";
 
 const TEXTAREA_MAX_HEIGHT = 220;
+const HISTORY_LIMIT = 50;
+
+function loadHistory(storageKey?: string): string[] {
+  if (!storageKey || typeof window === "undefined") return [];
+  try {
+    const parsed = JSON.parse(localStorage.getItem(storageKey) ?? "[]") as unknown;
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveHistory(storageKey: string | undefined, entries: string[]): void {
+  if (!storageKey || typeof window === "undefined") return;
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(entries.slice(-HISTORY_LIMIT)));
+  } catch {
+    // Storage can be unavailable in private/restricted browser contexts.
+  }
+}
 
 export interface ComposerProps {
   value: string;
@@ -67,6 +87,8 @@ export interface ComposerProps {
   statusStart?: ReactNode;
   onPlanUsageClick?: () => void;
   inputAriaLabel?: string;
+  /** Optional localStorage key for submitted prompt history navigation. */
+  historyStorageKey?: string;
 }
 
 export function Composer({
@@ -101,10 +123,20 @@ export function Composer({
   statusStart,
   onPlanUsageClick,
   inputAriaLabel = "Message",
+  historyStorageKey,
 }: ComposerProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const draftBeforeHistoryRef = useRef("");
   const [formattingVisible, setFormattingVisible] = useState(false);
   const [slashIndex, setSlashIndex] = useState(0);
+  const [history, setHistory] = useState<string[]>(() => loadHistory(historyStorageKey));
+  const [historyIndex, setHistoryIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    setHistory(loadHistory(historyStorageKey));
+    setHistoryIndex(null);
+    draftBeforeHistoryRef.current = "";
+  }, [historyStorageKey]);
 
   // Auto-resize: collapse then grow to content, capped so long drafts scroll.
   useLayoutEffect(() => {
@@ -138,6 +170,65 @@ export function Composer({
       textareaRef.current?.focus();
     },
     [value, onChange],
+  );
+
+  const commitHistory = useCallback(
+    (text: string) => {
+      if (!historyStorageKey) return;
+      const trimmed = text.trim();
+      if (!trimmed) return;
+      setHistory((current) => {
+        const next = [...current.filter((entry) => entry !== trimmed), trimmed].slice(-HISTORY_LIMIT);
+        saveHistory(historyStorageKey, next);
+        return next;
+      });
+      setHistoryIndex(null);
+      draftBeforeHistoryRef.current = "";
+    },
+    [historyStorageKey],
+  );
+
+  const submitCurrent = useCallback(() => {
+    if (!value.trim()) return;
+    commitHistory(value);
+    onSubmit();
+  }, [commitHistory, onSubmit, value]);
+
+  const replaceFromHistory = useCallback(
+    (nextValue: string, nextIndex: number | null) => {
+      setHistoryIndex(nextIndex);
+      onChange(nextValue);
+      requestAnimationFrame(() => {
+        const el = textareaRef.current;
+        if (!el) return;
+        el.selectionStart = nextValue.length;
+        el.selectionEnd = nextValue.length;
+      });
+    },
+    [onChange],
+  );
+
+  const navigateHistory = useCallback(
+    (direction: "older" | "newer") => {
+      if (!historyStorageKey || history.length === 0) return false;
+
+      if (direction === "older") {
+        const nextIndex = historyIndex == null ? history.length - 1 : Math.max(0, historyIndex - 1);
+        if (historyIndex == null) draftBeforeHistoryRef.current = value;
+        replaceFromHistory(history[nextIndex] ?? "", nextIndex);
+        return true;
+      }
+
+      if (historyIndex == null) return false;
+      if (historyIndex >= history.length - 1) {
+        replaceFromHistory(draftBeforeHistoryRef.current, null);
+      } else {
+        const nextIndex = historyIndex + 1;
+        replaceFromHistory(history[nextIndex] ?? "", nextIndex);
+      }
+      return true;
+    },
+    [history, historyIndex, historyStorageKey, replaceFromHistory, value],
   );
 
   // Slash-commands entry inserts "/" so the typeahead opens.
@@ -184,7 +275,23 @@ export function Composer({
 
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      if (value.trim()) onSubmit();
+      submitCurrent();
+      return;
+    }
+
+    if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+      const el = e.currentTarget;
+      const hasSelection = el.selectionStart !== el.selectionEnd;
+      const isMultiline = value.includes("\n");
+      const canMoveOlder = !hasSelection && (!isMultiline || el.selectionStart === 0);
+      const canMoveNewer = !hasSelection && (!isMultiline || el.selectionEnd === value.length);
+      if (e.key === "ArrowUp" && canMoveOlder && navigateHistory("older")) {
+        e.preventDefault();
+        return;
+      }
+      if (e.key === "ArrowDown" && canMoveNewer && navigateHistory("newer")) {
+        e.preventDefault();
+      }
     }
   }
 
@@ -210,7 +317,10 @@ export function Composer({
             disabled={disabled}
             aria-label={inputAriaLabel}
             aria-autocomplete={slashOpen ? "list" : undefined}
-            onChange={(e) => onChange(e.target.value)}
+            onChange={(e) => {
+              setHistoryIndex(null);
+              onChange(e.target.value);
+            }}
             onKeyDown={handleKeyDown}
           />
         </div>
@@ -239,7 +349,7 @@ export function Composer({
           voiceActive={voiceActive}
           voiceAvailable={voiceAvailable}
           onVoiceToggle={onVoiceToggle}
-          onSubmit={onSubmit}
+          onSubmit={submitCurrent}
           onStop={onStop}
           canSubmit={value.trim().length > 0}
         />

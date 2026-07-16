@@ -256,6 +256,7 @@ export function StudioApp() {
         value={draft}
         onChange={setDraft}
         onSubmit={() => submit()}
+        historyStorageKey="arco:studio:composer-history:v1"
         streaming={chat.streaming}
         onStop={chat.stop}
         placeholder={i18n.t(I18nKey.APPS$STUDIO_ASK_THE_AGENT_TO_BUILD_SCRIPT_OR_AUTOMATE)}

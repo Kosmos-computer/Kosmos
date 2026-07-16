@@ -26,7 +26,7 @@
    user footer. Generic .arco-sidenav__* naming so Chat can adopt it. */
 
 .arco-sidenav {
-  width: 240px;
+  width: clamp(196px, 28vw, 240px);
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -36,6 +36,8 @@
 }
 
 .arco-sidenav__brand-row {
+  position: relative;
+  z-index: 2;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -49,6 +51,10 @@
   height: 24px;
   flex-shrink: 0;
   color: var(--arco-text-primary);
+}
+
+.arco-sidenav__brand-row .arco-btn--icon {
+  flex-shrink: 0;
 }
 
 .arco-sidenav__header {
@@ -305,7 +311,7 @@
   display: flex;
   align-items: center;
   gap: var(--arco-space-xs);
-  padding: 6px 8px;
+  padding: 6px 42px 6px 8px;
   text-align: left;
   cursor: pointer;
 }
@@ -321,7 +327,6 @@
 
 .arco-sidenav__itemtime {
   flex-shrink: 0;
-  padding-right: 8px;
   font-size: var(--arco-text-xs);
   color: var(--arco-text-tertiary);
 }
@@ -332,6 +337,8 @@
 .arco-sidenav__itemactions {
   position: absolute;
   right: 2px;
+  top: 50%;
+  transform: translateY(-50%);
   display: inline-flex;
   align-items: center;
   gap: 1px;

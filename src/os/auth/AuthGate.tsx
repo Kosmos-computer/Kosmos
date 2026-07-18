@@ -5,6 +5,7 @@
  * ready and unlocked, so no shell content is mounted behind the lock screen.
  */
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { idleLockTimeoutMs, useOsStore } from "../osStore";
 import { useAuthStore, type AuthPhase } from "./authStore";
 import { InstallFlow } from "./InstallFlow";
 import { BootScreen, LockScreen, LoginScreen, OfflineScreen } from "./screens";
@@ -22,9 +23,6 @@ function useBootTestMode(): boolean {
 
 /** Must match --arco-dur-xfade in auth.css. */
 const XFADE_MS = 600;
-
-/** Auto-lock after this much input inactivity (only while signed in). */
-const IDLE_LOCK_MS = 15 * 60 * 1000;
 
 type ScreenKey = "boot" | AuthPhase;
 
@@ -77,10 +75,12 @@ function FadeSwitch({ screenKey, children }: { screenKey: ScreenKey; children: R
 
 function useIdleLock(enabled: boolean) {
   const lock = useAuthStore((s) => s.lock);
+  const idleLockTimeout = useOsStore((s) => s.idleLockTimeout);
+  const idleMs = idleLockTimeoutMs(idleLockTimeout);
   const lastActivity = useRef(Date.now());
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || idleMs == null) return;
     lastActivity.current = Date.now();
     const stamp = () => {
       lastActivity.current = Date.now();
@@ -88,13 +88,13 @@ function useIdleLock(enabled: boolean) {
     const events = ["pointerdown", "keydown", "wheel"] as const;
     for (const ev of events) window.addEventListener(ev, stamp, { passive: true });
     const timer = setInterval(() => {
-      if (Date.now() - lastActivity.current >= IDLE_LOCK_MS) void lock();
+      if (Date.now() - lastActivity.current >= idleMs) void lock();
     }, 30_000);
     return () => {
       for (const ev of events) window.removeEventListener(ev, stamp);
       clearInterval(timer);
     };
-  }, [enabled, lock]);
+  }, [enabled, idleMs, lock]);
 }
 
 // ---------------------------------------------------------------------------

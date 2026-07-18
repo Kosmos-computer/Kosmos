@@ -1,23 +1,27 @@
 import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
 /**
- * PasswordSection — change the signed-in user's own password. Requires the
- * current password (server-verified); on success the server rotates every
- * session for the account but re-issues this one, so the user stays in.
+ * PasswordSection — lock-screen idle preference plus change-password form.
+ * Idle lock is a client shell pref (osStore); password change hits the API.
  */
 import { useState, type FormEvent } from "react";
 import { api } from "../../lib/api";
 import {
   SettingsAlert,
+  SettingsChipRow,
   SettingsFieldRow,
   SettingsPage,
   SettingsSaveBar,
   SettingsSection,
   SettingsStack,
+  SettingsSubhead,
 } from "../../components/patterns";
-import { Button, Input } from "../../components/ui";
+import { Button, Chip, Input } from "../../components/ui";
+import { IDLE_LOCK_TIMEOUT_OPTIONS, useOsStore } from "../../os/osStore";
 
 export function PasswordSection() {
+  const idleLockTimeout = useOsStore((s) => s.idleLockTimeout);
+  const setIdleLockTimeout = useOsStore((s) => s.setIdleLockTimeout);
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -47,7 +51,26 @@ export function PasswordSection() {
 
   return (
     <SettingsPage>
+      <SettingsSection intro="When to show the lock screen after inactivity. You can always lock from the menu bar.">
+        <SettingsStack>
+          <SettingsFieldRow label="Auto-lock">
+            <SettingsChipRow>
+              {IDLE_LOCK_TIMEOUT_OPTIONS.map((option) => (
+                <Chip
+                  key={option.id}
+                  active={idleLockTimeout === option.id}
+                  onClick={() => setIdleLockTimeout(option.id)}
+                >
+                  {option.label}
+                </Chip>
+              ))}
+            </SettingsChipRow>
+          </SettingsFieldRow>
+        </SettingsStack>
+      </SettingsSection>
+
       <SettingsSection intro={i18n.t(I18nKey.APPS$SETTINGS_CHANGE_YOUR_PASSWORD_OTHER_ACTIVE_SESSIONS_WILL_BE_SIGNE)}>
+        <SettingsSubhead>Password</SettingsSubhead>
         <form onSubmit={(e) => void submit(e)}>
           {message ? (
             <SettingsAlert tone={message.kind === "ok" ? "success" : "error"}>{message.text}</SettingsAlert>

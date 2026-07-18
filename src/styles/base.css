@@ -299,6 +299,51 @@ select {
   scrollbar-color: var(--arco-border-strong) transparent;
 }
 
+.arco-menu__panel--footer {
+  max-height: min(420px, calc(100vh - 48px));
+  overflow: hidden;
+  padding: 0;
+}
+
+.arco-menu__panel--footer .arco-menu__items {
+  padding: 4px;
+}
+
+.arco-menu__footer {
+  flex-shrink: 0;
+  padding: 4px;
+  border-top: 1px solid var(--arco-border);
+  background: var(--arco-bg-elevated);
+}
+
+.arco-menu__footer-header {
+  padding: 8px 10px 6px;
+}
+
+.arco-menu__user {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.arco-menu__user-name {
+  font-size: var(--arco-text-sm);
+  font-weight: 500;
+  color: var(--arco-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arco-menu__user-meta {
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .arco-menu__empty {
   padding: 10px 12px;
   font-size: var(--arco-text-sm);

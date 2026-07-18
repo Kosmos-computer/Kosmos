@@ -46,6 +46,33 @@ export type ShellView = "desktop" | "app";
 /** Where app windows render in the desktop Electron shell. */
 export type AppWindowHost = "embedded" | "native";
 
+/** Auto-lock after idle input; `"never"` disables the timer (manual lock still works). */
+export type IdleLockTimeout = "5m" | "15m" | "30m" | "1h" | "never";
+
+export const IDLE_LOCK_TIMEOUT_OPTIONS: readonly {
+  id: IdleLockTimeout;
+  label: string;
+  ms: number | null;
+}[] = [
+  { id: "5m", label: "5 minutes", ms: 5 * 60 * 1000 },
+  { id: "15m", label: "15 minutes", ms: 15 * 60 * 1000 },
+  { id: "30m", label: "30 minutes", ms: 30 * 60 * 1000 },
+  { id: "1h", label: "1 hour", ms: 60 * 60 * 1000 },
+  { id: "never", label: "Never", ms: null },
+] as const;
+
+const IDLE_LOCK_TIMEOUT_SET = new Set<string>(IDLE_LOCK_TIMEOUT_OPTIONS.map((o) => o.id));
+const IDLE_LOCK_STORAGE_KEY = "arco:idle-lock";
+
+export function normalizeIdleLockTimeout(raw: string | null | undefined): IdleLockTimeout {
+  if (raw && IDLE_LOCK_TIMEOUT_SET.has(raw)) return raw as IdleLockTimeout;
+  return "15m";
+}
+
+export function idleLockTimeoutMs(timeout: IdleLockTimeout): number | null {
+  return IDLE_LOCK_TIMEOUT_OPTIONS.find((o) => o.id === timeout)?.ms ?? 15 * 60 * 1000;
+}
+
 export interface OsNotification {
   id: string;
   message: string;
@@ -104,6 +131,8 @@ interface OsStore {
    * grab strip stays on-screen). When false, windows stay inside the viewport.
    */
   windowsOffscreen: boolean;
+  /** Auto-lock after inactivity; `"never"` turns the idle timer off. */
+  idleLockTimeout: IdleLockTimeout;
 
   setTheme: (theme: Theme) => void;
   setAccentPreset: (preset: AccentPreset) => void;
@@ -128,6 +157,7 @@ interface OsStore {
   setAppWindowHost: (host: AppWindowHost) => void;
   setDeveloperApps: (enabled: boolean) => void;
   setWindowsOffscreen: (enabled: boolean) => void;
+  setIdleLockTimeout: (timeout: IdleLockTimeout) => void;
   addShellConfirm: (confirm: ShellConfirm) => void;
   removeShellConfirm: (confirmId: string) => void;
 }
@@ -179,6 +209,7 @@ export const useOsStore = create<OsStore>((set) => ({
   navBrandImage: localStorage.getItem("arco:nav-brand-image"),
   developerApps: localStorage.getItem("arco:developer-apps") === "true",
   windowsOffscreen: localStorage.getItem("arco:windows-offscreen") !== "false",
+  idleLockTimeout: normalizeIdleLockTimeout(localStorage.getItem(IDLE_LOCK_STORAGE_KEY)),
 
   setTheme: (theme) => {
     localStorage.setItem("arco:theme", theme);
@@ -327,5 +358,10 @@ export const useOsStore = create<OsStore>((set) => ({
   setWindowsOffscreen: (windowsOffscreen) => {
     localStorage.setItem("arco:windows-offscreen", String(windowsOffscreen));
     set({ windowsOffscreen });
+  },
+
+  setIdleLockTimeout: (idleLockTimeout) => {
+    localStorage.setItem(IDLE_LOCK_STORAGE_KEY, idleLockTimeout);
+    set({ idleLockTimeout });
   },
 }));

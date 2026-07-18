@@ -114,6 +114,7 @@ function NavItem({
 
 export function NavRail() {
   const expanded = useOsStore((s) => s.navExpanded);
+  const visible = useOsStore((s) => s.navVisible);
   const setExpanded = useOsStore((s) => s.setNavExpanded);
   const navPinnedIds = useOsStore((s) => s.navPinnedIds);
   const setNavPinnedIds = useOsStore((s) => s.setNavPinnedIds);
@@ -142,8 +143,16 @@ export function NavRail() {
   return (
     <nav
       ref={railRef}
-      className={`arco-navrail ${expanded ? "arco-navrail--expanded" : ""}`}
+      className={[
+        "arco-navrail",
+        expanded && "arco-navrail--expanded",
+        !visible && "arco-navrail--hidden",
+      ]
+        .filter(Boolean)
+        .join(" ")}
       aria-label={i18n.t(I18nKey.APPS$LIBRARY_APPS)}
+      aria-hidden={!visible}
+      inert={!visible || undefined}
     >
       <div className="arco-navrail__brand-row">
         <NavBrandMark />

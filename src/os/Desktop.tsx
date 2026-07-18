@@ -138,6 +138,7 @@ export function Desktop() {
   }, [constrainWindowsToViewport, navExpanded, navVisible]);
 
   const focusedId = [...embeddedWindows.filter((w) => !w.minimized)].sort((a, b) => b.z - a.z)[0]?.id;
+  // MenuBar toggles visibility; NavRail's own chevron toggles collapsed (56px) vs expanded (200px).
   const navWidth = !navVisible ? "0px" : navExpanded ? "200px" : "56px";
 
   return (
@@ -157,7 +158,7 @@ export function Desktop() {
       <HoverMenuBar enabled={appView} onOpenChange={setMenuBarOpen}>
         <MenuBar />
       </HoverMenuBar>
-      {navVisible ? <NavRail /> : null}
+      <NavRail />
       <div className="arco-window-layer">
         {embeddedWindows.map((win) => (
           <WindowFrame key={win.id} win={win} focused={win.id === focusedId}>

@@ -33,6 +33,76 @@
   min-height: 0;
   border-right: 1px solid var(--arco-border);
   background: var(--arco-bg-sunk);
+  transition: width var(--arco-dur-fast) ease;
+}
+
+/* OpenHands-style collapsed rail: icons stay, labels/list hide. */
+.arco-sidenav--collapsed {
+  width: 52px;
+  /* Empty chrome + footer read as a resize/expand affordance. */
+  cursor: col-resize;
+}
+
+.arco-sidenav--collapsed :is(button, a, input, textarea, select, label, [role="button"]) {
+  cursor: pointer;
+}
+
+.arco-sidenav--collapsed .arco-sidenav__brand-row {
+  justify-content: center;
+  padding: var(--arco-space-m) 0 0;
+}
+
+/* Collapsed: expand control overlays the logo when hovering the rail (or footer).
+   Avoid :focus-within — the toggle keeps focus after click and would hide the logo.
+   Pin to the brand box (not inset:0) so brand-row top padding still applies. */
+.arco-sidenav--collapsed .arco-sidenav__collapse {
+  position: absolute;
+  top: var(--arco-space-m);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 32px;
+  height: 32px;
+  opacity: 0;
+}
+
+.arco-sidenav--collapsed:hover .arco-sidenav__brand {
+  opacity: 0;
+}
+
+.arco-sidenav--collapsed:hover .arco-sidenav__collapse,
+.arco-sidenav--collapsed .arco-sidenav__collapse:focus-visible {
+  opacity: 1;
+  background: var(--arco-bg-hover);
+  color: var(--arco-text-primary);
+}
+
+.arco-sidenav--collapsed .arco-sidenav__header {
+  align-items: center;
+  padding: var(--arco-space-s) var(--arco-space-xs);
+}
+
+.arco-sidenav--collapsed .arco-sidenav__primary {
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+}
+
+.arco-sidenav--collapsed .arco-sidenav__quicklinks {
+  align-items: center;
+  width: 100%;
+}
+
+.arco-sidenav--collapsed .arco-sidenav__quicklink {
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+}
+
+.arco-sidenav--collapsed .arco-sidenav__footer {
+  justify-content: center;
+  padding: var(--arco-space-s) var(--arco-space-xs);
 }
 
 .arco-sidenav__brand-row {
@@ -43,18 +113,26 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--arco-space-s);
-  padding: var(--arco-space-s) var(--arco-space-s) 0;
+  padding: var(--arco-space-m) var(--arco-space-s) 0;
 }
 
 .arco-sidenav__brand {
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   flex-shrink: 0;
   color: var(--arco-text-primary);
+  transition: opacity var(--arco-dur-fast);
 }
 
-.arco-sidenav__brand-row .arco-btn--icon {
+.arco-sidenav__collapse {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
   flex-shrink: 0;
+  transition: opacity var(--arco-dur-fast);
 }
 
 .arco-sidenav__header {
@@ -109,6 +187,11 @@
   justify-content: space-between;
   gap: var(--arco-space-s);
   padding-bottom: var(--arco-space-xs);
+}
+
+.arco-sidenav__sectionheader--fixed {
+  flex-shrink: 0;
+  padding: 0 var(--arco-space-m) var(--arco-space-xs);
 }
 
 .arco-sidenav__sectiontitle {
@@ -312,7 +395,7 @@
   display: flex;
   align-items: center;
   gap: var(--arco-space-xs);
-  padding: 6px 42px 6px 8px;
+  padding: 6px 40px 6px 8px;
   text-align: left;
   cursor: pointer;
 }
@@ -326,67 +409,74 @@
   white-space: nowrap;
 }
 
-.arco-sidenav__itemtime {
-  flex-shrink: 0;
-  font-size: var(--arco-text-xs);
-  color: var(--arco-text-tertiary);
-}
-
-/* Pin + delete overlay the timestamp: invisible until hover, but still
-   focusable so keyboard users can tab to them (focus-visible reveals them).
-   A pinned row keeps its (filled) pin icon visible at rest. */
+/* Timestamp and ⋮ share one slot — time at rest, menu on hover/focus. */
 .arco-sidenav__itemactions {
   position: absolute;
-  right: 2px;
+  right: 4px;
   top: 50%;
   transform: translateY(-50%);
-  display: inline-flex;
+  display: grid;
+  grid-template-areas: "slot";
   align-items: center;
-  gap: 1px;
-  /* Pass clicks through to the row button except on visible action controls. */
+  justify-items: end;
+  min-width: 28px;
+  min-height: 28px;
   pointer-events: none;
 }
 
-.arco-sidenav__itempin,
-.arco-sidenav__itemdelete,
+.arco-sidenav__itemactions > .arco-sidenav__itemtime,
+.arco-sidenav__itemactions > .arco-menu {
+  grid-area: slot;
+}
+
+.arco-sidenav__itemtime {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 4px;
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
+  white-space: nowrap;
+  transition: opacity 120ms ease;
+}
+
 .arco-sidenav__itemmenu {
   display: inline-flex;
-  padding: 6px;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
   border-radius: var(--arco-radius-s);
   color: var(--arco-text-tertiary);
   opacity: 0;
   pointer-events: none;
+  transition: opacity 120ms ease;
 }
-.arco-sidenav__item--pinned .arco-sidenav__itemtime {
-  visibility: hidden;
-}
+
 .arco-sidenav__item:hover .arco-sidenav__itemtime,
 .arco-sidenav__item:focus-within .arco-sidenav__itemtime {
-  visibility: hidden;
+  opacity: 0;
 }
-.arco-sidenav__item:hover .arco-sidenav__itempin,
-.arco-sidenav__item:hover .arco-sidenav__itemdelete,
+
 .arco-sidenav__item:hover .arco-sidenav__itemmenu,
-.arco-sidenav__itempin:focus-visible,
-.arco-sidenav__itemdelete:focus-visible,
+.arco-sidenav__item:focus-within .arco-sidenav__itemmenu,
 .arco-sidenav__itemmenu:focus-visible,
-.arco-sidenav__itempin--active {
+.arco-sidenav__itemmenu[aria-expanded="true"] {
   opacity: 1;
   pointer-events: auto;
 }
-.arco-sidenav__itemdelete:hover {
-  color: var(--arco-danger);
-}
+
 .arco-sidenav__itemmenu:hover {
   color: var(--arco-text-secondary);
-}
-.arco-sidenav__itempin:hover,
-.arco-sidenav__itempin--active {
-  color: var(--arco-accent);
+  background: var(--arco-bg-active);
 }
 
 .arco-sidenav__pinnedsection {
-  margin-bottom: var(--arco-space-s);
+  flex-shrink: 0;
+  margin: 0 var(--arco-space-m) var(--arco-space-s);
   padding-bottom: var(--arco-space-s);
   border-bottom: 1px solid var(--arco-border);
 }
@@ -399,6 +489,7 @@
 
 .arco-sidenav__footer {
   flex-shrink: 0;
+  margin-top: auto;
   display: flex;
   align-items: center;
   gap: var(--arco-space-s);
@@ -1356,7 +1447,10 @@
 /* ── Shared: icon-only button variant ─────────────────────────────────────── */
 
 .arco-btn--icon {
-  padding: 5px 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
 }
 
 /* ── Workspace chrome (composer status chip row) ──────────────────────────── */

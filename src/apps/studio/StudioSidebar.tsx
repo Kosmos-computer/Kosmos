@@ -6,8 +6,8 @@ import { T } from "../../i18n/T";
  * filter views, workspace-folder groups with drag reorder, collapse, and +
  * on each group to start a chat in that folder/repo.
  */
-import { useEffect, useMemo, useState } from "react";
-import { Calendar, Download, LayoutGrid, Layers, MoreVertical, PanelLeft, Pin, Plus, Search, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent } from "react";
+import { Calendar, ChevronRight, Download, LayoutGrid, Layers, MoreVertical, PanelLeft, Pin, Plus, Search, Trash2 } from "lucide-react";
 import type { Project, SessionSummary } from "@shared/types";
 import { useAuthStore } from "../../os/auth/authStore";
 import { useWindowStore } from "../../os/windowStore";
@@ -28,6 +28,10 @@ import {
 import { useSidebarPreferencesStore } from "./sidebarPreferencesStore";
 import { useUnreadSessionsStore } from "./unreadSessionsStore";
 
+/** Interactive targets that keep their own click behavior when the rail is collapsed. */
+const COLLAPSED_RAIL_INTERACTIVE =
+  "button, a, input, textarea, select, label, [role='button'], [role='menuitem']";
+
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
@@ -47,22 +51,25 @@ export interface StudioSidebarProps {
   sessions: SessionSummary[];
   projects: Project[];
   activeSessionId?: string;
+  /** OpenHands-style icon rail when true — quick actions stay, list hides. */
+  collapsed?: boolean;
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
   onNewChat: () => void;
   onNewChatInProject: (projectId: string | null) => void;
-  onClose?: () => void;
+  onToggleCollapsed?: () => void;
 }
 
 export function StudioSidebar({
   sessions,
   projects,
   activeSessionId,
+  collapsed = false,
   onSelect,
   onDelete,
   onNewChat,
   onNewChatInProject,
-  onClose,
+  onToggleCollapsed,
 }: StudioSidebarProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -119,57 +126,107 @@ export function StudioSidebar({
     return applyGroupOrder(groups, groupOrder);
   }, [unpinnedSessions, projects, sortField, groupOrder]);
 
+  /** Collapsed rail: empty chrome + footer expand; real controls keep their handlers. */
+  const onCollapsedRailClick = (event: ReactMouseEvent<HTMLElement>) => {
+    if (!collapsed || !onToggleCollapsed) return;
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    if (target.closest(COLLAPSED_RAIL_INTERACTIVE)) return;
+    onToggleCollapsed();
+  };
+
   return (
-    <aside className="arco-sidenav" aria-label={i18n.t(I18nKey.APPS$STUDIO_CONVERSATIONS)}>
+    <aside
+      className={["arco-sidenav", collapsed && "arco-sidenav--collapsed"].filter(Boolean).join(" ")}
+      aria-label={i18n.t(I18nKey.APPS$STUDIO_CONVERSATIONS)}
+      onClick={onCollapsedRailClick}
+    >
       <div className="arco-sidenav__brand-row">
         <StudioLogoMark className="arco-sidenav__brand" title="" />
-        {onClose ? (
+        {onToggleCollapsed ? (
           <button
             type="button"
-            className="arco-btn arco-btn--icon"
-            onClick={onClose}
-            aria-pressed
-            aria-label={i18n.t(I18nKey.APPS$STUDIO_HIDE_CONVERSATIONS)}
+            className="arco-btn arco-btn--icon arco-sidenav__collapse"
+            onClick={onToggleCollapsed}
+            aria-pressed={collapsed}
+            aria-label={
+              collapsed
+                ? i18n.t(I18nKey.APPS$STUDIO_SHOW_CONVERSATIONS)
+                : i18n.t(I18nKey.APPS$STUDIO_HIDE_CONVERSATIONS)
+            }
+            title={
+              collapsed
+                ? i18n.t(I18nKey.APPS$STUDIO_SHOW_CONVERSATIONS)
+                : i18n.t(I18nKey.APPS$STUDIO_HIDE_CONVERSATIONS)
+            }
           >
-            <PanelLeft size={14} />
+            {collapsed ? <ChevronRight size={14} /> : <PanelLeft size={14} />}
           </button>
         ) : null}
       </div>
 
       <div className="arco-sidenav__header">
-        <button className="arco-btn arco-sidenav__primary" onClick={onNewChat}>
-          <Plus size={14} /><T k={I18nKey.APPS$STUDIO_NEW_CHAT} /></button>
+        <button
+          className="arco-btn arco-sidenav__primary"
+          onClick={onNewChat}
+          aria-label={i18n.t(I18nKey.APPS$STUDIO_NEW_CHAT)}
+          title={i18n.t(I18nKey.APPS$STUDIO_NEW_CHAT)}
+        >
+          <Plus size={14} />
+          {!collapsed ? <T k={I18nKey.APPS$STUDIO_NEW_CHAT} /> : null}
+        </button>
         <div className="arco-sidenav__quicklinks">
           <button
             type="button"
             className="arco-sidenav__quicklink"
             aria-pressed={searchOpen}
+            aria-label={i18n.t(I18nKey.COMMON$SEARCH)}
+            title={i18n.t(I18nKey.COMMON$SEARCH)}
             onClick={() => {
+              if (collapsed) {
+                onToggleCollapsed?.();
+                setSearchOpen(true);
+                return;
+              }
               setSearchOpen((v) => !v);
               setQuery("");
             }}
           >
-            <Search size={14} /><T k={I18nKey.COMMON$SEARCH} /></button>
+            <Search size={14} />
+            {!collapsed ? <T k={I18nKey.COMMON$SEARCH} /> : null}
+          </button>
           <button
             type="button"
             className="arco-sidenav__quicklink"
+            aria-label={i18n.t(I18nKey.APPS$STUDIO_SKILLS)}
+            title={i18n.t(I18nKey.APPS$STUDIO_SKILLS)}
             onClick={() => openSystem("skills")}
           >
-            <Layers size={14} /><T k={I18nKey.APPS$STUDIO_SKILLS} /></button>
+            <Layers size={14} />
+            {!collapsed ? <T k={I18nKey.APPS$STUDIO_SKILLS} /> : null}
+          </button>
           <button
             type="button"
             className="arco-sidenav__quicklink"
+            aria-label={i18n.t(I18nKey.APPS$STUDIO_SCHEDULED)}
+            title={i18n.t(I18nKey.APPS$STUDIO_SCHEDULED)}
             onClick={() => openSystem("automations")}
           >
-            <Calendar size={14} /><T k={I18nKey.APPS$STUDIO_SCHEDULED} /></button>
+            <Calendar size={14} />
+            {!collapsed ? <T k={I18nKey.APPS$STUDIO_SCHEDULED} /> : null}
+          </button>
           <button
             type="button"
             className="arco-sidenav__quicklink"
+            aria-label={i18n.t(I18nKey.APPS$STUDIO_PLUGINS)}
+            title={i18n.t(I18nKey.APPS$STUDIO_PLUGINS)}
             onClick={() => openApisApp("marketplace")}
           >
-            <LayoutGrid size={14} /><T k={I18nKey.APPS$STUDIO_PLUGINS} /></button>
+            <LayoutGrid size={14} />
+            {!collapsed ? <T k={I18nKey.APPS$STUDIO_PLUGINS} /> : null}
+          </button>
         </div>
-        {searchOpen && (
+        {!collapsed && searchOpen ? (
           <input
             className="arco-input"
             placeholder={i18n.t(I18nKey.APPS$STUDIO_SEARCH_CONVERSATIONS)}
@@ -178,90 +235,96 @@ export function StudioSidebar({
             autoFocus
             onChange={(e) => setQuery(e.target.value)}
           />
-        )}
+        ) : null}
       </div>
 
-      <div className="arco-sidenav__scroll arco-scroll">
-        {pinnedSessions.length > 0 && (
-          <div className="arco-sidenav__pinnedsection">
-            <div className="arco-sidenav__sectionheader">
-              <span className="arco-sidenav__sectiontitle arco-sidenav__sectiontitle--icon">
-                <Pin size={12} aria-hidden="true" /><T k={I18nKey.APPS$STUDIO_PINNED} /></span>
+      {!collapsed ? (
+        <>
+          {pinnedSessions.length > 0 && (
+            <div className="arco-sidenav__pinnedsection">
+              <div className="arco-sidenav__sectionheader">
+                <span className="arco-sidenav__sectiontitle arco-sidenav__sectiontitle--icon">
+                  <Pin size={12} aria-hidden="true" /><T k={I18nKey.APPS$STUDIO_PINNED} /></span>
+              </div>
+              <div className="arco-sidenav__items">
+                {pinnedSessions.map((session) => (
+                  <SessionRow
+                    key={session.id}
+                    session={session}
+                    active={session.id === activeSessionId}
+                    pinned
+                    onSelect={onSelect}
+                    onDelete={onDelete}
+                    onTogglePin={() => togglePinned(session.id)}
+                  />
+                ))}
+              </div>
             </div>
-            <div className="arco-sidenav__items">
-              {pinnedSessions.map((session) => (
-                <SessionRow
-                  key={session.id}
-                  session={session}
-                  active={session.id === activeSessionId}
-                  pinned
-                  onSelect={onSelect}
-                  onDelete={onDelete}
-                  onTogglePin={() => togglePinned(session.id)}
-                />
-              ))}
+          )}
+
+          <div className="arco-sidenav__sectionheader arco-sidenav__sectionheader--fixed">
+            <span className="arco-sidenav__sectiontitle"><T k={I18nKey.APPS$STUDIO_CONVERSATIONS} /></span>
+            <div className="arco-sidenav__sectionactions">
+              <StudioSidebarFilterMenu
+                organizeMode={organizeMode}
+                sortField={sortField}
+                onOrganizeModeChange={setOrganizeMode}
+                onSortFieldChange={setSortField}
+              />
             </div>
           </div>
-        )}
 
-        <div className="arco-sidenav__sectionheader">
-          <span className="arco-sidenav__sectiontitle"><T k={I18nKey.APPS$STUDIO_CONVERSATIONS} /></span>
-          <div className="arco-sidenav__sectionactions">
-            <StudioSidebarFilterMenu
-              organizeMode={organizeMode}
-              sortField={sortField}
-              onOrganizeModeChange={setOrganizeMode}
-              onSortFieldChange={setSortField}
-            />
-          </div>
-        </div>
+          <div className="arco-sidenav__scroll arco-scroll">
+            {visibleSessions.length === 0 && (
+              <div className="arco-empty">{query ? "No matching conversations" : "No sessions yet"}</div>
+            )}
 
-        {visibleSessions.length === 0 && (
-          <div className="arco-empty">{query ? "No matching conversations" : "No sessions yet"}</div>
-        )}
-
-        {organizeMode === "recent" ? (
-          <div className="arco-sidenav__items">
-            {recentSessions.map((session) => (
-              <SessionRow
-                key={session.id}
-                session={session}
-                active={session.id === activeSessionId}
+            {organizeMode === "recent" ? (
+              <div className="arco-sidenav__items">
+                {recentSessions.map((session) => (
+                  <SessionRow
+                    key={session.id}
+                    session={session}
+                    active={session.id === activeSessionId}
+                    onSelect={onSelect}
+                    onDelete={onDelete}
+                    onTogglePin={() => togglePinned(session.id)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <StudioConversationGroups
+                groups={groupedSessions}
+                groupOrder={groupOrder}
+                collapsedGroups={collapsedGroups}
+                expandedPreviews={expandedPreviews}
+                activeSessionId={activeSessionId}
+                onGroupOrderChange={setGroupOrder}
+                onToggleCollapsed={toggleGroupCollapsed}
+                onTogglePreview={toggleGroupPreview}
+                onNewChatInGroup={onNewChatInProject}
                 onSelect={onSelect}
                 onDelete={onDelete}
-                onTogglePin={() => togglePinned(session.id)}
+                renderRow={(props) => (
+                  <SessionRow {...props} session={props.session} onTogglePin={() => togglePinned(props.session.id)} />
+                )}
               />
-            ))}
-          </div>
-        ) : (
-          <StudioConversationGroups
-            groups={groupedSessions}
-            groupOrder={groupOrder}
-            collapsedGroups={collapsedGroups}
-            expandedPreviews={expandedPreviews}
-            activeSessionId={activeSessionId}
-            onGroupOrderChange={setGroupOrder}
-            onToggleCollapsed={toggleGroupCollapsed}
-            onTogglePreview={toggleGroupPreview}
-            onNewChatInGroup={onNewChatInProject}
-            onSelect={onSelect}
-            onDelete={onDelete}
-            renderRow={(props) => (
-              <SessionRow {...props} session={props.session} onTogglePin={() => togglePinned(props.session.id)} />
             )}
-          />
-        )}
-      </div>
+          </div>
+        </>
+      ) : null}
 
       {user && (
-        <div className="arco-sidenav__footer">
+        <div className="arco-sidenav__footer" title={`${user.displayName} · ${user.role}`}>
           <span className="arco-sidenav__avatar" aria-hidden="true">
             {initials(user.displayName)}
           </span>
-          <span className="arco-sidenav__userbody">
-            <span className="arco-sidenav__username">{user.displayName}</span>
-            <span className="arco-sidenav__usermeta">{user.role}</span>
-          </span>
+          {!collapsed ? (
+            <span className="arco-sidenav__userbody">
+              <span className="arco-sidenav__username">{user.displayName}</span>
+              <span className="arco-sidenav__usermeta">{user.role}</span>
+            </span>
+          ) : null}
         </div>
       )}
     </aside>
@@ -369,9 +432,9 @@ function SessionRow({
           {session.kind === "automation" ? "⚙ " : ""}
           {session.title}
         </span>
-        <span className="arco-sidenav__itemtime">{relativeTime(session.updatedAt)}</span>
       </button>
       <div className="arco-sidenav__itemactions">
+        <span className="arco-sidenav__itemtime">{relativeTime(session.updatedAt)}</span>
         <Menu
           side="bottom"
           align="end"

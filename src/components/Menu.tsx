@@ -48,6 +48,13 @@ export interface MenuProps {
   /** The element that opens the menu; cloned with onClick + ARIA wiring. */
   trigger: ReactElement<Record<string, unknown>>;
   items: MenuItem[];
+  /**
+   * Items pinned below the scrollable list (e.g. Lock / Sign out). Not filtered
+   * by search; stay visible while the main list scrolls.
+   */
+  footerItems?: MenuItem[];
+  /** Optional non-interactive content above footer items (e.g. signed-in user). */
+  footerHeader?: ReactNode;
   /** Optional title above the item list (e.g. approval posture menus). */
   heading?: string;
   /** Panel edge alignment relative to the trigger. */
@@ -68,6 +75,8 @@ export interface MenuProps {
 export function Menu({
   trigger,
   items,
+  footerItems,
+  footerHeader,
   heading,
   align = "start",
   side = "bottom",
@@ -133,6 +142,7 @@ export function Menu({
   });
 
   const rich = Boolean(heading || items.some((item) => item.description));
+  const hasFooter = Boolean(footerHeader || (footerItems && footerItems.length > 0));
 
   return (
     <div className={`arco-menu ${className ?? ""}`} ref={rootRef}>
@@ -142,7 +152,16 @@ export function Menu({
           ref={panelRef}
           role="menu"
           aria-label={ariaLabel}
-          className={`arco-menu__panel arco-menu__panel--${side} arco-menu__panel--${align}${showSearch ? " arco-menu__panel--searchable" : ""}${rich ? " arco-menu__panel--rich" : ""}`}
+          className={[
+            "arco-menu__panel",
+            `arco-menu__panel--${side}`,
+            `arco-menu__panel--${align}`,
+            showSearch && "arco-menu__panel--searchable",
+            rich && "arco-menu__panel--rich",
+            hasFooter && "arco-menu__panel--footer",
+          ]
+            .filter(Boolean)
+            .join(" ")}
           onKeyDown={onPanelKeyDown}
         >
           {heading ? <div className="arco-menu__heading">{heading}</div> : null}
@@ -165,6 +184,14 @@ export function Menu({
               visibleItems.map((item) => <MenuRow key={item.id} item={item} onClose={close} />)
             )}
           </div>
+          {hasFooter ? (
+            <div className="arco-menu__footer">
+              {footerHeader ? <div className="arco-menu__footer-header">{footerHeader}</div> : null}
+              {footerItems?.map((item) => (
+                <MenuRow key={item.id} item={item} onClose={close} />
+              ))}
+            </div>
+          ) : null}
         </div>
       )}
     </div>

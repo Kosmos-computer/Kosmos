@@ -1,6 +1,6 @@
 import { I18nKey } from "../i18n/declaration";
 import i18n from "../i18n/index";
-/** Top chrome: left-nav drawer toggle, settings menu, focused window title, shell view toggle, bento drawer, clock, theme toggle, lock. */
+/** Top chrome: left-nav visibility toggle, search, focused window title, status tray, clock, settings. */
 import { useEffect, useMemo, useState } from "react";
 import { AppWindow, LayoutGrid, Lock, LogOut, Monitor, Moon, PanelLeft, Search, Settings, Sun } from "lucide-react";
 import { Menu, type MenuItem } from "../components/Menu";
@@ -60,6 +60,25 @@ export function MenuBar() {
     );
   }, [canWriteSettings, canManageUsers]);
 
+  const settingsFooterItems = useMemo<MenuItem[]>(
+    () => [
+      {
+        id: "lock-screen",
+        label: "Lock screen",
+        icon: Lock,
+        onSelect: () => void lock(),
+      },
+      {
+        id: "sign-out",
+        label: "Sign out",
+        icon: LogOut,
+        danger: true,
+        onSelect: () => void logout(),
+      },
+    ],
+    [lock, logout],
+  );
+
   const focused = windows
     .filter((w) => !w.minimized)
     .sort((a, b) => b.z - a.z)[0];
@@ -77,21 +96,6 @@ export function MenuBar() {
         >
           <PanelLeft size={14} />
         </button>
-        <Menu
-          trigger={
-            <button
-              type="button"
-              className="arco-menubar__icon-btn"
-              aria-label={i18n.t(I18nKey.OS$APP_SETTINGS)}
-              title={i18n.t(I18nKey.OS$APP_SETTINGS)}
-            >
-              <Settings size={14} />
-            </button>
-          }
-          items={settingsMenuItems}
-          aria-label={i18n.t(I18nKey.OS$APP_SETTINGS)}
-          searchPlaceholder={i18n.t(I18nKey.APPS$SETTINGS_SEARCH_SETTINGS)}
-        />
         <button
           type="button"
           className="arco-menubar__icon-btn"
@@ -140,23 +144,6 @@ export function MenuBar() {
             <AppWindow size={14} />
           </button>
         </div>
-        {user && <span title={`Signed in as ${user.username} (${user.role})`}>{user.displayName}</span>}
-        <button
-          className="arco-menubar__icon-btn"
-          onClick={() => void lock()}
-          aria-label={i18n.t(I18nKey.OS_MENUBAR_LOCK_ARCO)}
-          title={i18n.t(I18nKey.OS_MENUBAR_LOCK)}
-        >
-          <Lock size={14} />
-        </button>
-        <button
-          className="arco-menubar__icon-btn"
-          onClick={() => void logout()}
-          aria-label="Sign out"
-          title="Sign out"
-        >
-          <LogOut size={14} />
-        </button>
         <button
           className="arco-menubar__icon-btn"
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
@@ -170,6 +157,31 @@ export function MenuBar() {
         <MenuBarToolsStatus />
         <MenuBarBackendStatus />
         <span>{clock}</span>
+        <Menu
+          align="end"
+          trigger={
+            <button
+              type="button"
+              className="arco-menubar__icon-btn"
+              aria-label={i18n.t(I18nKey.OS$APP_SETTINGS)}
+              title={i18n.t(I18nKey.OS$APP_SETTINGS)}
+            >
+              <Settings size={14} />
+            </button>
+          }
+          items={settingsMenuItems}
+          footerHeader={
+            user ? (
+              <div className="arco-menu__user" title={`Signed in as ${user.username} (${user.role})`}>
+                <span className="arco-menu__user-name">{user.displayName}</span>
+                <span className="arco-menu__user-meta">{user.role}</span>
+              </div>
+            ) : null
+          }
+          footerItems={settingsFooterItems}
+          aria-label={i18n.t(I18nKey.OS$APP_SETTINGS)}
+          searchPlaceholder={i18n.t(I18nKey.APPS$SETTINGS_SEARCH_SETTINGS)}
+        />
       </div>
     </header>
   );

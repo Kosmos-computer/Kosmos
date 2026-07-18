@@ -15,7 +15,6 @@ import {
   FileDiff,
   FolderTree,
   Globe,
-  PanelLeft,
   PanelRight,
   SquareTerminal,
 } from "lucide-react";
@@ -34,7 +33,6 @@ import { Composer } from "../../components/composer/Composer";
 import { ComposerNotice } from "../../components/composer/ComposerNotice";
 import { DEFAULT_APPROVAL_MODE } from "../../components/composer/approvalModes";
 import { DEFAULT_TOOLSET_IDS } from "../../components/composer/toolsets";
-import { StudioLogoMark } from "../../components/StudioLogoMark";
 import { contextPercent, type UsageStats } from "../../components/composer/UsagePopover";
 import { useStudioStore, useSessionActivity } from "./studioStore";
 import { useResizableSplit } from "./useResizableSplit";
@@ -293,32 +291,18 @@ export function StudioApp() {
   return (
     <div className="arco-studio">
       <div className="arco-studio__body">
-        {/* ── Left: conversations sidebar ──────────────────────────────── */}
-        {navOpen ? (
-          <StudioSidebar
-            sessions={chat.sessions}
-            projects={projectsInfo.projects}
-            activeSessionId={chat.sessionId}
-            onSelect={selectSession}
-            onDelete={(id) => void chat.removeSession(id)}
-            onNewChat={chat.newChat}
-            onNewChatInProject={newChatInProject}
-            onClose={() => setNavOpen(false)}
-          />
-        ) : (
-          <div className="arco-studio__rail arco-studio__rail--left" aria-label={i18n.t(I18nKey.APPS$STUDIO_CONVERSATIONS)}>
-            <StudioLogoMark className="arco-studio__railbrand" title="" />
-            <button
-              type="button"
-              className="arco-btn arco-btn--icon"
-              onClick={() => setNavOpen(true)}
-              aria-pressed={false}
-              aria-label={i18n.t(I18nKey.APPS$STUDIO_SHOW_CONVERSATIONS)}
-            >
-              <PanelLeft size={14} />
-            </button>
-          </div>
-        )}
+        {/* ── Left: conversations sidebar (icons remain when collapsed) ─── */}
+        <StudioSidebar
+          sessions={chat.sessions}
+          projects={projectsInfo.projects}
+          activeSessionId={chat.sessionId}
+          collapsed={!navOpen}
+          onSelect={selectSession}
+          onDelete={(id) => void chat.removeSession(id)}
+          onNewChat={chat.newChat}
+          onNewChatInProject={newChatInProject}
+          onToggleCollapsed={() => setNavOpen(!navOpen)}
+        />
 
         {/* Chat + drawer split — resize % is relative to this pane only. */}
         <div className="arco-studio__split" ref={containerRef}>

@@ -102,7 +102,20 @@ export function useDrive() {
   const [shareFile, setShareFile] = useState<DriveFileItem | null>(null);
   const [moveFile, setMoveFile] = useState<DriveFileItem | null>(null);
   const [clipboard, setClipboard] = useState<DriveClipboard | null>(null);
+  const [flashIds, setFlashIds] = useState<string[]>([]);
+  const flashTimerRef = useRef<number | null>(null);
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
+
+  const flashItems = useCallback((ids: string[]) => {
+    const unique = [...new Set(ids.filter(Boolean))];
+    if (unique.length === 0) return;
+    if (flashTimerRef.current !== null) window.clearTimeout(flashTimerRef.current);
+    setFlashIds(unique);
+    flashTimerRef.current = window.setTimeout(() => {
+      setFlashIds([]);
+      flashTimerRef.current = null;
+    }, 900);
+  }, []);
 
   const currentFolderId = folderPath[folderPath.length - 1]?.id ?? null;
 
@@ -364,6 +377,7 @@ export function useDrive() {
           content: defaults.content,
         });
         await refresh();
+        flashItems([entry.id]);
         const item = entryToDriveItem(entry, ownerName);
         openDriveFile(item);
         setError(null);
@@ -371,7 +385,7 @@ export function useDrive() {
         setError(err instanceof Error ? err.message : "Could not create file");
       }
     },
-    [createFolder, currentFolderId, location, ownerName, refresh],
+    [createFolder, currentFolderId, flashItems, location, ownerName, refresh],
   );
 
   const trashFile = useCallback(
@@ -494,14 +508,16 @@ export function useDrive() {
     async (file: DriveFileItem) => {
       try {
         const parentId = location === "drive" || location === "music" ? currentFolderId : file.parentId;
-        await duplicateEntryTree(file.id, parentId, driveCopyName(file.name));
+        const created = await duplicateEntryTree(file.id, parentId, driveCopyName(file.name));
         await refresh();
+        flashItems([created.id]);
+        setSelectedId(created.id);
         setError(null);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Could not duplicate item");
       }
     },
-    [currentFolderId, duplicateEntryTree, location, refresh],
+    [currentFolderId, duplicateEntryTree, flashItems, location, refresh],
   );
 
   const pasteClipboard = useCallback(
@@ -516,17 +532,23 @@ export function useDrive() {
       try {
         if (clipboard.mode === "cut") {
           await api.patchDriveEntry(clipboard.id, { parentId });
+          const movedId = clipboard.id;
           setClipboard(null);
+          await refresh();
+          flashItems([movedId]);
+          setSelectedId(movedId);
         } else {
-          await duplicateEntryTree(clipboard.id, parentId, driveCopyName(clipboard.name));
+          const created = await duplicateEntryTree(clipboard.id, parentId, driveCopyName(clipboard.name));
+          await refresh();
+          flashItems([created.id]);
+          setSelectedId(created.id);
         }
-        await refresh();
         setError(null);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Could not paste item");
       }
     },
-    [clipboard, currentFolderId, duplicateEntryTree, location, refresh],
+    [clipboard, currentFolderId, duplicateEntryTree, flashItems, location, refresh],
   );
 
   const uploadFiles = useCallback(
@@ -535,16 +557,20 @@ export function useDrive() {
       if (files.length === 0) return;
       const parentId = location === "drive" || location === "music" ? currentFolderId : null;
       try {
+        const createdIds: string[] = [];
         for (const file of files) {
-          await api.uploadDriveFile(file, parentId);
+          const created = await api.uploadDriveFile(file, parentId);
+          createdIds.push(created.id);
         }
         await refresh();
+        flashItems(createdIds);
+        if (createdIds[0]) setSelectedId(createdIds[0]);
         setError(null);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Could not upload file");
       }
     },
-    [currentFolderId, location, refresh],
+    [currentFolderId, flashItems, location, refresh],
   );
 
   const triggerUpload = useCallback(() => {
@@ -617,6 +643,7 @@ export function useDrive() {
     moveFile,
     setMoveFile,
     clipboard,
+    flashIds,
     uploadInputRef,
     openFile,
     openFileEditor,

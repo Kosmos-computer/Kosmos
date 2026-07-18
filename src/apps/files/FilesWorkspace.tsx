@@ -6,6 +6,7 @@ import { Folder, FileText } from "lucide-react";
 import { PreviewPane, SidebarPane } from "../../components/patterns";
 import { EmptyState, Button } from "../../components/ui";
 import { DriveColumnHeader, useDriveColumnWidths } from "./DriveColumnHeader";
+import { DriveMotionSlot } from "./DriveMotionSlot";
 import { DrivePathBar } from "./DrivePathBar";
 import { canPasteClipboard, type DriveItemMenuActions } from "./driveItemMenu";
 import { FileCard } from "./FileCard";
@@ -13,6 +14,7 @@ import { FilePreviewEmpty, FilePreviewPane } from "./FilePreviewPane";
 import { FileRow } from "./FileRow";
 import { FilesSidebar } from "./FilesSidebar";
 import { FilesToolbar } from "./FilesToolbar";
+import { useStagedList } from "./useStagedList";
 import type {
   DriveClipboard,
   DriveFileItem,
@@ -72,6 +74,7 @@ export interface FilesWorkspaceProps {
   onDuplicateFile?: (file: DriveFileItem) => void;
   onPaste?: (intoFolderId?: string | null) => void;
   clipboard?: DriveClipboard | null;
+  flashIds?: string[];
   onUpload?: () => void;
   onRefresh?: () => void;
 }
@@ -115,6 +118,7 @@ export function FilesWorkspace({
   onDuplicateFile,
   onPaste,
   clipboard = null,
+  flashIds = [],
   onUpload,
   onRefresh,
 }: FilesWorkspaceProps) {
@@ -144,6 +148,8 @@ export function FilesWorkspace({
     [files, selectedId],
   );
   const { widths: columnWidths, setColumnWidth, style: columnStyle } = useDriveColumnWidths();
+  const stagedFiles = useStagedList(files);
+  const flashIdSet = useMemo(() => new Set(flashIds), [flashIds]);
   const inTrash = location === "trash";
   const canPaste = canPasteClipboard(clipboard, inTrash);
 
@@ -307,20 +313,26 @@ export function FilesWorkspace({
             />
               {loading ? (
                 <EmptyState title={i18n.t(I18nKey.APPS$FILES_LOADING)} />
-              ) : files.length === 0 ? (
+              ) : stagedFiles.length === 0 ? (
                 <EmptyState title={emptyCopy.title}>{emptyCopy.description}</EmptyState>
               ) : (
-                files.map((file) => (
-                  <FileRow
-                    key={file.id}
-                    file={file}
-                    selected={file.id === selectedId}
-                    cut={clipboard?.mode === "cut" && clipboard.id === file.id}
-                    menuActions={menuActionsFor(file)}
-                    onOpen={() => openEntry(file)}
-                    onSelect={() => onSelectFile(file)}
-                    onToggleStar={() => onToggleStar(file.id)}
-                  />
+                stagedFiles.map(({ item: file, phase, key }) => (
+                  <DriveMotionSlot
+                    key={key}
+                    phase={phase}
+                    variant="row"
+                    flash={flashIdSet.has(file.id)}
+                  >
+                    <FileRow
+                      file={file}
+                      selected={file.id === selectedId}
+                      cut={clipboard?.mode === "cut" && clipboard.id === file.id}
+                      menuActions={menuActionsFor(file)}
+                      onOpen={() => openEntry(file)}
+                      onSelect={() => onSelectFile(file)}
+                      onToggleStar={() => onToggleStar(file.id)}
+                    />
+                  </DriveMotionSlot>
                 ))
               )}
             </div>
@@ -329,7 +341,7 @@ export function FilesWorkspace({
           <div className={["arco-drive__scroll arco-scroll", "arco-drive__scroll--grid"].filter(Boolean).join(" ")}>
             {loading ? (
               <EmptyState title={i18n.t(I18nKey.APPS$FILES_LOADING)} />
-            ) : files.length === 0 ? (
+            ) : stagedFiles.length === 0 ? (
               <EmptyState title={emptyCopy.title}>{emptyCopy.description}</EmptyState>
             ) : (
               <div
@@ -340,18 +352,24 @@ export function FilesWorkspace({
                   .filter(Boolean)
                   .join(" ")}
               >
-                {files.map((file) => (
-                  <FileCard
-                    key={file.id}
-                    file={file}
-                    selected={file.id === selectedId}
-                    compact={viewMode === "grid"}
-                    cut={clipboard?.mode === "cut" && clipboard.id === file.id}
-                    menuActions={menuActionsFor(file)}
-                    onOpen={() => openEntry(file)}
-                    onSelect={() => onSelectFile(file)}
-                    onToggleStar={() => onToggleStar(file.id)}
-                  />
+                {stagedFiles.map(({ item: file, phase, key }) => (
+                  <DriveMotionSlot
+                    key={key}
+                    phase={phase}
+                    variant="card"
+                    flash={flashIdSet.has(file.id)}
+                  >
+                    <FileCard
+                      file={file}
+                      selected={file.id === selectedId}
+                      compact={viewMode === "grid"}
+                      cut={clipboard?.mode === "cut" && clipboard.id === file.id}
+                      menuActions={menuActionsFor(file)}
+                      onOpen={() => openEntry(file)}
+                      onSelect={() => onSelectFile(file)}
+                      onToggleStar={() => onToggleStar(file.id)}
+                    />
+                  </DriveMotionSlot>
                 ))}
               </div>
             )}

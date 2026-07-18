@@ -172,7 +172,7 @@ export function MenuBar() {
         <MenuBarVolumeControl />
         <MenuBarToolsStatus />
         <MenuBarBackendStatus />
-        <span>{clock}</span>
+        <span className="arco-menubar__clock">{clock}</span>
         <Menu
           align="end"
           trigger={

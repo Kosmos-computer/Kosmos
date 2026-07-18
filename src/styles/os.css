@@ -26,7 +26,8 @@
   right: 0;
   height: 34px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  /* Left absorbs leftover space (title ellipsizes); center/right stay one line. */
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
   gap: var(--arco-space-l);
   padding: 0 var(--arco-space-l);
@@ -44,9 +45,11 @@
 .arco-menubar__left {
   display: flex;
   align-items: center;
+  flex-wrap: nowrap;
   gap: var(--arco-space-xs);
   min-width: 0;
   justify-self: start;
+  white-space: nowrap;
 }
 
 .arco-menubar__title {
@@ -58,19 +61,31 @@
 
 .arco-menubar__beta {
   justify-self: center;
+  flex-shrink: 0;
   padding: 1px 7px;
   font-size: 10px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   line-height: 1.2;
+  white-space: nowrap;
 }
 
 .arco-menubar__right {
   display: flex;
   align-items: center;
+  flex-wrap: nowrap;
   gap: var(--arco-space-m);
-  min-width: 0;
   justify-self: end;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.arco-menubar__right > * {
+  flex-shrink: 0;
+}
+
+.arco-menubar__clock {
+  white-space: nowrap;
 }
 
 .arco-menubar__icon-btn {
@@ -1762,7 +1777,7 @@
 /* Mobile status bar (fixed or swipe-revealed) */
 .arco-mobile-statusbar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
   gap: var(--arco-space-s);
   height: 44px;
@@ -1777,16 +1792,23 @@
 .arco-mobile-statusbar__right {
   display: flex;
   align-items: center;
+  flex-wrap: nowrap;
   gap: var(--arco-space-xs);
-  min-width: 0;
+  white-space: nowrap;
 }
 
 .arco-mobile-statusbar__left {
+  min-width: 0;
   justify-self: start;
 }
 
 .arco-mobile-statusbar__right {
+  flex-shrink: 0;
   justify-self: end;
+}
+
+.arco-mobile-statusbar__right > * {
+  flex-shrink: 0;
 }
 
 .arco-mobile-statusbar__title {
@@ -1800,11 +1822,13 @@
 
 .arco-mobile-statusbar__beta {
   justify-self: center;
+  flex-shrink: 0;
   padding: 1px 7px;
   font-size: 10px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   line-height: 1.2;
+  white-space: nowrap;
 }
 
 .arco-mobile-statusbar__icon-btn {

@@ -93,6 +93,7 @@ export function FilesApp() {
         onDuplicateFile={(file) => void drive.duplicateFile(file)}
         onPaste={(intoFolderId) => void drive.pasteClipboard(intoFolderId)}
         clipboard={drive.clipboard}
+        flashIds={drive.flashIds}
         onUpload={drive.triggerUpload}
         onRefresh={() => void drive.refresh()}
       />

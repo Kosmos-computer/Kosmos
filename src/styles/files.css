@@ -151,11 +151,21 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
+  --arco-drive-col-name: 280px;
+  --arco-drive-col-name-min: 160px;
   --arco-drive-col-owner: 160px;
+  --arco-drive-col-owner-min: 88px;
   --arco-drive-col-modified: 120px;
+  --arco-drive-col-modified-min: 72px;
   --arco-drive-col-size: 90px;
-  /* Name fills leftover space and truncates; other columns keep a shared width. */
-  --arco-drive-cols: minmax(0, 1fr) var(--arco-drive-col-owner) var(--arco-drive-col-modified) var(--arco-drive-col-size) 56px;
+  --arco-drive-col-size-min: 56px;
+  --arco-drive-col-actions: 56px;
+  /* Preferred column widths + mins; overflow scrolls instead of crushing columns. */
+  --arco-drive-row-min: calc(
+    var(--arco-drive-col-name) + var(--arco-drive-col-owner) + var(--arco-drive-col-modified) +
+      var(--arco-drive-col-size) + var(--arco-drive-col-actions) + (4 * var(--arco-space-m)) +
+      (2 * var(--arco-space-l))
+  );
 }
 
 .arco-drive__list > .arco-drive__scroll {
@@ -168,11 +178,12 @@
 .arco-drive__column-header {
   position: sticky;
   top: 0;
-  z-index: 1;
-  display: grid;
-  grid-template-columns: var(--arco-drive-cols);
+  z-index: 3;
+  display: flex;
+  align-items: center;
   gap: var(--arco-space-m);
-  width: 100%;
+  width: max(100%, var(--arco-drive-row-min));
+  min-width: var(--arco-drive-row-min);
   box-sizing: border-box;
   padding: var(--arco-space-s) var(--arco-space-l);
   border-bottom: 1px solid var(--arco-border);
@@ -184,22 +195,45 @@
   letter-spacing: 0.03em;
 }
 
-.arco-drive__column-header-name {
-  min-width: 0;
-}
-
+.arco-drive__column-header-name,
 .arco-drive__column-header-owner,
 .arco-drive__column-header-modified,
 .arco-drive__column-header-size {
   position: relative;
-  min-width: 0;
   display: flex;
   align-items: center;
-  overflow: hidden;
+  /* Keep visible so right-edge resize handles aren't clipped into the gap. */
+  overflow: visible;
+}
+
+.arco-drive__column-header-name {
+  flex: 1 0 var(--arco-drive-col-name);
+  min-width: var(--arco-drive-col-name-min);
+}
+
+.arco-drive__column-header-owner {
+  flex: 0 0 var(--arco-drive-col-owner);
+  width: var(--arco-drive-col-owner);
+  min-width: var(--arco-drive-col-owner-min);
+}
+
+.arco-drive__column-header-modified {
+  flex: 0 0 var(--arco-drive-col-modified);
+  width: var(--arco-drive-col-modified);
+  min-width: var(--arco-drive-col-modified-min);
 }
 
 .arco-drive__column-header-size {
+  flex: 0 0 var(--arco-drive-col-size);
+  width: var(--arco-drive-col-size);
+  min-width: var(--arco-drive-col-size-min);
   justify-content: flex-end;
+}
+
+.arco-drive__column-header-actions {
+  flex: 0 0 var(--arco-drive-col-actions);
+  width: var(--arco-drive-col-actions);
+  min-width: var(--arco-drive-col-actions);
 }
 
 .arco-drive__column-sort {
@@ -240,14 +274,14 @@
   flex-shrink: 0;
 }
 
-/* Hit target always present; the line only appears on header/handle hover. */
+/* Hit target on the column's right edge; the line only appears on hover/drag. */
 .arco-drive__col-resize {
   position: absolute;
-  left: calc(var(--arco-space-m) / -2 - 3px);
-  top: -6px;
-  bottom: -6px;
-  width: 6px;
-  z-index: 2;
+  top: -8px;
+  right: calc(var(--arco-space-m) / -2 - 5px);
+  bottom: -8px;
+  width: 10px;
+  z-index: 4;
   cursor: col-resize;
   touch-action: none;
   background: transparent;
@@ -256,8 +290,8 @@
 .arco-drive__col-resize::after {
   content: "";
   position: absolute;
-  top: 6px;
-  bottom: 6px;
+  top: 8px;
+  bottom: 8px;
   left: 50%;
   width: 1px;
   transform: translateX(-50%);
@@ -278,6 +312,11 @@
 .arco-drive__col-resize:focus-visible::after,
 .arco-drive__col-resize--active::after {
   width: 2px;
+}
+
+.arco-drive__column-header .arco-drive__column-sort {
+  flex: 1;
+  min-width: 0;
 }
 
 .arco-drive__scroll {
@@ -398,12 +437,11 @@ button.arco-drive-path__crumb:hover {
 
 .arco-drive-row {
   position: relative;
-  display: grid;
-  grid-template-columns: var(--arco-drive-cols);
+  display: flex;
   align-items: center;
   gap: var(--arco-space-m);
-  width: 100%;
-  max-width: 100%;
+  width: max(100%, var(--arco-drive-row-min));
+  min-width: var(--arco-drive-row-min);
   box-sizing: border-box;
   padding: var(--arco-space-s) var(--arco-space-l);
   border: none;
@@ -416,6 +454,100 @@ button.arco-drive-path__crumb:hover {
 
 .arco-drive-item--cut {
   opacity: 0.55;
+  transition: opacity var(--arco-dur-med) var(--arco-ease);
+}
+
+/* Enter / exit / flash motion for list + grid mutations */
+.arco-drive-motion {
+  display: grid;
+  grid-template-rows: 1fr;
+  min-width: 0;
+  transition:
+    grid-template-rows var(--arco-dur-med) var(--arco-ease),
+    opacity var(--arco-dur-med) var(--arco-ease),
+    transform var(--arco-dur-med) var(--arco-ease);
+}
+
+.arco-drive-motion__inner {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.arco-drive-motion--row {
+  width: max(100%, var(--arco-drive-row-min));
+  min-width: var(--arco-drive-row-min);
+}
+
+.arco-drive-motion--row .arco-drive-row {
+  width: 100%;
+  min-width: 0;
+}
+
+.arco-drive-motion--card {
+  min-width: 0;
+}
+
+.arco-drive-motion--enter {
+  animation: arco-drive-item-enter var(--arco-dur-med) var(--arco-ease) both;
+}
+
+.arco-drive-motion--exit {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+}
+
+.arco-drive-motion--card.arco-drive-motion--exit {
+  transform: scale(0.96) translateY(-4px);
+}
+
+.arco-drive-motion--flash .arco-drive-row,
+.arco-drive-motion--flash .arco-drive-card {
+  animation: arco-drive-item-flash 900ms var(--arco-ease);
+}
+
+@keyframes arco-drive-item-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes arco-drive-item-flash {
+  0% {
+    background: var(--arco-accent-soft);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--arco-accent) 35%, transparent);
+  }
+  55% {
+    background: var(--arco-accent-soft);
+  }
+  100% {
+    background: transparent;
+    box-shadow: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arco-drive-motion,
+  .arco-drive-motion--enter,
+  .arco-drive-motion--exit,
+  .arco-drive-motion--flash .arco-drive-row,
+  .arco-drive-motion--flash .arco-drive-card,
+  .arco-drive-item--cut {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+
+  .arco-drive-motion--exit {
+    display: none;
+  }
 }
 
 /* Keep the context-menu anchor out of the row grid so it can't add a bottom gap. */
@@ -434,10 +566,12 @@ button.arco-drive-path__crumb:hover {
 
 .arco-drive-row__actions {
   display: flex;
+  flex: 0 0 var(--arco-drive-col-actions);
   align-items: center;
   justify-content: flex-end;
   gap: 2px;
-  min-width: 0;
+  width: var(--arco-drive-col-actions);
+  min-width: var(--arco-drive-col-actions);
 }
 
 .arco-drive-item__more {
@@ -475,9 +609,10 @@ button.arco-drive-path__crumb:hover {
 
 .arco-drive-row__name-cell {
   display: flex;
+  flex: 1 0 var(--arco-drive-col-name);
   align-items: center;
   gap: var(--arco-space-m);
-  min-width: 0;
+  min-width: var(--arco-drive-col-name-min);
   overflow: hidden;
 }
 
@@ -528,9 +663,11 @@ button.arco-drive-path__crumb:hover {
 
 .arco-drive-row__owner-cell {
   display: flex;
+  flex: 0 0 var(--arco-drive-col-owner);
   align-items: center;
   gap: var(--arco-space-s);
-  min-width: 0;
+  width: var(--arco-drive-col-owner);
+  min-width: var(--arco-drive-col-owner-min);
   font-size: var(--arco-text-sm);
   color: var(--arco-text-tertiary);
   overflow: hidden;
@@ -538,9 +675,10 @@ button.arco-drive-path__crumb:hover {
   white-space: nowrap;
 }
 
-.arco-drive-row__modified-cell,
-.arco-drive-row__size-cell {
-  flex-shrink: 0;
+.arco-drive-row__modified-cell {
+  flex: 0 0 var(--arco-drive-col-modified);
+  width: var(--arco-drive-col-modified);
+  min-width: var(--arco-drive-col-modified-min);
   font-size: var(--arco-text-sm);
   color: var(--arco-text-tertiary);
   overflow: hidden;
@@ -549,6 +687,14 @@ button.arco-drive-path__crumb:hover {
 }
 
 .arco-drive-row__size-cell {
+  flex: 0 0 var(--arco-drive-col-size);
+  width: var(--arco-drive-col-size);
+  min-width: var(--arco-drive-col-size-min);
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   text-align: right;
 }
 
@@ -1033,26 +1179,6 @@ button.arco-drive-path__crumb:hover {
 }
 
 @media (max-width: 720px) {
-  .arco-drive__list {
-    --arco-drive-cols: minmax(0, 1fr) 56px;
-  }
-
-  .arco-drive__column-header-owner,
-  .arco-drive__column-header-modified,
-  .arco-drive__column-header-size {
-    display: none;
-  }
-
-  .arco-drive-row {
-    min-width: 0;
-  }
-
-  .arco-drive-row__owner-cell,
-  .arco-drive-row__modified-cell,
-  .arco-drive-row__size-cell {
-    display: none;
-  }
-
   .arco-drive > .arco-preview-pane {
     display: none;
   }

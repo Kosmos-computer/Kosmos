@@ -38,6 +38,8 @@ const SHELL_EVENT_TYPES = new Set<AgentEvent["type"]>([
   "automation_run_finished",
   "file_changed",
   "cursor_request",
+  "browser_request",
+  "computer_request",
   "confirm_required",
   "confirm_resolved",
 ]);

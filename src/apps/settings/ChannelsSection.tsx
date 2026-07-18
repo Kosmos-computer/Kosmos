@@ -7,6 +7,8 @@ import { T } from "../../i18n/T";
 import { useCallback, useEffect, useState } from "react";
 import { Check, ExternalLink, MessageCircle, Plus, RotateCw, Trash2, X } from "lucide-react";
 import type { ChannelInfo, ChannelStatus } from "@shared/types";
+import type { AgentProfile } from "@shared/agents";
+import { BUILTIN_AGENT_ID } from "@shared/agents";
 import { api } from "../../lib/api";
 import { useCan } from "../../os/auth/authStore";
 import {
@@ -47,15 +49,19 @@ function statusColor(status: ChannelStatus): string {
 export function ChannelsSection() {
   const canManage = useCan("settings:write");
   const [channels, setChannels] = useState<ChannelInfo[]>([]);
+  const [agents, setAgents] = useState<AgentProfile[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const [adding, setAdding] = useState(false);
+  const [kind, setKind] = useState<"telegram" | "discord">("telegram");
   const [name, setName] = useState("");
   const [token, setToken] = useState("");
 
   const refresh = useCallback(async () => {
     try {
-      setChannels(await api.listChannels());
+      const [chs, agentData] = await Promise.all([api.listChannels(), api.listAgents()]);
+      setChannels(chs);
+      setAgents(agentData.agents.filter((a) => a.enabled));
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load channels");
@@ -76,9 +82,10 @@ export function ChannelsSection() {
   const add = async () => {
     if (!name.trim() || !token.trim()) return;
     try {
-      await api.addChannel({ kind: "telegram", name: name.trim(), token: token.trim() });
+      await api.addChannel({ kind, name: name.trim(), token: token.trim() });
       setName("");
       setToken("");
+      setKind("telegram");
       setAdding(false);
       await refresh();
     } catch (err) {
@@ -116,7 +123,8 @@ export function ChannelsSection() {
           {canManage && (
             <SettingsRowActions>
               <Button onClick={() => setAdding((v) => !v)}>
-                <Plus size={13} /><T k={I18nKey.APPS$SETTINGS_ADD_TELEGRAM} /></Button>
+                <Plus size={13} /> Add channel
+              </Button>
             </SettingsRowActions>
           )}
         </SettingsRow>
@@ -125,13 +133,60 @@ export function ChannelsSection() {
 
         {adding && (
           <>
-            <SettingsSubhead><T k={I18nKey.APPS$SETTINGS_CONNECT_TELEGRAM} /></SettingsSubhead>
-            <p className="arco-settings-intro"><T k={I18nKey.APPS$SETTINGS_NEED_A_TOKEN_MESSAGE} /><strong><T k={I18nKey.APPS$SETTINGS_BOTFATHER} /></strong> → <code className="arco-code arco-code--xs"><T k={I18nKey.APPS$SETTINGS_NEWBOT} /></code><T k={I18nKey.APPS$SETTINGS_FOLLOW_THE_PROMPTS_PASTE_THE_TOKEN_BELOW} /></p>
+            <SettingsSubhead>Connect a messaging channel</SettingsSubhead>
+            <p className="arco-settings-intro">
+              {kind === "telegram" ? (
+                <>
+                  <T k={I18nKey.APPS$SETTINGS_NEED_A_TOKEN_MESSAGE} />
+                  <strong>
+                    <T k={I18nKey.APPS$SETTINGS_BOTFATHER} />
+                  </strong>{" "}
+                  →{" "}
+                  <code className="arco-code arco-code--xs">
+                    <T k={I18nKey.APPS$SETTINGS_NEWBOT} />
+                  </code>
+                  <T k={I18nKey.APPS$SETTINGS_FOLLOW_THE_PROMPTS_PASTE_THE_TOKEN_BELOW} />
+                </>
+              ) : (
+                <>
+                  Create a Discord application at the Discord Developer Portal, enable the Bot,
+                  copy the bot token, and turn on Message Content Intent under Privileged Gateway
+                  Intents.
+                </>
+              )}
+            </p>
             <SettingsStack>
-              <SettingsFieldRow label={i18n.t(I18nKey.APPS$SKILLS_NAME)} htmlFor="ch-name">
-                <Input id="ch-name" width="auto" value={name} placeholder={i18n.t(I18nKey.APPS$SETTINGS_TELEGRAM)} onChange={(e) => setName(e.target.value)} />
+              <SettingsFieldRow label="Platform" htmlFor="ch-kind">
+                <select
+                  id="ch-kind"
+                  className="arco-input"
+                  value={kind}
+                  onChange={(e) => {
+                    const next = e.target.value === "discord" ? "discord" : "telegram";
+                    setKind(next);
+                    if (!name.trim() || name === "Telegram" || name === "Discord") {
+                      setName(next === "discord" ? "Discord" : "Telegram");
+                    }
+                  }}
+                >
+                  <option value="telegram">Telegram</option>
+                  <option value="discord">Discord</option>
+                </select>
               </SettingsFieldRow>
-              <SettingsFieldRow label={i18n.t(I18nKey.APPS$SETTINGS_BOT_TOKEN)} htmlFor="ch-token" hint="From @BotFather">
+              <SettingsFieldRow label={i18n.t(I18nKey.APPS$SKILLS_NAME)} htmlFor="ch-name">
+                <Input
+                  id="ch-name"
+                  width="auto"
+                  value={name}
+                  placeholder={kind === "discord" ? "Discord" : i18n.t(I18nKey.APPS$SETTINGS_TELEGRAM)}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </SettingsFieldRow>
+              <SettingsFieldRow
+                label={i18n.t(I18nKey.APPS$SETTINGS_BOT_TOKEN)}
+                htmlFor="ch-token"
+                hint={kind === "discord" ? "From Discord Developer Portal → Bot" : "From @BotFather"}
+              >
                 <Input
                   id="ch-token"
                   width="auto"
@@ -143,8 +198,12 @@ export function ChannelsSection() {
                 />
               </SettingsFieldRow>
               <SettingsFieldRow label=" ">
-                <Button variant="primary" disabled={!name.trim() || !token.trim()} onClick={() => void add()}><T k={I18nKey.COMMON$CONNECT} /></Button>
-                <Button onClick={() => setAdding(false)}><T k={I18nKey.COMMON$CANCEL} /></Button>
+                <Button variant="primary" disabled={!name.trim() || !token.trim()} onClick={() => void add()}>
+                  <T k={I18nKey.COMMON$CONNECT} />
+                </Button>
+                <Button onClick={() => setAdding(false)}>
+                  <T k={I18nKey.COMMON$CANCEL} />
+                </Button>
               </SettingsFieldRow>
             </SettingsStack>
           </>
@@ -191,7 +250,7 @@ export function ChannelsSection() {
 
                 {ch.error ? <SettingsAlert tone="error">{ch.error}</SettingsAlert> : null}
 
-                {ch.status === "running" && telegramUrl(ch.botName) ? (
+                {ch.status === "running" && ch.config.kind === "telegram" && telegramUrl(ch.botName) ? (
                   <SettingsPanelBody>
                     <SettingsRow>
                       <span className="arco-settings-tool-row__desc"><T k={I18nKey.APPS$SETTINGS_MESSAGE} />{ch.botName}<T k={I18nKey.APPS$SETTINGS_IN_TELEGRAM_TO_TALK_TO_THE_AGENT} /></span>
@@ -205,12 +264,37 @@ export function ChannelsSection() {
                           <ExternalLink size={13} /><T k={I18nKey.APPS$SETTINGS_OPEN_IN_TELEGRAM} /></a>
                       </SettingsRowActions>
                     </SettingsRow>
+                    {canManage && (
+                      <SettingsRow>
+                        <span className="arco-settings-tool-row__desc">
+                          Require @mention in groups (quiet until addressed)
+                        </span>
+                        <SettingsRowActions>
+                          <Chip
+                            active={ch.config.requireMention !== false}
+                            onClick={() =>
+                              void api
+                                .updateChannel(ch.config.id, {
+                                  requireMention: !(ch.config.requireMention !== false),
+                                })
+                                .then(patchRow)
+                            }
+                            aria-pressed={ch.config.requireMention !== false}
+                          >
+                            {ch.config.requireMention !== false ? "mention required" : "all group messages"}
+                          </Chip>
+                        </SettingsRowActions>
+                      </SettingsRow>
+                    )}
                   </SettingsPanelBody>
                 ) : null}
 
                 {ch.pairings.length > 0 && (
                   <SettingsPanelBody>
                     <span className="arco-settings-group-label"><T k={I18nKey.APPS$SETTINGS_PAIRING_REQUESTS} /></span>
+                    <p className="arco-settings-intro" style={{ marginTop: 0 }}>
+                      First approved chat becomes the channel owner.
+                    </p>
                     {ch.pairings.map((p) => (
                       <SettingsRow key={p.code}>
                         <span className="arco-settings-tool-row__desc">{p.label}</span>
@@ -231,12 +315,55 @@ export function ChannelsSection() {
                 {ch.peers.length > 0 && (
                   <SettingsPanelBody>
                     <span className="arco-settings-group-label"><T k={I18nKey.APPS$SETTINGS_APPROVED_CHATS} /></span>
+                    <p className="arco-settings-intro" style={{ marginTop: 0 }}>
+                      Bind each chat to an agent profile. Unbound chats use the default (Builtin).
+                      Changing the binding starts a fresh transcript for that chat.
+                    </p>
                     {ch.peers.map((peer) => (
                       <SettingsRow key={peer.chatId}>
-                        <span className="arco-settings-tool-row__desc">{peer.label}</span>
+                        <span className="arco-settings-tool-row__desc">
+                          {peer.label}
+                          {peer.owner ? " · owner" : ""}
+                        </span>
                         <code className="arco-code arco-code--xs">{peer.chatId}</code>
                         {canManage && (
                           <SettingsRowActions>
+                            <select
+                              className="arco-input"
+                              aria-label={`Agent for ${peer.label}`}
+                              value={peer.profileId ?? ""}
+                              onChange={(event) => {
+                                const value = event.target.value;
+                                void api
+                                  .updateChannelPeer(ch.config.id, peer.chatId, {
+                                    profileId: value || null,
+                                  })
+                                  .then(patchRow)
+                                  .catch((err) =>
+                                    setError(
+                                      err instanceof Error ? err.message : "Failed to bind agent",
+                                    ),
+                                  );
+                              }}
+                              style={{ minWidth: "9rem", maxWidth: "14rem" }}
+                            >
+                              <option value="">
+                                Default ({agents.find((a) => a.id === BUILTIN_AGENT_ID)?.name ?? "Arco"})
+                              </option>
+                              {agents
+                                .filter((a) => a.id !== BUILTIN_AGENT_ID)
+                                .map((a) => (
+                                  <option key={a.id} value={a.id}>
+                                    {a.name}
+                                  </option>
+                                ))}
+                              {/* Keep a selected disabled/deleted id visible until rebound */}
+                              {peer.profileId &&
+                              !agents.some((a) => a.id === peer.profileId) &&
+                              peer.profileId !== BUILTIN_AGENT_ID ? (
+                                <option value={peer.profileId}>{peer.profileId} (unavailable)</option>
+                              ) : null}
+                            </select>
                             <Button
                               size="icon"
                               onClick={() => void api.removeChannelPeer(ch.config.id, peer.chatId).then(patchRow)}

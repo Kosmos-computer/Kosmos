@@ -48,12 +48,14 @@ export { MediaProgressScrubber, type MediaProgressScrubberProps } from "./MediaP
 export { useColumnResize, type UseColumnResizeOptions } from "./useColumnResize";
 export {
   ModuleCardGrid,
+  ModuleFilterSelect,
   ModuleHeader,
   ModuleInner,
   ModuleList,
   ModulePage,
   ModuleSection,
   ModuleToolbar,
+  type ModuleFilterOption,
 } from "./ModuleDashboard";
 export { OnScreenKeyboard, type OnScreenKeyboardProps } from "./OnScreenKeyboard";
 export { OnboardingWidget } from "./OnboardingWidget";

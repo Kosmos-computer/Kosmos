@@ -6,7 +6,7 @@
  *
  * The adapter knows nothing about sessions or pairing — it turns platform
  * updates into normalized inbound messages and sends text back. Routing
- * policy lives in the gateway.
+ * policy (including mention gating) lives in the gateway.
  */
 import type { ChannelAdapter, InboundMessage } from "./gateway.js";
 
@@ -22,13 +22,25 @@ interface TgUser {
   username?: string;
 }
 
+interface TgMessageEntity {
+  type: string;
+  offset: number;
+  length: number;
+}
+
+interface TgMessage {
+  chat: { id: number; type: string; title?: string };
+  from?: TgUser;
+  text?: string;
+  entities?: TgMessageEntity[];
+  caption?: string;
+  caption_entities?: TgMessageEntity[];
+  reply_to_message?: { from?: TgUser };
+}
+
 interface TgUpdate {
   update_id: number;
-  message?: {
-    chat: { id: number; type: string; title?: string };
-    from?: TgUser;
-    text?: string;
-  };
+  message?: TgMessage;
 }
 
 /** "Paul Bloch (@paul)" — the label peers and pairings display in Settings. */
@@ -37,6 +49,29 @@ function describeSender(from: TgUser | undefined, chatTitle?: string): string {
   if (!from) return "Unknown";
   const name = [from.first_name, from.last_name].filter(Boolean).join(" ") || "Unknown";
   return from.username ? `${name} (@${from.username})` : name;
+}
+
+function isGroupChat(type: string): boolean {
+  return type === "group" || type === "supergroup";
+}
+
+/**
+ * True when the message @mentions `botUsername` (without @) or replies to the bot.
+ * OpenClaw group mention-gating: quiet by default until addressed.
+ */
+export function messageMentionsBot(msg: TgMessage, botUsername: string | undefined): boolean {
+  if (!botUsername) return false;
+  const uname = botUsername.replace(/^@/, "").toLowerCase();
+  if (msg.reply_to_message?.from?.username?.toLowerCase() === uname) return true;
+  const text = msg.text ?? msg.caption ?? "";
+  const entities = msg.entities ?? msg.caption_entities ?? [];
+  for (const ent of entities) {
+    if (ent.type !== "mention") continue;
+    const slice = text.slice(ent.offset, ent.offset + ent.length).toLowerCase();
+    if (slice === `@${uname}`) return true;
+  }
+  // Fallback: plain-text @bot when entities are missing
+  return new RegExp(`(^|\\s)@${uname}\\b`, "i").test(text);
 }
 
 async function callApi<T>(
@@ -67,12 +102,7 @@ export function createTelegramAdapter(
 ): ChannelAdapter {
   const abort = new AbortController();
   let stopped = false;
-
-  // ── Poll loop ──────────────────────────────────────────────────────────────
-  //
-  // offset = last update_id + 1 acknowledges processed updates server-side,
-  // so a restart never replays old messages. Errors back off 5s and retry —
-  // transient network failures must not kill the channel.
+  let botUsername: string | undefined;
 
   async function pollLoop(): Promise<void> {
     let offset = 0;
@@ -88,10 +118,13 @@ export function createTelegramAdapter(
           offset = Math.max(offset, update.update_id + 1);
           const msg = update.message;
           if (!msg?.text) continue; // text-only in v1 — media is future work
+          const group = isGroupChat(msg.chat.type);
           onMessage({
             chatId: String(msg.chat.id),
-            label: describeSender(msg.from, msg.chat.type === "private" ? undefined : msg.chat.title),
+            label: describeSender(msg.from, group ? msg.chat.title : undefined),
             text: msg.text,
+            isGroup: group,
+            mentioned: group ? messageMentionsBot(msg, botUsername) : true,
           });
         }
       } catch (err) {
@@ -108,6 +141,7 @@ export function createTelegramAdapter(
   return {
     async start() {
       const me = await callApi<TgUser>(token, "getMe", undefined, AbortSignal.timeout(10_000));
+      botUsername = me.username;
       void pollLoop();
       return { botName: me.username ? `@${me.username}` : undefined };
     },
@@ -118,8 +152,6 @@ export function createTelegramAdapter(
     },
 
     async send(chatId, text) {
-      // "typing…" indicators are handled by the gateway before the turn;
-      // here we only chunk and deliver the final text.
       for (let i = 0; i < text.length; i += MAX_MESSAGE_CHARS) {
         await callApi(token, "sendMessage", {
           chat_id: Number(chatId),
@@ -130,7 +162,7 @@ export function createTelegramAdapter(
 
     async indicateTyping(chatId) {
       await callApi(token, "sendChatAction", { chat_id: Number(chatId), action: "typing" }).catch(
-        () => {}, // cosmetic — never let a failed indicator affect the turn
+        () => {},
       );
     },
   };

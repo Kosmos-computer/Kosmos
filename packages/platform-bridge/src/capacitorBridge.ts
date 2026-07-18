@@ -26,6 +26,7 @@ export async function createCapacitorBridge(): Promise<PlatformBridge | null> {
       shellProfile: "mobile",
     }),
     desktop: null,
+    browserGrab: null,
     openExternal: async (url) => {
       window.open(url, "_blank", "noopener,noreferrer");
     },

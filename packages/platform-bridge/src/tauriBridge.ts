@@ -27,6 +27,7 @@ export async function createTauriBridge(): Promise<PlatformBridge | null> {
       apiBase: info.apiBase ?? null,
     }),
     desktop: null,
+    browserGrab: null,
     openExternal: async (url) => {
       window.open(url, "_blank", "noopener,noreferrer");
     },

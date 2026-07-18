@@ -640,7 +640,7 @@
   width: 1px;
   align-self: stretch;
   border-radius: 999px;
-  background: transparent;
+  background: var(--arco-border);
   transition:
     background var(--arco-dur-fast),
     width var(--arco-dur-fast);

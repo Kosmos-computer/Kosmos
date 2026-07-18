@@ -13,6 +13,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import type { AgentProfile } from "../../shared/agents.js";
 import { skillStore } from "../skills/skillStore.js";
 import {
   getPrimaryRoot,
@@ -53,22 +54,51 @@ INLINE CHAT UI (static surface)
 
 let cached: string | null = null;
 
+export interface BuildSystemPromptOptions {
+  profile?: AgentProfile;
+}
+
+/**
+ * Skills available to this profile — OpenClaw replace semantics:
+ * omit skills = all enabled; [] = none; then apply skillsDisabled denylist.
+ */
+export function skillsForProfile(profile?: AgentProfile) {
+  let skills = skillStore.list().filter((s) => s.enabled);
+  if (profile?.skills) {
+    const allow = new Set(profile.skills);
+    skills = skills.filter((s) => allow.has(s.id));
+  }
+  if (profile?.skillsDisabled?.length) {
+    const deny = new Set(profile.skillsDisabled);
+    skills = skills.filter((s) => !deny.has(s.id));
+  }
+  return skills;
+}
+
 /**
  * Skills index — id + description lines only. Full bodies are never
  * auto-injected (demand-paged knowledge): the agent reads what a turn
  * needs with read_skill. Rebuilt per turn; listing a handful of SKILL.md
  * frontmatters is cheap next to an LLM call.
  */
-function skillsIndex(): string {
-  const skills = skillStore.list().filter((s) => s.enabled);
+function skillsIndex(profile?: AgentProfile): string {
+  const skills = skillsForProfile(profile);
   if (skills.length === 0) return "";
   const lines = skills.map((s) => {
     const gates = s.gates.length > 0 ? ` (REQUIRED before: ${s.gates.join(", ")})` : "";
     return `- ${s.id}: ${s.description}${gates}`;
   });
   return `\n\n## Skills
-You have skills — instruction files you must read before relying on them. Read one with read_skill(id); tools listed as REQUIRED refuse to run until their skill is read this session. You can also distill a reusable lesson into a new skill with save_skill. Available:
+You have skills — instruction files you must read before relying on them. Read one with read_skill(id); tools listed as REQUIRED refuse to run until their skill is read this session. You can also distill a reusable lesson into a skill proposal with save_skill (the user Applies it in Skills to go live). Available:
 ${lines.join("\n")}`;
+}
+
+function profileIdentity(profile?: AgentProfile): string {
+  if (!profile || profile.id === "agent:builtin") return "";
+  const tag = profile.tagline ? ` — ${profile.tagline}` : "";
+  return `\n\n## Active agent profile
+You are running as "${profile.name}" (${profile.id})${tag}.
+Stay in this persona for tool use and memory; do not claim to be a different agent.`;
 }
 
 /**
@@ -107,9 +137,14 @@ function workspaceContext(): string {
   return `\n\nACTIVE WORKSPACE (${state.backend}): primary cwd is "${primary.name}" (${effective}).${backendNote}${worktreeNote}\nAttached roots:\n${rootLines}\nAll file tools resolve inside these roots. Treat them as a real codebase: read before you edit, keep changes minimal and consistent with the project's style, and use git via exec (status/diff/commit) for version control on Local workspaces. Commit only when the user asks. Destructive commands (push, hard reset) will pause for the user's approval.`;
 }
 
-export function buildSystemPrompt(): string {
+export function buildSystemPrompt(opts?: BuildSystemPromptOptions): string {
   if (!cached) {
     cached = IDENTITY + readGenerated("chat-prompt.md");
   }
-  return cached + skillsIndex() + workspaceContext();
+  return (
+    cached +
+    profileIdentity(opts?.profile) +
+    skillsIndex(opts?.profile) +
+    workspaceContext()
+  );
 }

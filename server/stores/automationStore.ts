@@ -86,6 +86,7 @@ function normalizeAutomation(raw: StoredAutomation, runs: AutomationRun[]): Auto
     mcpServerIds: raw.mcpServerIds,
     webhookSecret: raw.webhookSecret,
     deliver: raw.deliver,
+    checkIn: raw.checkIn,
   };
   syncScheduleFields(automation);
   return automation;
@@ -148,6 +149,8 @@ export type AutomationCreateInput = {
   mcpServerIds?: string[];
   webhookSecret?: string;
   deliver?: DeliveryTarget;
+  checkIn?: boolean;
+  profileId?: string | null;
 };
 
 export type AutomationUpdatePatch = Partial<
@@ -163,6 +166,8 @@ export type AutomationUpdatePatch = Partial<
     | "deliver"
     | "trigger"
     | "schedule"
+    | "checkIn"
+    | "profileId"
   >
 >;
 
@@ -205,6 +210,8 @@ export class AutomationStore {
       mcpServerIds: data.mcpServerIds,
       webhookSecret: data.webhookSecret ?? (trigger.type === "event" ? crypto.randomUUID().slice(0, 16) : undefined),
       deliver: data.deliver,
+      checkIn: data.checkIn,
+      profileId: data.profileId ?? null,
     };
     syncScheduleFields(automation);
 
@@ -240,6 +247,13 @@ export class AutomationStore {
     if ("deliver" in patch) {
       if (patch.deliver) current.deliver = patch.deliver;
       else delete current.deliver;
+    }
+    if (typeof patch.checkIn === "boolean") {
+      if (patch.checkIn) current.checkIn = true;
+      else delete current.checkIn;
+    }
+    if ("profileId" in patch) {
+      current.profileId = patch.profileId ?? null;
     }
 
     syncScheduleFields(current);

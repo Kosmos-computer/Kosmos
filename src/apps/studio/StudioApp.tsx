@@ -22,6 +22,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import type { ApprovalMode, WorkspaceTab } from "@shared/types";
 import { useChat } from "../chat/useChat";
+import { useActiveAgentProfile } from "../chat/useActiveAgentProfile";
 import { onPrimeComposer } from "../chat/composerBus";
 import { VoiceBar } from "../chat/VoiceBar";
 import { ChatThread } from "../../components/chat/ChatThread";
@@ -32,6 +33,7 @@ import { FaceWidget } from "../../face-rig";
 import { Composer } from "../../components/composer/Composer";
 import { ComposerNotice } from "../../components/composer/ComposerNotice";
 import { DEFAULT_APPROVAL_MODE } from "../../components/composer/approvalModes";
+import { DEFAULT_TOOLSET_IDS } from "../../components/composer/toolsets";
 import { StudioLogoMark } from "../../components/StudioLogoMark";
 import { contextPercent, type UsageStats } from "../../components/composer/UsagePopover";
 import { useStudioStore, useSessionActivity } from "./studioStore";
@@ -103,11 +105,13 @@ export function StudioApp() {
   const [draft, setDraft] = useState("");
   const [mode, setMode] = useState("agent");
   const [approvalMode, setApprovalMode] = useState<ApprovalMode>(DEFAULT_APPROVAL_MODE);
+  const [toolsetIds, setToolsetIds] = useState<string[]>(() => [...DEFAULT_TOOLSET_IDS]);
   /** Session key whose near-limit notice the user dismissed. */
   const [noticeDismissedFor, setNoticeDismissedFor] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const { onDividerPointerDown, isResizing } = useResizableSplit(containerRef);
   const { modelLabel, modelItems } = useModelSelection();
+  const { profileId, agentLabel, agentItems } = useActiveAgentProfile();
   const { scrollRef, onScroll, showJump, scrollToLatest, pinToLatest } =
     useThreadScroll(chat.items);
 
@@ -142,13 +146,15 @@ export function StudioApp() {
   useEffect(
     () =>
       onPrimeComposer(({ text, submit: shouldSubmit }) => {
-        setDraft(text);
         if (shouldSubmit) {
+          setDraft("");
           pinToLatest();
-          void chat.send(text);
+          void chat.send(text, { profileId });
+          return;
         }
+        setDraft(text);
       }),
-    [chat, pinToLatest],
+    [chat, pinToLatest, profileId],
   );
 
   const submit = useCallback(
@@ -162,9 +168,11 @@ export function StudioApp() {
       void chat.send(value, {
         ...(mode === "ask" ? { mode: "ask" as const } : {}),
         ...(mode === "agent" ? { approvalMode } : {}),
+        profileId,
+        toolsetIds,
       });
     },
-    [draft, chat, mode, approvalMode, pinToLatest],
+    [draft, chat, mode, approvalMode, profileId, toolsetIds, pinToLatest],
   );
 
   // ── Composer wiring ───────────────────────────────────────────────────────
@@ -265,6 +273,10 @@ export function StudioApp() {
         onModeChange={setMode}
         approvalMode={mode === "agent" ? approvalMode : undefined}
         onApprovalModeChange={mode === "agent" ? setApprovalMode : undefined}
+        toolsetIds={mode === "agent" ? toolsetIds : undefined}
+        onToolsetIdsChange={mode === "agent" ? setToolsetIds : undefined}
+        agent={agentLabel}
+        agentItems={agentItems}
         model={modelLabel}
         modelItems={modelItems}
         onAddFile={attach.onAddFile}
@@ -274,6 +286,7 @@ export function StudioApp() {
         onManageConnectors={attach.onManageConnectors}
         onBrowseConnectors={attach.onBrowseConnectors}
         connectors={attach.connectors}
+        onFilesDropped={attach.onFilesDropped}
         panelToggles={panelToggles}
         voiceActive={voice.active}
         voiceAvailable={voice.available}
@@ -445,7 +458,14 @@ export function StudioApp() {
                   {activeTab === "files" && <FilesTab />}
                   {activeTab === "diffs" && <GitTab />}
                   {activeTab === "terminal" && <TerminalTab />}
-                  {activeTab === "browser" && <BrowserTab />}
+                  {activeTab === "browser" && (
+                    <BrowserTab
+                      onInsertDraft={(text) =>
+                        setDraft((current) => (current.trim() ? `${current.trim()}\n\n${text}` : text))
+                      }
+                      onSubmitMessage={(text) => submit(text)}
+                    />
+                  )}
                 </div>
               </section>
             </>

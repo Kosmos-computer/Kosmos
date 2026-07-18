@@ -71,7 +71,12 @@ interface SessionBuffer {
 
 interface QueuedTurn {
   text: string;
-  opts?: { mode?: "agent" | "ask"; approvalMode?: "strict" | "smart" | "full" };
+  opts?: {
+    mode?: "agent" | "ask";
+    approvalMode?: "strict" | "smart" | "full";
+    profileId?: string | null;
+    toolsetIds?: string[];
+  };
 }
 
 function emptyBuffer(): SessionBuffer {
@@ -401,7 +406,12 @@ export function useChat(opts?: { activeProjectId?: string | null; persistedSessi
   );
 
   const send = useCallback(
-    async (text: string, opts?: { mode?: "agent" | "ask"; approvalMode?: "strict" | "smart" | "full" }) => {
+    async (text: string, opts?: {
+      mode?: "agent" | "ask";
+      approvalMode?: "strict" | "smart" | "full";
+      profileId?: string | null;
+      toolsetIds?: string[];
+    }) => {
       const trimmed = text.trim();
       const streamKey = activeKeyRef.current;
       const buffer = buffersRef.current.get(streamKey) ?? emptyBuffer();
@@ -470,6 +480,8 @@ export function useChat(opts?: { activeProjectId?: string | null; persistedSessi
             currentTurn.opts?.mode,
             activeProjectId,
             currentTurn.opts?.approvalMode,
+            currentTurn.opts?.profileId,
+            currentTurn.opts?.toolsetIds,
           );
         } catch (err) {
           if (!abort.signal.aborted) {
@@ -504,6 +516,7 @@ export function useChat(opts?: { activeProjectId?: string | null; persistedSessi
     },
     [activeProjectId, migrateBuffer, persistActiveSession, refreshSessions, updateBuffer],
   );
+
 
   const stop = useCallback(() => {
     const key = activeKeyRef.current;

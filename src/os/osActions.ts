@@ -22,6 +22,8 @@ import { executeCursorCommand } from "./cursor/uiDriver";
 import { publishAppEvent } from "./appEventBus";
 import { focusShellWindow, openShellWindow } from "./shellNavigation";
 import { useStudioStore } from "../apps/studio/studioStore";
+import { executeBrowserCommand } from "../apps/studio/browser/browserAutomation";
+import { executeComputerCommand } from "./computerUse";
 import { systemAppTitle } from "./systemAppTitles";
 import { installedLaunchKey, systemLaunchKey, useDocumentLaunchStore } from "./documentLaunchStore";
 
@@ -274,6 +276,20 @@ export function handleShellEvent(event: AgentEvent, sessionKey?: string | null):
 
   useStudioStore.getState().ingestAgentEvent(event, sessionKey);
 
+  // Mark unread when an agent turn ends / needs confirm while another session is active.
+  if (
+    sessionKey &&
+    (event.type === "done" || event.type === "error" || event.type === "confirm_required")
+  ) {
+    const active = useStudioStore.getState().activeSessionKey;
+    if (active && active !== sessionKey) {
+      void import("../apps/studio/unreadSessionsStore").then(({ useUnreadSessionsStore }) => {
+        useUnreadSessionsStore.getState().markUnread(sessionKey);
+      });
+      os.notify("Agent needs attention");
+    }
+  }
+
   switch (event.type) {
     case "apps_changed":
       void os.refreshApps();
@@ -294,6 +310,18 @@ export function handleShellEvent(event: AgentEvent, sessionKey?: string | null):
 
     case "cursor_request":
       void executeCursorCommand(event.command).then((result) =>
+        api.answerClientRequest(event.requestId, result),
+      );
+      break;
+
+    case "browser_request":
+      void executeBrowserCommand(event.command).then((result) =>
+        api.answerClientRequest(event.requestId, result),
+      );
+      break;
+
+    case "computer_request":
+      void executeComputerCommand(event.command).then((result) =>
         api.answerClientRequest(event.requestId, result),
       );
       break;

@@ -38,6 +38,7 @@ import { SkillsSection } from "./SkillsSection";
 import { MemorySection } from "./MemorySection";
 import { UsageSection } from "./UsageSection";
 import { BillingSection } from "./BillingSection";
+import { DoctorRepairSection } from "./DoctorRepairSection";
 import { KosmosCloudSection } from "./KosmosCloudSection";
 import { PlatformDownloadsSection } from "./PlatformDownloadsSection";
 import { DesktopUpdatesSection } from "./DesktopUpdatesSection";
@@ -55,7 +56,6 @@ import {
   SettingsSaveBar,
   SettingsSection,
   SettingsStack,
-  SettingsSubhead,
   SidebarPane,
 } from "../../components/patterns";
 import { useWindowStore } from "../../os/windowStore";
@@ -249,6 +249,7 @@ export function SettingsApp() {
               showNotice={activeSection !== "wallpaper"}
             />
           ) : null}
+          {activeSection === "advanced" ? <DoctorRepairSection /> : null}
 
           {activeSection === "agent" && (
             <SettingsPage>
@@ -674,7 +675,15 @@ export function SettingsApp() {
                       </div>
                     </div>
                   </SettingsFieldRow>
-                  <SettingsSubhead>{settingsSectionLabel("wallpaper", navGroups)}</SettingsSubhead>
+                </SettingsStack>
+              </SettingsSection>
+            </SettingsPage>
+          )}
+
+          {activeSection === "wallpaper" && (
+            <SettingsPage>
+              <SettingsSection intro="Desktop background and sign-in screen wallpaper.">
+                <SettingsStack>
                   <WallpaperSettings />
                 </SettingsStack>
               </SettingsSection>

@@ -25,6 +25,7 @@ import {
   sortSessions,
 } from "./sidebarGrouping";
 import { useSidebarPreferencesStore } from "./sidebarPreferencesStore";
+import { useUnreadSessionsStore } from "./unreadSessionsStore";
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
@@ -290,6 +291,10 @@ function SessionRow({
   onDelete: (id: string) => void;
   onTogglePin?: () => void;
 }) {
+  const unread = useUnreadSessionsStore((s) => s.isUnread(session.id));
+  const toggleUnread = useUnreadSessionsStore((s) => s.toggleUnread);
+  const clearUnread = useUnreadSessionsStore((s) => s.clearUnread);
+
   const handleSave = () => {
     void (async () => {
       try {
@@ -318,6 +323,11 @@ function SessionRow({
         ]
       : []),
     {
+      id: "unread",
+      label: unread ? "Mark as read" : "Mark as unread",
+      onSelect: () => toggleUnread(session.id),
+    },
+    {
       id: "save",
       label: <T k={I18nKey.APPS$STUDIO_SAVE_CONVERSATION} />,
       icon: Download,
@@ -339,6 +349,7 @@ function SessionRow({
         "arco-sidenav__item",
         active && "arco-sidenav__item--active",
         pinned && "arco-sidenav__item--pinned",
+        unread && "arco-studio__session--unread",
       ]
         .filter(Boolean)
         .join(" ")}
@@ -347,8 +358,12 @@ function SessionRow({
         type="button"
         className="arco-sidenav__itembody"
         aria-current={active || undefined}
-        onClick={() => onSelect(session.id)}
+        onClick={() => {
+          clearUnread(session.id);
+          onSelect(session.id);
+        }}
       >
+        {unread ? <span className="arco-studio__unread-dot" aria-label="Unread" /> : null}
         <span className="arco-sidenav__itemtitle">
           {session.kind === "automation" ? "⚙ " : ""}
           {session.title}

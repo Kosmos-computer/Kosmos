@@ -10,6 +10,12 @@ export const DESKTOP_IPC = {
   minimizeWindow: "arco:minimize-window",
   maximizeWindow: "arco:maximize-window",
   closeWindow: "arco:close-window",
+  computerScreenshot: "arco:computer-screenshot",
+  computerClick: "arco:computer-click",
+  computerType: "arco:computer-type",
+  browserSetGrabMode: "arco:browser-set-grab-mode",
+  browserAwaitGrab: "arco:browser-await-grab",
+  browserCaptureCrop: "arco:browser-capture-crop",
 } as const;
 
 export type TitleBarTheme = "dark" | "light";

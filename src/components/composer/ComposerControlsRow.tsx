@@ -32,8 +32,17 @@ import {
   APPROVAL_MODE_OPTIONS,
   approvalModeLabel,
 } from "./approvalModes";
+import { TOOLSETS, toolsetsLabel } from "./toolsets";
 
-type ControlId = "attach" | "emoji" | "formatting" | "mode" | "approval" | "model";
+type ControlId =
+  | "attach"
+  | "emoji"
+  | "formatting"
+  | "mode"
+  | "approval"
+  | "toolset"
+  | "agent"
+  | "model";
 
 const CONTROL_GAP = 4;
 const OVERFLOW_DOCK_WIDTH = 36;
@@ -64,6 +73,12 @@ export interface ComposerControlsRowProps {
   /** Agent approval posture (Ask / Approve / Full). Hidden when unset. */
   approvalMode?: ApprovalMode;
   onApprovalModeChange?: (mode: ApprovalMode) => void;
+  /** Active toolset ids (multi-select). Hidden when unset. */
+  toolsetIds?: string[];
+  onToolsetIdsChange?: (ids: string[]) => void;
+  /** Active agent profile label + menu (Hermes-style chip). */
+  agent?: string;
+  agentItems?: MenuItem[];
   model?: string;
   modelItems?: MenuItem[];
   /** Voice session wiring — when provided, the mic button toggles it. */
@@ -95,6 +110,10 @@ export function ComposerControlsRow({
   onModeChange,
   approvalMode,
   onApprovalModeChange,
+  toolsetIds,
+  onToolsetIdsChange,
+  agent,
+  agentItems,
   model,
   modelItems,
   voiceActive,
@@ -114,6 +133,10 @@ export function ComposerControlsRow({
   const activeModeLabel = modes?.find((m) => m.id === activeModeId)?.label;
   const showApprovalMenu = Boolean(approvalMode && onApprovalModeChange);
   const activeApprovalLabel = approvalMode ? approvalModeLabel(approvalMode) : undefined;
+  const showToolsetMenu = Boolean(toolsetIds && onToolsetIdsChange);
+  const activeToolsetLabel = toolsetIds ? toolsetsLabel(toolsetIds) : undefined;
+  const showAgentMenu = Boolean(agentItems?.length);
+  const agentLabel = agent ?? "Agent";
   const showModelMenu = Boolean(modelItems?.length);
   const modelLabel = model ?? "Model";
 
@@ -121,9 +144,11 @@ export function ComposerControlsRow({
     const ids: ControlId[] = ["attach", "emoji", "formatting"];
     if (showModeMenu) ids.push("mode");
     if (showApprovalMenu) ids.push("approval");
+    if (showToolsetMenu) ids.push("toolset");
+    if (showAgentMenu) ids.push("agent");
     if (showModelMenu) ids.push("model");
     return ids;
-  }, [showModeMenu, showApprovalMenu, showModelMenu]);
+  }, [showModeMenu, showApprovalMenu, showToolsetMenu, showAgentMenu, showModelMenu]);
 
   // ── Overflow measurement ─────────────────────────────────────────────────
   // Drop controls from the end until the visible set (plus the overflow dock,
@@ -163,7 +188,7 @@ export function ComposerControlsRow({
 
   useLayoutEffect(() => {
     measureOverflow();
-  }, [measureOverflow, formattingVisible, activeModeLabel, activeApprovalLabel, model, disabled]);
+  }, [measureOverflow, formattingVisible, activeModeLabel, activeApprovalLabel, agent, model, disabled]);
 
   useEffect(() => {
     const row = rowRef.current;
@@ -240,6 +265,37 @@ export function ComposerControlsRow({
       });
     }
 
+    if (overflowIds.includes("toolset") && toolsetIds && onToolsetIdsChange) {
+      TOOLSETS.forEach((set, i) => {
+        const checked = toolsetIds.includes(set.id);
+        items.push({
+          id: `of-toolset-${set.id}`,
+          label: set.label,
+          description: set.description,
+          checked,
+          separatorAbove: items.length > 0 && i === 0,
+          onSelect: () => {
+            if (checked) {
+              const next = toolsetIds.filter((id) => id !== set.id);
+              onToolsetIdsChange(next.length > 0 ? next : [set.id]);
+            } else {
+              onToolsetIdsChange([...toolsetIds, set.id]);
+            }
+          },
+        });
+      });
+    }
+
+    if (overflowIds.includes("agent") && agentItems) {
+      agentItems.forEach((item, i) => {
+        items.push({
+          ...item,
+          id: `of-agent-${item.id}`,
+          separatorAbove: items.length > 0 && i === 0,
+        });
+      });
+    }
+
     if (overflowIds.includes("model") && modelItems) {
       modelItems.forEach((item, i) => {
         items.push({
@@ -267,6 +323,9 @@ export function ComposerControlsRow({
     onModeChange,
     approvalMode,
     onApprovalModeChange,
+    toolsetIds,
+    onToolsetIdsChange,
+    agentItems,
     modelItems,
   ]);
 
@@ -301,6 +360,29 @@ export function ComposerControlsRow({
         onSelect: () => onApprovalModeChange?.(option.id),
       })),
     [approvalMode, onApprovalModeChange],
+  );
+
+  const toolsetItems = useMemo<MenuItem[]>(
+    () =>
+      TOOLSETS.map((set) => {
+        const checked = toolsetIds?.includes(set.id) ?? false;
+        return {
+          id: set.id,
+          label: set.label,
+          description: set.description,
+          checked,
+          onSelect: () => {
+            if (!toolsetIds || !onToolsetIdsChange) return;
+            if (checked) {
+              const next = toolsetIds.filter((id) => id !== set.id);
+              onToolsetIdsChange(next.length > 0 ? next : [set.id]);
+            } else {
+              onToolsetIdsChange([...toolsetIds, set.id]);
+            }
+          },
+        };
+      }),
+    [toolsetIds, onToolsetIdsChange],
   );
 
   return (
@@ -355,6 +437,40 @@ export function ComposerControlsRow({
                 trigger={
                   <button type="button" className="arco-composer__pickertrigger">
                     <span className="arco-composer__pickerlabel">{activeApprovalLabel}</span>
+                    <ChevronDown size={12} />
+                  </button>
+                }
+              />
+            </div>
+          )}
+          {showToolsetMenu && (
+            <div ref={setItemRef("toolset")} className={controlClass("toolset")} aria-hidden={overflowIds.includes("toolset") || undefined}>
+              <Menu
+                side="top"
+                align="start"
+                heading="Which toolsets may the agent use?"
+                aria-label="Agent toolsets"
+                items={toolsetItems}
+                searchable={false}
+                trigger={
+                  <button type="button" className="arco-composer__pickertrigger">
+                    <span className="arco-composer__pickerlabel">{activeToolsetLabel}</span>
+                    <ChevronDown size={12} />
+                  </button>
+                }
+              />
+            </div>
+          )}
+          {showAgentMenu && (
+            <div ref={setItemRef("agent")} className={controlClass("agent")} aria-hidden={overflowIds.includes("agent") || undefined}>
+              <Menu
+                side="top"
+                align="start"
+                aria-label="Choose agent"
+                items={agentItems ?? []}
+                trigger={
+                  <button type="button" className="arco-composer__pickertrigger">
+                    <span className="arco-composer__pickerlabel">{agentLabel}</span>
                     <ChevronDown size={12} />
                   </button>
                 }

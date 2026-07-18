@@ -57,4 +57,10 @@ Telegram ⇄ adapter ⇄ gateway ⇄ runAgentTurn (existing loop)
 - Voice memo transcription, media in/out (text only)
 - Confirmation cards over chat (headless hardening instead)
 - Webhook-mode Telegram (long polling avoids public exposure entirely)
-- Group-chat mention gating (DM-first; groups work but every message routes)
+
+## Shipped after v1 (OpenClaw port plan)
+
+- **Group mention gating** — groups default to `requireMention: true`; only
+  @bot mentions or replies-to-bot enqueue a turn. Toggle in Settings → Channels.
+  See `docs/openclaw-port-plan.md` Phase A.
+- **First-approver owner** — first approved peer is tagged `owner` in Settings.

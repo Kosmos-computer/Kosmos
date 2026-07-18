@@ -36,39 +36,37 @@ export function DiffsTab() {
         const open = openPath === change.path;
         return (
           <div key={change.path} className="arco-studio__diffcard">
-            <button
-              className="arco-studio__diffrow"
-              onClick={() => setOpenPath(open ? null : change.path)}
-              aria-expanded={open}
-            >
-              <ChevronRight
-                size={12}
-                className="arco-studio__treechevron"
-                style={{ transform: open ? "rotate(90deg)" : undefined }}
-              />
-              <span className="arco-studio__diffpath">{change.path}</span>
-              <span className={`arco-studio__diffbadge ${change.before === null ? "arco-studio__diffbadge--new" : ""}`}>
-                {change.before === null ? "new" : "edited"}
-              </span>
-              <span
-                role="button"
-                tabIndex={0}
+            <div className="arco-studio__diffrow">
+              <button
+                type="button"
+                className="arco-studio__diffrow-main"
+                onClick={() => setOpenPath(open ? null : change.path)}
+                aria-expanded={open}
+              >
+                <ChevronRight
+                  size={12}
+                  className="arco-studio__treechevron"
+                  style={{ transform: open ? "rotate(90deg)" : undefined }}
+                />
+                <span className="arco-studio__diffpath">{change.path}</span>
+                <span
+                  className={`arco-studio__diffbadge ${change.before === null ? "arco-studio__diffbadge--new" : ""}`}
+                >
+                  {change.before === null ? "new" : "edited"}
+                </span>
+              </button>
+              <button
+                type="button"
                 className="arco-toolcard__open"
-                onClick={(e) => {
-                  e.stopPropagation();
+                onClick={() => {
                   requestFile(change.path);
                   setActiveTab("files");
                 }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.stopPropagation();
-                    requestFile(change.path);
-                    setActiveTab("files");
-                  }
-                }}
               >
-                <SquarePen size={11} style={{ verticalAlign: "-1px" }} /><T k={I18nKey.COMMON$EDIT} /></span>
-            </button>
+                <SquarePen size={11} style={{ verticalAlign: "-1px" }} />
+                <T k={I18nKey.COMMON$EDIT} />
+              </button>
+            </div>
             {open && (
               <div className="arco-studio__diffhost">
                 <Suspense fallback={<div className="arco-empty"><T k={I18nKey.APPS$STUDIO_LOADING_DIFF} /></div>}>

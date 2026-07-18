@@ -63,6 +63,11 @@ export interface ModelManifest {
   runtime: ModelRuntime;
   /** Editorial metadata (speedTier, experimental, benchmark notes). */
   meta?: Record<string, string | number | boolean>;
+  /** Optional trust / safety labels (model-agent-profiles Phase 5). */
+  trust?: import("./profiles.js").TrustLevel;
+  safety?: import("./profiles.js").SafetyProfile;
+  audience?: import("./profiles.js").AudienceProfile;
+  certification?: import("./profiles.js").CertificationProfile;
 }
 
 /** Same vocabulary as InstalledApp: seeded, added by URL, or hand-entered. */
@@ -114,6 +119,14 @@ export const USE_CASE_SLOTS: UseCaseSlotDef[] = [
     id: "automations.chat",
     label: "Automations",
     description: "Scheduled and event-triggered agent runs.",
+    requires: "text.chat",
+    fallback: "agent.chat",
+  },
+  {
+    id: "background.review",
+    label: "Background review",
+    description:
+      "Post-turn learning loop: proposes pending memory and skill drafts (never auto-applies).",
     requires: "text.chat",
     fallback: "agent.chat",
   },

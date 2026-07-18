@@ -1,8 +1,9 @@
 import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
-import type { ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Search, X } from "lucide-react";
+import { ChevronDown, Search, X } from "lucide-react";
+import { Menu, type MenuItem } from "../Menu";
 import { Input } from "../ui/Input";
 
 export function ModulePage({ children }: { children: ReactNode }) {
@@ -78,8 +79,53 @@ export function ModuleToolbar({
           </button>
         ) : null}
       </div>
-      {children}
+      {children ? <div className="arco-module__filters">{children}</div> : null}
     </div>
+  );
+}
+
+export type ModuleFilterOption<T extends string = string> = {
+  value: T;
+  label: string;
+};
+
+/** Exclusive toolbar filter as an Arco Menu dropdown (replaces chip rails). */
+export function ModuleFilterSelect<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: T;
+  options: readonly ModuleFilterOption<T>[];
+  onChange: (value: T) => void;
+}) {
+  const selectedLabel = options.find((option) => option.value === value)?.label ?? label;
+  const items = useMemo<MenuItem[]>(
+    () =>
+      options.map((option) => ({
+        id: option.value,
+        label: option.label,
+        checked: option.value === value,
+        onSelect: () => onChange(option.value),
+      })),
+    [onChange, options, value],
+  );
+
+  return (
+    <Menu
+      className="arco-module__filter"
+      aria-label={label}
+      searchable={false}
+      items={items}
+      trigger={
+        <button type="button" className="arco-module__filter-trigger">
+          <span className="arco-module__filter-label">{selectedLabel}</span>
+          <ChevronDown size={14} aria-hidden="true" />
+        </button>
+      }
+    />
   );
 }
 

@@ -58,6 +58,7 @@ import type {
   OpenRouterModelInfo,
   Skill,
   SkillMeta,
+  SkillProposal,
   StoredApp,
   WebApp,
   WebAppLaunchStatus,
@@ -69,6 +70,13 @@ import type { Task, TaskInput, TaskStatus } from "@shared/capabilities/tasks";
 import type { FileCreateInput, FileEntry } from "@shared/capabilities/files";
 import type { DownloadsSettingsDto, DownloadsStatsDto, TorrentDto } from "@shared/capabilities/downloads";
 import type { ShareCreateInput, ShareRecord } from "@shared/capabilities/shares";
+import type {
+  MemoryCollection,
+  MemoryEntry,
+  MemoryGrant,
+  MemoryKind,
+  MemoryStatus,
+} from "@shared/capabilities/memory";
 import type { InstalledAppInfo, GrantState } from "@shared/manifest";
 import type {
   MailAccountInfo,
@@ -191,6 +199,52 @@ export const api = {
     settings?: Partial<Settings>;
   }) => post<AuthSessionResponse>("/api/auth/setup", data),
   installStatus: () => fetch("/api/system/install-status").then((r) => json<InstallStatus>(r)),
+  probeInstallLlm: (settings?: Partial<Settings>) =>
+    fetch("/api/install/probe-llm", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(settings ?? {}),
+    }).then((r) => json<{ ok: boolean; message: string; latencyMs: number }>(r)),
+  listAgents: () =>
+    fetch("/api/agents").then((r) =>
+      json<{
+        agents: import("@shared/agents").AgentProfile[];
+        defaultProfileId: string;
+        busyProfileIds?: string[];
+      }>(r),
+    ),
+  getAgent: (id: string) =>
+    fetch(`/api/agents/${encodeURIComponent(id)}`).then((r) =>
+      json<import("@shared/agents").AgentProfile>(r),
+    ),
+  createAgent: (data: import("@shared/agents").CreateAgentProfileInput) =>
+    post<import("@shared/agents").AgentProfile>("/api/agents", data),
+  updateAgent: (id: string, patch: import("@shared/agents").UpdateAgentProfileInput) =>
+    fetch(`/api/agents/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    }).then((r) => json<import("@shared/agents").AgentProfile>(r)),
+  removeAgent: (id: string) =>
+    fetch(`/api/agents/${encodeURIComponent(id)}`, { method: "DELETE" }).then((r) =>
+      json<{ ok: true }>(r),
+    ),
+  setDefaultAgent: (id: string) =>
+    post<import("@shared/agents").AgentProfile>(
+      `/api/agents/${encodeURIComponent(id)}/default`,
+    ),
+  runDoctor: () =>
+    post<{
+      ok: boolean;
+      steps: { id: string; status: "ok" | "skipped" | "fixed" | "error"; detail: string }[];
+    }>("/api/doctor"),
+  getDoctor: () =>
+    fetch("/api/doctor").then((r) =>
+      json<{
+        ok: boolean;
+        steps: { id: string; status: "ok" | "skipped" | "fixed" | "error"; detail: string }[];
+      }>(r),
+    ),
   shellStatus: () =>
     fetch("/api/system/shell-status").then((r) => json<{ clients: number; interactive: boolean }>(r)),
   workspaceFeatures: () =>
@@ -320,6 +374,8 @@ export const api = {
     model?: string;
     mcpServerIds?: string[];
     deliver?: DeliveryTarget;
+    checkIn?: boolean;
+    profileId?: string | null;
   }) =>
     fetch("/api/automations", {
       method: "POST",
@@ -329,7 +385,18 @@ export const api = {
   updateAutomation: (
     id: string,
     patch: Partial<
-      Pick<Automation, "name" | "schedule" | "prompt" | "enabled" | "timezone" | "model" | "trigger">
+      Pick<
+        Automation,
+        | "name"
+        | "schedule"
+        | "prompt"
+        | "enabled"
+        | "timezone"
+        | "model"
+        | "trigger"
+        | "checkIn"
+        | "profileId"
+      >
     > & {
       deliver?: DeliveryTarget | null;
       mcpServerIds?: string[];
@@ -703,7 +770,11 @@ export const api = {
   gitInfo: () => fetch("/api/git/info").then((r) => json<GitInfo>(r)),
   gitDiff: (path: string) =>
     fetch(`/api/git/diff?path=${encodeURIComponent(path)}`).then((r) =>
-      json<{ before: string | null; after: string | null }>(r),
+      json<{
+        before: string | null;
+        after: string | null;
+        unavailable?: "directory" | "binary" | "too_large";
+      }>(r),
     ),
   gitCommit: (message: string, paths?: string[]) =>
     fetch("/api/git/commit", {
@@ -790,6 +861,94 @@ export const api = {
     fetch(`/api/skills/${encodeURIComponent(id)}`, { method: "DELETE" }).then((r) =>
       json<{ ok: true }>(r),
     ),
+
+  // Memory (Phase 1 document store + ACLs)
+  listMemoryEntries: (opts?: {
+    kind?: MemoryKind;
+    collectionId?: string;
+    status?: MemoryStatus;
+    q?: string;
+    limit?: number;
+  }) => {
+    const params = new URLSearchParams();
+    if (opts?.kind) params.set("kind", opts.kind);
+    if (opts?.collectionId) params.set("collectionId", opts.collectionId);
+    if (opts?.status) params.set("status", opts.status);
+    if (opts?.q) params.set("q", opts.q);
+    if (opts?.limit) params.set("limit", String(opts.limit));
+    const qs = params.toString();
+    return fetch(`/api/memory/entries${qs ? `?${qs}` : ""}`).then((r) => json<MemoryEntry[]>(r));
+  },
+  getMemoryEntry: (id: string) =>
+    fetch(`/api/memory/entries/${encodeURIComponent(id)}`).then((r) => json<MemoryEntry>(r)),
+  createMemoryEntry: (data: {
+    kind: MemoryKind;
+    title: string;
+    summary: string;
+    body?: string;
+    tags?: string[];
+    collectionId?: string;
+    status?: MemoryStatus;
+    source?: string;
+    confidence?: number;
+    sourceSessionId?: string | null;
+  }) => post<MemoryEntry>("/api/memory/entries", data),
+  updateMemoryEntry: (
+    id: string,
+    patch: {
+      title?: string;
+      summary?: string;
+      body?: string | null;
+      status?: MemoryStatus;
+      tags?: string[];
+      confidence?: number;
+    },
+  ) =>
+    fetch(`/api/memory/entries/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    }).then((r) => json<MemoryEntry>(r)),
+  deleteMemoryEntry: (id: string) =>
+    fetch(`/api/memory/entries/${encodeURIComponent(id)}`, { method: "DELETE" }).then((r) =>
+      json<{ ok: true }>(r),
+    ),
+  searchMemory: (opts: { q: string; kind?: MemoryKind; kinds?: MemoryKind[]; limit?: number }) => {
+    const params = new URLSearchParams();
+    params.set("q", opts.q);
+    if (opts.kind) params.set("kind", opts.kind);
+    if (opts.kinds?.length) params.set("kinds", opts.kinds.join(","));
+    if (opts.limit) params.set("limit", String(opts.limit));
+    return fetch(`/api/memory/search?${params}`).then((r) => json<MemoryEntry[]>(r));
+  },
+  listMemoryCollections: () =>
+    fetch("/api/memory/collections").then((r) => json<MemoryCollection[]>(r)),
+  createMemoryCollection: (data: {
+    kind: MemoryKind;
+    name: string;
+    description?: string;
+    id?: string;
+    retentionDays?: number | null;
+  }) => post<MemoryCollection>("/api/memory/collections", data),
+  listMemoryGrants: () => fetch("/api/memory/grants").then((r) => json<MemoryGrant[]>(r)),
+  setMemoryGrants: (
+    body:
+      | { grants: MemoryGrant[] }
+      | { principalId: string; scope: MemoryGrant["scope"]; access: MemoryGrant["access"] },
+  ) =>
+    fetch("/api/memory/grants", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }).then((r) => json<MemoryGrant[] | MemoryGrant>(r)),
+  listSkillProposals: () =>
+    fetch("/api/skills/proposals").then((r) => json<SkillProposal[]>(r)),
+  applySkillProposal: (id: string) =>
+    post<Skill>(`/api/skills/proposals/${encodeURIComponent(id)}/apply`),
+  rejectSkillProposal: (id: string) =>
+    post<SkillProposal>(`/api/skills/proposals/${encodeURIComponent(id)}/reject`),
+  quarantineSkillProposal: (id: string) =>
+    post<SkillProposal>(`/api/skills/proposals/${encodeURIComponent(id)}/quarantine`),
 
   // MCP servers (external tool providers for the agent)
   listMcpServers: () => fetch("/api/mcp-servers").then((r) => json<McpServerInfo[]>(r)),
@@ -1009,11 +1168,11 @@ export const api = {
   followSocialActor: (input: SocialFollowInput) =>
     post<{ ok: true; followUri?: string }>("/api/social/actors/follow", input),
 
-  // Channels (external messaging: Telegram, …)
+  // Channels (external messaging: Telegram, Discord, …)
   listChannels: () => fetch("/api/channels").then((r) => json<ChannelInfo[]>(r)),
-  addChannel: (data: { kind: "telegram"; name: string; token: string }) =>
+  addChannel: (data: { kind: "telegram" | "discord"; name: string; token: string }) =>
     post<ChannelInfo>("/api/channels", data),
-  updateChannel: (id: string, patch: { name?: string; token?: string; enabled?: boolean }) =>
+  updateChannel: (id: string, patch: { name?: string; token?: string; enabled?: boolean; requireMention?: boolean }) =>
     fetch(`/api/channels/${encodeURIComponent(id)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -1034,6 +1193,15 @@ export const api = {
     fetch(
       `/api/channels/${encodeURIComponent(id)}/peers/${encodeURIComponent(chatId)}`,
       { method: "DELETE" },
+    ).then((r) => json<ChannelInfo>(r)),
+  updateChannelPeer: (id: string, chatId: string, patch: { profileId: string | null }) =>
+    fetch(
+      `/api/channels/${encodeURIComponent(id)}/peers/${encodeURIComponent(chatId)}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      },
     ).then((r) => json<ChannelInfo>(r)),
 
   // External access (Arco as an outward MCP server)
@@ -1287,6 +1455,8 @@ export async function streamChat(
   mode?: "agent" | "ask",
   projectId?: string | null,
   approvalMode?: "strict" | "smart" | "full",
+  profileId?: string | null,
+  toolsetIds?: string[],
 ): Promise<void> {
   const res = await fetch("/api/chat", {
     method: "POST",
@@ -1297,6 +1467,8 @@ export async function streamChat(
       ...(mode ? { mode } : {}),
       ...(approvalMode ? { approvalMode } : {}),
       projectId: projectId ?? null,
+      ...(profileId ? { profileId } : {}),
+      ...(toolsetIds && toolsetIds.length > 0 ? { toolsetIds } : {}),
     }),
     signal,
   });

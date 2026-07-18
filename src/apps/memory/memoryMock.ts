@@ -146,11 +146,11 @@ export const MEMORY_WORKSPACE_MOCK: MemoryWorkspaceData = {
     { id: "n-vector", label: "Vector Store", type: "concept", connections: 6 },
   ],
   graphEdges: [
-    { id: "e1", fromId: "n-user", toId: "n-arco", relation: "uses", weight: 0.9 },
-    { id: "e2", fromId: "n-arco", toId: "n-memory", relation: "stores", weight: 0.8 },
-    { id: "e3", fromId: "n-memory", toId: "n-rag", relation: "feeds", weight: 0.7 },
-    { id: "e4", fromId: "n-rag", toId: "n-vector", relation: "queries", weight: 0.85 },
-    { id: "e5", fromId: "n-vector", toId: "n-memory", relation: "indexes", weight: 0.65 },
+    { id: "e1", fromId: "n-user", toId: "n-arco", relation: "related", weight: 0.9 },
+    { id: "e2", fromId: "n-arco", toId: "n-memory", relation: "mentions", weight: 0.8 },
+    { id: "e3", fromId: "n-memory", toId: "n-rag", relation: "supports", weight: 0.7 },
+    { id: "e4", fromId: "n-rag", toId: "n-vector", relation: "derived_from", weight: 0.85 },
+    { id: "e5", fromId: "n-vector", toId: "n-memory", relation: "supports", weight: 0.65 },
   ],
   ragQueries: [
     {

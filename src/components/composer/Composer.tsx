@@ -62,6 +62,12 @@ export interface ComposerProps {
   /** Approval posture (Ask / Approve / Full). Shown when both are set. */
   approvalMode?: ApprovalMode;
   onApprovalModeChange?: (mode: ApprovalMode) => void;
+  /** Toolset chips (Hermes). Shown when both are set. */
+  toolsetIds?: string[];
+  onToolsetIdsChange?: (ids: string[]) => void;
+  /** Active agent profile label + menu. */
+  agent?: string;
+  agentItems?: MenuItem[];
   /** Current model label + menu of alternatives. */
   model?: string;
   modelItems?: MenuItem[];
@@ -89,6 +95,8 @@ export interface ComposerProps {
   inputAriaLabel?: string;
   /** Optional localStorage key for submitted prompt history navigation. */
   historyStorageKey?: string;
+  /** Drop files/images onto the composer (uploads via onFilesDropped). */
+  onFilesDropped?: (files: FileList) => void;
 }
 
 export function Composer({
@@ -104,6 +112,10 @@ export function Composer({
   onModeChange,
   approvalMode,
   onApprovalModeChange,
+  toolsetIds,
+  onToolsetIdsChange,
+  agent,
+  agentItems,
   model,
   modelItems,
   onAddFile,
@@ -124,6 +136,7 @@ export function Composer({
   onPlanUsageClick,
   inputAriaLabel = "Message",
   historyStorageKey,
+  onFilesDropped,
 }: ComposerProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const draftBeforeHistoryRef = useRef("");
@@ -131,6 +144,7 @@ export function Composer({
   const [slashIndex, setSlashIndex] = useState(0);
   const [history, setHistory] = useState<string[]>(() => loadHistory(historyStorageKey));
   const [historyIndex, setHistoryIndex] = useState<number | null>(null);
+  const [dragOver, setDragOver] = useState(false);
 
   useEffect(() => {
     setHistory(loadHistory(historyStorageKey));
@@ -297,7 +311,29 @@ export function Composer({
 
   return (
     <div className="arco-composer">
-      <div className={`arco-composer__card ${notice ? "arco-composer__card--docked" : ""}`}>
+      <div
+        className={`arco-composer__card ${notice ? "arco-composer__card--docked" : ""}${dragOver ? " arco-composer__card--dragover" : ""}`}
+        onDragEnter={(e) => {
+          if (!onFilesDropped || !e.dataTransfer.types.includes("Files")) return;
+          e.preventDefault();
+          setDragOver(true);
+        }}
+        onDragOver={(e) => {
+          if (!onFilesDropped || !e.dataTransfer.types.includes("Files")) return;
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "copy";
+        }}
+        onDragLeave={(e) => {
+          if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+          setDragOver(false);
+        }}
+        onDrop={(e) => {
+          setDragOver(false);
+          if (!onFilesDropped) return;
+          e.preventDefault();
+          if (e.dataTransfer.files?.length) onFilesDropped(e.dataTransfer.files);
+        }}
+      >
         {formattingVisible && <ComposerFormattingToolbar onFormat={handleFormat} />}
         <div className="arco-composer__inputwrap">
           {slashOpen && (
@@ -344,6 +380,10 @@ export function Composer({
           onModeChange={onModeChange}
           approvalMode={approvalMode}
           onApprovalModeChange={onApprovalModeChange}
+          toolsetIds={toolsetIds}
+          onToolsetIdsChange={onToolsetIdsChange}
+          agent={agent}
+          agentItems={agentItems}
           model={model}
           modelItems={modelItems}
           voiceActive={voiceActive}

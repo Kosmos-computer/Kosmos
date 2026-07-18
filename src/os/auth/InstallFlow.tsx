@@ -266,6 +266,8 @@ export function InstallFlow() {
   const [kosmosUrl, setKosmosUrl] = useState("");
   const [kosmosError, setKosmosError] = useState<string | null>(null);
   const [kosmosBusy, setKosmosBusy] = useState(false);
+  const [probeError, setProbeError] = useState<string | null>(null);
+  const [probeBusy, setProbeBusy] = useState(false);
 
   useEffect(() => {
     void api.installStatus().then(setInstallStatus).catch(() => setInstallStatus(null));
@@ -286,8 +288,55 @@ export function InstallFlow() {
   const stepNumber = stepOrder.indexOf(step) + 1;
   const stepTotal = stepOrder.length;
 
+  const runProbeAndAdvance = async (next: InstallStep, settings: Partial<Settings>) => {
+    if (settings.provider === "mock") {
+      setProbeError(null);
+      setStep(next);
+      return;
+    }
+    setProbeBusy(true);
+    setProbeError(null);
+    try {
+      const result = await api.probeInstallLlm(settings);
+      if (!result.ok) {
+        setProbeError(result.message || "Model probe failed");
+        return;
+      }
+      setStep(next);
+    } catch (err) {
+      setProbeError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setProbeBusy(false);
+    }
+  };
+
   const goNextFromModelPath = () => {
-    setStep(modelPath === "cloud" ? "provider" : modelPath === "kosmos" ? "kosmos-connect" : "account");
+    if (modelPath === "cloud") {
+      setProbeError(null);
+      setStep("provider");
+      return;
+    }
+    if (modelPath === "kosmos") {
+      setProbeError(null);
+      setStep("kosmos-connect");
+      return;
+    }
+    if (modelPath === "mock") {
+      setProbeError(null);
+      setStep("account");
+      return;
+    }
+    void runProbeAndAdvance(
+      "account",
+      settingsForPath(modelPath, cloudProvider, apiKey),
+    );
+  };
+
+  const goNextFromProvider = () => {
+    void runProbeAndAdvance(
+      "account",
+      settingsForPath("cloud", cloudProvider, apiKey),
+    );
   };
 
   const connectKosmos = async () => {
@@ -375,10 +424,28 @@ export function InstallFlow() {
             <Button variant="ghost" onClick={() => setStep("welcome")}>
               {i18n.t(I18nKey.COMMON$BACK)}
             </Button>
-            <Button variant="primary" onClick={goNextFromModelPath}>
-              {i18n.t(I18nKey.COMMON$CONTINUE)}
+            <Button variant="primary" disabled={probeBusy} onClick={goNextFromModelPath}>
+              {probeBusy ? "Checking…" : i18n.t(I18nKey.COMMON$CONTINUE)}
             </Button>
           </div>
+          {probeError && (modelPath === "local" || modelPath === "ollama") ? (
+            <div className="arco-authscreen__error" role="alert" style={{ marginTop: 12 }}>
+              <div>{probeError}</div>
+              <Button
+                variant="ghost"
+                style={{ marginTop: 8 }}
+                disabled={probeBusy}
+                onClick={() =>
+                  void runProbeAndAdvance(
+                    "account",
+                    settingsForPath(modelPath, cloudProvider, apiKey),
+                  )
+                }
+              >
+                Retry
+              </Button>
+            </div>
+          ) : null}
         </>
       )}
 
@@ -414,7 +481,7 @@ export function InstallFlow() {
             className="arco-authscreen__form"
             onSubmit={(e) => {
               e.preventDefault();
-              setStep("account");
+              goNextFromProvider();
             }}
           >
             <div>
@@ -443,12 +510,26 @@ export function InstallFlow() {
                 onChange={(e) => setApiKey(e.target.value)}
               />
             </div>
+            {probeError ? (
+              <div className="arco-authscreen__error" role="alert">
+                <div>{probeError}</div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  style={{ marginTop: 8 }}
+                  disabled={probeBusy}
+                  onClick={() => goNextFromProvider()}
+                >
+                  Retry
+                </Button>
+              </div>
+            ) : null}
             <div className="arco-startup-preview__actions">
               <Button type="button" variant="ghost" onClick={() => setStep("model-path")}>
                 {i18n.t(I18nKey.COMMON$BACK)}
               </Button>
-              <Button type="submit" variant="primary">
-                {i18n.t(I18nKey.COMMON$CONTINUE)}
+              <Button type="submit" variant="primary" disabled={probeBusy}>
+                {probeBusy ? "Checking…" : i18n.t(I18nKey.COMMON$CONTINUE)}
               </Button>
             </div>
           </form>

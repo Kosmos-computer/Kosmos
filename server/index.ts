@@ -37,13 +37,20 @@ import { requireAuth, requireCap, currentUser, type AuthEnv } from "./auth/middl
 import { authRoutes } from "./auth/routes.js";
 import { mobileShellCors } from "./cors.js";
 import { createEntryGate } from "./security/entryGate.js";
-import { runAgentTurn } from "./agent/loop.js";
-import { runAcpTurn, stopAllAcpRuns } from "./acp/acpAgent.js";
-import { runCursorTurn, stopAllCursorRuns } from "./cursor/cursorAgent.js";
+import { enqueueSessionResult } from "./agent/sessionQueue.js";
+import {
+  pickTurnRunner,
+  resolveAcpCommand,
+  resolveTurnKind,
+} from "./agent/turnRunner.js";
+import { withProfileActivity } from "./agents/activity.js";
+import { resolveProfileForTurn } from "./agents/resolveProfile.js";
+import { stopAllAcpRuns } from "./acp/acpAgent.js";
+import { stopAllCursorRuns } from "./cursor/cursorAgent.js";
 import { listCursorModels, testCursorConnection } from "./cursor/cursorConnect.js";
-import { runOpenhandsTurn, stopAllOpenhandsRuns } from "./openhands/openhandsAgent.js";
+import { stopAllOpenhandsRuns } from "./openhands/openhandsAgent.js";
 import { testOpenhandsConnection } from "./openhands/openhandsConnect.js";
-import { runKosmosRemoteTurn, stopAllKosmosRemoteRuns } from "./kosmos-remote/kosmosRemoteAgent.js";
+import { stopAllKosmosRemoteRuns } from "./kosmos-remote/kosmosRemoteAgent.js";
 import { testKosmosConnection } from "./kosmos-remote/kosmosRemoteConnect.js";
 import { listOpenRouterModels } from "./openrouter/openrouterModels.js";
 import { openaiCompatRoutes } from "./agent/openaiCompat.js";
@@ -54,6 +61,8 @@ import { runAutomationNow, startScheduler } from "./automations/scheduler.js";
 import { eventTriggerMatches, verifyWebhookSecret } from "./automations/eventMatcher.js";
 import { describeSchedule } from "./automations/scheduleUtils.js";
 import { dataDirs, ensureDataDirs, loadSettings, maskSettings, saveSettings } from "./env.js";
+import { probeLlm } from "./agent/llm.js";
+import { runDoctor } from "./system/doctor.js";
 import {
   gitBranches,
   gitCheckout,
@@ -119,6 +128,10 @@ import type { TorrentAddInput } from "../shared/capabilities/downloads.js";
 import { searchPlaces, geocodePlace, getDrivingRoute } from "./services/mapsService.js";
 import { webSearch } from "./services/searchService.js";
 import { browseErrorHtml, fetchBrowsePage } from "./services/browseProxyService.js";
+import {
+  fetchStudioPreviewPage,
+  studioPreviewErrorHtml,
+} from "./services/studioPreviewProxy.js";
 import { listMusicTracksAsSeedStatus, statAnyMusicTrack } from "./services/musicLibraryService.js";
 import {
   getMusicTrack,
@@ -175,6 +188,8 @@ import { shareRoutes } from "./routes/shareRoutes.js";
 import { usageRoutes } from "./routes/usage.js";
 import { billingRoutes } from "./routes/billing.js";
 import { storageRoutes } from "./routes/storage.js";
+import { memoryRoutes } from "./routes/memory.js";
+import { agentRoutes } from "./routes/agents.js";
 import { startTranscriptionSupervisor } from "./transcription/supervisor.js";
 import { listRemoteVideos, listRemotePodcastEpisodes } from "./services/mediaRemoteService.js";
 import type { FileCreateInput } from "../shared/capabilities/files.js";
@@ -269,6 +284,31 @@ app.route("/api/auth", authRoutes);
 /** Setup readiness; the entry gate protects this when configured. */
 app.get("/api/system/install-status", async (c) => c.json(await getInstallStatus()));
 
+/**
+ * First-run LLM probe — unauthenticated so InstallFlow can prove connectivity
+ * before the owner account exists. Body may supply intended settings; otherwise
+ * current on-disk settings are used.
+ */
+app.post("/api/install/probe-llm", async (c) => {
+  let body: Partial<Settings> = {};
+  try {
+    body = (await c.req.json()) as Partial<Settings>;
+  } catch {
+    body = {};
+  }
+  const current = loadSettings();
+  const settings: Settings = {
+    ...current,
+    ...body,
+    // Prefer explicit probe keys over vault/masked leftovers from disk.
+    apiKey:
+      typeof body.apiKey === "string" && body.apiKey.trim() && !body.apiKey.includes("••••")
+        ? body.apiKey.trim()
+        : current.apiKey,
+  };
+  return c.json(await probeLlm(settings));
+});
+
 /** Minimal deployment probe; deliberately exempt from the entry gate. */
 app.get("/health", (c) => c.json({ ok: true }));
 
@@ -289,6 +329,8 @@ app.route("/", shareRoutes);
 app.route("/v1", openaiCompatRoutes);
 
 app.route("/api/transcription", transcriptionRoutes);
+app.route("/api/memory", memoryRoutes);
+app.route("/api/agents", agentRoutes);
 
 // ── Model registry (docs/model-hub-plan.md) ──────────────────────────────────
 app.route("/api/models", modelRoutes);
@@ -323,6 +365,10 @@ app.post("/api/chat", requireCap("chat"), async (c) => {
     approvalMode?: "strict" | "smart" | "full";
     /** Workspace folder for new sessions (null = sandbox). */
     projectId?: string | null;
+    /** Agent profile for this turn / new session (agent:builtin, agent:user:…). */
+    profileId?: string | null;
+    /** Composer toolset chips — scopes tools for this turn. */
+    toolsetIds?: string[];
   };
   const message = (body.message ?? "").trim();
   if (!message) return c.json({ error: "message is required" }, 400);
@@ -332,12 +378,22 @@ app.post("/api/chat", requireCap("chat"), async (c) => {
       ? body.approvalMode
       : "smart";
 
+  const toolsetIds = Array.isArray(body.toolsetIds)
+    ? body.toolsetIds.filter((id): id is string => typeof id === "string" && id.trim().length > 0)
+    : undefined;
+
   let session = body.sessionId
     ? await sessionStore.get(body.sessionId)
-    : await sessionStore.create("chat", "New chat", { projectId: body.projectId ?? null });
+    : await sessionStore.create("chat", "New chat", {
+        projectId: body.projectId ?? null,
+        profileId: body.profileId ?? null,
+      });
   if (!session) return c.json({ error: "Session not found" }, 404);
   if (body.sessionId && session.projectId == null) {
     session = await sessionStore.tagProjectIfMissing(session, body.projectId ?? null);
+  }
+  if (body.profileId && session.profileId !== body.profileId) {
+    session = (await sessionStore.setProfileId(session.id, body.profileId)) ?? session;
   }
   if (activeChatTurns.has(session.id)) {
     return c.json({ error: "A turn is already running for this session" }, 409);
@@ -354,29 +410,31 @@ app.post("/api/chat", requireCap("chat"), async (c) => {
     };
     emit({ type: "session", sessionId: session.id });
     try {
-      // Interactive chat routes to whichever brain Settings selects; the
-      // built-in loop stays the only agent for automations (headless ACP
-      // has unresolved lifecycle semantics — see the extensibility plan).
-      const agentKind = loadSettings().agent;
-      const turnRunner =
-        agentKind === "acp"
-          ? runAcpTurn
-          : agentKind === "cursor"
-            ? runCursorTurn
-            : agentKind === "openhands"
-              ? runOpenhandsTurn
-              : agentKind === "kosmos"
-                ? runKosmosRemoteTurn
-                : runAgentTurn;
-      await turnRunner({
-        sessionId: session.id,
-        userMessage: message,
-        emit,
-        signal: turnController.signal,
-        interactive: true,
-        readOnly: body.mode === "ask",
-        approvalMode,
-        userId: currentUser(c).id,
+      // Profile.runtime.kind wins when set; otherwise Settings.agent (shell default).
+      // Serialize turns per session so concurrent sends cannot interleave
+      // tool races (OpenClaw session-lane pattern; shared with channels).
+      await enqueueSessionResult(`chat:${session.id}`, async () => {
+        const profile = resolveProfileForTurn({
+          profileId: body.profileId ?? session.profileId,
+          sessionProfileId: session.profileId,
+        });
+        const kind = resolveTurnKind(profile);
+        const turnRunner = pickTurnRunner(kind);
+        await withProfileActivity(profile.id, () =>
+          turnRunner({
+            sessionId: session.id,
+            userMessage: message,
+            emit,
+            signal: turnController.signal,
+            interactive: true,
+            readOnly: body.mode === "ask",
+            approvalMode,
+            userId: currentUser(c).id,
+            profileId: profile.id,
+            ...(toolsetIds && toolsetIds.length > 0 ? { toolsetIds } : {}),
+            ...(kind === "acp" ? { acpCommand: resolveAcpCommand(profile) } : {}),
+          }),
+        );
       });
       emit({ type: "done" });
     } catch (err) {
@@ -656,6 +714,8 @@ app.post("/api/automations", requireCap("automations:manage"), async (c) => {
     model?: string;
     mcpServerIds?: string[];
     deliver?: unknown;
+    checkIn?: boolean;
+    profileId?: string | null;
   };
   const deliver = parseDeliver(body.deliver);
   const trigger = parseTrigger(body.trigger, body.schedule);
@@ -667,6 +727,8 @@ app.post("/api/automations", requireCap("automations:manage"), async (c) => {
     ...(typeof body.model === "string" ? { model: body.model } : {}),
     ...(Array.isArray(body.mcpServerIds) ? { mcpServerIds: body.mcpServerIds } : {}),
     ...(deliver ? { deliver } : {}),
+    ...(typeof body.checkIn === "boolean" ? { checkIn: body.checkIn } : {}),
+    ...(body.profileId !== undefined ? { profileId: body.profileId } : {}),
   });
   bus.emit("automations_changed");
   return c.json(automation);
@@ -684,6 +746,8 @@ app.patch("/api/automations/:id", requireCap("automations:manage"), async (c) =>
     model: string;
     mcpServerIds: string[];
     webhookSecret: string;
+    checkIn: boolean;
+    profileId: string | null;
   }>;
   const patch: Parameters<typeof automationStore.update>[1] = {};
   if (typeof body.name === "string") patch.name = body.name;
@@ -694,6 +758,8 @@ app.patch("/api/automations/:id", requireCap("automations:manage"), async (c) =>
   if (typeof body.model === "string") patch.model = body.model;
   if (Array.isArray(body.mcpServerIds)) patch.mcpServerIds = body.mcpServerIds;
   if (typeof body.webhookSecret === "string") patch.webhookSecret = body.webhookSecret;
+  if (typeof body.checkIn === "boolean") patch.checkIn = body.checkIn;
+  if ("profileId" in body) patch.profileId = body.profileId ?? null;
   if (body.trigger !== undefined) {
     const trigger = parseTrigger(body.trigger, body.schedule);
     if (trigger) patch.trigger = trigger;
@@ -886,6 +952,23 @@ app.get("/api/search/browse", async (c) => {
   } catch (err) {
     const message = err instanceof Error ? err.message : "Browse failed";
     return c.html(browseErrorHtml(message), 502);
+  }
+});
+
+/** Same-origin project preview for Studio Design Mode (browser/cloud). Allows loopback. */
+app.get("/api/studio/preview", requireCap("files:read"), async (c) => {
+  const raw = c.req.query("url") ?? "";
+  if (!raw.trim()) return c.text("Missing url", 400);
+  try {
+    const { html, contentType } = await fetchStudioPreviewPage(raw);
+    return c.body(html, 200, {
+      "Content-Type": contentType,
+      // Allow embedding in the Studio shell iframe.
+      "X-Frame-Options": "SAMEORIGIN",
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Preview failed";
+    return c.html(studioPreviewErrorHtml(message), 502);
   }
 });
 
@@ -2302,6 +2385,26 @@ app.get("/api/audit", requireCap("settings:write"), (c) => {
 
 app.get("/api/skills", (c) => c.json(skillStore.list()));
 
+app.get("/api/skills/proposals", (c) => c.json(skillStore.listProposals()));
+
+app.post("/api/skills/proposals/:id/apply", requireCap("settings:write"), (c) => {
+  const skill = skillStore.applyProposal(c.req.param("id"));
+  if (!skill) return c.json({ error: "Not found or not applyable" }, 404);
+  return c.json(skill);
+});
+
+app.post("/api/skills/proposals/:id/reject", requireCap("settings:write"), (c) => {
+  const proposal = skillStore.rejectProposal(c.req.param("id"));
+  if (!proposal) return c.json({ error: "Not found" }, 404);
+  return c.json(proposal);
+});
+
+app.post("/api/skills/proposals/:id/quarantine", requireCap("settings:write"), (c) => {
+  const proposal = skillStore.quarantineProposal(c.req.param("id"));
+  if (!proposal) return c.json({ error: "Not found" }, 404);
+  return c.json(proposal);
+});
+
 app.get("/api/skills/:id", (c) => {
   const skill = skillStore.get(c.req.param("id"));
   if (!skill) return c.json({ error: "Not found" }, 404);
@@ -3073,22 +3176,34 @@ app.get("/api/channels", (c) => c.json(channelGateway.list()));
 
 app.post("/api/channels", requireCap("settings:write"), async (c) => {
   const body = (await c.req.json()) as { kind?: string; name?: string; token?: string };
-  if (body.kind !== "telegram") return c.json({ error: "kind must be \"telegram\"" }, 400);
+  if (body.kind !== "telegram" && body.kind !== "discord") {
+    return c.json({ error: 'kind must be "telegram" or "discord"' }, 400);
+  }
   if (!body.name?.trim() || !body.token?.trim()) {
     return c.json({ error: "name and token are required" }, 400);
   }
-  const cfg = channelStore.add({ kind: "telegram", name: body.name.trim(), token: body.token.trim() });
+  const cfg = channelStore.add({
+    kind: body.kind,
+    name: body.name.trim(),
+    token: body.token.trim(),
+  });
   await channelGateway.sync(cfg.id);
   return c.json(channelGateway.list().find((ch) => ch.config.id === cfg.id));
 });
 
 app.patch("/api/channels/:id", requireCap("settings:write"), async (c) => {
   const id = c.req.param("id");
-  const body = (await c.req.json()) as { name?: string; token?: string; enabled?: boolean };
+  const body = (await c.req.json()) as {
+    name?: string;
+    token?: string;
+    enabled?: boolean;
+    requireMention?: boolean;
+  };
   const patch: Parameters<typeof channelStore.update>[1] = {};
   if (typeof body.name === "string") patch.name = body.name.trim();
   if (typeof body.token === "string" && body.token.trim()) patch.token = body.token.trim();
   if (typeof body.enabled === "boolean") patch.enabled = body.enabled;
+  if (typeof body.requireMention === "boolean") patch.requireMention = body.requireMention;
   const cfg = channelStore.update(id, patch);
   if (!cfg) return c.json({ error: "Not found" }, 404);
   // Token and enabled changes affect the live connection; a rename doesn't.
@@ -3128,6 +3243,25 @@ app.post("/api/channels/:id/pairings/:code", requireCap("settings:write"), async
 app.delete("/api/channels/:id/peers/:chatId", requireCap("settings:write"), (c) => {
   channelStore.removePeer(c.req.param("id"), c.req.param("chatId"));
   return c.json(channelGateway.list().find((ch) => ch.config.id === c.req.param("id")));
+});
+
+app.patch("/api/channels/:id/peers/:chatId", requireCap("settings:write"), async (c) => {
+  const id = c.req.param("id");
+  const chatId = c.req.param("chatId");
+  const body = (await c.req.json()) as { profileId?: string | null };
+  if (!("profileId" in body)) {
+    return c.json({ error: "profileId is required (string or null)" }, 400);
+  }
+  const profileId = body.profileId === null || body.profileId === "" ? null : body.profileId;
+  if (profileId) {
+    const { agentStore } = await import("./agents/agentStore.js");
+    const profile = agentStore.get(profileId);
+    if (!profile) return c.json({ error: "Agent profile not found" }, 404);
+    if (!profile.enabled) return c.json({ error: "Agent profile is disabled" }, 400);
+  }
+  const peer = channelStore.updatePeer(id, chatId, { profileId });
+  if (!peer) return c.json({ error: "Peer not found" }, 404);
+  return c.json(channelGateway.list().find((ch) => ch.config.id === id));
 });
 
 // ── Outward MCP (external agents drive Arco's intents) ──────────────────────
@@ -3233,6 +3367,21 @@ app.post("/api/exec", requireCap("exec"), async (c) => {
 // ── Settings ─────────────────────────────────────────────────────────────────
 
 app.get("/api/settings", (c) => c.json(maskSettings(loadSettings())));
+
+app.get("/api/doctor", (c) =>
+  c.json({
+    ok: true,
+    steps: [
+      {
+        id: "info",
+        status: "ok" as const,
+        detail: "POST /api/doctor to run repair migrations",
+      },
+    ],
+  }),
+);
+
+app.post("/api/doctor", requireCap("settings:write"), async (c) => c.json(await runDoctor()));
 
 app.put("/api/settings", requireCap("settings:write"), async (c) => {
   const patch = (await c.req.json()) as Partial<Settings>;

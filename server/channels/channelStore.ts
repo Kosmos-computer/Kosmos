@@ -87,6 +87,7 @@ export const channelStore = {
       token: input.token,
       enabled: true,
       addedAt: new Date().toISOString(),
+      requireMention: true,
     };
     file.channels.push(cfg);
     save(file);
@@ -95,7 +96,7 @@ export const channelStore = {
 
   update(
     id: string,
-    patch: Partial<Pick<ChannelConfig, "name" | "token" | "enabled">>,
+    patch: Partial<Pick<ChannelConfig, "name" | "token" | "enabled" | "requireMention">>,
   ): ChannelConfig | undefined {
     const file = load();
     const cfg = file.channels.find((c) => c.id === id);
@@ -104,6 +105,7 @@ export const channelStore = {
     // A mask echoed back from the Settings form must not clobber the secret.
     if (patch.token !== undefined && !patch.token.startsWith("••••")) cfg.token = patch.token;
     if (patch.enabled !== undefined) cfg.enabled = patch.enabled;
+    if (patch.requireMention !== undefined) cfg.requireMention = patch.requireMention;
     save(file);
     return cfg;
   },
@@ -134,6 +136,32 @@ export const channelStore = {
     file.peers[channelId] = (file.peers[channelId] ?? []).filter((p) => p.chatId !== chatId);
     delete file.chatSessions[chatKey(channelId, chatId)];
     save(file);
+  },
+
+  /**
+   * Patch an approved peer (e.g. bind a profile). Changing profileId clears the
+   * chat→session map entry so the next message mints a fresh transcript under
+   * the new principal (no bleed across personas).
+   */
+  updatePeer(
+    channelId: string,
+    chatId: string,
+    patch: { profileId?: string | null },
+  ): ChannelPeer | undefined {
+    const file = load();
+    const list = file.peers[channelId] ?? [];
+    const peer = list.find((p) => p.chatId === chatId);
+    if (!peer) return undefined;
+    if ("profileId" in patch) {
+      const next = patch.profileId ?? null;
+      const prev = peer.profileId ?? null;
+      peer.profileId = next;
+      if (prev !== next) {
+        delete file.chatSessions[chatKey(channelId, chatId)];
+      }
+    }
+    save(file);
+    return peer;
   },
 
   // ── Pairing (unknown-sender approval flow) ─────────────────────────────────
@@ -175,8 +203,16 @@ export const channelStore = {
     file.pairings[channelId] = list;
     let peer: ChannelPeer | null = null;
     if (approve) {
-      peer = { chatId: pairing.chatId, label: pairing.label, addedAt: new Date().toISOString() };
-      file.peers[channelId] = [...(file.peers[channelId] ?? []), peer];
+      const existing = file.peers[channelId] ?? [];
+      // First approved peer becomes the channel owner (OpenClaw first-approver bootstrap).
+      const isFirst = existing.length === 0;
+      peer = {
+        chatId: pairing.chatId,
+        label: pairing.label,
+        addedAt: new Date().toISOString(),
+        ...(isFirst ? { owner: true } : {}),
+      };
+      file.peers[channelId] = [...existing, peer];
     }
     save(file);
     return peer;

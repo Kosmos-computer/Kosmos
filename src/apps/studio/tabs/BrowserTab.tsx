@@ -4,8 +4,8 @@ import { T } from "../../../i18n/T";
 /**
  * BrowserTab — run and preview the open project (the agent-canvas browser
  * pane): a runs strip starts/stops long-lived dev servers through the run
- * manager, and an iframe previews any URL — typically the dev server that
- * was just started. The agent can point this tab at a URL via
+ * manager, and a preview loads any URL — Electron <webview> on desktop
+ * (Design Mode) or iframe on web. The agent can point this tab at a URL via
  * os_ui open_workspace_tab { tab: "browser", path: "http://..." }.
  */
 import { useCallback, useEffect, useState } from "react";
@@ -16,7 +16,14 @@ import { api } from "../../../lib/api";
 import { useOsStore } from "../../../os/osStore";
 import { useStudioStore } from "../studioStore";
 
-export function BrowserTab() {
+interface BrowserTabProps {
+  /** Insert Design Mode context into the Studio composer draft. */
+  onInsertDraft?: (text: string) => void;
+  /** Submit a Design Mode edit into the Studio chat feed. */
+  onSubmitMessage?: (text: string) => void;
+}
+
+export function BrowserTab({ onInsertDraft, onSubmitMessage }: BrowserTabProps = {}) {
   const browserUrl = useStudioStore((s) => s.browserUrl);
   const [runs, setRuns] = useState<RunEntry[]>([]);
   const [command, setCommand] = useState("");
@@ -132,6 +139,9 @@ export function BrowserTab() {
         onNavigate={navigate}
         placeholder="http://localhost:5173 (or just a port number)"
         title={i18n.t(I18nKey.APPS$STUDIO_PROJECT_PREVIEW)}
+        enableDesignMode
+        onInsertDraft={onInsertDraft}
+        onSubmitMessage={onSubmitMessage}
         toolbarExtra={
           <button
             className="arco-btn"

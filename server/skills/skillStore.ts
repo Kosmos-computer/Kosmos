@@ -4,6 +4,7 @@
  *   data/skills/<id>/SKILL.md     frontmatter (name/description/gates) + body
  *   data/skills/skills.json      enable flags, deleted-seed tombstones, and
  *                                which sessions have read which skills
+ *   data/skills/proposals.json   agent-drafted skills awaiting review
  *
  * The folder-per-skill layout leaves room for bundled assets later, and the
  * SKILL.md format stays portable with the broader ecosystem (Claude/Cursor
@@ -12,14 +13,22 @@
  * Gate state is persisted (not in-memory) so a server restart doesn't force
  * the agent to re-read every gating skill mid-conversation.
  */
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import type { Skill, SkillMeta, SkillSource } from "../../shared/types.js";
+import type {
+  Skill,
+  SkillMeta,
+  SkillProposal,
+  SkillProposalStatus,
+  SkillSource,
+} from "../../shared/types.js";
 import { dataDirs } from "../env.js";
 import { bus } from "../bus.js";
 
 const SKILLS_DIR = path.join(dataDirs.root, "skills");
 const STATE_FILE = path.join(SKILLS_DIR, "skills.json");
+const PROPOSALS_FILE = path.join(SKILLS_DIR, "proposals.json");
 
 interface SkillsState {
   /** id → enabled (absent = enabled; only explicit disables are stored). */
@@ -152,6 +161,40 @@ function listIds(): string[] {
   }
 }
 
+function hashProposalContent(input: {
+  name: string;
+  description: string;
+  body: string;
+  gates: string[];
+}): string {
+  return crypto
+    .createHash("sha256")
+    .update(
+      JSON.stringify({
+        name: input.name,
+        description: input.description,
+        body: input.body,
+        gates: input.gates,
+      }),
+    )
+    .digest("hex")
+    .slice(0, 16);
+}
+
+function loadProposals(): SkillProposal[] {
+  try {
+    const raw = JSON.parse(fs.readFileSync(PROPOSALS_FILE, "utf-8")) as SkillProposal[];
+    return Array.isArray(raw) ? raw : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveProposals(proposals: SkillProposal[]): void {
+  fs.mkdirSync(SKILLS_DIR, { recursive: true });
+  fs.writeFileSync(PROPOSALS_FILE, JSON.stringify(proposals, null, 2), "utf-8");
+}
+
 export const skillStore = {
   list(): SkillMeta[] {
     const state = loadState();
@@ -229,6 +272,94 @@ export const skillStore = {
     return true;
   },
 
+  // ── Proposals (draft skills awaiting review) ───────────────────────────────
+
+  listProposals(status?: SkillProposalStatus): SkillProposal[] {
+    const all = loadProposals();
+    if (!status) return all;
+    return all.filter((p) => p.status === status);
+  },
+
+  getProposal(id: string): SkillProposal | null {
+    return loadProposals().find((p) => p.id === id) ?? null;
+  },
+
+  createProposal(input: {
+    name: string;
+    description: string;
+    body: string;
+    gates?: string[];
+    targetSkillId?: string;
+  }): SkillProposal {
+    const now = new Date().toISOString();
+    const gates = input.gates ?? [];
+    const proposal: SkillProposal = {
+      id: crypto.randomUUID(),
+      name: input.name,
+      description: input.description,
+      body: input.body,
+      gates,
+      status: "proposed",
+      createdAt: now,
+      updatedAt: now,
+      hash: hashProposalContent({
+        name: input.name,
+        description: input.description,
+        body: input.body,
+        gates,
+      }),
+      ...(input.targetSkillId ? { targetSkillId: input.targetSkillId } : {}),
+    };
+    const all = loadProposals();
+    all.unshift(proposal);
+    saveProposals(all);
+    bus.emit("skills_changed");
+    return proposal;
+  },
+
+  /** Write SKILL.md from a proposal, enable it, and remove the proposal. */
+  applyProposal(id: string): Skill | null {
+    const all = loadProposals();
+    const idx = all.findIndex((p) => p.id === id);
+    if (idx < 0) return null;
+    const proposal = all[idx];
+    if (proposal.status === "rejected" || proposal.status === "quarantined") {
+      return null;
+    }
+    let skill: Skill;
+    if (proposal.targetSkillId && this.get(proposal.targetSkillId)) {
+      const updated = this.update(proposal.targetSkillId, {
+        name: proposal.name,
+        description: proposal.description,
+        body: proposal.body,
+        gates: proposal.gates,
+      });
+      if (!updated) return null;
+      skill = updated;
+    } else {
+      skill = this.create({
+        name: proposal.name,
+        description: proposal.description,
+        body: proposal.body,
+        gates: proposal.gates,
+        source: "user",
+      });
+    }
+    // create() leaves skills enabled by default (absent from disabled list).
+    all.splice(idx, 1);
+    saveProposals(all);
+    bus.emit("skills_changed");
+    return skill;
+  },
+
+  rejectProposal(id: string): SkillProposal | null {
+    return setProposalStatus(id, "rejected");
+  },
+
+  quarantineProposal(id: string): SkillProposal | null {
+    return setProposalStatus(id, "quarantined");
+  },
+
   // ── Gate state ─────────────────────────────────────────────────────────────
 
   markRead(sessionId: string, skillId: string): void {
@@ -302,3 +433,13 @@ export const skillStore = {
     console.log(`[arco] seeded skill ${id} (from ${path.basename(bodyFile)})`);
   },
 };
+
+function setProposalStatus(id: string, status: SkillProposalStatus): SkillProposal | null {
+  const all = loadProposals();
+  const idx = all.findIndex((p) => p.id === id);
+  if (idx < 0) return null;
+  all[idx] = { ...all[idx], status, updatedAt: new Date().toISOString() };
+  saveProposals(all);
+  bus.emit("skills_changed");
+  return all[idx];
+}

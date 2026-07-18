@@ -72,6 +72,22 @@ logic, `podium-web` transcript editor UX, `fathom-asr-core` GPU ASR package.
 
 ## UI Experiments / reference (external)
 
-Architecture notes for Joplin, agent-canvas, OpenClaw, etc. live in
-`docs/agent-extensibility-plan.md` §2. Those clones are maintained outside
-this repo (historically under `UI Experiments/reference/`).
+Architecture notes for Joplin, agent-canvas, OpenClaw, Hermes, Orca, etc. live
+in `UI Experiments/reference/LEARNINGS.md` and `docs/agent-extensibility-plan.md`
+§2. Those clones are maintained outside this repo under
+`UI Experiments/reference/`.
+
+### hermes-agent — self-improving agent runtime
+
+| | |
+| --- | --- |
+| **Path** | `UI Experiments/reference/hermes-agent/` |
+| **Upstream** | https://github.com/NousResearch/hermes-agent |
+| **Added** | 2026-07-15 |
+| **Learnings** | `UI Experiments/reference/LEARNINGS.md` §19 |
+
+Distinct from `hermes-webui/` (UI shell). Steal: closed learning loop →
+**proposal** pipeline, FTS5 session search, toolset scoping, skill self-improve.
+Skip: `HERMES_HOME`, markdown memory as SoT, messenger zoo, autonomous skill
+writes without Apply/Reject. See also `docs/memory-plan.md`,
+`docs/agent-registry-bindings-plan.md` §1.1.

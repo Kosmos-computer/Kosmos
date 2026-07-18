@@ -779,6 +779,7 @@
 }
 
 .arco-studio__diffcard {
+  flex-shrink: 0;
   border: 1px solid var(--arco-border);
   border-radius: var(--arco-radius-s);
   background: var(--arco-bg-sunk);
@@ -796,6 +797,21 @@
 }
 .arco-studio__diffrow:hover {
   background: var(--arco-bg-hover);
+}
+
+/* Expand control + Edit are siblings — never nest interactive elements. */
+.arco-studio__diffrow-main {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  color: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
 }
 
 .arco-studio__diffpath {
@@ -823,8 +839,113 @@
 
 /* Fixed height keeps expanded diffs scannable; Monaco scrolls internally. */
 .arco-studio__diffhost {
-  height: 260px;
+  height: 320px;
   border-top: 1px solid var(--arco-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.arco-diff-viewer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-s);
+  height: 100%;
+  min-height: 0;
+  flex: 1;
+}
+
+.arco-diff-viewer__editor {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+
+.arco-diff-viewer__toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-xs) var(--arco-space-s);
+  flex-shrink: 0;
+}
+
+.arco-diff-viewer__draft {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-s);
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-s, 4px);
+  margin: 0 var(--arco-space-s);
+  flex-shrink: 0;
+}
+
+.arco-diff-viewer__draft label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--arco-font-size-s);
+}
+
+.arco-diff-viewer__draft textarea {
+  width: 100%;
+  resize: vertical;
+  font: inherit;
+  padding: var(--arco-space-s);
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-s, 4px);
+  background: var(--arco-bg-surface-solid);
+  color: inherit;
+}
+
+.arco-diff-viewer__draft-actions {
+  display: flex;
+  gap: var(--arco-space-s);
+}
+
+.arco-diff-viewer__notes {
+  list-style: none;
+  margin: 0;
+  padding: 0 var(--arco-space-s);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--arco-font-size-s);
+  flex-shrink: 0;
+}
+
+.arco-diff-viewer__notes li {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--arco-space-s);
+  padding: 4px 6px;
+  background: var(--arco-accent-soft);
+  border-radius: var(--arco-radius-s, 4px);
+}
+
+.arco-diff-comment-line {
+  background: color-mix(in srgb, var(--arco-accent) 12%, transparent) !important;
+}
+
+.arco-diff-comment-glyph {
+  background: var(--arco-accent);
+  width: 4px !important;
+  margin-left: 3px;
+  border-radius: 2px;
+}
+
+
+.arco-studio__session--unread {
+  font-weight: 700;
+}
+
+.arco-studio__unread-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--arco-accent);
+  flex-shrink: 0;
 }
 
 /* ── Terminal tab ─────────────────────────────────────────────────────────── */
@@ -1340,6 +1461,70 @@
   left: 0;
   right: auto;
   min-width: 280px;
+}
+
+.arco-workspacechrome__menu--worktree {
+  min-width: 320px;
+  max-width: min(420px, 90vw);
+  padding: 4px 0;
+}
+
+.arco-workspacechrome__worktrees {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 6px 8px;
+  max-height: 280px;
+  overflow: auto;
+}
+
+.arco-workspacechrome__worktrees-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--arco-space-s);
+  font-size: var(--arco-font-size-s);
+  font-weight: 600;
+  padding: 4px 6px 6px;
+}
+
+.arco-workspacechrome__worktree-row-wrap {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.arco-workspacechrome__worktree-row {
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  padding: 4px 6px;
+  border-radius: var(--arco-radius-s, 4px);
+  font-size: var(--arco-font-size-s);
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.arco-workspacechrome__worktree-row:hover,
+.arco-workspacechrome__worktree-row--active {
+  background: var(--arco-accent-soft);
+}
+
+.arco-workspacechrome__worktree-row--sleeping {
+  opacity: 0.55;
+}
+
+.arco-workspacechrome__worktree-meta {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .arco-workspacechrome__branchsearch {

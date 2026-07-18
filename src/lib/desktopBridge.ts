@@ -25,6 +25,9 @@ export interface ArcoDesktopBridge {
   remindLaterUpdate: (version?: string) => Promise<DesktopUpdateState>;
   skipUpdate: (version?: string) => Promise<DesktopUpdateState>;
   onUpdateStateChanged: (handler: (state: DesktopUpdateState) => void) => () => void;
+  computerScreenshot?: () => Promise<{ ok: boolean; imageDataUrl?: string; error?: string }>;
+  computerClick?: (x: number, y: number) => Promise<{ ok: boolean; error?: string }>;
+  computerType?: (text: string) => Promise<{ ok: boolean; error?: string }>;
 }
 
 export function isArcoDesktop(): boolean {
@@ -70,6 +73,9 @@ export function getArcoDesktop(): ArcoDesktopBridge | null {
     closeWindow: () => desktop.closeWindow(),
     onAppWindowClosed: (handler) => desktop.onAppWindowClosed(handler),
     ...updates,
+    computerScreenshot: legacy?.computerScreenshot?.bind(legacy),
+    computerClick: legacy?.computerClick?.bind(legacy),
+    computerType: legacy?.computerType?.bind(legacy),
   };
 }
 

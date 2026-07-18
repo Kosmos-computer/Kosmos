@@ -31,4 +31,15 @@ contextBridge.exposeInMainWorld("arcoDesktop", {
     ipcRenderer.on(UPDATE_IPC.stateChanged, listener);
     return () => ipcRenderer.removeListener(UPDATE_IPC.stateChanged, listener);
   },
+  computerScreenshot: () => ipcRenderer.invoke(DESKTOP_IPC.computerScreenshot),
+  computerClick: (x: number, y: number) => ipcRenderer.invoke(DESKTOP_IPC.computerClick, x, y),
+  computerType: (text: string) => ipcRenderer.invoke(DESKTOP_IPC.computerType, text),
+  browserSetGrabMode: (webContentsId: number, enabled: boolean) =>
+    ipcRenderer.invoke(DESKTOP_IPC.browserSetGrabMode, webContentsId, enabled),
+  browserAwaitGrab: (webContentsId: number) =>
+    ipcRenderer.invoke(DESKTOP_IPC.browserAwaitGrab, webContentsId),
+  browserCaptureCrop: (
+    webContentsId: number,
+    rect: { x: number; y: number; width: number; height: number },
+  ) => ipcRenderer.invoke(DESKTOP_IPC.browserCaptureCrop, webContentsId, rect),
 });

@@ -7,19 +7,20 @@ import { T } from "../../i18n/T";
  * Settings → Skills.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BookOpen, Plus, Trash2, X } from "lucide-react";
-import type { SkillMeta } from "@shared/types";
+import { BookOpen, Layers, Plus, Trash2, X } from "lucide-react";
+import type { SkillMeta, SkillProposal } from "@shared/types";
 import { api } from "../../lib/api";
 import { useCan } from "../../os/auth/authStore";
 import {
   ModuleCardGrid,
+  ModuleFilterSelect,
   ModuleHeader,
   ModuleInner,
   ModulePage,
   ModuleSection,
   ModuleToolbar,
 } from "../../components/patterns/ModuleDashboard";
-import { Button, Chip, EmptyState, Input, Switch } from "../../components/ui";
+import { Button, EmptyState, Input, Switch } from "../../components/ui";
 import { SettingsAlert } from "../../components/patterns";
 import {
   filterSkills,
@@ -59,9 +60,7 @@ function SkillModuleCard({
         </span>
         <div className="arco-module-card__body">
           <h3 className="arco-module-card__title">{skill.name}</h3>
-          <div className="arco-module-card__meta">
-            {skill.id} · {skillSourceLabel(skill.source)}
-          </div>
+          <div className="arco-module-card__meta">{skillSourceLabel(skill.source)}</div>
         </div>
         {canManage ? (
           <div className="arco-module-card__actions">
@@ -78,7 +77,12 @@ function SkillModuleCard({
       {skill.gates.length > 0 ? (
         <div className="arco-module-card__pills">
           {skill.gates.map((gate) => (
-            <span key={gate} className="arco-module-card__pill" title={i18n.t(I18nKey.APPS$SKILLS_BLOCKED_UNTIL_READ)}><T k={I18nKey.APPS$SKILLS_GATES} />{gate}
+            <span
+              key={gate}
+              className="arco-module-card__pill"
+              title={i18n.t(I18nKey.APPS$SKILLS_BLOCKED_UNTIL_READ)}
+            >
+              {gate}
             </span>
           ))}
         </div>
@@ -178,7 +182,8 @@ function SkillDetailOverlay({
         {skill.gates.length > 0 ? (
           <div className="arco-module-card__pills">
             {skill.gates.map((gate) => (
-              <span key={gate} className="arco-module-card__pill"><T k={I18nKey.APPS$SKILLS_GATES} />{gate}
+              <span key={gate} className="arco-module-card__pill">
+                {gate}
               </span>
             ))}
           </div>
@@ -279,19 +284,72 @@ function AddSkillPanel({
   );
 }
 
+function SkillProposalCard({
+  proposal,
+  canManage,
+  busy,
+  onApply,
+  onReject,
+  onQuarantine,
+}: {
+  proposal: SkillProposal;
+  canManage: boolean;
+  busy: boolean;
+  onApply: () => void;
+  onReject: () => void;
+  onQuarantine: () => void;
+}) {
+  return (
+    <div className="arco-module-card">
+      <div className="arco-module-card__head">
+        <span className="arco-module-card__icon" aria-hidden="true">
+          <Layers size={16} />
+        </span>
+        <div className="arco-module-card__body">
+          <h3 className="arco-module-card__title">{proposal.name}</h3>
+          <div className="arco-module-card__meta">
+            {proposal.status}
+            {proposal.hash ? ` · ${proposal.hash}` : ""}
+          </div>
+        </div>
+      </div>
+      <p className="arco-module-card__desc">{proposal.description}</p>
+      {canManage && proposal.status === "proposed" ? (
+        <div className="arco-module-card__actions arco-module-card__actions--footer">
+          <Button variant="primary" disabled={busy} onClick={onApply}>
+            Apply
+          </Button>
+          <Button disabled={busy} onClick={onReject}>
+            Reject
+          </Button>
+          <Button variant="ghost" disabled={busy} onClick={onQuarantine}>
+            Quarantine
+          </Button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function SkillsDashboard({ embedded = false }: { embedded?: boolean }) {
   const canManage = useCan("settings:write");
   const [skills, setSkills] = useState<SkillMeta[]>([]);
+  const [proposals, setProposals] = useState<SkillProposal[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [sourceFilter, setSourceFilter] = useState<SkillSourceFilter>("all");
   const [selected, setSelected] = useState<SkillMeta | null>(null);
   const [showAdd, setShowAdd] = useState(false);
+  const [proposalBusy, setProposalBusy] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     try {
-      const next = await api.listSkills();
+      const [next, nextProposals] = await Promise.all([
+        api.listSkills(),
+        api.listSkillProposals(),
+      ]);
       setSkills(next);
+      setProposals(nextProposals.filter((p) => p.status !== "rejected"));
       setSelected((current) => (current ? next.find((s) => s.id === current.id) ?? null : null));
       setError(null);
     } catch (err) {
@@ -310,10 +368,31 @@ export function SkillsDashboard({ embedded = false }: { embedded?: boolean }) {
 
   const enabled = useMemo(() => filtered.filter((skill) => skill.enabled), [filtered]);
   const disabled = useMemo(() => filtered.filter((skill) => !skill.enabled), [filtered]);
+  const openProposals = useMemo(
+    () => proposals.filter((p) => p.status === "proposed" || p.status === "quarantined"),
+    [proposals],
+  );
 
   const toggleSkill = async (skill: SkillMeta, enabledNext: boolean) => {
     await api.updateSkill(skill.id, { enabled: enabledNext });
     await refresh();
+  };
+
+  const actOnProposal = async (
+    id: string,
+    action: "apply" | "reject" | "quarantine",
+  ) => {
+    setProposalBusy(id);
+    try {
+      if (action === "apply") await api.applySkillProposal(id);
+      else if (action === "reject") await api.rejectSkillProposal(id);
+      else await api.quarantineSkillProposal(id);
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Proposal action failed");
+    } finally {
+      setProposalBusy(null);
+    }
   };
 
   const content = (
@@ -341,23 +420,38 @@ export function SkillsDashboard({ embedded = false }: { embedded?: boolean }) {
         />
       ) : null}
 
-      {skills.length === 0 ? (
+      {openProposals.length > 0 ? (
+        <ModuleSection title="Proposals" count={openProposals.length}>
+          <ModuleCardGrid>
+            {openProposals.map((proposal) => (
+              <SkillProposalCard
+                key={proposal.id}
+                proposal={proposal}
+                canManage={canManage}
+                busy={proposalBusy === proposal.id}
+                onApply={() => void actOnProposal(proposal.id, "apply")}
+                onReject={() => void actOnProposal(proposal.id, "reject")}
+                onQuarantine={() => void actOnProposal(proposal.id, "quarantine")}
+              />
+            ))}
+          </ModuleCardGrid>
+        </ModuleSection>
+      ) : null}
+
+      {skills.length === 0 && openProposals.length === 0 ? (
         <EmptyState title={i18n.t(I18nKey.APPS$SKILLS_NO_SKILLS_INSTALLED)}><T k={I18nKey.APPS$SKILLS_CREATE_A_SKILL_OR_ASK_ARCO_TO_SAVE_REUSABLE_INSTRUCTIONS} /></EmptyState>
-      ) : (
+      ) : skills.length === 0 ? null : (
         <>
           <ModuleToolbar search={search} onSearchChange={setSearch} searchLabel={i18n.t(I18nKey.APPS$SKILLS_SEARCH_SKILLS)}>
-            <div className="arco-chip-row" role="group" aria-label={i18n.t(I18nKey.APPS$SKILLS_SKILL_SOURCE_FILTER)}>
-              {SOURCE_FILTERS.map((entry) => (
-                <Chip
-                  key={entry.id}
-                  active={sourceFilter === entry.id}
-                  aria-pressed={sourceFilter === entry.id}
-                  onClick={() => setSourceFilter(entry.id)}
-                >
-                  {entry.label}
-                </Chip>
-              ))}
-            </div>
+            <ModuleFilterSelect
+              label={i18n.t(I18nKey.APPS$SKILLS_SKILL_SOURCE_FILTER)}
+              value={sourceFilter}
+              options={SOURCE_FILTERS.map((entry) => ({
+                value: entry.id,
+                label: entry.label,
+              }))}
+              onChange={setSourceFilter}
+            />
           </ModuleToolbar>
 
           {filtered.length === 0 ? (

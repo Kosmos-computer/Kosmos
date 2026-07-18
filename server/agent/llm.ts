@@ -79,6 +79,46 @@ export async function streamTurn(opts: StreamTurnOptions): Promise<LlmTurn> {
   return turn;
 }
 
+export interface LlmProbeResult {
+  ok: boolean;
+  message: string;
+  latencyMs: number;
+}
+
+/**
+ * One-shot connectivity check used by first-run install (and Settings repair).
+ * Asks the model to reply with exactly "ok"; mock/skip providers succeed immediately.
+ */
+export async function probeLlm(settings: Settings): Promise<LlmProbeResult> {
+  const started = Date.now();
+  if (settings.provider === "mock") {
+    return { ok: true, message: "Mock provider — probe skipped", latencyMs: Date.now() - started };
+  }
+  try {
+    const turn = await apiTurn({
+      settings,
+      messages: [{ role: "user", content: "Reply with exactly: ok" }],
+      tools: [],
+      onTextDelta: () => {},
+    });
+    const text = turn.text.trim();
+    const ok = /\bok\b/i.test(text);
+    return {
+      ok,
+      message: ok
+        ? `Model replied: ${text.slice(0, 80)}`
+        : `Unexpected reply: ${text.slice(0, 120) || "(empty)"}`,
+      latencyMs: Date.now() - started,
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      message: err instanceof Error ? err.message : String(err),
+      latencyMs: Date.now() - started,
+    };
+  }
+}
+
 async function apiTurn(opts: StreamTurnOptions): Promise<LlmTurn> {
   const client = new OpenAI({
     apiKey: opts.settings.apiKey || "missing",

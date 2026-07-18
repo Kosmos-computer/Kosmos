@@ -3,7 +3,14 @@
  * from docs/model-agent-profiles-plan.md. STUB phase: satisfied by mock data.
  */
 
-export type AgentRuntimeKind = "builtin" | "acp" | "cursor" | "automation" | "channel";
+export type AgentRuntimeKind =
+  | "builtin"
+  | "acp"
+  | "cursor"
+  | "openhands"
+  | "kosmos"
+  | "automation"
+  | "channel";
 
 export type AgentStatus = "active" | "idle" | "running" | "offline";
 

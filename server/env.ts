@@ -179,7 +179,7 @@ function migrateLegacyAgentBackends(raw: Record<string, unknown>): Partial<Setti
   };
 }
 
-function hasPlaintextSettingsSecrets(settings: Settings): boolean {
+export function hasPlaintextSettingsSecrets(settings: Settings): boolean {
   if (settings.apiKey?.trim() && !settings.apiKey.includes("••••")) return true;
   if (settings.cursorApiKey?.trim() && !settings.cursorApiKey.includes("••••")) return true;
   if (settings.apiKeys) {

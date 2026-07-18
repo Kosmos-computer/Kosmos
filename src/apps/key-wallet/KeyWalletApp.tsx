@@ -10,13 +10,14 @@ import { useMemo, useState } from "react";
 import { Eye, EyeOff, KeyRound, Plus, Trash2, X } from "lucide-react";
 import {
   ModuleCardGrid,
+  ModuleFilterSelect,
   ModuleHeader,
   ModuleInner,
   ModulePage,
   ModuleSection,
   ModuleToolbar,
 } from "../../components/patterns/ModuleDashboard";
-import { Button, Chip, EmptyState, Input } from "../../components/ui";
+import { Button, EmptyState, Input } from "../../components/ui";
 import { filterKeys, keyScopeLabel } from "./keyWalletFilters";
 import type { KeyEntry, KeyScopeFilter } from "./types";
 import { useKeyWalletStub } from "./useKeyWalletStub";
@@ -45,11 +46,9 @@ function KeyCard({ entry, onOpen }: { entry: KeyEntry; onOpen: () => void }) {
           </div>
         </div>
       </div>
-      <p className="arco-module-card__desc">{entry.description ?? "Saved credential for this integration."}</p>
-      <div className="arco-module-card__pills">
-        <span className="arco-module-card__pill">{keyScopeLabel(entry.scope)}</span>
-        <span className="arco-module-card__pill">{entry.maskedValue}</span>
-      </div>
+      {entry.description ? (
+        <p className="arco-module-card__desc">{entry.description}</p>
+      ) : null}
     </button>
   );
 }
@@ -96,7 +95,7 @@ function KeyDetailOverlay({
         </div>
 
         <label className="arco-label" htmlFor="key-value"><T k={I18nKey.APPS$KEY_WALLET_VALUE} /></label>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <div className="arco-module-card__actions arco-module-card__actions--footer">
           <Input
             id="key-value"
             width="auto"
@@ -172,18 +171,15 @@ export function KeyWalletApp() {
         ) : (
           <>
             <ModuleToolbar search={search} onSearchChange={setSearch} searchLabel={i18n.t(I18nKey.APPS$KEY_WALLET_SEARCH_KEYS)}>
-              <div className="arco-chip-row" role="group" aria-label={i18n.t(I18nKey.APPS$KEY_WALLET_KEY_SCOPE_FILTER)}>
-                {SCOPE_FILTERS.map((entry) => (
-                  <Chip
-                    key={entry.id}
-                    active={scopeFilter === entry.id}
-                    aria-pressed={scopeFilter === entry.id}
-                    onClick={() => setScopeFilter(entry.id)}
-                  >
-                    {entry.label}
-                  </Chip>
-                ))}
-              </div>
+              <ModuleFilterSelect
+                label={i18n.t(I18nKey.APPS$KEY_WALLET_KEY_SCOPE_FILTER)}
+                value={scopeFilter}
+                options={SCOPE_FILTERS.map((entry) => ({
+                  value: entry.id,
+                  label: entry.label,
+                }))}
+                onChange={setScopeFilter}
+              />
             </ModuleToolbar>
 
             {filtered.length === 0 ? (

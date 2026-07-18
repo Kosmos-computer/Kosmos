@@ -40,56 +40,121 @@ const STATE_BADGE: Record<GitFileChange["state"], string> = {
   conflicted: "!",
 };
 
-function ChangeRow({ change, theme }: { change: GitFileChange; theme: "light" | "dark" }) {
-  const [open, setOpen] = useState(false);
-  const [diff, setDiff] = useState<{ before: string | null; after: string | null } | null>(null);
+type FileDiff = {
+  before: string | null;
+  after: string | null;
+  unavailable?: "directory" | "binary" | "too_large";
+};
+
+const UNAVAILABLE_COPY: Record<NonNullable<FileDiff["unavailable"]>, string> = {
+  directory: "This is a directory — expand individual files to see diffs.",
+  binary: "Binary file — content preview is unavailable.",
+  too_large: "File is too large to preview inline.",
+};
+
+/** Skip auto-expand for paths that will never show a useful text diff. */
+const BINARY_EXT = /\.(apk|aab|png|jpe?g|gif|webp|ico|pdf|zip|gz|tgz|wasm|woff2?|ttf|otf|mp[34]|mov|dmg|exe|dll|so|dylib|o|a)$/i;
+
+function canPreviewPath(p: string): boolean {
+  return !p.endsWith("/") && !BINARY_EXT.test(p);
+}
+
+function ChangeRow({
+  change,
+  theme,
+  defaultOpen = false,
+}: {
+  change: GitFileChange;
+  theme: "light" | "dark";
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  const [diff, setDiff] = useState<FileDiff | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const requestFile = useStudioStore((s) => s.requestFile);
   const setActiveTab = useStudioStore((s) => s.setActiveTab);
 
-  const toggle = useCallback(async () => {
-    const next = !open;
-    setOpen(next);
-    if (next && !diff) setDiff(await api.gitDiff(change.path));
-  }, [open, diff, change.path]);
+  // Lazy-load on first expand (and when defaultOpen mounts already open).
+  const loadDiff = useCallback(async () => {
+    if (diff || loading) return;
+    setLoading(true);
+    setError(null);
+    try {
+      setDiff(await api.gitDiff(change.path));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load diff");
+    } finally {
+      setLoading(false);
+    }
+  }, [change.path, diff, loading]);
+
+  useEffect(() => {
+    if (open) void loadDiff();
+  }, [open, loadDiff]);
+
+  const toggle = useCallback(() => {
+    setOpen((prev) => !prev);
+  }, []);
+
+  const openInFiles = useCallback(() => {
+    requestFile(change.path);
+    setActiveTab("files");
+  }, [change.path, requestFile, setActiveTab]);
 
   return (
     <div className="arco-studio__diffcard">
-      <button className="arco-studio__diffrow" onClick={() => void toggle()} aria-expanded={open}>
-        <ChevronRight
-          size={12}
-          className="arco-studio__treechevron"
-          style={{ transform: open ? "rotate(90deg)" : undefined }}
-        />
-        <span className={`arco-studio__gitstate arco-studio__gitstate--${change.state}`}>
-          {STATE_BADGE[change.state]}
-        </span>
-        <span className="arco-studio__diffpath">{change.path}</span>
+      <div className="arco-studio__diffrow">
+        <button
+          type="button"
+          className="arco-studio__diffrow-main"
+          onClick={toggle}
+          aria-expanded={open}
+        >
+          <ChevronRight
+            size={12}
+            className="arco-studio__treechevron"
+            style={{ transform: open ? "rotate(90deg)" : undefined }}
+          />
+          <span className={`arco-studio__gitstate arco-studio__gitstate--${change.state}`}>
+            {STATE_BADGE[change.state]}
+          </span>
+          <span className="arco-studio__diffpath">{change.path}</span>
+        </button>
         {change.state !== "deleted" && (
-          <span
-            role="button"
-            tabIndex={0}
-            className="arco-toolcard__open"
-            onClick={(e) => {
-              e.stopPropagation();
-              requestFile(change.path);
-              setActiveTab("files");
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.stopPropagation();
-                requestFile(change.path);
-                setActiveTab("files");
-              }
-            }}
-          >
-            <SquarePen size={11} style={{ verticalAlign: "-1px" }} /><T k={I18nKey.COMMON$EDIT} /></span>
+          <button type="button" className="arco-toolcard__open" onClick={openInFiles}>
+            <SquarePen size={11} style={{ verticalAlign: "-1px" }} />
+            <T k={I18nKey.COMMON$EDIT} />
+          </button>
         )}
-      </button>
-      {open && diff && (
+      </div>
+      {open && (
         <div className="arco-studio__diffhost">
-          <Suspense fallback={<div className="arco-empty"><T k={I18nKey.APPS$STUDIO_LOADING_DIFF} /></div>}>
-            <DiffViewer path={change.path} before={diff.before} after={diff.after ?? ""} theme={theme} />
-          </Suspense>
+          {loading && !diff && (
+            <div className="arco-empty">
+              <T k={I18nKey.APPS$STUDIO_LOADING_DIFF} />
+            </div>
+          )}
+          {error && <div className="arco-empty">{error}</div>}
+          {diff?.unavailable && (
+            <div className="arco-empty">{UNAVAILABLE_COPY[diff.unavailable]}</div>
+          )}
+          {diff && !diff.unavailable && (
+            <Suspense
+              fallback={
+                <div className="arco-empty">
+                  <T k={I18nKey.APPS$STUDIO_LOADING_DIFF} />
+                </div>
+              }
+            >
+              <DiffViewer
+                path={change.path}
+                before={diff.before}
+                after={diff.after ?? ""}
+                theme={theme}
+              />
+            </Suspense>
+          )}
         </div>
       )}
     </div>
@@ -158,6 +223,8 @@ export function GitTab() {
   // Sandbox / non-repo folder: session snapshots are the best we can show.
   if (!info.isRepo) return <DiffsTab />;
 
+  const firstPreviewable = info.changes.find((c) => canPreviewPath(c.path))?.path;
+
   return (
     <div className="arco-studio__git">
       {/* ── Branch bar ─────────────────────────────────────────────────── */}
@@ -210,7 +277,12 @@ export function GitTab() {
           </div>
         )}
         {info.changes.map((change) => (
-          <ChangeRow key={change.path} change={change} theme={theme} />
+          <ChangeRow
+            key={change.path}
+            change={change}
+            theme={theme}
+            defaultOpen={change.path === firstPreviewable}
+          />
         ))}
       </div>
 

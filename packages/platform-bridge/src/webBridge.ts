@@ -9,6 +9,7 @@ export function createWebBridge(): PlatformBridge {
       version: "web",
     }),
     desktop: null,
+    browserGrab: null,
     openExternal: async (url) => {
       window.open(url, "_blank", "noopener,noreferrer");
     },

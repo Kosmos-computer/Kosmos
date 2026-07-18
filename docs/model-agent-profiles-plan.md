@@ -4,10 +4,17 @@
 > `memory-plan.md` (agent principals), `agent-extensibility-plan.md` (tool
 > policy + skills), and `app-platform-plan.md` (manifests + grants).
 >
-> **Status: PROPOSED.** Nothing here is shipped yet. Models have a typed
-> registry (`shared/models.ts`) but no structured safety, age, or
-> certification fields. Agents are configured across settings, tool policy,
-> skills, MCP, and ACP presets — there is no agent registry or unified
+> **Status: IN PROGRESS.** Runtime agent registry + channel peer bindings +
+> Phase 5 stubs (`shared/profiles.ts`, badges, `canUseProfile`) landed via
+> [`docs/agent-registry-bindings-plan.md`](./agent-registry-bindings-plan.md).
+> Agents UI is live. Full certification suites and parental allowlists remain
+> proposed below.
+> (Hermes UX + OpenClaw peer routing). Safety/certification Phases 3–5 below
+> remain on this document.
+>
+> Models have a typed registry (`shared/models.ts`) but no structured safety,
+> age, or certification fields. Agents are configured across settings, tool
+> policy, skills, MCP, and ACP presets — there is no agent registry or unified
 > listing surface.
 
 ## Why

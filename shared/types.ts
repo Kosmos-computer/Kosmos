@@ -118,6 +118,11 @@ export interface Session {
   kind: "chat" | "automation" | "channel";
   /** Open-folder workspace this thread belongs to; null/omitted = sandbox. */
   projectId?: string | null;
+  /**
+   * Agent profile that owns this transcript (agent:builtin, agent:user:…).
+   * Omitted/legacy sessions resolve to agent:builtin at turn time.
+   */
+  profileId?: string | null;
   messages: ChatMessage[];
   createdAt: string;
   updatedAt: string;
@@ -199,6 +204,10 @@ export type AgentEvent =
    * generalized to arbitrary client-side work.
    */
   | { type: "cursor_request"; requestId: string; command: CursorCommand }
+  /** Studio Browser webview automation (click / fill / snapshot). */
+  | { type: "browser_request"; requestId: string; command: BrowserCommand }
+  /** OS-level computer use (screenshot / click / type outside Arco DOM). */
+  | { type: "computer_request"; requestId: string; command: ComputerCommand }
   /**
    * Emitted by write_file with the file's prior content so the client can
    * render a real diff. Deliberately an event (not part of the tool result):
@@ -314,6 +323,34 @@ export interface CursorResult {
   snapshot?: UiSnapshot;
 }
 
+/** Studio Browser webview automation commands. */
+export type BrowserCommand =
+  | { kind: "snapshot" }
+  | { kind: "click"; selector: string }
+  | { kind: "fill"; selector: string; value: string };
+
+export interface BrowserResult {
+  ok: boolean;
+  outcome?: string;
+  error?: string;
+  /** Accessibility / DOM text snapshot of the guest page. */
+  snapshot?: string;
+}
+
+/** OS-level computer-use commands (desktop apps outside Arco DOM). */
+export type ComputerCommand =
+  | { kind: "screenshot" }
+  | { kind: "click"; x: number; y: number }
+  | { kind: "type"; text: string };
+
+export interface ComputerResult {
+  ok: boolean;
+  outcome?: string;
+  error?: string;
+  /** PNG data URL when kind was screenshot. */
+  imageDataUrl?: string;
+}
+
 // ── Agent policy + audit ─────────────────────────────────────────────────────
 //
 // Policy rules answer "may the agent call this tool, and does it need the
@@ -361,6 +398,24 @@ export interface SkillMeta {
 export interface Skill extends SkillMeta {
   /** Markdown body (frontmatter stripped). */
   body: string;
+}
+
+/** Agent-drafted skill awaiting human Apply / Reject / Quarantine. */
+export type SkillProposalStatus = "proposed" | "rejected" | "quarantined";
+
+export interface SkillProposal {
+  id: string;
+  name: string;
+  description: string;
+  body: string;
+  gates: string[];
+  status: SkillProposalStatus;
+  createdAt: string;
+  updatedAt: string;
+  /** Content hash for change detection (name+description+body+gates). */
+  hash?: string;
+  /** When set, Apply updates this skill instead of creating a new one. */
+  targetSkillId?: string;
 }
 
 // ── MCP servers (Model Context Protocol — external tool providers) ──────────
@@ -489,6 +544,16 @@ export interface Automation {
   webhookSecret?: string;
   /** Optional outbound delivery of the run result to a channel chat. */
   deliver?: DeliveryTarget;
+  /**
+   * When true, silence tokens (`CHECKIN_OK` / `HEARTBEAT_OK`) or empty replies
+   * suppress channel delivery — quiet heartbeat-style check-ins.
+   */
+  checkIn?: boolean;
+  /**
+   * Agent profile for this automation's turns (agent:builtin, agent:user:…).
+   * omit/null → registry default.
+   */
+  profileId?: string | null;
 }
 
 export interface AutomationsListResponse {
@@ -513,7 +578,7 @@ export interface AutomationHealthResponse {
 // reply back. Unknown senders are NOT processed: they receive a pairing code
 // the user approves in Settings — OpenClaw's DM-pairing posture.
 
-export type ChannelKind = "telegram";
+export type ChannelKind = "telegram" | "discord";
 
 export interface ChannelConfig {
   /** Slug, unique — also keys the chat→session map. */
@@ -524,6 +589,12 @@ export interface ChannelConfig {
   token: string;
   enabled: boolean;
   addedAt: string;
+  /**
+   * When true (default), group/supergroup messages are ignored unless the bot
+   * is @mentioned or the message is a reply to the bot. DMs are unaffected.
+   * OpenClaw group mention-gating posture.
+   */
+  requireMention?: boolean;
 }
 
 /** An approved conversation the agent may read from and send to. */
@@ -533,6 +604,16 @@ export interface ChannelPeer {
   /** Human-readable identity captured at pairing time ("Paul (@paul)"). */
   label: string;
   addedAt: string;
+  /**
+   * First approved peer on a channel is tagged owner (OpenClaw first-approver
+   * bootstrap). Owners are informational for Settings; allowlist still gates access.
+   */
+  owner?: boolean;
+  /**
+   * Bound agent profile for this peer (OpenClaw peer → agent routing).
+   * omit/null → channel resolves to the registry default (usually builtin).
+   */
+  profileId?: string | null;
 }
 
 /** An unapproved sender waiting for the user's decision in Settings. */

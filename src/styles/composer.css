@@ -43,6 +43,12 @@
   z-index: 1;
 }
 
+.arco-composer__card--dragover {
+  outline: 2px dashed var(--arco-accent);
+  outline-offset: -2px;
+  background: color-mix(in srgb, var(--arco-accent) 8%, var(--arco-bg-surface-solid));
+}
+
 /* ── Formatting toolbar ───────────────────────────────────────────────────── */
 
 .arco-composer__toolbar {

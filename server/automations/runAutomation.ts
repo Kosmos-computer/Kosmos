@@ -5,17 +5,30 @@
 import crypto from "node:crypto";
 import type { AutomationRun } from "../../shared/types.js";
 import { bus } from "../bus.js";
-import { runAgentTurn } from "../agent/loop.js";
+import { pickTurnRunner, resolveAcpCommand, resolveTurnKind } from "../agent/turnRunner.js";
+import { withProfileActivity } from "../agents/activity.js";
+import { resolveProfileForTurn } from "../agents/resolveProfile.js";
 import { channelGateway } from "../channels/gateway.js";
 import { automationStore } from "../stores/automationStore.js";
 import { sessionStore } from "../stores/sessionStore.js";
 import { broadcastShellEvent } from "../shellChannel.js";
 
+/** Silence tokens / empty replies for check-in automations (OpenClaw HEARTBEAT_OK). */
+const CHECKIN_SILENCE = /^(CHECKIN_OK|HEARTBEAT_OK)\s*$/i;
+
+function isQuietCheckIn(finalText: string): boolean {
+  const trimmed = finalText.trim();
+  return !trimmed || CHECKIN_SILENCE.test(trimmed);
+}
+
 export async function runAutomationNow(id: string): Promise<AutomationRun> {
   const automation = await automationStore.get(id);
   if (!automation) throw new Error(`Automation not found: ${id}`);
 
-  const session = await sessionStore.create("automation", `⚙ ${automation.name}`);
+  const profile = resolveProfileForTurn({ profileId: automation.profileId });
+  const session = await sessionStore.create("automation", `⚙ ${automation.name}`, {
+    profileId: profile.id,
+  });
   const run: AutomationRun = {
     id: crypto.randomUUID(),
     startedAt: new Date().toISOString(),
@@ -26,16 +39,25 @@ export async function runAutomationNow(id: string): Promise<AutomationRun> {
   await automationStore.recordRun(id, run);
 
   try {
-    const finalText = await runAgentTurn({
-      sessionId: session.id,
-      userMessage: automation.prompt,
-      emit: () => {},
-      slot: "automations.chat",
-    });
+    const kind = resolveTurnKind(profile);
+    const runner = pickTurnRunner(kind);
+    const finalText = await withProfileActivity(profile.id, () =>
+      runner({
+        sessionId: session.id,
+        userMessage: automation.prompt,
+        emit: () => {},
+        slot: "automations.chat",
+        profileId: profile.id,
+        ...(kind === "acp" ? { acpCommand: resolveAcpCommand(profile) } : {}),
+      }),
+    );
     run.status = "ok";
     run.summary = finalText.slice(0, 500);
 
-    if (automation.deliver && finalText.trim()) {
+    const quiet = Boolean(automation.checkIn) && isQuietCheckIn(finalText);
+    if (quiet) {
+      run.summary = "[quiet check-in]";
+    } else if (automation.deliver && finalText.trim()) {
       try {
         await channelGateway.send(
           automation.deliver.channelId,

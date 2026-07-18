@@ -10,6 +10,15 @@ export const DESKTOP_IPC = {
   minimizeWindow: "arco:minimize-window",
   maximizeWindow: "arco:maximize-window",
   closeWindow: "arco:close-window",
+  computerScreenshot: "arco:computer-screenshot",
+  computerClick: "arco:computer-click",
+  computerType: "arco:computer-type",
+  /** Design Mode: arm/disarm guest overlay on a webview webContents id. */
+  browserSetGrabMode: "arco:browser-set-grab-mode",
+  /** Design Mode: wait for element click; returns BrowserGrabPayload (no screenshot). */
+  browserAwaitGrab: "arco:browser-await-grab",
+  /** Design Mode: capture cropped PNG of the selected rect. */
+  browserCaptureCrop: "arco:browser-capture-crop",
 } as const;
 
 export type TitleBarTheme = "dark" | "light";

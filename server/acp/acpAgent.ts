@@ -312,8 +312,10 @@ async function spawnRun(
   arcoSessionId: string,
   settings: Settings,
   emit: (event: AgentEvent) => void,
+  acpCommand?: string,
 ): Promise<AcpRun> {
-  const [cmd, ...args] = tokenize(settings.acpCommand);
+  const command = (acpCommand?.trim() || settings.acpCommand).trim();
+  const [cmd, ...args] = tokenize(command);
   if (!cmd) throw new Error("No ACP agent command configured — set one in Settings → Agent.");
 
   const logDir = path.join(dataDirs.root, "acp-logs");
@@ -330,7 +332,7 @@ async function spawnRun(
   });
 
   const run: AcpRun = {
-    command: settings.acpCommand,
+    command,
     child,
     conn: undefined as unknown as ClientSideConnection,
     acpSessionId: "",
@@ -394,16 +396,18 @@ async function ensureRun(
   arcoSessionId: string,
   settings: Settings,
   emit: (event: AgentEvent) => void,
+  acpCommand?: string,
 ): Promise<AcpRun> {
+  const command = (acpCommand?.trim() || settings.acpCommand).trim();
   const existing = runs.get(arcoSessionId);
   if (existing) {
-    if (existing.command === settings.acpCommand && existing.child.exitCode === null) {
+    if (existing.command === command && existing.child.exitCode === null) {
       return existing;
     }
     existing.child.kill();
     runs.delete(arcoSessionId);
   }
-  return spawnRun(arcoSessionId, settings, emit);
+  return spawnRun(arcoSessionId, settings, emit, command);
 }
 
 // ── Public API ───────────────────────────────────────────────────────────────
@@ -420,7 +424,7 @@ export async function runAcpTurn(opts: RunTurnOptions): Promise<string> {
 
   await sessionStore.appendMessages(session.id, [{ role: "user", content: opts.userMessage }]);
 
-  const run = await ensureRun(opts.sessionId, settings, opts.emit);
+  const run = await ensureRun(opts.sessionId, settings, opts.emit, opts.acpCommand);
   run.emit = opts.emit;
   run.turnText = "";
   run.signal = opts.signal;

@@ -4,12 +4,14 @@ import { T } from "../../i18n/T";
 /**
  * Agents — manager surface for orchestrating agent profiles. Card grid with
  * search/filters; each agent opens a tabbed profile (avatar, models, memory,
- * documents, access). Phase 0 stub — see useAgentsStub.
+ * documents, access). Wired to /api/agents via useAgents.
  */
 import { useMemo, useState } from "react";
-import { Bot, Plus } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { Plus } from "lucide-react";
 import {
   ModuleCardGrid,
+  ModuleFilterSelect,
   ModuleHeader,
   ModuleInner,
   ModulePage,
@@ -19,9 +21,9 @@ import {
 import { Button, EmptyState, Input, Switch } from "../../components/ui";
 import { AgentAvatar } from "./AgentAvatar";
 import { AgentDetailPanel } from "./AgentDetailPanel";
-import { filterAgents, runtimeLabel, statusLabel } from "./agentFilters";
+import { filterAgents, runtimeLabel } from "./agentFilters";
 import type { AgentProfile, AgentRuntimeFilter, AgentStatusFilter } from "./types";
-import { useAgentsStub } from "./useAgentsStub";
+import { useAgents, type AgentsViewModel } from "./useAgents";
 
 const RUNTIME_FILTERS: { id: AgentRuntimeFilter; labelKey: I18nKey }[] = [
   { id: "all", labelKey: I18nKey.APPS$AGENTS_FILTER_ALL },
@@ -65,9 +67,7 @@ function AgentCard({
         <AgentAvatar avatar={agent.avatar} name={agent.name} size="md" status={agent.status} />
         <div className="arco-module-card__body">
           <h3 className="arco-module-card__title">{agent.name}</h3>
-          <div className="arco-module-card__meta">
-            {runtimeLabel(agent.runtime)} · {statusLabel(agent.status)}
-          </div>
+          <div className="arco-module-card__meta">{runtimeLabel(agent.runtime)}</div>
         </div>
         <div className="arco-module-card__actions">
           <Switch
@@ -78,27 +78,7 @@ function AgentCard({
           />
         </div>
       </div>
-      <p className="arco-module-card__desc">{agent.tagline}</p>
-      <div className="arco-agents-card__stats">
-        {agent.defaultModel ? (
-          <span className="arco-agents-card__stat" title={agent.defaultModel}>
-            <Bot size={12} aria-hidden="true" />
-            {agent.defaultModel.split(".").pop()}
-          </span>
-        ) : null}
-        <span className="arco-agents-card__stat">{agent.memoryEntryCount} mem</span>
-        <span className="arco-agents-card__stat">{agent.documents.length} docs</span>
-        <span className="arco-agents-card__stat">{agent.toolCount} tools</span>
-      </div>
-      {agent.labels.length > 0 ? (
-        <div className="arco-module-card__pills">
-          {agent.labels.slice(0, 3).map((label) => (
-            <span key={label} className="arco-module-card__pill">
-              {label}
-            </span>
-          ))}
-        </div>
-      ) : null}
+      {agent.tagline ? <p className="arco-module-card__desc">{agent.tagline}</p> : null}
     </button>
   );
 }
@@ -107,21 +87,26 @@ function CreateAgentPanel({
   vm,
   onCancel,
 }: {
-  vm: ReturnType<typeof useAgentsStub>;
+  vm: AgentsViewModel;
   onCancel: () => void;
 }) {
   const [name, setName] = useState("");
   const [tagline, setTagline] = useState("");
   const [description, setDescription] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const create = () => {
-    vm.createAgent({
-      name,
-      tagline,
-      description,
-      avatar: { kind: "emoji", value: "✦", color: "accent" },
-    });
-    onCancel();
+    if (!name.trim() || saving) return;
+    setSaving(true);
+    void vm
+      .createAgent({
+        name,
+        tagline,
+        description,
+        avatar: { kind: "emoji", value: "✦", color: "accent" },
+      })
+      .then(() => onCancel())
+      .finally(() => setSaving(false));
   };
 
   return (
@@ -152,7 +137,7 @@ function CreateAgentPanel({
         onChange={(e) => setDescription(e.target.value)}
       />
       <div className="arco-agents-detail__actions">
-        <Button variant="primary" disabled={!name.trim()} onClick={create}>
+        <Button variant="primary" disabled={!name.trim() || saving} onClick={create}>
           <T k={I18nKey.COMMON$CREATE} />
         </Button>
         <Button onClick={onCancel}><T k={I18nKey.COMMON$CANCEL} /></Button>
@@ -162,7 +147,8 @@ function CreateAgentPanel({
 }
 
 export function AgentsApp() {
-  const vm = useAgentsStub();
+  const { t } = useTranslation();
+  const vm = useAgents();
   const [search, setSearch] = useState("");
   const [runtimeFilter, setRuntimeFilter] = useState<AgentRuntimeFilter>("all");
   const [statusFilter, setStatusFilter] = useState<AgentStatusFilter>("all");
@@ -217,37 +203,33 @@ export function AgentsApp() {
             <CreateAgentPanel vm={vm} onCancel={() => setShowCreate(false)} />
           ) : null}
 
+          {vm.error ? (
+            <EmptyState title="Could not load agents">{vm.error}</EmptyState>
+          ) : null}
+
           <ModuleToolbar
             search={search}
             onSearchChange={setSearch}
             searchLabel={i18n.t(I18nKey.APPS$AGENTS_SEARCH)}
           >
-            <div className="arco-chip-row" role="group" aria-label={i18n.t(I18nKey.APPS$AGENTS_RUNTIME_FILTER)}>
-              {RUNTIME_FILTERS.map(({ id, labelKey }) => (
-                <button
-                  key={id}
-                  type="button"
-                  className={`arco-chip${runtimeFilter === id ? " arco-chip--active" : ""}`}
-                  aria-pressed={runtimeFilter === id}
-                  onClick={() => setRuntimeFilter(id)}
-                >
-                  <T k={labelKey} />
-                </button>
-              ))}
-            </div>
-            <div className="arco-chip-row" role="group" aria-label={i18n.t(I18nKey.APPS$AGENTS_STATUS_FILTER)}>
-              {STATUS_FILTERS.map(({ id, labelKey }) => (
-                <button
-                  key={id}
-                  type="button"
-                  className={`arco-chip${statusFilter === id ? " arco-chip--active" : ""}`}
-                  aria-pressed={statusFilter === id}
-                  onClick={() => setStatusFilter(id)}
-                >
-                  <T k={labelKey} />
-                </button>
-              ))}
-            </div>
+            <ModuleFilterSelect
+              label={i18n.t(I18nKey.APPS$AGENTS_RUNTIME_FILTER)}
+              value={runtimeFilter}
+              options={RUNTIME_FILTERS.map(({ id, labelKey }) => ({
+                value: id,
+                label: t(labelKey),
+              }))}
+              onChange={setRuntimeFilter}
+            />
+            <ModuleFilterSelect
+              label={i18n.t(I18nKey.APPS$AGENTS_STATUS_FILTER)}
+              value={statusFilter}
+              options={STATUS_FILTERS.map(({ id, labelKey }) => ({
+                value: id,
+                label: t(labelKey),
+              }))}
+              onChange={setStatusFilter}
+            />
           </ModuleToolbar>
 
           {filtered.length === 0 ? (

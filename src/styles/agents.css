@@ -16,29 +16,14 @@
   align-items: stretch;
   justify-content: flex-end;
   padding: var(--arco-space-m);
-  background: color-mix(in srgb, var(--arco-bg-base) 42%, transparent);
-  backdrop-filter: blur(6px);
+  background: color-mix(in srgb, var(--arco-bg-base) 48%, transparent);
+  backdrop-filter: blur(8px);
 }
 
 .arco-agents__backdrop > div {
-  width: min(28rem, 100%);
+  width: min(30rem, 100%);
   min-height: 0;
   display: flex;
-}
-
-.arco-agents-card__stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--arco-space-xs);
-  margin-top: var(--arco-space-xs);
-}
-
-.arco-agents-card__stat {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: var(--arco-text-xs);
-  color: var(--arco-text-secondary);
 }
 
 .arco-agents-card--running {
@@ -113,17 +98,27 @@
 .arco-agent-avatar--indigo { background: color-mix(in srgb, #6366f1 22%, var(--arco-bg-sunk)); }
 .arco-agent-avatar--rose { background: color-mix(in srgb, #f43f5e 22%, var(--arco-bg-sunk)); }
 
-/* Detail panel */
+/* Detail panel — side sheet */
 .arco-agents-detail {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
   gap: var(--arco-space-m);
+  padding: var(--arco-space-l);
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-l);
+  background: var(--arco-bg-surface-solid);
+  box-shadow: var(--arco-shadow-lg, 0 16px 48px color-mix(in srgb, #000 28%, transparent));
+  overflow: hidden;
 }
 
 .arco-agents-detail__head {
-  align-items: center;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--arco-space-m);
+  flex-shrink: 0;
 }
 
 .arco-agents-detail__identity {
@@ -137,49 +132,92 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--arco-space-xs);
+  gap: 4px;
+  padding-top: 2px;
 }
 
 .arco-agents-detail__title {
   margin: 0;
   font-size: var(--arco-text-lg);
   font-weight: 600;
+  color: var(--arco-text-primary);
 }
 
 .arco-agents-detail__tagline {
   margin: 0;
   font-size: var(--arco-text-sm);
+  line-height: 1.4;
   color: var(--arco-text-secondary);
 }
 
 .arco-agents-detail__labels {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--arco-space-xs);
+  margin-top: 2px;
+}
+
+.arco-agents-detail__runtime {
+  font-size: var(--arco-text-xs);
+  color: var(--arco-text-tertiary);
 }
 
 .arco-agents-detail__headactions {
   display: flex;
   align-items: center;
   gap: var(--arco-space-s);
+  flex-shrink: 0;
 }
 
 .arco-agents-detail__tabs {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--arco-space-xs);
+  flex-wrap: nowrap;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-m);
+  background: var(--arco-bg-sunk);
+  overflow-x: auto;
+  flex-shrink: 0;
 }
 
 .arco-agents-detail__tab {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
+  flex: 1 0 auto;
+  min-height: 2rem;
+  padding: 0 10px;
+  border: none;
+  border-radius: var(--arco-radius-s);
+  background: transparent;
+  color: var(--arco-text-secondary);
+  font: inherit;
+  font-size: var(--arco-text-xs);
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--arco-dur-fast), color var(--arco-dur-fast);
+}
+
+.arco-agents-detail__tab:hover {
+  color: var(--arco-text-primary);
+  background: var(--arco-bg-hover);
+}
+
+.arco-agents-detail__tab--active {
+  color: var(--arco-text-primary);
+  background: var(--arco-bg-surface-solid);
+  box-shadow: 0 1px 2px color-mix(in srgb, #000 12%, transparent);
 }
 
 .arco-agents-detail__body {
   flex: 1;
   min-height: 0;
   overflow: auto;
+  padding-right: 2px;
 }
 
 .arco-agents-detail__actions {
@@ -191,16 +229,11 @@
 
 .arco-agents-avatar-picker {
   display: flex;
-  gap: var(--arco-space-m);
-  margin-bottom: var(--arco-space-m);
-}
-
-.arco-agents-avatar-picker__controls {
-  flex: 1;
-  min-width: 0;
-  display: flex;
   flex-direction: column;
   gap: var(--arco-space-s);
+  margin-bottom: var(--arco-space-m);
+  padding-bottom: var(--arco-space-m);
+  border-bottom: 1px solid var(--arco-border);
 }
 
 .arco-agents-emoji-chip {
@@ -372,6 +405,10 @@
   .arco-agents__backdrop > div {
     width: 100%;
     max-height: 92%;
+  }
+
+  .arco-agents-detail {
+    border-radius: var(--arco-radius-l) var(--arco-radius-l) 0 0;
   }
 
   .arco-agents-docs {

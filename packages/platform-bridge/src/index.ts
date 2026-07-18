@@ -1,4 +1,5 @@
 export type {
+  DesktopBrowserGrabBridge,
   DesktopWindowBridge,
   OpenAppWindowPayload,
   PlatformBridge,

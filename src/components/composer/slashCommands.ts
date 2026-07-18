@@ -54,6 +54,14 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     insert: "Plan how to: ",
     keywords: ["steps", "design"],
   },
+  {
+    id: "learn",
+    label: "learn",
+    description: "Distill this conversation into a reusable skill proposal",
+    insert:
+      "Distill what we just did into a reusable skill. Call save_skill (or patch_skill if updating an existing one) with a clear when-to-read description and full markdown instructions: ",
+    keywords: ["skill", "teach", "remember", "procedure"],
+  },
 ];
 
 /** Match the trailing `/token` in the draft (token may be empty). */

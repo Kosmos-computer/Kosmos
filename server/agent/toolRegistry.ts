@@ -79,10 +79,18 @@ const WRITE_SYSTEM_TOOLS = new Set([
   "slides_write",
   "mail_send",
   "generator_catalog_add",
+  "memory_write",
+  "save_skill",
+  "patch_skill",
+  "delegate_task",
   "os_ui",
   "mouse_click",
   "type_text",
   "select_option",
+  "browser_click",
+  "browser_fill",
+  "computer_click",
+  "computer_type",
 ]);
 
 function systemTools(): RegisteredTool[] {
@@ -212,6 +220,16 @@ export async function applyPolicy(
     decision = "auto";
   } else if (mode === "strict" && tool.access === "write" && decision === "auto") {
     decision = "confirm";
+  }
+
+  // Profile policyLevel overlays stored rules; user/session "always" denies still bind.
+  // Conservative: treat write autos as confirm (headless → deny). Permissive: only
+  // when interactive, skip confirms that aren't explicit denies.
+  const level = ctx.policyLevel ?? "balanced";
+  if (level === "conservative" && tool.access === "write" && decision === "auto") {
+    decision = "confirm";
+  } else if (level === "permissive" && decision === "confirm" && ctx.interactive) {
+    decision = "auto";
   }
 
   if (tool.source.kind === "system" && decision === "auto") return null;

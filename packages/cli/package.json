@@ -1,0 +1,11 @@
+{
+  "name": "@arco/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "kosmos": "./bin/kosmos.mjs",
+    "arco": "./bin/kosmos.mjs"
+  },
+  "description": "Kosmos / Arco orchestration CLI — worktrees, browser, sessions (talks to local server)."
+}

@@ -44,6 +44,7 @@ import {
 } from "../../components/patterns/ModuleDashboard";
 import { SettingsAlert } from "../../components/patterns";
 import { Badge, Button, Input, Switch } from "../../components/ui";
+import { defaultSafety } from "@shared/profiles";
 import { api } from "../../lib/api";
 import { useOsStore } from "../../os/osStore";
 
@@ -243,6 +244,18 @@ function ModelRow({
           {manifest.capabilities.map((cap) => (
             <Badge key={cap}>{CAPABILITY_LABELS[cap] ?? cap}</Badge>
           ))}
+          <Badge>
+            {(manifest.safety ?? defaultSafety("standard")).level}
+          </Badge>
+          {manifest.audience?.age ? <Badge>{manifest.audience.age}</Badge> : null}
+          {manifest.certification?.status && manifest.certification.status !== "unevaluated" ? (
+            <Badge tone={manifest.certification.status === "pass" ? "success" : "warning"}>
+              {manifest.certification.status}
+            </Badge>
+          ) : (
+            <Badge>unevaluated</Badge>
+          )}
+          {manifest.trust ? <Badge>{manifest.trust}</Badge> : null}
           {local && sizeBytes ? <Badge>{formatBytes(sizeBytes)}</Badge> : null}
         </div>
       </div>

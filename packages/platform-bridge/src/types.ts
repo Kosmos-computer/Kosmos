@@ -44,9 +44,21 @@ export interface DesktopWindowBridge {
   onAppWindowClosed(handler: (id: string) => void): () => void;
 }
 
+/** Design Mode grab against an Electron <webview> webContents id. */
+export interface DesktopBrowserGrabBridge {
+  setGrabMode(webContentsId: number, enabled: boolean): Promise<{ ok: boolean }>;
+  awaitGrab(webContentsId: number): Promise<unknown>;
+  captureCrop(
+    webContentsId: number,
+    rect: { x: number; y: number; width: number; height: number },
+  ): Promise<{ mimeType: "image/png"; dataUrl: string; width: number; height: number }>;
+}
+
 export interface PlatformBridge {
   config: PlatformConfig;
   desktop: DesktopWindowBridge | null;
+  /** Present on Electron when Design Mode IPC is available. */
+  browserGrab: DesktopBrowserGrabBridge | null;
   openExternal(url: string): Promise<void>;
 }
 

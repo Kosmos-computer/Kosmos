@@ -1,9 +1,9 @@
 /**
  * WorkspaceChrome — chip row in the Studio composer status bar:
- * [Local▾] [folder▾] [branch▾ | □ worktree] [extra✕]… [📁+]
+ * [Local▾] [folder▾] [branch▾ | □ worktree▾] [extra✕]… [📁+]
  *
- * Branch opens a search + branch-list popover. Worktree is a checkbox that
- * activates/clears a linked worktree without a separate menu.
+ * Branch opens a search + branch-list popover. Worktree opens a picker
+ * popover (activate / create / pin / sleep / archive / remove).
  */
 import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
@@ -50,22 +50,13 @@ import {
   reloadForServerSwitch,
 } from "../../os/server/serverProfileStore";
 import { useStudioStore } from "./studioStore";
+import { WorktreePicker } from "./WorktreePicker";
 
 const SANDBOX_LABEL = "Sandbox";
 const FOLDER_MIME = "inode/directory";
 
-type MenuKind = "backend" | "primary" | "branch" | "add" | null;
+type MenuKind = "backend" | "primary" | "branch" | "worktree" | "add" | null;
 type FolderPanel = "menu" | "browse" | "github" | "drive";
-
-/** Sibling path for a new worktree: `../repo-wt-branch`. */
-function defaultWorktreePath(primaryPath: string, branch: string): string {
-  const safe = branch.replace(/[^a-zA-Z0-9._-]+/g, "-") || "worktree";
-  const trimmed = primaryPath.replace(/\/+$/, "");
-  const slash = trimmed.lastIndexOf("/");
-  const parent = slash >= 0 ? trimmed.slice(0, slash) : ".";
-  const base = slash >= 0 ? trimmed.slice(slash + 1) : trimmed;
-  return `${parent}/${base}-wt-${safe}`;
-}
 
 function backendIcon(kind: WorkspaceBackendKind, size: number) {
   if (kind === "drive") return <HardDrive size={size} />;
@@ -300,44 +291,6 @@ export function WorkspaceChrome() {
       setBranchQuery("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Checkout failed");
-    } finally {
-      setGitBusy(false);
-    }
-  };
-
-  const toggleWorktree = async () => {
-    if (gitBusy) return;
-    setGitBusy(true);
-    setError(null);
-    try {
-      if (workspace.worktreePath) {
-        applyWorkspace(await api.setWorkspaceWorktree(null));
-        return;
-      }
-      const primaryPath = primary?.location;
-      if (!primaryPath) return;
-
-      const trees = await api.gitWorktrees();
-      // First porcelain entry is the main worktree; linked ones follow.
-      const linked = trees.filter((w, i) => i > 0 && !w.bare);
-      const info = await api.gitInfo();
-      const current = info.branch || branchName;
-      const match =
-        linked.find((w) => w.branch === current) ?? linked[0] ?? null;
-
-      if (match) {
-        applyWorkspace(await api.setWorkspaceWorktree(match.path));
-        return;
-      }
-
-      if (!current) {
-        setError("No branch to create a worktree for");
-        return;
-      }
-      await api.gitWorktreeAdd(defaultWorktreePath(primaryPath, current), current);
-      applyWorkspace(await api.getWorkspace());
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Worktree toggle failed");
     } finally {
       setGitBusy(false);
     }
@@ -717,8 +670,9 @@ export function WorkspaceChrome() {
             <button
               type="button"
               className="arco-workspacechrome__chipseg"
-              onClick={() => void toggleWorktree()}
-              disabled={gitBusy}
+              onClick={() => openMenu(menu === "worktree" ? null : "worktree")}
+              aria-expanded={menu === "worktree"}
+              aria-haspopup="listbox"
               aria-pressed={!!workspace.worktreePath}
               title={
                 workspace.worktreePath
@@ -768,14 +722,15 @@ export function WorkspaceChrome() {
               {error && <div className="arco-projectpicker__error">{error}</div>}
             </div>
           )}
+          {menu === "worktree" && (
+            <div
+              className="arco-projectpicker__menu arco-workspacechrome__menu arco-workspacechrome__menu--worktree"
+              role="listbox"
+            >
+              <WorktreePicker onDone={() => setMenu(null)} />
+            </div>
+          )}
         </div>
-      )}
-
-      {/* Surface worktree toggle errors even when the branch menu is closed */}
-      {showGit && error && menu !== "branch" && (
-        <span className="arco-workspacechrome__inlineerror" title={error}>
-          {error}
-        </span>
       )}
 
       {/* Additional roots */}

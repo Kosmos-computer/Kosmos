@@ -8,10 +8,16 @@ export function runtimeLabel(runtime: AgentProfile["runtime"]): string {
       return "ACP";
     case "cursor":
       return "Cursor";
+    case "openhands":
+      return "OpenHands";
+    case "kosmos":
+      return "Kosmos";
     case "automation":
       return "Automation";
     case "channel":
       return "Channel";
+    default:
+      return runtime;
   }
 }
 

@@ -15,6 +15,7 @@ import { VoiceBar } from "./VoiceBar";
 import { useVoice, voiceClient } from "../../voice";
 import { Composer } from "../../components/composer/Composer";
 import { DEFAULT_APPROVAL_MODE } from "../../components/composer/approvalModes";
+import { DEFAULT_TOOLSET_IDS } from "../../components/composer/toolsets";
 import { useComposerAttach } from "../../components/composer/useComposerAttach";
 import { ChatThread } from "../../components/chat/ChatThread";
 import { ScrollToLatestButton } from "../../components/chat/ScrollToLatestButton";
@@ -22,6 +23,7 @@ import { useThreadScroll } from "../../components/chat/useThreadScroll";
 import { MasterDetail } from "../../components/patterns";
 import { EmptyState } from "../../components/ui";
 import { useModelSelection } from "../studio/useModelSelection";
+import { useActiveAgentProfile } from "./useActiveAgentProfile";
 import { openShellWindow } from "../../os/shellNavigation";
 import { systemAppTitle } from "../../os/systemAppTitles";
 
@@ -29,8 +31,10 @@ export function ChatApp() {
   const chat = useChat();
   const voice = useVoice();
   const { modelLabel, modelItems } = useModelSelection();
+  const { profileId, agentLabel, agentItems } = useActiveAgentProfile();
   const [draft, setDraft] = useState("");
   const [approvalMode, setApprovalMode] = useState<ApprovalMode>(DEFAULT_APPROVAL_MODE);
+  const [toolsetIds, setToolsetIds] = useState<string[]>(() => [...DEFAULT_TOOLSET_IDS]);
   const [showSessions, setShowSessions] = useState(false);
   const { scrollRef, onScroll, showJump, scrollToLatest, pinToLatest } =
     useThreadScroll(chat.items);
@@ -48,9 +52,9 @@ export function ChatApp() {
       if (!value) return;
       setDraft("");
       pinToLatest();
-      void chat.send(value, { approvalMode });
+      void chat.send(value, { approvalMode, profileId, toolsetIds });
     },
-    [draft, chat, approvalMode, pinToLatest],
+    [draft, chat, approvalMode, profileId, toolsetIds, pinToLatest],
   );
 
   useEffect(() => voiceClient.subscribe(chat.applyVoiceEvent), [chat.applyVoiceEvent]);
@@ -152,9 +156,14 @@ export function ChatApp() {
           placeholder={i18n.t(I18nKey.APPS$CHAT_ASK_ARCO_TO_BUILD_AUTOMATE_OR_EXPLAIN)}
           approvalMode={approvalMode}
           onApprovalModeChange={setApprovalMode}
+          toolsetIds={toolsetIds}
+          onToolsetIdsChange={setToolsetIds}
+          agent={agentLabel}
+          agentItems={agentItems}
           model={modelLabel}
           modelItems={modelItems}
           onAddFile={attach.onAddFile}
+          onFilesDropped={attach.onFilesDropped}
           onAddFolder={attach.onAddFolder}
           onImportGitHubIssue={attach.onImportGitHubIssue}
           onAddPlugins={attach.onAddPlugins}

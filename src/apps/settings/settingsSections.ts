@@ -1,7 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
   AppWindow,
-  Bell,
   Bot,
   Brain,
   CreditCard,
@@ -9,27 +8,19 @@ import {
   Globe,
   HardDrive,
   Image,
-  Keyboard,
-  Languages,
   Layers,
   Link2,
   Lock,
-  Mic,
-  Monitor,
   Palette,
   Plug,
   Server,
   Shield,
   Sparkles,
-  Target,
-  User,
   Users,
-  Video,
   Wallet,
   Wrench,
   Cloud,
   Code,
-  Gift,
 } from "lucide-react";
 import i18n from "../../i18n";
 import { isArcoDesktop } from "../../lib/desktopBridge";
@@ -82,43 +73,7 @@ export interface SettingsNavGroup {
   items: SettingsNavItem[];
 }
 
-const STUB_SECTION_ICONS: Partial<Record<StubSettingsSectionId, LucideIcon>> = {
-  "account-info": User,
-  "content-social": Globe,
-  "data-privacy": Lock,
-  "authorized-apps": Layers,
-  connections: Link2,
-  notifications: Bell,
-  subscriptions: Wallet,
-  "gift-inventory": Gift,
-  billing: CreditCard,
-  wallpaper: Image,
-  accessibility: Target,
-  "voice-video": Mic,
-  "text-images": Monitor,
-  "notification-settings": Bell,
-  keybinds: Keyboard,
-  language: Languages,
-  "streamer-mode": Video,
-  advanced: Code,
-};
-
-function stubNavItemToArco(item: (typeof SETTINGS_STUB_NAV_GROUPS)[number]["items"][number]): SettingsNavItem {
-  return {
-    id: item.id,
-    label: item.label,
-    icon: STUB_SECTION_ICONS[item.id],
-    badge: item.badge,
-    children: item.children?.map(stubNavItemToArco),
-  };
-}
-
-export const SETTINGS_STUB_NAV: SettingsNavGroup[] = SETTINGS_STUB_NAV_GROUPS.map((group) => ({
-  id: group.id,
-  title: group.title,
-  items: group.items.map(stubNavItemToArco),
-}));
-
+/** Stub section ids retained for type/deep-link guards; not shown in Settings nav. */
 export const STUB_SETTINGS_SECTION_IDS = new Set<SettingsSectionId>(
   SETTINGS_STUB_NAV_GROUPS.flatMap((group) =>
     group.items.flatMap((item) => [
@@ -128,58 +83,78 @@ export const STUB_SETTINGS_SECTION_IDS = new Set<SettingsSectionId>(
   ),
 );
 
-/** Billing nav items render real subscription UI instead of the stub pane. */
+/**
+ * Stub nav ids that still map to real settings panes (not SettingsStubPane).
+ * Keep these out of the stub nav while they remain valid SettingsSectionIds.
+ */
 export const BILLING_SETTINGS_SECTION_IDS = new Set<SettingsSectionId>(["subscriptions", "billing"]);
 
+/** Sections that share a stub id but render live UI only. */
+const LIVE_SETTINGS_SECTION_IDS = new Set<SettingsSectionId>([
+  ...BILLING_SETTINGS_SECTION_IDS,
+  "advanced",
+  "wallpaper",
+]);
+
 export function isStubSettingsSection(sectionId: SettingsSectionId): sectionId is StubSettingsSectionId {
-  if (BILLING_SETTINGS_SECTION_IDS.has(sectionId)) return false;
+  if (LIVE_SETTINGS_SECTION_IDS.has(sectionId)) return false;
   return STUB_SETTINGS_SECTION_IDS.has(sectionId);
 }
 
 export function buildSettingsNavGroups(): SettingsNavGroup[] {
+  // Stub Longformer Profile / Billing / Experience pages stay in settingsStubMock
+  // for later wiring, but are hidden from the live Settings nav.
   return [
-    ...SETTINGS_STUB_NAV,
     {
       id: "general",
       title: i18n.t(I18nKey.SETTINGS$SECTION_GENERAL),
       items: [
-        { id: "agent", label: i18n.t(I18nKey.SETTINGS$SECTION_AGENT), icon: Bot },
-        { id: "model", label: i18n.t(I18nKey.SETTINGS$SECTION_MODEL), icon: Sparkles },
-        { id: "appearance", label: i18n.t(I18nKey.SETTINGS$SECTION_APPEARANCE), icon: Palette },
+        { id: "password", label: i18n.t(I18nKey.SETTINGS$SECTION_PASSWORD), icon: Lock },
+        { id: "users", label: i18n.t(I18nKey.SETTINGS$SECTION_USERS), icon: Users, requiresUsersManage: true },
+        { id: "subscriptions", label: "Subscriptions", icon: Wallet },
+        { id: "usage", label: "Usage & credits", icon: CreditCard },
+        { id: "advanced", label: "Advanced", icon: Code },
       ],
     },
     {
-      id: "platform",
-      title: i18n.t(I18nKey.SETTINGS$SECTION_PLATFORM),
+      id: "appearance",
+      title: i18n.t(I18nKey.SETTINGS$SECTION_APPEARANCE),
       items: [
-        { id: "kosmos-cloud", label: "Kosmos Cloud", icon: Cloud, requiresDesktop: true },
-        { id: "server", label: "Server", icon: HardDrive, requiresMobileServer: true },
-        { id: "downloads", label: "Downloads", icon: Download },
-        { id: "apps", label: i18n.t(I18nKey.SETTINGS$SECTION_APPS), icon: AppWindow },
+        { id: "appearance", label: "Theme", icon: Palette },
+        { id: "wallpaper", label: "Wallpaper", icon: Image },
+      ],
+    },
+    {
+      id: "agent",
+      title: i18n.t(I18nKey.SETTINGS$SECTION_AGENT),
+      items: [
+        { id: "agent", label: "Runtime", icon: Bot },
+        { id: "model", label: i18n.t(I18nKey.SETTINGS$SECTION_MODEL), icon: Sparkles },
+        { id: "permissions", label: i18n.t(I18nKey.SETTINGS$SECTION_PERMISSIONS), icon: Shield, requiresWrite: true },
+        { id: "memory", label: i18n.t(I18nKey.SETTINGS$SECTION_MEMORY), icon: Brain, requiresWrite: true },
+        { id: "skills", label: i18n.t(I18nKey.SETTINGS$SECTION_SKILLS), icon: Layers },
         { id: "tools", label: i18n.t(I18nKey.SETTINGS$SECTION_TOOLS), icon: Wrench },
         { id: "mcp", label: i18n.t(I18nKey.SETTINGS$SECTION_MCP), icon: Server },
-        { id: "skills", label: i18n.t(I18nKey.SETTINGS$SECTION_SKILLS), icon: Layers },
-        { id: "memory", label: i18n.t(I18nKey.SETTINGS$SECTION_MEMORY), icon: Brain, requiresWrite: true },
+        { id: "external", label: i18n.t(I18nKey.SETTINGS$SECTION_EXTERNAL), icon: Globe },
       ],
     },
     {
       id: "integrations",
       title: i18n.t(I18nKey.SETTINGS$SECTION_INTEGRATIONS),
       items: [
-        { id: "channels", label: i18n.t(I18nKey.SETTINGS$SECTION_CHANNELS), icon: Plug },
         { id: "accounts", label: i18n.t(I18nKey.SETTINGS$SECTION_ACCOUNTS), icon: Link2 },
-        { id: "external", label: i18n.t(I18nKey.SETTINGS$SECTION_EXTERNAL), icon: Globe },
-        { id: "providers", label: i18n.t(I18nKey.SETTINGS$SECTION_PROVIDERS), icon: Shield },
+        { id: "channels", label: i18n.t(I18nKey.SETTINGS$SECTION_CHANNELS), icon: Plug },
       ],
     },
     {
-      id: "account",
-      title: i18n.t(I18nKey.SETTINGS$SECTION_ACCOUNT),
+      id: "platform",
+      title: i18n.t(I18nKey.SETTINGS$SECTION_PLATFORM),
       items: [
-        { id: "permissions", label: i18n.t(I18nKey.SETTINGS$SECTION_PERMISSIONS), icon: Shield, requiresWrite: true },
-        { id: "usage", label: "Usage & credits", icon: CreditCard },
-        { id: "password", label: i18n.t(I18nKey.SETTINGS$SECTION_PASSWORD), icon: Lock },
-        { id: "users", label: i18n.t(I18nKey.SETTINGS$SECTION_USERS), icon: Users, requiresUsersManage: true },
+        { id: "apps", label: i18n.t(I18nKey.SETTINGS$SECTION_APPS), icon: AppWindow },
+        { id: "providers", label: i18n.t(I18nKey.SETTINGS$SECTION_PROVIDERS), icon: Shield },
+        { id: "downloads", label: "Downloads", icon: Download },
+        { id: "kosmos-cloud", label: "Kosmos Cloud", icon: Cloud, requiresDesktop: true },
+        { id: "server", label: "Server", icon: HardDrive, requiresMobileServer: true },
       ],
     },
   ];

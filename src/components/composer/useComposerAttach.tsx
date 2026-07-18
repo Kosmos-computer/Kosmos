@@ -140,6 +140,7 @@ export function useComposerAttach(options: UseComposerAttachOptions = {}) {
     onManageConnectors,
     onBrowseConnectors,
     onAddPlugins,
+    onFilesDropped: onFilesSelected,
     fileInput,
     githubModal,
   };

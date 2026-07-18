@@ -24,6 +24,7 @@ import {
   type UseCaseSlotSource,
   type UseCaseSlotState,
 } from "../../shared/models.js";
+import { canUseProfile } from "../../shared/profiles.js";
 import { dataDirs, loadSettings, saveSettings } from "../env.js";
 import { parseModelManifest } from "./modelSchema.js";
 import { parseCreateUseCaseSlot } from "./useCaseSlotSchema.js";
@@ -290,8 +291,16 @@ export const modelStore = {
       if (assigned) {
         const record = this.get(assigned);
         if (record?.enabled) {
-          const endpoint = endpointOf(record.manifest, settings);
-          if (endpoint) return { modelId: record.manifest.id, ...endpoint };
+          const gate = canUseProfile({
+            enabled: record.enabled,
+            safety: record.manifest.safety,
+            audience: record.manifest.audience,
+            certification: record.manifest.certification,
+          });
+          if (gate.allowed) {
+            const endpoint = endpointOf(record.manifest, settings);
+            if (endpoint) return { modelId: record.manifest.id, ...endpoint };
+          }
         }
       }
       current = this.getSlotDef(current)?.fallback;

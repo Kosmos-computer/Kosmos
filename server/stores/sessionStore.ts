@@ -9,6 +9,7 @@ import crypto from "node:crypto";
 import type { ChatMessage, Session, SessionSummary } from "../../shared/types.js";
 import { dataDirs } from "../env.js";
 import { projectStore } from "./projectStore.js";
+import { sessionSearchIndex } from "./sessionSearchIndex.js";
 
 function sessionText(session: Session): string {
   return session.messages
@@ -52,7 +53,7 @@ export class SessionStore {
   async create(
     kind: Session["kind"],
     title: string,
-    opts?: { projectId?: string | null },
+    opts?: { projectId?: string | null; profileId?: string | null },
   ): Promise<Session> {
     await fs.mkdir(this.dir, { recursive: true });
     const now = new Date().toISOString();
@@ -61,6 +62,7 @@ export class SessionStore {
       title,
       kind,
       projectId: opts?.projectId ?? null,
+      profileId: opts?.profileId ?? null,
       messages: [],
       createdAt: now,
       updatedAt: now,
@@ -86,6 +88,15 @@ export class SessionStore {
     return session;
   }
 
+  /** Set or clear the agent profile for a session. */
+  async setProfileId(id: string, profileId: string | null): Promise<Session | null> {
+    const session = await this.get(id);
+    if (!session) return null;
+    session.profileId = profileId;
+    await this.save(session);
+    return session;
+  }
+
   private async resolveProjectId(session: Session): Promise<Session> {
     const inferred = inferProjectId(session);
     if (inferred && session.projectId !== inferred) {
@@ -104,6 +115,7 @@ export class SessionStore {
   async appendMessages(id: string, messages: ChatMessage[]): Promise<void> {
     const session = await this.get(id);
     if (!session) throw new Error(`Session not found: ${id}`);
+    const fromIdx = session.messages.length;
     const now = new Date().toISOString();
     session.messages.push(
       ...messages.map((m) => (m.role === "tool" ? m : { ...m, timestamp: m.timestamp ?? now })),
@@ -116,6 +128,14 @@ export class SessionStore {
       }
     }
     await this.save(session);
+    try {
+      sessionSearchIndex.indexMessages(session.id, session.messages, fromIdx);
+    } catch (err) {
+      console.warn(
+        `[arco] session FTS index failed:`,
+        err instanceof Error ? err.message : err,
+      );
+    }
   }
 
   async list(): Promise<SessionSummary[]> {
@@ -158,6 +178,11 @@ export class SessionStore {
       await fs.unlink(this.filePath(id));
     } catch {
       // Already gone.
+    }
+    try {
+      sessionSearchIndex.removeSession(id);
+    } catch {
+      // Index best-effort.
     }
   }
 

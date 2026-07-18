@@ -30,7 +30,7 @@ import { systemAppTitle } from "../../os/systemAppTitles";
 import { AgentAvatar } from "./AgentAvatar";
 import { runtimeLabel } from "./agentFilters";
 import type { AgentDetailTab, AgentProfile } from "./types";
-import type { AgentsViewModel } from "./useAgentsStub";
+import type { AgentsViewModel } from "./useAgents";
 
 const DETAIL_TABS: { id: AgentDetailTab; labelKey: I18nKey; icon: typeof Settings }[] = [
   { id: "profile", labelKey: I18nKey.APPS$AGENTS_TAB_PROFILE, icon: Settings },
@@ -79,35 +79,32 @@ function ProfileTab({
   return (
     <SettingsSection intro={i18n.t(I18nKey.APPS$AGENTS_PROFILE_INTRO)}>
       <div className="arco-agents-avatar-picker">
-        <AgentAvatar avatar={agent.avatar} name={agent.name} size="lg" status={agent.status} />
-        <div className="arco-agents-avatar-picker__controls">
-          <SettingsGroupLabel><T k={I18nKey.APPS$AGENTS_AVATAR_EMOJI} /></SettingsGroupLabel>
-          <div className="arco-chip-row" role="group" aria-label={i18n.t(I18nKey.APPS$AGENTS_AVATAR_EMOJI)}>
-            {vm.avatarEmojis.map((emoji) => (
-              <button
-                key={emoji}
-                type="button"
-                className={`arco-chip arco-agents-emoji-chip${agent.avatar.value === emoji ? " arco-chip--active" : ""}`}
-                aria-pressed={agent.avatar.value === emoji}
-                onClick={() => vm.updateAvatar(agent.id, { ...agent.avatar, kind: "emoji", value: emoji })}
-              >
-                {emoji}
-              </button>
-            ))}
-          </div>
-          <SettingsGroupLabel><T k={I18nKey.APPS$AGENTS_AVATAR_COLOR} /></SettingsGroupLabel>
-          <div className="arco-chip-row" role="group" aria-label={i18n.t(I18nKey.APPS$AGENTS_AVATAR_COLOR)}>
-            {vm.avatarColors.map((color) => (
-              <button
-                key={color}
-                type="button"
-                className={`arco-agents-color-chip arco-agents-color-chip--${color}${agent.avatar.color === color ? " arco-agents-color-chip--active" : ""}`}
-                aria-pressed={agent.avatar.color === color}
-                aria-label={color}
-                onClick={() => vm.updateAvatar(agent.id, { ...agent.avatar, color })}
-              />
-            ))}
-          </div>
+        <SettingsGroupLabel><T k={I18nKey.APPS$AGENTS_AVATAR_EMOJI} /></SettingsGroupLabel>
+        <div className="arco-chip-row" role="group" aria-label={i18n.t(I18nKey.APPS$AGENTS_AVATAR_EMOJI)}>
+          {vm.avatarEmojis.map((emoji) => (
+            <button
+              key={emoji}
+              type="button"
+              className={`arco-chip arco-agents-emoji-chip${agent.avatar.value === emoji ? " arco-chip--active" : ""}`}
+              aria-pressed={agent.avatar.value === emoji}
+              onClick={() => vm.updateAvatar(agent.id, { ...agent.avatar, kind: "emoji", value: emoji })}
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+        <SettingsGroupLabel><T k={I18nKey.APPS$AGENTS_AVATAR_COLOR} /></SettingsGroupLabel>
+        <div className="arco-chip-row" role="group" aria-label={i18n.t(I18nKey.APPS$AGENTS_AVATAR_COLOR)}>
+          {vm.avatarColors.map((color) => (
+            <button
+              key={color}
+              type="button"
+              className={`arco-agents-color-chip arco-agents-color-chip--${color}${agent.avatar.color === color ? " arco-agents-color-chip--active" : ""}`}
+              aria-pressed={agent.avatar.color === color}
+              aria-label={color}
+              onClick={() => vm.updateAvatar(agent.id, { ...agent.avatar, color })}
+            />
+          ))}
         </div>
       </div>
 
@@ -142,7 +139,40 @@ function ProfileTab({
           />
         </SettingsFieldRow>
         <SettingsFieldRow label={<T k={I18nKey.APPS$AGENTS_RUNTIME} />}>
-          <Chip>{runtimeLabel(agent.runtime)}</Chip>
+          {agent.source === "seed" && agent.id.startsWith("agent:acp:") ? (
+            <Chip>{runtimeLabel(agent.runtime)}</Chip>
+          ) : (
+            <select
+              className="arco-input"
+              aria-label="Agent runtime"
+              value={
+                agent.runtime === "acp"
+                  ? `acp:${agent.acpPresetId ?? "claude-code"}`
+                  : agent.runtime
+              }
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value.startsWith("acp:")) {
+                  void vm.updateAgent(agent.id, {
+                    runtime: "acp",
+                    acpPresetId: value.slice(4),
+                  });
+                } else {
+                  void vm.updateAgent(agent.id, {
+                    runtime: value as AgentProfile["runtime"],
+                    acpPresetId: undefined,
+                  });
+                }
+              }}
+              style={{ minWidth: "10rem" }}
+            >
+              <option value="builtin">Builtin</option>
+              <option value="acp:claude-code">ACP · Claude Code</option>
+              <option value="acp:codex">ACP · Codex</option>
+              <option value="acp:gemini">ACP · Gemini CLI</option>
+              <option value="cursor">Cursor</option>
+            </select>
+          )}
         </SettingsFieldRow>
         <SettingsFieldRow label={<T k={I18nKey.APPS$AGENTS_PRINCIPAL} />}>
           <code className="arco-agents-code">{agent.principalId}</code>
@@ -311,7 +341,13 @@ function DocumentsTab({ agent }: { agent: AgentProfile }) {
   );
 }
 
-function AccessTab({ agent }: { agent: AgentProfile }) {
+function AccessTab({
+  agent,
+  vm,
+}: {
+  agent: AgentProfile;
+  vm: Pick<AgentsViewModel, "updateAgent">;
+}) {
   return (
     <SettingsSection intro={i18n.t(I18nKey.APPS$AGENTS_ACCESS_INTRO)}>
       <SettingsStack>
@@ -322,19 +358,30 @@ function AccessTab({ agent }: { agent: AgentProfile }) {
           <Chip>{agent.policyLevel}</Chip>
         </SettingsFieldRow>
         <SettingsFieldRow label={<T k={I18nKey.APPS$AGENTS_SAFETY_LEVEL} />}>
-          <Chip>{agent.safetyLevel}</Chip>
+          <select
+            className="arco-input"
+            aria-label="Safety level"
+            value={agent.safetyLevel}
+            onChange={(e) =>
+              void vm.updateAgent(agent.id, {
+                safetyLevel: e.target.value as AgentProfile["safetyLevel"],
+              })
+            }
+            style={{ minWidth: "8rem" }}
+          >
+            <option value="restricted">restricted</option>
+            <option value="standard">standard</option>
+            <option value="elevated">elevated</option>
+          </select>
         </SettingsFieldRow>
       </SettingsStack>
 
       {agent.skillGates.length > 0 ? (
         <>
           <SettingsGroupLabel><T k={I18nKey.APPS$AGENTS_SKILL_GATES} /></SettingsGroupLabel>
-          <div className="arco-module-card__pills">
+          <div className="arco-chip-row">
             {agent.skillGates.map((gate) => (
-              <span key={gate} className="arco-module-card__pill">
-                <Layers size={11} aria-hidden="true" />
-                {gate}
-              </span>
+              <Chip key={gate}>{gate}</Chip>
             ))}
           </div>
         </>
@@ -356,15 +403,9 @@ function AccessTab({ agent }: { agent: AgentProfile }) {
           <Shield size={13} aria-hidden="true" />
           <T k={I18nKey.APPS$AGENTS_TOOL_POLICY} />
         </Button>
-        <Button variant="ghost" onClick={() => openSettingsApp("tools")}>
-          <T k={I18nKey.APPS$AGENTS_BUILTIN_TOOLS} />
-        </Button>
         <Button variant="ghost" onClick={openSkillsApp}>
           <Layers size={13} aria-hidden="true" />
           <T k={I18nKey.APPS$AGENTS_SKILLS} />
-        </Button>
-        <Button variant="ghost" onClick={() => openSettingsApp("mcp")}>
-          <T k={I18nKey.APPS$AGENTS_MCP_SETTINGS} />
         </Button>
       </div>
     </SettingsSection>
@@ -380,19 +421,22 @@ export function AgentDetailPanel({
   vm: AgentsViewModel;
   onClose: () => void;
 }) {
+  const certificationLabels = agent.labels.filter(
+    (label) => label !== "seed" && label !== "custom" && label !== "acp",
+  );
+
   return (
-    <div className="arco-module-overlay arco-agents-detail" role="dialog" aria-label={agent.name}>
-      <header className="arco-module-overlay__head arco-agents-detail__head">
+    <div className="arco-agents-detail" role="dialog" aria-label={agent.name}>
+      <header className="arco-agents-detail__head">
         <div className="arco-agents-detail__identity">
           <AgentAvatar avatar={agent.avatar} name={agent.name} size="lg" status={agent.status} />
           <div className="arco-agents-detail__identitycopy">
             <h2 className="arco-agents-detail__title">{agent.name}</h2>
-            <p className="arco-agents-detail__tagline">{agent.tagline}</p>
+            {agent.tagline ? <p className="arco-agents-detail__tagline">{agent.tagline}</p> : null}
             <div className="arco-agents-detail__labels">
-              {agent.labels.map((label) => (
-                <Badge key={label}>
-                  {label}
-                </Badge>
+              <span className="arco-agents-detail__runtime">{runtimeLabel(agent.runtime)}</span>
+              {certificationLabels.map((label) => (
+                <Badge key={label}>{label}</Badge>
               ))}
             </div>
           </div>
@@ -414,7 +458,7 @@ export function AgentDetailPanel({
           <button
             key={id}
             type="button"
-            className={`arco-chip arco-agents-detail__tab${vm.detailTab === id ? " arco-chip--active" : ""}`}
+            className={`arco-agents-detail__tab${vm.detailTab === id ? " arco-agents-detail__tab--active" : ""}`}
             aria-pressed={vm.detailTab === id}
             onClick={() => vm.setDetailTab(id)}
           >
@@ -429,7 +473,7 @@ export function AgentDetailPanel({
         {vm.detailTab === "models" ? <ModelsTab agent={agent} vm={vm} /> : null}
         {vm.detailTab === "memory" ? <MemoryTab agent={agent} /> : null}
         {vm.detailTab === "documents" ? <DocumentsTab agent={agent} /> : null}
-        {vm.detailTab === "access" ? <AccessTab agent={agent} /> : null}
+        {vm.detailTab === "access" ? <AccessTab agent={agent} vm={vm} /> : null}
       </div>
     </div>
   );

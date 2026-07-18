@@ -1,5 +1,5 @@
 import { buildPlatformConfig } from "./config";
-import type { DesktopWindowBridge, PlatformBridge } from "./types";
+import type { DesktopBrowserGrabBridge, DesktopWindowBridge, PlatformBridge } from "./types";
 
 interface ElectronPreloadDesktop {
   isDesktop: true;
@@ -14,6 +14,9 @@ interface ElectronPreloadDesktop {
   maximizeWindow: DesktopWindowBridge["maximizeWindow"];
   closeWindow: DesktopWindowBridge["closeWindow"];
   onAppWindowClosed: DesktopWindowBridge["onAppWindowClosed"];
+  browserSetGrabMode?: DesktopBrowserGrabBridge["setGrabMode"];
+  browserAwaitGrab?: DesktopBrowserGrabBridge["awaitGrab"];
+  browserCaptureCrop?: DesktopBrowserGrabBridge["captureCrop"];
 }
 
 function desktopBridgeFromPreload(): DesktopWindowBridge | null {
@@ -32,6 +35,19 @@ function desktopBridgeFromPreload(): DesktopWindowBridge | null {
   };
 }
 
+function browserGrabFromPreload(): DesktopBrowserGrabBridge | null {
+  const desktop = (window as Window & { arcoDesktop?: ElectronPreloadDesktop }).arcoDesktop;
+  if (!desktop?.isDesktop) return null;
+  if (!desktop.browserSetGrabMode || !desktop.browserAwaitGrab || !desktop.browserCaptureCrop) {
+    return null;
+  }
+  return {
+    setGrabMode: (id, enabled) => desktop.browserSetGrabMode!(id, enabled),
+    awaitGrab: (id) => desktop.browserAwaitGrab!(id),
+    captureCrop: (id, rect) => desktop.browserCaptureCrop!(id, rect),
+  };
+}
+
 export function createElectronBridge(): PlatformBridge | null {
   const desktop = (window as Window & { arcoDesktop?: ElectronPreloadDesktop }).arcoDesktop;
   if (!desktop?.isDesktop) return null;
@@ -44,6 +60,7 @@ export function createElectronBridge(): PlatformBridge | null {
       shellProfile: "desktop",
     }),
     desktop: desktopApi,
+    browserGrab: browserGrabFromPreload(),
     openExternal: async (url) => {
       window.open(url, "_blank", "noopener,noreferrer");
     },

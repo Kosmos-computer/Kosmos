@@ -6,8 +6,16 @@
 > remembers across sessions — typed stores, vector/RAG backends, knowledge
 > graphs, and **which agents may read or write which memory**.
 >
-> **Status: PROPOSED v1.** Nothing here is shipped yet. Arco today has chat
-> session transcripts, workspace files, and skills — not agent memory.
+> **Status: Phase 1 kernel + Hermes §19 P0 hooks landed.** Document
+> store + ACLs + agent tools (`memory_read` / `memory_write` / `memory_search`)
+> + REST `/api/memory/*` are implemented. **Budgeted `recallForTurn` prefill**
+> and **post-turn background review → pending entries** are wired in the agent
+> loop (`server/memory/recall.ts`, `server/agent/backgroundReview.ts`).
+> Vector/RAG and dreaming remain Phase 2+. UI falls back to stub mock when
+> the API is empty or unreachable.
+>
+> Previously: PROPOSED v1 — nothing shipped. Arco had chat session transcripts,
+> workspace files, and skills — not agent memory.
 
 ## Why
 
@@ -64,6 +72,15 @@ permission model**, not ad-hoc files the agent happens to read.
 | **Engram** (`reference/engram/`) | Receipt-gated writes, blind assessor separation from tutor, FSRS in deterministic code (not LLM), SessionStart re-anchor from disk, open JSON learner model + concept DAGs, append-only grade receipts | Full tutoring/SRS product surface; Claude/Codex plugin packaging; explorable HTML contract (unless Learning workspace is scoped) |
 | **NanoClaw / OpenClaw** | File scaffold for imported agent memory; group-scoped memory dirs | Container-per-group isolation (Arco uses ACL tables instead) |
 | **Arco today** | `sessionStore`, `grantStore`, `policyStore`, `skillStore`, audit JSONL, Settings sections pattern | Transcript-as-only-context; skills mistaken for episodic memory |
+
+### 1.1a OpenClaw lessons (adopt without copying the file system)
+
+From `docs/openclaw-port-plan.md` §3.2 — keep UX/safety ideas, not `MEMORY.md` as runtime:
+
+1. **Tool split:** `memory_search` (short hits) vs `memory_read` (full entry by id).
+2. **Group ACL default:** channel/automation principals must not read/write identity or semantic “personal” memory without an explicit grant.
+3. **Importer only:** foreign workspace files may become pending `memory_write` proposals later — never the source of truth.
+4. **No dreaming / heartbeat memory:** extraction is Phase 3 soft-distill into `pending` entries, not OpenClaw dreaming.
 
 ### 1.2 Backend options (vector + graph + RAG)
 
@@ -169,22 +186,23 @@ type MemoryScope =
   | { level: "collection"; collectionId: string }
   | { level: "all" };
 
-// Stored: data/memory-grants.json
-// Key: `${principalId}#${scopeKey}` → MemoryAccess
+// Stored: data/memory/memory.db → memory_grants table
+// Key: (principal_id, scope_key) → access
 ```
 
-**Default matrix (v1):**
+**Default matrix (Phase 1 seed — stricter channel/automation than earlier draft):**
 
 | Principal | working | episodic | semantic | procedural | identity | reference |
 | --- | --- | --- | --- | --- | --- | --- |
-| `agent:builtin` | R/W | R/W | R/W | R | R | R |
-| `agent:acp:*` | R | R | R | R | R | R* |
-| `agent:automation:*` | — | — | R | R | R | R* |
-| `agent:channel:*` | R | R | R | — | — | — |
-| `app:*` | — | — | — | — | — | R* |
+| `agent:builtin` | admin (all) | admin | admin | admin | admin | admin |
+| `user` | admin (all) | admin | admin | admin | admin | admin |
+| `agent:channel` / `agent:channel:*` | R | R | — | — | — | — |
+| `agent:automation` / `agent:automation:*` | R | R | — | — | — | — |
 
-\* Reference access requires explicit collection grant or `reference:*` admin
-approval in Settings.
+OpenClaw lesson: no personal / identity / semantic memory for group-like
+principals until an explicit grant is added in Settings.
+
+Later phases may widen ACP/app defaults; Phase 1 seeds only the rows above.
 
 **Write vs extract:** `write` allows tool/API mutations. **Extraction**
 (commit after session) uses `system` + delegated rules: only principals with
@@ -451,14 +469,19 @@ Add row to `open-standards-map.md` when Phase 1 ships.
 
 **Goal:** Swappable-free core — document store + ACLs + manual CRUD.
 
-- [ ] `memoryStore` choke point + `memoryGrantStore`
-- [ ] SQLite schema + `memory_entries` / `memory_collections`
-- [ ] REST CRUD for entries and collections
-- [ ] Agent tools: `memory_read`, `memory_write`, `memory_search` (keyword only)
-- [ ] Settings grant matrix UI (principal × kind)
-- [ ] Audit lines on every mutation
+- [x] `memoryStore` choke point + `memoryGrantStore`
+- [x] SQLite schema + `memory_entries` / `memory_collections` / `memory_grants`
+- [x] REST CRUD for entries and collections (`/api/memory/*`)
+- [x] Agent tools: `memory_read`, `memory_write`, `memory_search` (keyword only)
+- [ ] Settings grant matrix UI (principal × kind) — API `GET/PUT /grants` ready
+- [x] Audit lines on every mutation
 
 **Exit:** User and built-in agent can create/search memories with permissions enforced.
+
+**Landed on `feat/openclaw-port-plan`:** default grants seed `agent:builtin` +
+`user` as admin-on-all; `agent:channel` / `agent:automation` read-only on
+working+episodic (OpenClaw “no personal MEMORY in groups”). Channel principal
+threading into tools is TODO — tools currently use `agent:builtin`.
 
 ### Phase 2 — Vector + RAG (2–3 weeks)
 

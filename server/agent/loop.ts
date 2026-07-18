@@ -7,20 +7,31 @@
  * and headless automation runs (events discarded, transcript persisted).
  */
 import type { AgentEvent, ApprovalMode, ChatMessage, Session } from "../../shared/types.js";
+import type { AgentProfile } from "../../shared/agents.js";
+import { resolveToolsetAllowlist } from "../../shared/toolsets.js";
 import { loadSettings } from "../env.js";
 import { modelStore } from "../stores/modelStore.js";
 import { sessionStore } from "../stores/sessionStore.js";
+import { resolveProfileForTurn } from "../agents/resolveProfile.js";
+import { formatRecallForPrompt, recallForTurn } from "../memory/recall.js";
 import { streamTurn, type LlmMessage } from "./llm.js";
 import { buildSystemPrompt } from "./systemPrompt.js";
 import { applyPolicy, assembleTools, toLlmDefs } from "./toolRegistry.js";
 import type { ToolContext } from "./tools.js";
+import { scheduleBackgroundReview } from "./backgroundReview.js";
 
 const MAX_ITERATIONS = 12;
 /** Tool results beyond this are truncated for the LLM (full result goes to the UI). */
 const MAX_TOOL_RESULT_CHARS = 6_000;
 
-function toLlmMessages(session: Session, extraSystem?: string): LlmMessage[] {
-  const system = extraSystem ? `${buildSystemPrompt()}\n\n${extraSystem}` : buildSystemPrompt();
+function toLlmMessages(
+  session: Session,
+  profile: AgentProfile,
+  extraSystem?: string,
+): LlmMessage[] {
+  const system = extraSystem
+    ? `${buildSystemPrompt({ profile })}\n\n${extraSystem}`
+    : buildSystemPrompt({ profile });
   const messages: LlmMessage[] = [{ role: "system", content: system }];
   for (const m of session.messages) {
     if (m.role === "user") {
@@ -75,6 +86,22 @@ export interface RunTurnOptions {
    * pass "automations.chat", the voice brain "voice.brain".
    */
   slot?: string;
+  /** Agent profile for this turn; defaults to session.profileId or builtin. */
+  profileId?: string;
+  /**
+   * Override ACP spawn command for this turn (from profile.runtime.acpPresetId).
+   * When omitted, Settings.acpCommand is used.
+   */
+  acpCommand?: string;
+  /**
+   * Composer toolset chips — when set, only tools in the union of these sets
+   * are offered to the model (Hermes toolset scoping). Omit / empty = all.
+   */
+  toolsetIds?: string[];
+  /**
+   * Skip the post-turn background learning review (e.g. nested delegate_task).
+   */
+  skipBackgroundReview?: boolean;
 }
 
 const ASK_MODE_SYSTEM =
@@ -91,7 +118,27 @@ export async function runAgentTurn(opts: RunTurnOptions): Promise<string> {
   // The LLM connection resolves through the model registry's slot table;
   // the rest of settings (agent kind, disabled tools, …) stays as-is.
   const baseSettings = loadSettings();
-  const llm = modelStore.resolveModel(opts.slot ?? "agent.chat", baseSettings);
+  const session = await sessionStore.get(opts.sessionId);
+  if (!session) throw new Error(`Session not found: ${opts.sessionId}`);
+
+  const profile = resolveProfileForTurn({
+    profileId: opts.profileId,
+    sessionProfileId: session.profileId,
+  });
+  if (session.profileId !== profile.id) {
+    session.profileId = profile.id;
+    await sessionStore.save(session);
+  }
+
+  // Channel turns default to conservative tool posture (OpenClaw group safety);
+  // never escalate to permissive on a headless messaging edge.
+  let policyLevel = profile.policyLevel ?? "balanced";
+  if (session.kind === "channel") {
+    if (!profile.policyLevel) policyLevel = "conservative";
+    else if (policyLevel === "permissive") policyLevel = "balanced";
+  }
+
+  const llm = modelStore.resolveModel(opts.slot ?? profile.modelSlot ?? "agent.chat", baseSettings);
   const settings = {
     ...baseSettings,
     provider: llm.provider,
@@ -99,8 +146,6 @@ export async function runAgentTurn(opts: RunTurnOptions): Promise<string> {
     model: llm.model,
     apiKey: llm.apiKey,
   };
-  const session = await sessionStore.get(opts.sessionId);
-  if (!session) throw new Error(`Session not found: ${opts.sessionId}`);
 
   await sessionStore.appendMessages(session.id, [
     { role: "user", content: opts.userMessage },
@@ -113,6 +158,9 @@ export async function runAgentTurn(opts: RunTurnOptions): Promise<string> {
     userId: opts.userId,
     approvalMode: opts.approvalMode ?? "smart",
     signal: opts.signal,
+    profileId: profile.id,
+    principalId: profile.principalId,
+    policyLevel,
   };
   let finalText = "";
   const usage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
@@ -121,11 +169,36 @@ export async function runAgentTurn(opts: RunTurnOptions): Promise<string> {
   // change mid-turn, and re-listing remote servers on every loop pass would
   // add latency for nothing.
   const assembled = await assembleTools(ctx);
-  const tools = opts.readOnly ? assembled.filter((t) => t.access === "read") : assembled;
+  const allowlist = resolveToolsetAllowlist(opts.toolsetIds);
+  let tools = opts.readOnly ? assembled.filter((t) => t.access === "read") : assembled;
+  if (allowlist) {
+    // Toolsets scope first-party system tools; MCP/app contributors stay available.
+    tools = tools.filter((t) => t.source !== "system" || allowlist.has(t.name));
+  }
   const toolDefs = toLlmDefs(tools);
-  const extraSystem = opts.readOnly
-    ? [opts.extraSystem, ASK_MODE_SYSTEM].filter(Boolean).join("\n\n")
-    : opts.extraSystem;
+
+  // Budgeted memory recall → system prompt (Hermes recall prefill).
+  let recallText = "";
+  try {
+    const bundle = recallForTurn({
+      principalId: profile.principalId,
+      userMessage: opts.userMessage,
+    });
+    recallText = formatRecallForPrompt(bundle);
+  } catch (err) {
+    console.warn(
+      `[arco] memory recall failed:`,
+      err instanceof Error ? err.message : err,
+    );
+  }
+
+  const extraSystem = [
+    opts.extraSystem,
+    recallText,
+    opts.readOnly ? ASK_MODE_SYSTEM : "",
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 
   for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
     const current = await sessionStore.get(session.id);
@@ -133,7 +206,7 @@ export async function runAgentTurn(opts: RunTurnOptions): Promise<string> {
 
     const turn = await streamTurn({
       settings,
-      messages: toLlmMessages(current, extraSystem),
+      messages: toLlmMessages(current, profile, extraSystem || undefined),
       tools: toolDefs,
       onTextDelta: (delta) => opts.emit({ type: "text_delta", delta }),
       signal: opts.signal,
@@ -214,6 +287,14 @@ export async function runAgentTurn(opts: RunTurnOptions): Promise<string> {
 
     await sessionStore.appendMessages(session.id, [assistantMessage, ...toolMessages]);
     finalText = turn.text;
+  }
+
+  // Hermes closed learning loop → pending memory + skill proposals only.
+  if (!opts.skipBackgroundReview && !opts.readOnly) {
+    scheduleBackgroundReview({
+      sessionId: session.id,
+      principalId: profile.principalId,
+    });
   }
 
   return finalText;

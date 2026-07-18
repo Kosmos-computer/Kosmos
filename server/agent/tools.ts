@@ -18,6 +18,10 @@ import { mergeStatements } from "@openuidev/lang-core";
 import type {
   AgentEvent,
   ApprovalMode,
+  BrowserCommand,
+  BrowserResult,
+  ComputerCommand,
+  ComputerResult,
   CursorCommand,
   CursorResult,
   OsUiAction,
@@ -54,6 +58,15 @@ import { requestClientAction } from "./clientRequests.js";
 import { isRiskyCommand, requestConfirmation } from "./confirmations.js";
 import { opsAgentTools } from "./opsTools.js";
 import {
+  MemoryAccessError,
+  memoryStore,
+} from "../memory/memoryStore.js";
+import { MEMORY_KINDS } from "../memory/memoryGrantStore.js";
+import type { MemoryKind } from "../../shared/capabilities/memory.js";
+import { sessionSearchIndex } from "../stores/sessionSearchIndex.js";
+import { sessionStore } from "../stores/sessionStore.js";
+import { enqueueSessionResult } from "./sessionQueue.js";
+import {
   checkWorkspaceQuota,
   invalidateWorkspaceUsage,
   quotaApplies,
@@ -84,6 +97,12 @@ export interface ToolContext {
   approvalMode?: ApprovalMode;
   /** Cancels long-running tools and pending confirmations with the turn. */
   signal?: AbortSignal;
+  /** Agent profile id for this turn (agent:builtin, agent:user:…). */
+  profileId?: string;
+  /** Memory / ACL principal — usually equals profileId. */
+  principalId?: string;
+  /** Profile policy posture — overlays stored tool rules when set. */
+  policyLevel?: import("../../shared/agents.js").AgentPolicyLevel;
 }
 
 /**
@@ -220,6 +239,40 @@ async function runCursorCommand(
   return {
     ...(res.outcome ? { outcome: res.outcome } : {}),
     ...(res.snapshot ? { [screenKey]: formatSnapshot(res.snapshot) } : {}),
+  };
+}
+
+async function runBrowserCommand(
+  command: BrowserCommand,
+  ctx: ToolContext,
+): Promise<Record<string, unknown>> {
+  if (!ctx.interactive) {
+    return { error: "Browser tools need an open Studio Browser tab." };
+  }
+  const { requestId, result } = requestClientAction<BrowserResult>();
+  ctx.emit({ type: "browser_request", requestId, command });
+  const res = await result;
+  if (!res.ok) return { error: res.error ?? "Browser command failed" };
+  return {
+    ...(res.outcome ? { outcome: res.outcome } : {}),
+    ...(res.snapshot ? { snapshot: res.snapshot } : {}),
+  };
+}
+
+async function runComputerCommand(
+  command: ComputerCommand,
+  ctx: ToolContext,
+): Promise<Record<string, unknown>> {
+  if (!ctx.interactive) {
+    return { error: "Computer use needs the desktop app with Accessibility permission." };
+  }
+  const { requestId, result } = requestClientAction<ComputerResult>();
+  ctx.emit({ type: "computer_request", requestId, command });
+  const res = await result;
+  if (!res.ok) return { error: res.error ?? "Computer command failed" };
+  return {
+    ...(res.outcome ? { outcome: res.outcome } : {}),
+    ...(res.imageDataUrl ? { imageDataUrl: res.imageDataUrl } : {}),
   };
 }
 
@@ -1691,7 +1744,7 @@ export const agentTools: AgentTool[] = [
   {
     name: "save_skill",
     description:
-      "Save a reusable skill — distill a lesson, preference, or procedure from this conversation into standing instructions for future sessions. Pauses for user approval. Write the description so a future agent knows WHEN to read the skill.",
+      "Draft a reusable skill proposal — distill a lesson, preference, or procedure from this conversation into standing instructions. Creates a proposal for the user to Apply (go live) or Reject in Skills; does not enable the skill immediately. Pauses for user approval. Write the description so a future agent knows WHEN to read the skill.",
     parameters: {
       type: "object",
       properties: {
@@ -1711,23 +1764,93 @@ export const agentTools: AgentTool[] = [
       if (!name || !description || !body) {
         return { error: "name, description, and body are all required" };
       }
-      // Additions to the user's standing instructions need sign-off when a
-      // user is attached. Smart mode shows a confirm card; strict already
-      // paused in applyPolicy; full skips the card. Headless always denies.
+      // Proposals still need sign-off when a user is attached. Smart mode
+      // shows a confirm card; strict already paused in applyPolicy; full
+      // skips the card. Headless always denies.
       if (!ctx.interactive) {
         return { error: "Saving a skill requires user approval and no user is attached. Skipped." };
       }
       if (shouldConfirmInternally(ctx)) {
         const { confirmId, verdict } = requestConfirmation(ctx.signal);
-        ctx.emit({ type: "confirm_required", confirmId, command: `Save skill "${name}" — ${description}` });
+        ctx.emit({
+          type: "confirm_required",
+          confirmId,
+          command: `Propose skill "${name}" — ${description}`,
+        });
         const { approved } = await verdict;
         ctx.emit({ type: "confirm_resolved", confirmId, approved });
         if (!approved) {
           return { error: "User declined to save this skill. Do not retry; ask what they'd like instead." };
         }
       }
-      const skill = skillStore.create({ name, description, body, source: "user" });
-      return { id: skill.id, name: skill.name, saved: true };
+      const proposal = skillStore.createProposal({ name, description, body });
+      return {
+        id: proposal.id,
+        name: proposal.name,
+        proposed: true,
+        status: proposal.status,
+        note: "Skill drafted as a proposal. The user can Apply it in Skills to make it live.",
+      };
+    },
+  },
+  {
+    name: "patch_skill",
+    description:
+      "Propose an update to an existing skill (body/description). Creates a proposal targeting that skill for the user to Apply or Reject — does not change the live skill until applied. Prefer this over save_skill when improving a skill you already used.",
+    parameters: {
+      type: "object",
+      properties: {
+        skillId: { type: "string", description: "Existing skill id to patch" },
+        name: { type: "string", description: "Optional new display name" },
+        description: {
+          type: "string",
+          description: "Updated when-to-read description",
+        },
+        body: { type: "string", description: "Updated full instructions, markdown" },
+      },
+      required: ["skillId", "description", "body"],
+    },
+    execute: async (args, ctx) => {
+      const skillId = String(args.skillId ?? "").trim();
+      const existing = skillStore.get(skillId);
+      if (!existing) return { error: `Unknown skill: ${skillId}` };
+      const name = String(args.name ?? existing.name).trim() || existing.name;
+      const description = String(args.description ?? "").trim();
+      const body = String(args.body ?? "").trim();
+      if (!description || !body) {
+        return { error: "description and body are required" };
+      }
+      if (!ctx.interactive) {
+        return { error: "Patching a skill requires user approval and no user is attached. Skipped." };
+      }
+      if (shouldConfirmInternally(ctx)) {
+        const { confirmId, verdict } = requestConfirmation();
+        ctx.emit({
+          type: "confirm_required",
+          confirmId,
+          command: `Propose patch to skill "${existing.name}" (${skillId})`,
+        });
+        const { approved } = await verdict;
+        ctx.emit({ type: "confirm_resolved", confirmId, approved });
+        if (!approved) {
+          return { error: "User declined to patch this skill. Do not retry; ask what they'd like instead." };
+        }
+      }
+      const proposal = skillStore.createProposal({
+        name,
+        description,
+        body,
+        gates: existing.gates,
+        targetSkillId: skillId,
+      });
+      return {
+        id: proposal.id,
+        targetSkillId: skillId,
+        name: proposal.name,
+        proposed: true,
+        status: proposal.status,
+        note: "Skill patch drafted as a proposal. Apply in Skills to update the live skill.",
+      };
     },
   },
 
@@ -1950,6 +2073,84 @@ export const agentTools: AgentTool[] = [
         ctx,
       ),
   },
+
+  // ── Studio Browser automation (webview) ────────────────────────────────────
+  {
+    name: "browser_snapshot",
+    description:
+      "Snapshot interactive elements in the Techno Studio Browser webview (URL, title, selectors). Open Studio → Browser and load a page first.",
+    parameters: { type: "object", properties: {} },
+    execute: async (_args, ctx) => runBrowserCommand({ kind: "snapshot" }, ctx),
+  },
+  {
+    name: "browser_click",
+    description: "Click a CSS selector in the Studio Browser webview.",
+    parameters: {
+      type: "object",
+      properties: {
+        selector: { type: "string", description: "CSS selector, e.g. '#submit' or 'button.primary'" },
+      },
+      required: ["selector"],
+    },
+    execute: async (args, ctx) =>
+      runBrowserCommand({ kind: "click", selector: String(args.selector ?? "") }, ctx),
+  },
+  {
+    name: "browser_fill",
+    description: "Fill an input/textarea in the Studio Browser webview by CSS selector.",
+    parameters: {
+      type: "object",
+      properties: {
+        selector: { type: "string" },
+        value: { type: "string" },
+      },
+      required: ["selector", "value"],
+    },
+    execute: async (args, ctx) =>
+      runBrowserCommand(
+        { kind: "fill", selector: String(args.selector ?? ""), value: String(args.value ?? "") },
+        ctx,
+      ),
+  },
+
+  // ── OS computer use (outside Arco DOM) ─────────────────────────────────────
+  {
+    name: "computer_screenshot",
+    description:
+      "Capture a screenshot of the user's desktop (Kosmos desktop app). Prefer ui_snapshot for in-Arco UI.",
+    parameters: { type: "object", properties: {} },
+    execute: async (_args, ctx) => runComputerCommand({ kind: "screenshot" }, ctx),
+  },
+  {
+    name: "computer_click",
+    description:
+      "Click screen coordinates outside Arco (macOS Accessibility). Prefer mouse_click for in-Arco UI.",
+    parameters: {
+      type: "object",
+      properties: {
+        x: { type: "number" },
+        y: { type: "number" },
+      },
+      required: ["x", "y"],
+    },
+    execute: async (args, ctx) =>
+      runComputerCommand(
+        { kind: "click", x: Number(args.x ?? 0), y: Number(args.y ?? 0) },
+        ctx,
+      ),
+  },
+  {
+    name: "computer_type",
+    description: "Type text via OS keyboard events (macOS Accessibility). Prefer type_text in Arco.",
+    parameters: {
+      type: "object",
+      properties: { text: { type: "string" } },
+      required: ["text"],
+    },
+    execute: async (args, ctx) =>
+      runComputerCommand({ kind: "type", text: String(args.text ?? "") }, ctx),
+  },
+
   {
     name: "generator_catalog_add",
     description:
@@ -1980,6 +2181,265 @@ export const agentTools: AgentTool[] = [
         validation: lint.ok ? "ok" : "warn",
         ...(lint.ok ? {} : { lintSummary: lint.summary }),
       };
+    },
+  },
+
+  // ── Memory (Phase 1 document store — keyword search, ACL-gated) ────────────
+  //
+  // Principal comes from ToolContext (agent profile). Channel turns should
+  // pass agent:channel:<id> or the bound profile principal (Phase 2 bindings).
+  {
+    name: "memory_write",
+    description:
+      "Create a durable memory entry (working, episodic, semantic, procedural, identity, or reference). Use for facts, preferences, session outcomes, and standing notes the user wants remembered across chats. Pauses for user approval in interactive mode.",
+    parameters: {
+      type: "object",
+      properties: {
+        kind: {
+          type: "string",
+          enum: ["working", "episodic", "semantic", "procedural", "identity", "reference"],
+          description: "Memory kind — prefer semantic for stable facts, episodic for what happened",
+        },
+        title: { type: "string", description: "Short title" },
+        summary: { type: "string", description: "One or two sentence summary (searchable)" },
+        body: { type: "string", description: "Optional longer body" },
+        tags: {
+          type: "array",
+          items: { type: "string" },
+          description: "Optional tags",
+        },
+      },
+      required: ["kind", "title", "summary"],
+    },
+    execute: async (args, ctx) => {
+      const kind = String(args.kind ?? "") as MemoryKind;
+      if (!(MEMORY_KINDS as string[]).includes(kind)) {
+        return { error: `Invalid kind. Use one of: ${MEMORY_KINDS.join(", ")}` };
+      }
+      const title = String(args.title ?? "").trim();
+      const summary = String(args.summary ?? "").trim();
+      if (!title || !summary) return { error: "title and summary are required" };
+
+      const principalId = ctx.principalId ?? "agent:builtin";
+
+      if (!ctx.interactive) {
+        return {
+          error:
+            "Writing memory requires user approval and no user is attached. Skipped.",
+        };
+      }
+      if (shouldConfirmInternally(ctx)) {
+        const { confirmId, verdict } = requestConfirmation();
+        ctx.emit({
+          type: "confirm_required",
+          confirmId,
+          command: `Remember (${kind}): ${title}`,
+        });
+        const { approved } = await verdict;
+        ctx.emit({ type: "confirm_resolved", confirmId, approved });
+        if (!approved) {
+          return {
+            error: "User declined to save this memory. Do not retry; ask what they'd like instead.",
+          };
+        }
+      }
+
+      try {
+        const entry = memoryStore.createEntry(principalId, {
+          kind,
+          title,
+          summary,
+          ...(typeof args.body === "string" ? { body: args.body } : {}),
+          ...(Array.isArray(args.tags) ? { tags: args.tags.map(String) } : {}),
+          source: `session:${ctx.sessionId}`,
+          sourceSessionId: ctx.sessionId,
+        });
+        return {
+          id: entry.id,
+          kind: entry.kind,
+          title: entry.title,
+          collectionId: entry.collectionId,
+          saved: true,
+        };
+      } catch (err) {
+        if (err instanceof MemoryAccessError) {
+          return { error: err.message };
+        }
+        return { error: err instanceof Error ? err.message : "Failed to write memory" };
+      }
+    },
+  },
+  {
+    name: "memory_read",
+    description: "Fetch a memory entry by id (full title, summary, body, tags, status).",
+    parameters: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "Memory entry id" },
+      },
+      required: ["id"],
+    },
+    execute: async (args, ctx) => {
+      const id = String(args.id ?? "").trim();
+      if (!id) return { error: "id is required" };
+      const principalId = ctx.principalId ?? "agent:builtin";
+      try {
+        const entry = memoryStore.getEntry(principalId, id);
+        if (!entry) return { error: `Memory entry not found: ${id}` };
+        return entry;
+      } catch (err) {
+        if (err instanceof MemoryAccessError) return { error: err.message };
+        return { error: err instanceof Error ? err.message : "Failed to read memory" };
+      }
+    },
+  },
+  {
+    name: "memory_search",
+    description:
+      "Keyword search over memory entries the agent may read (title, summary, body). Filter by kind. Returns a limited list — use memory_read for full body.",
+    parameters: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "Search query" },
+        kind: {
+          type: "string",
+          enum: ["working", "episodic", "semantic", "procedural", "identity", "reference"],
+          description: "Optional single-kind filter",
+        },
+        limit: {
+          type: "integer",
+          description: "Max results (1–20, default 8)",
+        },
+      },
+      required: ["query"],
+    },
+    execute: async (args, ctx) => {
+      const query = String(args.query ?? "").trim();
+      if (!query) return { error: "query is required" };
+      const principalId = ctx.principalId ?? "agent:builtin";
+      const kind = typeof args.kind === "string" ? (args.kind as MemoryKind) : undefined;
+      const limit =
+        typeof args.limit === "number" && Number.isFinite(args.limit)
+          ? Math.min(Math.max(Math.floor(args.limit), 1), 20)
+          : 8;
+      try {
+        const hits = memoryStore.search(principalId, {
+          query,
+          ...(kind && (MEMORY_KINDS as string[]).includes(kind) ? { kinds: [kind] } : {}),
+          limit,
+        });
+        return {
+          query,
+          count: hits.length,
+          results: hits.map((e) => ({
+            id: e.id,
+            kind: e.kind,
+            title: e.title,
+            summary: e.summary,
+            tags: e.tags,
+            status: e.status,
+            updatedAt: e.updatedAt,
+          })),
+        };
+      } catch (err) {
+        if (err instanceof MemoryAccessError) return { error: err.message };
+        return { error: err instanceof Error ? err.message : "Search failed" };
+      }
+    },
+  },
+
+  {
+    name: "session_search",
+    description:
+      "Full-text search over past conversation transcripts (FTS5). Returns snippets with session id and message index — zero LLM cost. Use to recall what was said in earlier chats. Optionally scope to one sessionId.",
+    parameters: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "Search query" },
+        sessionId: {
+          type: "string",
+          description: "Optional: limit search to one session",
+        },
+        limit: {
+          type: "integer",
+          description: "Max hits (1–30, default 8)",
+        },
+      },
+      required: ["query"],
+    },
+    execute: async (args) => {
+      const query = String(args.query ?? "").trim();
+      if (!query) return { error: "query is required" };
+      const limit =
+        typeof args.limit === "number" && Number.isFinite(args.limit)
+          ? Math.min(Math.max(Math.floor(args.limit), 1), 30)
+          : 8;
+      const sessionId =
+        typeof args.sessionId === "string" && args.sessionId.trim()
+          ? args.sessionId.trim()
+          : undefined;
+      const hits = sessionSearchIndex.search({ query, sessionId, limit });
+      return {
+        query,
+        count: hits.length,
+        results: hits,
+      };
+    },
+  },
+
+  {
+    name: "delegate_task",
+    description:
+      "Spawn an isolated headless sub-agent for a focused subtask and return its final text summary. Use for parallelizable research or multi-step work that would clutter this transcript. Does not share this conversation's tool confirmations.",
+    parameters: {
+      type: "object",
+      properties: {
+        prompt: {
+          type: "string",
+          description: "Clear instructions for the sub-agent",
+        },
+        label: {
+          type: "string",
+          description: "Short label for the delegate session title",
+        },
+      },
+      required: ["prompt"],
+    },
+    execute: async (args, ctx) => {
+      const prompt = String(args.prompt ?? "").trim();
+      if (!prompt) return { error: "prompt is required" };
+      const label = String(args.label ?? "").trim() || "Delegated task";
+
+      const child = await sessionStore.create("automation", `↳ ${label}`, {
+        profileId: ctx.profileId ?? null,
+      });
+
+      // Dynamic import avoids a circular dependency with loop.ts.
+      const { runAgentTurn } = await import("./loop.js");
+
+      try {
+        const text = await enqueueSessionResult(`delegate:${child.id}`, () =>
+          runAgentTurn({
+            sessionId: child.id,
+            userMessage: prompt,
+            emit: () => {},
+            interactive: false,
+            profileId: ctx.profileId,
+            skipBackgroundReview: true,
+            toolsetIds: ["core", "coding", "memory"],
+          }),
+        );
+        return {
+          sessionId: child.id,
+          label,
+          summary: text || "(no reply)",
+        };
+      } catch (err) {
+        return {
+          sessionId: child.id,
+          error: err instanceof Error ? err.message : "delegate_task failed",
+        };
+      }
     },
   },
 

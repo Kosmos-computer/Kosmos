@@ -8,6 +8,8 @@ import { appIconPath, desktopDataDir, repoRoot } from "./paths.js";
 import { attachServerLogging, resolveServerPort, startServerProcess, waitForUrl } from "./serverProcess.js";
 import { registerTitleBarIpc } from "./titleBarIpc.js";
 import { registerWindowControlsIpc } from "./windowControlsIpc.js";
+import { registerComputerUseIpc } from "./computerUseIpc.js";
+import { registerBrowserGrabIpc } from "./browserGrabIpc.js";
 import { titleBarWindowOptions } from "./titleBar.js";
 
 const DEV_SHELL = process.argv.includes("--dev");
@@ -93,6 +95,8 @@ function createWindow(): void {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      // Studio Design Mode embeds guest pages in <webview>.
+      webviewTag: true,
     },
   });
 
@@ -140,6 +144,8 @@ if (!gotLock) {
       });
       registerWindowControlsIpc();
       registerAutoUpdateIpc();
+      registerComputerUseIpc();
+      registerBrowserGrabIpc();
       autoUpdateService.init(() => BrowserWindow.getAllWindows().filter((win) => !win.isDestroyed()));
       createWindow();
     } catch (err) {

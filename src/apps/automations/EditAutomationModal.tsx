@@ -4,8 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
 import type { Automation, AutomationTrigger, ChannelInfo, DeliveryTarget } from "@shared/types";
+import type { AgentProfile } from "@shared/agents";
+import { BUILTIN_AGENT_ID } from "@shared/agents";
 import { api } from "../../lib/api";
-import { Button, Input } from "../../components/ui";
+import { Button, Input, Switch } from "../../components/ui";
 import {
   buildCronSchedule,
   formatTimeOfDay,
@@ -112,6 +114,9 @@ export function EditAutomationModal({
   const [deliver, setDeliver] = useState(
     automation.deliver ? `${automation.deliver.channelId}:${automation.deliver.chatId}` : "",
   );
+  const [checkIn, setCheckIn] = useState(Boolean(automation.checkIn));
+  const [profileId, setProfileId] = useState(automation.profileId ?? "");
+  const [agents, setAgents] = useState<AgentProfile[]>([]);
   const [triggerType, setTriggerType] = useState(initial.triggerType);
   const [frequency, setFrequency] = useState<FrequencyKey>(initial.frequency);
   const [weekday, setWeekday] = useState(initial.weekday);
@@ -130,6 +135,8 @@ export function EditAutomationModal({
     setDeliver(
       automation.deliver ? `${automation.deliver.channelId}:${automation.deliver.chatId}` : "",
     );
+    setCheckIn(Boolean(automation.checkIn));
+    setProfileId(automation.profileId ?? "");
     const next = buildInitialTrigger(automation);
     setTriggerType(next.triggerType);
     setFrequency(next.frequency);
@@ -140,6 +147,7 @@ export function EditAutomationModal({
     setEventOn(next.eventOn);
     setEventFilter(next.eventFilter);
     setError(null);
+    void api.listAgents().then((data) => setAgents(data.agents.filter((a) => a.enabled))).catch(() => {});
   }, [open, automation]);
 
   if (!open) return null;
@@ -184,6 +192,8 @@ export function EditAutomationModal({
         prompt: prompt.trim(),
         trigger: buildTrigger(),
         deliver: target ?? null,
+        checkIn,
+        profileId: profileId || null,
       });
       onSaved();
       onClose();
@@ -222,6 +232,26 @@ export function EditAutomationModal({
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
           />
+
+          <label className="arco-label" htmlFor="edit-auto-agent">Agent profile</label>
+          <select
+            id="edit-auto-agent"
+            className="arco-input"
+            value={profileId}
+            onChange={(e) => setProfileId(e.target.value)}
+          >
+            <option value="">
+              Default ({agents.find((a) => a.id === BUILTIN_AGENT_ID)?.name ?? "Arco"})
+            </option>
+            {agents
+              .filter((a) => a.id !== BUILTIN_AGENT_ID)
+              .map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                  {a.runtime.kind === "acp" ? " · ACP" : ""}
+                </option>
+              ))}
+          </select>
 
           <label className="arco-label"><T k={I18nKey.APPS$AUTOMATIONS_TRIGGER_TYPE} /></label>
           <div className="arco-chip-row">
@@ -306,6 +336,15 @@ export function EditAutomationModal({
               </select>
             </>
           ) : null}
+
+          <label className="arco-label" htmlFor="edit-auto-checkin" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Switch
+              id="edit-auto-checkin"
+              checked={checkIn}
+              onChange={(e) => setCheckIn(e.target.checked)}
+            />
+            Quiet check-in (skip channel delivery on CHECKIN_OK / empty)
+          </label>
 
           {error ? <p style={{ color: "var(--arco-danger)", margin: 0 }}>{error}</p> : null}
         </div>

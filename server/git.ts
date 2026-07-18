@@ -61,7 +61,9 @@ export async function gitInfo(): Promise<GitInfo> {
   const empty: GitInfo = { isRepo: false, branch: "", ahead: 0, behind: 0, upstream: "", changes: [] };
   if (!(await isGitRepo())) return empty;
 
-  const { stdout } = await git(["status", "--porcelain=v2", "--branch"]);
+  // -uall expands untracked directories into individual files so the UI can open
+  // a real before/after diff instead of a directory stub with no content.
+  const { stdout } = await git(["status", "--porcelain=v2", "--branch", "-uall"]);
   const info: GitInfo = { ...empty, isRepo: true };
   const changes: GitFileChange[] = [];
 
@@ -100,10 +102,52 @@ export async function gitInfo(): Promise<GitInfo> {
 //
 // Returns before/after snapshots (HEAD vs working tree) rather than a unified
 // diff string — the client renders them in a Monaco DiffEditor, which wants
-// full texts.
+// full texts. Directories / binaries / huge files are marked unavailable so
+// the client can show a reason instead of an empty editor.
 // ---------------------------------------------------------------------------
 
-export async function gitFileDiff(relPath: string): Promise<{ before: string | null; after: string | null }> {
+export type GitFileDiffResult = {
+  before: string | null;
+  after: string | null;
+  unavailable?: "directory" | "binary" | "too_large";
+};
+
+/** Null-byte sniff — good enough to keep Monaco away from apk/wasm/etc. */
+async function looksBinary(abs: string): Promise<boolean> {
+  const fh = await fs.open(abs, "r");
+  try {
+    const buf = Buffer.alloc(8192);
+    const { bytesRead } = await fh.read(buf, 0, buf.length, 0);
+    return buf.subarray(0, bytesRead).includes(0);
+  } finally {
+    await fh.close();
+  }
+}
+
+const MAX_DIFF_BYTES = 1_500_000;
+
+export async function gitFileDiff(relPath: string): Promise<GitFileDiffResult> {
+  const abs = path.join(getActiveRoot(), relPath);
+  let st: Awaited<ReturnType<typeof fs.stat>> | null = null;
+  try {
+    st = await fs.stat(abs);
+  } catch {
+    st = null;
+  }
+
+  if (st?.isDirectory() || relPath.endsWith("/")) {
+    return { before: null, after: null, unavailable: "directory" };
+  }
+
+  if (st?.isFile()) {
+    if (st.size > MAX_DIFF_BYTES) {
+      return { before: null, after: null, unavailable: "too_large" };
+    }
+    if (await looksBinary(abs)) {
+      return { before: null, after: null, unavailable: "binary" };
+    }
+  }
+
   let before: string | null = null;
   try {
     const { stdout } = await git(["show", `HEAD:${relPath}`]);
@@ -111,12 +155,26 @@ export async function gitFileDiff(relPath: string): Promise<{ before: string | n
   } catch {
     // Not in HEAD — new/untracked file.
   }
-  let after: string | null = null;
-  try {
-    after = await fs.readFile(path.join(getActiveRoot(), relPath), "utf-8");
-  } catch {
-    // Deleted from the working tree.
+
+  // HEAD-only binary/huge (deleted from tree or never read via working copy).
+  if (before != null) {
+    if (Buffer.byteLength(before, "utf8") > MAX_DIFF_BYTES) {
+      return { before: null, after: null, unavailable: "too_large" };
+    }
+    if (before.includes("\0")) {
+      return { before: null, after: null, unavailable: "binary" };
+    }
   }
+
+  let after: string | null = null;
+  if (st?.isFile()) {
+    try {
+      after = await fs.readFile(abs, "utf-8");
+    } catch {
+      after = null;
+    }
+  }
+
   return { before, after };
 }
 

@@ -7,19 +7,28 @@
  * Routing policy (the part adapters don't know about):
  *   - Unknown senders are never processed — they get a pairing code and the
  *     message stops there (OpenClaw's DM-pairing posture).
- *   - Each approved chat maps to one persistent "channel" session, so a
- *     conversation keeps its context across messages and restarts.
- *   - Turns per chat are serialized; a second message queues behind the
- *     first rather than interleaving tool calls in one transcript.
+ *   - Group chats require an @mention (or reply-to-bot) when requireMention
+ *     is enabled (default) — OpenClaw group mention gating.
+ *   - Each approved chat maps to one persistent "channel" session (reminted
+ *     when the peer's bound profile changes), so a conversation keeps its
+ *     context across messages and restarts without bleeding across personas.
+ *   - Peer → profile bindings (Settings) select which agent principal runs
+ *     the turn; unbound peers use the registry default (builtin).
+ *   - Turns per chat are serialized via sessionQueue; a second message queues
+ *     behind the first rather than interleaving tool calls in one transcript.
  *   - Turns run headless (interactive: false): policy "confirm" degrades to
  *     deny, exactly like automations — nobody can answer a confirm card
  *     from Telegram (yet).
  */
 import type { ChannelInfo, ChannelStatus } from "../../shared/types.js";
-import { runAgentTurn } from "../agent/loop.js";
+import { enqueueSession } from "../agent/sessionQueue.js";
+import { pickTurnRunner, resolveAcpCommand, resolveTurnKind } from "../agent/turnRunner.js";
+import { withProfileActivity } from "../agents/activity.js";
+import { resolveChannelProfile } from "../agents/resolveProfile.js";
 import { sessionStore } from "../stores/sessionStore.js";
 import { channelStore, maskConfig } from "./channelStore.js";
 import { createTelegramAdapter } from "./telegram.js";
+import { createDiscordAdapter } from "./discord.js";
 
 /** A normalized inbound message — everything routing needs, nothing more. */
 export interface InboundMessage {
@@ -27,6 +36,10 @@ export interface InboundMessage {
   /** Sender identity for pairing labels ("Paul (@paul)"). */
   label: string;
   text: string;
+  /** True for Telegram group/supergroup chats. */
+  isGroup?: boolean;
+  /** True when the bot was @mentioned or the message replies to the bot. DMs always true. */
+  mentioned?: boolean;
 }
 
 /** What every platform adapter must provide. Kept minimal on purpose. */
@@ -48,14 +61,6 @@ interface Entry {
 
 const entries = new Map<string, Entry>();
 
-/** Per-chat turn serialization: chain each task onto the chat's tail. */
-const chatQueues = new Map<string, Promise<void>>();
-
-function enqueue(key: string, task: () => Promise<void>): void {
-  const tail = (chatQueues.get(key) ?? Promise.resolve()).then(task).catch(() => {});
-  chatQueues.set(key, tail);
-}
-
 function entry(id: string): Entry {
   let e = entries.get(id);
   if (!e) {
@@ -64,14 +69,6 @@ function entry(id: string): Entry {
   }
   return e;
 }
-
-// ---------------------------------------------------------------------------
-// Inbound routing
-//
-// Pairing gate first, then session resolution, then the agent turn. The
-// reply is whatever final text the loop produced — tool traffic stays in
-// the transcript, only the answer travels back to the platform.
-// ---------------------------------------------------------------------------
 
 const PAIRING_REPLY = (code: string) =>
   `This assistant is private. Your pairing request (code ${code}) is waiting for approval — ` +
@@ -88,26 +85,53 @@ async function handleInbound(channelId: string, msg: InboundMessage): Promise<vo
     return;
   }
 
-  // One durable session per chat — recreate it if the user deleted the old
-  // transcript, and persist the mapping so restarts resume the conversation.
+  const cfg = channelStore.get(channelId);
+  const requireMention = cfg?.requireMention !== false; // default true
+  if (msg.isGroup && requireMention && !msg.mentioned) {
+    // Quiet in groups until addressed — OpenClaw mention-gating posture.
+    return;
+  }
+
+  const peer = channelStore.peers(channelId).find((p) => p.chatId === msg.chatId);
+  const profile = resolveChannelProfile({ peerProfileId: peer?.profileId });
+
   let sessionId = channelStore.sessionFor(channelId, msg.chatId);
-  if (!sessionId || !(await sessionStore.get(sessionId))) {
-    const cfg = channelStore.get(channelId);
-    const session = await sessionStore.create("channel", `✉ ${cfg?.name ?? channelId} · ${msg.label}`);
+  const existing = sessionId ? await sessionStore.get(sessionId) : null;
+  // Remint when missing, stale, or bound to a different profile (no transcript bleed).
+  if (!existing || existing.profileId !== profile.id) {
+    const session = await sessionStore.create(
+      "channel",
+      `✉ ${cfg?.name ?? channelId} · ${msg.label}`,
+      { profileId: profile.id },
+    );
     sessionId = session.id;
     channelStore.setSession(channelId, msg.chatId, sessionId);
   }
 
+  if (!sessionId) return;
+
   const sid = sessionId;
-  enqueue(`${channelId}:${msg.chatId}`, async () => {
+  const surface =
+    msg.isGroup
+      ? `Inbound via ${cfg?.kind ?? "channel"} group${cfg?.requireMention !== false ? "; mention-gated" : ""}.`
+      : `Inbound via ${cfg?.kind ?? "channel"} direct message.`;
+
+  void enqueueSession(`channel:${channelId}:${msg.chatId}`, async () => {
     await adapter.indicateTyping(msg.chatId);
     let reply: string;
     try {
-      reply = await runAgentTurn({
-        sessionId: sid,
-        userMessage: msg.text,
-        emit: () => {}, // headless — no shell client attached
-      });
+      const kind = resolveTurnKind(profile);
+      const runner = pickTurnRunner(kind);
+      reply = await withProfileActivity(profile.id, () =>
+        runner({
+          sessionId: sid,
+          userMessage: msg.text,
+          emit: () => {},
+          profileId: profile.id,
+          extraSystem: surface,
+          ...(kind === "acp" ? { acpCommand: resolveAcpCommand(profile) } : {}),
+        }),
+      );
     } catch (err) {
       reply = `Something went wrong: ${err instanceof Error ? err.message : "agent turn failed"}`;
     }
@@ -117,17 +141,14 @@ async function handleInbound(channelId: string, msg: InboundMessage): Promise<vo
   });
 }
 
-// ---------------------------------------------------------------------------
-// Lifecycle
-// ---------------------------------------------------------------------------
-
 function buildAdapter(channelId: string): ChannelAdapter {
   const cfg = channelStore.get(channelId);
   if (!cfg) throw new Error(`Channel not found: ${channelId}`);
-  // kind is a union of one today; the switch is where Discord etc. join.
   switch (cfg.kind) {
     case "telegram":
       return createTelegramAdapter(cfg.token, (msg) => void handleInbound(channelId, msg));
+    case "discord":
+      return createDiscordAdapter(cfg.token, (msg) => void handleInbound(channelId, msg));
   }
 }
 
@@ -159,7 +180,6 @@ function disconnect(id: string): void {
   e.error = undefined;
 }
 
-/** One-shot env bootstrap — paste TELEGRAM_BOT_TOKEN in .env to skip the Settings form. */
 function bootstrapFromEnv(): void {
   const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
   if (!token) return;
@@ -169,7 +189,6 @@ function bootstrapFromEnv(): void {
 }
 
 export const channelGateway = {
-  /** Boot: start every enabled channel in parallel, failures isolated. */
   async start(): Promise<void> {
     bootstrapFromEnv();
     await Promise.all(channelStore.list().filter((c) => c.enabled).map((c) => connect(c.id)));
@@ -179,7 +198,6 @@ export const channelGateway = {
     }
   },
 
-  /** Reconcile one channel with its stored config (after add/edit/toggle). */
   async sync(id: string): Promise<void> {
     disconnect(id);
     if (channelStore.get(id)?.enabled) await connect(id);
@@ -195,11 +213,6 @@ export const channelGateway = {
     entries.delete(id);
   },
 
-  /**
-   * Outbound send to an approved chat — the delivery path automations and
-   * the channel_send tool share. Refusing unapproved chats here (not just at
-   * inbound) keeps the allowlist authoritative in both directions.
-   */
   async send(channelId: string, chatId: string, text: string): Promise<void> {
     const e = entries.get(channelId);
     if (!e?.adapter || e.status !== "running") {
@@ -211,7 +224,6 @@ export const channelGateway = {
     await e.adapter.send(chatId, text);
   },
 
-  /** Everything the Settings panel needs, token masked. */
   list(): ChannelInfo[] {
     return channelStore.list().map((cfg) => {
       const e = entries.get(cfg.id);

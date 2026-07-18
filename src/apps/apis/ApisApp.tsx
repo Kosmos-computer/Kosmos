@@ -10,12 +10,13 @@ import { useEffect, useMemo, useState } from "react";
 import { ExternalLink, Plus, Star, Trash2, X } from "lucide-react";
 import {
   ModuleCardGrid,
+  ModuleFilterSelect,
   ModuleHeader,
   ModuleInner,
   ModulePage,
   ModuleToolbar,
 } from "../../components/patterns/ModuleDashboard";
-import { Button, Chip, EmptyState } from "../../components/ui";
+import { Button, EmptyState } from "../../components/ui";
 import { appIcon } from "../appview/appIcon";
 import { filterApis } from "./apisFilters";
 import { useApisNavStore } from "./apisNavStore";
@@ -49,11 +50,8 @@ function ApiCard({ api, onOpen }: { api: ApiIntegration; onOpen: () => void }) {
         <span className="arco-module-card__pill">{api.category}</span>
         {typeof api.rating === "number" ? (
           <span className="arco-module-card__pill">
-            <Star size={10} style={{ verticalAlign: "-1px" }} /> {api.rating.toFixed(1)}
+            <Star size={10} aria-hidden="true" /> {api.rating.toFixed(1)}
           </span>
-        ) : null}
-        {api.installed ? (
-          <span className="arco-module-card__pill"><T k={I18nKey.APPS$APIS_INSTALLED} /></span>
         ) : null}
       </div>
     </button>
@@ -82,35 +80,29 @@ function ApiDetailOverlay({
         onClick={(event) => event.stopPropagation()}
       >
         <div className="arco-module-overlay__head">
-          <div className="arco-module__headcopy">
-            <h2 className="arco-module__title">{api.name}</h2>
-            <p className="arco-module__subtitle">
-              {api.author}
-              {api.version ? ` · v${api.version}` : ""} · {api.category}
-            </p>
-          </div>
-          <div className="arco-module-card__actions">
-            <Button size="icon" onClick={onClose} aria-label={i18n.t(I18nKey.COMMON$CLOSE)}>
-              <X size={14} />
-            </Button>
-          </div>
-        </div>
-
-        <div className="arco-module-card__head">
-          <span className="arco-module-card__icon" aria-hidden="true">
-            <Icon size={18} />
-          </span>
-          <div className="arco-module-card__body">
-            {typeof api.rating === "number" ? (
-              <div className="arco-module-card__meta">
-                <Star size={12} style={{ verticalAlign: "-2px" }} /> {api.rating.toFixed(1)}<T k={I18nKey.APPS$APIS_RATING} /></div>
-            ) : null}
+          <div className="arco-module-card__head">
+            <span className="arco-module-card__icon" aria-hidden="true">
+              <Icon size={18} />
+            </span>
+            <div className="arco-module__headcopy">
+              <h2 className="arco-module__title">{api.name}</h2>
+              <p className="arco-module__subtitle">
+                {api.author}
+                {api.version ? ` · v${api.version}` : ""} · {api.category}
+                {typeof api.rating === "number" ? ` · ${api.rating.toFixed(1)}` : ""}
+              </p>
+            </div>
+            <div className="arco-module-card__actions">
+              <Button size="icon" onClick={onClose} aria-label={i18n.t(I18nKey.COMMON$CLOSE)}>
+                <X size={14} />
+              </Button>
+            </div>
           </div>
         </div>
 
         <p className="arco-module-card__desc">{api.description}</p>
 
-        <div className="arco-module-card__actions">
+        <div className="arco-module-card__actions arco-module-card__actions--footer">
           {api.installed ? (
             <>
               <Button disabled><T k={I18nKey.APPS$APIS_INSTALLED} /></Button>
@@ -172,19 +164,18 @@ export function ApisApp() {
         />
 
         <ModuleToolbar search={search} onSearchChange={setSearch} searchLabel={i18n.t(I18nKey.APPS$APIS_SEARCH_APIS)}>
-          <div className="arco-chip-row" role="group" aria-label={i18n.t(I18nKey.APPS$APIS_API_CATALOG_TAB)}>
-            {TAB_FILTERS.map((entry) => (
-              <Chip
-                key={entry.id}
-                active={tab === entry.id}
-                aria-pressed={tab === entry.id}
-                onClick={() => setTab(entry.id)}
-              >
-                {entry.label}
-                {entry.id === "installed" ? ` (${installedCount})` : ""}
-              </Chip>
-            ))}
-          </div>
+          <ModuleFilterSelect
+            label={i18n.t(I18nKey.APPS$APIS_API_CATALOG_TAB)}
+            value={tab}
+            options={TAB_FILTERS.map((entry) => ({
+              value: entry.id,
+              label:
+                entry.id === "installed"
+                  ? `${entry.label} (${installedCount})`
+                  : entry.label,
+            }))}
+            onChange={setTab}
+          />
         </ModuleToolbar>
 
         {filtered.length === 0 ? (

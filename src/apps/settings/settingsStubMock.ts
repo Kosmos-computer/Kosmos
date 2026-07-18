@@ -22,7 +22,6 @@ export const SETTINGS_STUB_NAV_GROUPS: StubSettingsNavGroup[] = [
           { id: "family-center", label: "Family Center" },
         ],
       },
-      { id: "content-social", label: "Content & Social" },
       { id: "data-privacy", label: "Data & Privacy" },
       { id: "authorized-apps", label: "Authorized Apps" },
       { id: "connections", label: "Connections" },
@@ -34,7 +33,6 @@ export const SETTINGS_STUB_NAV_GROUPS: StubSettingsNavGroup[] = [
     title: "Billing",
     items: [
       { id: "subscriptions", label: "Subscriptions" },
-      { id: "gift-inventory", label: "Gift Inventory" },
       { id: "billing", label: "Billing" },
     ],
   },
@@ -127,31 +125,6 @@ export const SETTINGS_STUB_DATA: StubSettingsWorkspaceData = {
       ],
     },
     {
-      id: "content-social",
-      title: "Content & Social",
-      intro: "Control who can interact with you and what content you see.",
-      toggles: [
-        {
-          id: "filter-explicit",
-          label: "Filter explicit media content",
-          description: "Automatically hide media that may contain explicit material.",
-          enabled: true,
-        },
-        {
-          id: "friend-requests",
-          label: "Allow friend requests from server members",
-          description: "Members of servers you share can send you friend requests.",
-          enabled: true,
-        },
-        {
-          id: "discoverable-email",
-          label: "Discoverable by email",
-          description: "Let people who know your email find and add you.",
-          enabled: false,
-        },
-      ],
-    },
-    {
       id: "data-privacy",
       title: "Data & Privacy",
       intro: "Request your data, manage cookies, and control personalization.",
@@ -222,12 +195,6 @@ export const SETTINGS_STUB_DATA: StubSettingsWorkspaceData = {
       links: [
         { id: "hosted-plan", label: "Kosmos Hosted", value: "See plan details below" },
       ],
-    },
-    {
-      id: "gift-inventory",
-      title: "Gift Inventory",
-      intro: "Redeem or share gifts you've received.",
-      links: [{ id: "unused-gifts", label: "Unused gifts", value: "None" }],
     },
     {
       id: "billing",

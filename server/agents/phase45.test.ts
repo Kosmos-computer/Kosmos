@@ -54,13 +54,17 @@ describe("resolveTurnKind", () => {
     expect(resolveTurnKind(profile)).toBe("acp");
   });
 
-  it("falls back to settings for builtin profile runtime", () => {
+  it("honors builtin profile runtime (does not fall through to Settings.agent)", () => {
     const profile = {
       id: BUILTIN_AGENT_ID,
       runtime: { kind: "builtin" },
     } as AgentProfile;
-    // Settings may be acp/cursor/etc — just assert it returns a valid AgentKind string.
-    expect(typeof resolveTurnKind(profile)).toBe("string");
+    expect(resolveTurnKind(profile)).toBe("builtin");
+  });
+
+  it("falls back to settings when no profile is provided", () => {
+    expect(typeof resolveTurnKind(null)).toBe("string");
+    expect(typeof resolveTurnKind(undefined)).toBe("string");
   });
 });
 

@@ -14,10 +14,17 @@ import {
   Video,
 } from "lucide-react";
 import { Button } from "../../components/ui";
-import { ListSearch } from "../../components/patterns";
+import { ListSearch, ModuleFilterSelect } from "../../components/patterns";
+import { LongformerUploadMenu } from "./LongformerUploadMenu";
 import { filterTranscripts, formatDuration } from "./types";
 import type { LongformerViewModel } from "./longformerStore";
-import type { TranscriptSourceType, TranscriptStatus, TranscriptSummary } from "./types";
+import type {
+  TranscriptDateRange,
+  TranscriptMetric,
+  TranscriptSourceType,
+  TranscriptStatus,
+  TranscriptSummary,
+} from "./types";
 
 const SOURCE_ICON: Record<TranscriptSourceType, typeof Mic> = {
   call: Phone,
@@ -36,22 +43,75 @@ const STATUS_LABEL: Record<TranscriptStatus, string> = {
   failed: "Failed",
 };
 
+const SOURCE_LABEL: Record<TranscriptSourceType, string> = {
+  call: "Call",
+  meeting: "Meeting",
+  podcast: "Podcast",
+  upload: "Upload",
+  recording: "Recording",
+  memory: "Memory",
+  broadcast: "Broadcast",
+};
+
+const DATE_RANGE_OPTIONS: { value: TranscriptDateRange; label: string }[] = [
+  { value: "7d", label: "Last 7 Days" },
+  { value: "30d", label: "Last 30 Days" },
+  { value: "90d", label: "Last 90 Days" },
+  { value: "all", label: "All time" },
+];
+
+const SOURCE_OPTIONS: { value: TranscriptSourceType | "all"; label: string }[] = [
+  { value: "all", label: "All sources" },
+  ...(Object.keys(SOURCE_LABEL) as TranscriptSourceType[]).map((value) => ({
+    value,
+    label: SOURCE_LABEL[value],
+  })),
+];
+
+const STATUS_OPTIONS: { value: TranscriptStatus | "all"; label: string }[] = [
+  { value: "all", label: "All statuses" },
+  ...(Object.keys(STATUS_LABEL) as TranscriptStatus[]).map((value) => ({
+    value,
+    label: STATUS_LABEL[value],
+  })),
+];
+
 interface LongformerLibraryViewProps {
   vm: LongformerViewModel;
 }
 
-function MetricCard({ label, value, trend }: { label: string; value: number; trend: number }) {
-  const trendUp = trend >= 0;
+function MetricCard({
+  metric,
+  active,
+  onSelect,
+}: {
+  metric: TranscriptMetric;
+  active?: boolean;
+  onSelect: () => void;
+}) {
+  const trend = metric.trend;
+  const trendUp = trend != null && trend >= 0;
   return (
-    <div className="arco-longformer-metric">
-      <span className="arco-longformer-metric__label">{label}</span>
+    <button
+      type="button"
+      className={`arco-longformer-metric${active ? " arco-longformer-metric--active" : ""}`}
+      onClick={onSelect}
+      aria-pressed={active}
+    >
+      <span className="arco-longformer-metric__label">{metric.label}</span>
       <div className="arco-longformer-metric__row">
-        <span className="arco-longformer-metric__value">{value}</span>
-        <span className={`arco-longformer-metric__trend ${trendUp ? "arco-longformer-metric__trend--up" : "arco-longformer-metric__trend--down"}`}>
-          {trendUp ? "↑" : "↓"} {Math.abs(trend)}%
-        </span>
+        <span className="arco-longformer-metric__value">{metric.value}</span>
+        {trend != null ? (
+          <span
+            className={`arco-longformer-metric__trend ${
+              trendUp ? "arco-longformer-metric__trend--up" : "arco-longformer-metric__trend--down"
+            }`}
+          >
+            {trendUp ? "↑" : "↓"} {Math.abs(trend)}%
+          </span>
+        ) : null}
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -69,13 +129,7 @@ function TranscriptRow({
         <input type="checkbox" aria-label={`Select ${transcript.title}`} />
       </td>
       <td>
-        <div className="arco-longformer-table__title-cell">
-          <span className="arco-longformer-table__title">{transcript.title}</span>
-          {transcript.projectName ? (
-            <span className="arco-longformer-table__project">{transcript.projectName}</span>
-          ) : null}
-          {transcript.excerpt ? <span className="arco-longformer-table__excerpt">{transcript.excerpt}</span> : null}
-        </div>
+        <span className="arco-longformer-table__title">{transcript.title}</span>
       </td>
       <td>
         <span className="arco-longformer-table__source">
@@ -112,16 +166,38 @@ function TranscriptRow({
 /** Transcript library — KPI summary, filters, and searchable transcript table. */
 export function LongformerLibraryView({ vm }: LongformerLibraryViewProps) {
   const [showProcessingBanner, setShowProcessingBanner] = useState(true);
-  const { data, statusFilter, setStatusFilter, sourceFilter, setSourceFilter, openTranscript, uploadFile, openDemoProject } = vm;
+  const [dateRange, setDateRange] = useState<TranscriptDateRange>("30d");
+  const [languageFilter, setLanguageFilter] = useState<string | "all">("all");
+  const {
+    data,
+    statusFilter,
+    setStatusFilter,
+    sourceFilter,
+    setSourceFilter,
+    openTranscript,
+    uploadFile,
+    openDrivePicker,
+    uploading,
+  } = vm;
+
+  const languageOptions = useMemo(() => {
+    const languages = [...new Set(data.transcripts.map((t) => t.language).filter(Boolean) as string[])].sort();
+    return [
+      { value: "all" as const, label: i18n.t(I18nKey.APPS$LONGFORMER_LANGUAGE) },
+      ...languages.map((language) => ({ value: language, label: language })),
+    ];
+  }, [data.transcripts]);
 
   const visibleTranscripts = useMemo(
     () =>
       filterTranscripts(data.transcripts, {
         status: statusFilter,
         sourceType: sourceFilter,
+        dateRange,
+        language: languageFilter,
         query: vm.searchQuery,
       }),
-    [data.transcripts, statusFilter, sourceFilter, vm.searchQuery],
+    [data.transcripts, statusFilter, sourceFilter, dateRange, languageFilter, vm.searchQuery],
   );
 
   return (
@@ -129,15 +205,43 @@ export function LongformerLibraryView({ vm }: LongformerLibraryViewProps) {
       <header className="arco-longformer-library__header">
         <h1 className="arco-longformer-library__title"><T k={I18nKey.APPS$LONGFORMER_LIBRARY} /></h1>
         <div className="arco-longformer-library__actions">
-          <Button type="button" variant="default"><T k={I18nKey.APPS$LONGFORMER_EXPORT_ALL} /></Button>
-          <Button type="button" variant="primary" onClick={uploadFile}>
-            <Upload size={14} strokeWidth={1.75} /><T k={I18nKey.APPS$LONGFORMER_UPLOAD} /></Button>
+          <LongformerUploadMenu
+            label={i18n.t(I18nKey.APPS$LONGFORMER_UPLOAD)}
+            icon={Upload}
+            variant="primary"
+            disabled={uploading}
+            onPickLocal={uploadFile}
+            onPickDrive={openDrivePicker}
+          />
         </div>
       </header>
 
       <div className="arco-longformer-library__metrics">
         {data.metrics.map((metric) => (
-          <MetricCard key={metric.id} label={metric.label} value={metric.value} trend={metric.trend} />
+          <MetricCard
+            key={metric.id}
+            metric={metric}
+            active={
+              metric.id === "sources"
+                ? false
+                : metric.id === "total"
+                  ? statusFilter === "all"
+                  : statusFilter === metric.status
+            }
+            onSelect={() => {
+              if (metric.id === "sources") {
+                vm.setView("sources");
+                return;
+              }
+              if (metric.id === "total") {
+                setStatusFilter("all");
+                return;
+              }
+              if (metric.status === "ready" || metric.status === "processing" || metric.status === "queued") {
+                setStatusFilter((prev) => (prev === metric.status ? "all" : metric.status));
+              }
+            }}
+          />
         ))}
       </div>
 
@@ -149,28 +253,30 @@ export function LongformerLibraryView({ vm }: LongformerLibraryViewProps) {
           ariaLabel="Search transcripts"
           className="arco-longformer-library__search"
         />
-        <button type="button" className="arco-longformer-filter-btn"><T k={I18nKey.APPS$LONGFORMER_LAST_30_DAYS} /></button>
-        <button
-          type="button"
-          className="arco-longformer-filter-btn"
-          onClick={() =>
-            setSourceFilter((prev) =>
-              prev === "all" ? "meeting" : prev === "meeting" ? "call" : prev === "call" ? "podcast" : prev === "podcast" ? "upload" : prev === "upload" ? "memory" : "all",
-            )
-          }
-        ><T k={I18nKey.APPS$LONGFORMER_SOURCE} />{sourceFilter !== "all" ? `: ${sourceFilter}` : ""}
-        </button>
-        <button
-          type="button"
-          className="arco-longformer-filter-btn"
-          onClick={() =>
-            setStatusFilter((prev) =>
-              prev === "all" ? "ready" : prev === "ready" ? "processing" : prev === "processing" ? "queued" : prev === "queued" ? "failed" : "all",
-            )
-          }
-        ><T k={I18nKey.APPS$LONGFORMER_STATUS} />{statusFilter !== "all" ? `: ${statusFilter}` : ""}
-        </button>
-        <button type="button" className="arco-longformer-filter-btn"><T k={I18nKey.APPS$LONGFORMER_LANGUAGE} /></button>
+        <ModuleFilterSelect
+          label={i18n.t(I18nKey.APPS$LONGFORMER_LAST_30_DAYS)}
+          value={dateRange}
+          options={DATE_RANGE_OPTIONS}
+          onChange={setDateRange}
+        />
+        <ModuleFilterSelect
+          label={i18n.t(I18nKey.APPS$LONGFORMER_SOURCE)}
+          value={sourceFilter}
+          options={SOURCE_OPTIONS}
+          onChange={setSourceFilter}
+        />
+        <ModuleFilterSelect
+          label={i18n.t(I18nKey.APPS$LONGFORMER_STATUS)}
+          value={statusFilter}
+          options={STATUS_OPTIONS}
+          onChange={setStatusFilter}
+        />
+        <ModuleFilterSelect
+          label={i18n.t(I18nKey.APPS$LONGFORMER_LANGUAGE)}
+          value={languageFilter}
+          options={languageOptions}
+          onChange={setLanguageFilter}
+        />
       </div>
 
       {showProcessingBanner && data.processingCount > 0 ? (
@@ -183,14 +289,6 @@ export function LongformerLibraryView({ vm }: LongformerLibraryViewProps) {
           </div>
         </div>
       ) : null}
-
-      <div className="arco-longformer-library__demo">
-        <button type="button" className="arco-longformer-demo-card" onClick={openDemoProject}>
-          <span className="arco-longformer-demo-card__eyebrow"><T k={I18nKey.APPS$LONGFORMER_FEATURED_DEMO} /></span>
-          <span className="arco-longformer-demo-card__title"><T k={I18nKey.APPS$LONGFORMER_BEACHCUBE_DEMO_PROJECT_PODCAST} /></span>
-          <span className="arco-longformer-demo-card__meta"><T k={I18nKey.APPS$LONGFORMER_2_SPEAKERS_CHAPTERS_CLIPS_TIMELINE_EDITOR} /></span>
-        </button>
-      </div>
 
       <div className="arco-longformer-table-card">
         <div className="arco-longformer-table-wrap">

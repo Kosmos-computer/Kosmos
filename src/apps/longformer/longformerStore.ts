@@ -6,7 +6,8 @@ import {
   persistJobView,
 } from "./jobNav";
 import { isPersistableJobId } from "./artifactContent";
-import { BEACHCUBE_PODCAST_DETAIL, LONGFORMER_MOCK } from "./longformerMock";
+import { LONGFORMER_MOCK } from "./longformerMock";
+import { buildLibraryMetrics } from "./types";
 import type {
   ArtifactKind,
   LongformerJobView,
@@ -70,6 +71,7 @@ export function useLongformerStore() {
   const [generatingArtifact, setGeneratingArtifact] = useState<ArtifactKind | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [drivePickerOpen, setDrivePickerOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
 
@@ -95,6 +97,21 @@ export function useLongformerStore() {
   const processingCount = useMemo(
     () => transcripts.filter((t) => t.status === "queued" || t.status === "processing").length,
     [transcripts],
+  );
+
+  const metrics = useMemo(
+    () => buildLibraryMetrics(transcripts, LONGFORMER_MOCK.connectedSources),
+    [transcripts],
+  );
+
+  const navItems = useMemo(
+    () =>
+      LONGFORMER_MOCK.navItems.map((item) =>
+        item.view === "in-progress"
+          ? { ...item, badge: processingCount > 0 ? String(processingCount) : undefined }
+          : item,
+      ),
+    [processingCount],
   );
 
   useEffect(() => {
@@ -257,7 +274,6 @@ export function useLongformerStore() {
   }, [transcripts]);
 
   const closeEditor = useCallback(() => {
-    setView("library");
     setSelectedTranscriptId(null);
     setActiveJob(null);
     setJobViewState("status");
@@ -408,14 +424,24 @@ export function useLongformerStore() {
     [selectedTranscriptId],
   );
 
+  /** Open the native local-disk file picker (audio/video). */
   const uploadFile = useCallback(() => {
     fileInputRef.current?.click();
+  }, []);
+
+  const openDrivePicker = useCallback(() => {
+    setDrivePickerOpen(true);
+  }, []);
+
+  const closeDrivePicker = useCallback(() => {
+    setDrivePickerOpen(false);
   }, []);
 
   const handleFileSelected = useCallback(
     async (file: File) => {
       setUploading(true);
       setError(null);
+      setDrivePickerOpen(false);
       try {
         const body = new FormData();
         body.append("file", file);
@@ -436,23 +462,13 @@ export function useLongformerStore() {
     [openTranscript, refreshJobs],
   );
 
-  const openFromMemory = useCallback(() => {
-    openTranscript("tr-006");
-  }, [openTranscript]);
-
-  const openDemoProject = useCallback(() => {
-    setDetails((prev) => ({ ...prev, "tr-beachcube-podcast": BEACHCUBE_PODCAST_DETAIL }));
-    openTranscript("tr-beachcube-podcast");
-  }, [openTranscript]);
-
   return {
     data: {
       ...LONGFORMER_MOCK,
+      navItems,
       transcripts,
       processingCount,
-      metrics: LONGFORMER_MOCK.metrics.map((m) =>
-        m.id === "metric-processing" ? { ...m, value: processingCount } : m,
-      ),
+      metrics,
     },
     userName,
     userEmail,
@@ -497,8 +513,9 @@ export function useLongformerStore() {
     updateClipSettings,
     generateArtifact,
     uploadFile,
-    openFromMemory,
-    openDemoProject,
+    drivePickerOpen,
+    openDrivePicker,
+    closeDrivePicker,
     refreshJobs,
   };
 }

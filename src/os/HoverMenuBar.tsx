@@ -1,7 +1,11 @@
 /**
- * HoverMenuBar — top-edge hover reveal for the menu bar in App View, ported from
- * Longformer's HoverStatusBar: rest at the top edge, peek a handle, then slide
- * the bar fully open after a short pause.
+ * HoverMenuBar — top-edge hover reveal for the menu bar when auto-hidden
+ * (App view without “Show status bar”, or Appearance → Hide status bar). Ported from Longformer's
+ * HoverStatusBar: rest at the top edge, peek a handle, then slide the bar
+ * fully open after a short pause.
+ *
+ * The peak handle lives in the hover zone (not inside the sliding tray) so
+ * the light chrome never flashes as a 1–2px strip during the peek phase.
  */
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useDismiss } from "../components/useDismiss";
@@ -78,18 +82,18 @@ export function HoverMenuBar({ enabled = true, onOpenChange, children }: HoverMe
         .join(" ")}
       onMouseLeave={handleHoverLeave}
     >
-      <div className="arco-hover-menubar__zone" onMouseEnter={handleHoverEnter} aria-hidden="true" />
+      <div className="arco-hover-menubar__zone" onMouseEnter={handleHoverEnter} aria-hidden="true">
+        <div className="arco-hover-menubar__peak" />
+      </div>
       <div
         ref={barRef}
         className={[
           "arco-hover-menubar__tray",
-          phase === "peaked" && "arco-hover-menubar__tray--peaked",
           phase === "open" && "arco-hover-menubar__tray--open",
         ]
           .filter(Boolean)
           .join(" ")}
       >
-        <div className="arco-hover-menubar__peak" aria-hidden="true" />
         {children}
       </div>
     </div>

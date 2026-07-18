@@ -1,11 +1,17 @@
 /* Desktop shell chrome: desktop, menu bar, dock, windows, notifications. */
 
 /* Animatable so hide/show and expand/collapse interpolate for the rail and
-   maximized windows that read --arco-nav-width. */
+   maximized windows that read --arco-nav-width / --arco-menubar-offset. */
 @property --arco-nav-width {
   syntax: "<length>";
   inherits: true;
   initial-value: 56px;
+}
+
+@property --arco-menubar-offset {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
 }
 
 .arco-desktop {
@@ -14,7 +20,9 @@
   overflow: hidden;
   /* In-browser shell: menubar lives inside the desktop. */
   --arco-window-top: 34px;
-  transition: --arco-nav-width var(--arco-dur-med) var(--arco-ease);
+  transition:
+    --arco-nav-width var(--arco-dur-med) var(--arco-ease),
+    --arco-menubar-offset var(--arco-dur-med) var(--arco-ease);
 }
 
 /* ── Menu bar ─────────────────────────────────────────────────────────────── */
@@ -651,7 +659,9 @@
   letter-spacing: 0.02em;
 }
 
-/* ── Hover menu bar (App View top-edge reveal) ───────────────────────────── */
+/* ── Hover menu bar (top-edge reveal — UI Experiments HoverStatusBar) ────── */
+/* Peak lives in the zone; tray slides with transform only (no opacity fade)
+   so light chrome never flashes as a white strip during peek/open. */
 
 .arco-hover-menubar {
   position: fixed;
@@ -670,13 +680,39 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 4px;
+  height: 6px;
   pointer-events: auto;
 }
 
 .arco-hover-menubar--open .arco-hover-menubar__zone {
   inset: 0;
   height: 100%;
+}
+
+/* Full-width 1px edge line — appears on hotspot hover, gone once the bar opens. */
+.arco-hover-menubar__peak {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--arco-border-strong);
+  opacity: 0;
+  transform: scaleY(0);
+  transform-origin: top center;
+  transition:
+    opacity var(--arco-dur-fast) var(--arco-ease),
+    transform var(--arco-dur-fast) var(--arco-ease);
+}
+
+.arco-hover-menubar--peaked .arco-hover-menubar__peak {
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+.arco-hover-menubar--open .arco-hover-menubar__peak {
+  opacity: 0;
+  transform: scaleY(0);
 }
 
 .arco-hover-menubar__tray {
@@ -687,73 +723,15 @@
   display: flex;
   flex-direction: column;
   overflow: visible;
-  transform: translateY(calc(-100% - 8px));
-  opacity: 0;
+  transform: translateY(-100%);
   pointer-events: none;
-  transition:
-    transform var(--arco-dur-fast) var(--arco-ease),
-    opacity var(--arco-dur-fast) var(--arco-ease);
-}
-
-.arco-hover-menubar__peak {
-  flex-shrink: 0;
-  width: min(240px, 42vw);
-  height: 2px;
-  margin: 0 auto var(--arco-space-xs);
-  border-radius: 999px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    var(--arco-border-strong) 18%,
-    var(--arco-border-strong) 82%,
-    transparent 100%
-  );
-  opacity: 0;
-  transform: scaleX(0.35);
-  transition:
-    opacity var(--arco-dur-fast) var(--arco-ease),
-    transform var(--arco-dur-fast) var(--arco-ease),
-    margin var(--arco-dur-fast) var(--arco-ease),
-    height var(--arco-dur-fast) var(--arco-ease);
-}
-
-.arco-hover-menubar__tray--peaked,
-.arco-hover-menubar__tray--open {
-  transition:
-    transform var(--arco-dur-med) var(--arco-ease),
-    opacity var(--arco-dur-med) var(--arco-ease);
-}
-
-.arco-hover-menubar__tray--peaked .arco-hover-menubar__peak,
-.arco-hover-menubar__tray--open .arco-hover-menubar__peak {
-  transition:
-    opacity var(--arco-dur-med) var(--arco-ease),
-    transform var(--arco-dur-med) var(--arco-ease),
-    margin var(--arco-dur-med) var(--arco-ease),
-    height var(--arco-dur-med) var(--arco-ease);
-}
-
-.arco-hover-menubar__tray--peaked {
-  transform: translateY(calc(-100% + 2px));
-  opacity: 1;
-}
-
-.arco-hover-menubar__tray--peaked .arco-hover-menubar__peak {
-  opacity: 1;
-  transform: scaleX(1);
+  transition: transform var(--arco-dur-med) var(--arco-ease);
+  will-change: transform;
 }
 
 .arco-hover-menubar__tray--open {
   transform: translateY(0);
-  opacity: 1;
   pointer-events: auto;
-}
-
-.arco-hover-menubar__tray--open .arco-hover-menubar__peak {
-  opacity: 0;
-  height: 0;
-  margin-bottom: 0;
-  transform: scaleX(0.35);
 }
 
 .arco-hover-menubar__tray .arco-menubar {
@@ -763,11 +741,12 @@
   right: auto;
 }
 
-.arco-desktop--app-view {
+/* Auto-hidden status bar (Desktop hide setting or App view without “show in App view”). */
+.arco-desktop--menubar-auto {
   --arco-menubar-offset: 0px;
 }
 
-.arco-desktop--app-view .arco-navrail {
+.arco-desktop--menubar-auto .arco-navrail {
   top: var(--arco-menubar-offset, 0px);
 }
 
@@ -788,7 +767,6 @@
   /* Chrome/backdrop live on ::before — backdrop-filter on this element would
      clip overflowing menus/tooltips even with overflow: visible. */
   background: transparent;
-  border-right: 1px solid transparent;
   z-index: var(--arco-z-chrome);
   /* Width is driven by animated --arco-nav-width on .arco-desktop. */
   transition:
@@ -1283,7 +1261,7 @@
   opacity: 1;
 }
 
-/* ── Hover dock (App View bottom-edge reveal) ─────────────────────────────── */
+/* ── Hover dock (bottom-edge reveal — UI Experiments HoverAppTray) ────────── */
 
 .arco-hover-dock {
   position: fixed;
@@ -1298,7 +1276,8 @@
 }
 
 .arco-hover-dock--open {
-  height: 112px;
+  inset: 0;
+  height: auto;
   z-index: var(--arco-z-overlay);
 }
 
@@ -1307,8 +1286,19 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 4px;
+  /* Match Longformer HoverAppTray — roomy bottom strip so the peek is easy to hit. */
+  height: 28px;
   pointer-events: auto;
+}
+
+.arco-hover-dock--peaked .arco-hover-dock__zone {
+  inset: 0;
+  height: auto;
+}
+
+.arco-hover-dock--open .arco-hover-dock__zone {
+  inset: 0;
+  height: 100%;
 }
 
 .arco-hover-dock__tray {
@@ -1985,12 +1975,10 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  opacity: 0;
   pointer-events: none;
-  transform: translateY(-110%);
-  transition:
-    transform var(--arco-dur-med) var(--arco-ease),
-    opacity var(--arco-dur-med) var(--arco-ease);
+  transform: translateY(-100%);
+  transition: transform var(--arco-dur-med) var(--arco-ease);
+  will-change: transform;
 }
 
 .arco-swipe-tray--top .arco-swipe-tray__tray {
@@ -1999,13 +1987,12 @@
 
 .arco-swipe-tray--bottom .arco-swipe-tray__tray {
   bottom: 0;
-  transform: translateY(110%);
+  transform: translateY(100%);
   align-items: center;
 }
 
 .arco-swipe-tray__tray--open {
   transform: translateY(0);
-  opacity: 1;
   pointer-events: auto;
 }
 

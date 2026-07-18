@@ -108,8 +108,15 @@ export function StudioApp() {
   const [noticeDismissedFor, setNoticeDismissedFor] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const { onDividerPointerDown, isResizing } = useResizableSplit(containerRef);
-  const { profileId, agentLabel, agentItems, active } = useActiveAgentProfile();
-  const { modelLabel, modelItems } = useModelSelection(active);
+  const { profileId, agentLabel, agentItems, agents, active, setProfileId } =
+    useActiveAgentProfile();
+  const { modelLabel, modelItems, providers, activeProviderId, selectProvider } =
+    useModelSelection({
+      activeProfile: active,
+      agents,
+      setProfileId,
+      sessionId: chat.sessionId,
+    });
   const { scrollRef, onScroll, showJump, scrollToLatest, pinToLatest } =
     useThreadScroll(chat.items);
 
@@ -257,6 +264,9 @@ export function StudioApp() {
         agentItems={agentItems}
         model={modelLabel}
         modelItems={modelItems}
+        modelProviders={providers}
+        activeModelProviderId={activeProviderId}
+        onModelProviderChange={selectProvider}
         onAddFile={attach.onAddFile}
         onAddFolder={attach.onAddFolder}
         onImportGitHubIssue={attach.onImportGitHubIssue}

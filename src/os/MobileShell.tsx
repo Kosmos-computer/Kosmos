@@ -4,8 +4,10 @@ import { T } from "../i18n/T";
  * Mobile shell — the same windows become full-screen sheets: a home grid of
  * app icons, a bottom dock of open surfaces, one surface visible at a time.
  *
- * Desktop view keeps status bar + dock visible. App view is edge-to-edge
- * (fullscreen); swipe down for status bar, swipe up for the dock.
+ * Desktop view keeps status bar + dock visible unless Appearance hides them.
+ * App view hides chrome by default (status bar can stay visible via Appearance);
+ * edge-to-edge when hidden — swipe down for status bar,
+ * swipe up for the dock — same reveal idea as UI Experiments hover chrome.
  */
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -33,6 +35,9 @@ export function MobileShell() {
   const { i18n } = useTranslation();
   const refreshApps = useOsStore((s) => s.refreshApps);
   const shellView = useOsStore((s) => s.shellView);
+  const dockVisible = useOsStore((s) => s.dockVisible);
+  const menuBarVisible = useOsStore((s) => s.menuBarVisible);
+  const menuBarVisibleInAppView = useOsStore((s) => s.menuBarVisibleInAppView);
   const shellApps = useShellApps();
   const [homeSearch, setHomeSearch] = useState("");
   const notifications = useOsStore((s) => s.notifications);
@@ -41,6 +46,8 @@ export function MobileShell() {
   const toggleMinimize = useWindowStore((s) => s.toggleMinimize);
 
   const appView = shellView === "app";
+  const hideMenuBar = appView ? !menuBarVisibleInAppView : !menuBarVisible;
+  const hideDock = appView || !dockVisible;
 
   useEffect(() => {
     void refreshApps();
@@ -76,12 +83,14 @@ export function MobileShell() {
     <div
       className={[
         "arco-mobile-shell",
-        appView ? "arco-mobile-shell--app-view" : "arco-mobile-shell--desktop-view",
+        hideMenuBar || hideDock
+          ? "arco-mobile-shell--app-view"
+          : "arco-mobile-shell--desktop-view",
       ]
         .filter(Boolean)
         .join(" ")}
     >
-      {appView ? (
+      {hideMenuBar ? (
         <SwipeRevealTray
           edge="top"
           enabled
@@ -148,7 +157,7 @@ export function MobileShell() {
         )}
       </div>
 
-      {appView ? (
+      {hideDock ? (
         <SwipeRevealTray
           edge="bottom"
           enabled

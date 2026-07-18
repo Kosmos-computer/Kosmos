@@ -1,7 +1,8 @@
 /**
- * HoverDock — bottom-edge hover reveal for the dock in App View, ported from
- * Longformer's HoverAppTray: rest at the bottom edge, peek a handle, then
- * slide the dock fully open after a short pause.
+ * HoverDock — bottom-edge hover reveal for the dock when auto-hidden
+ * (App view or Appearance → Hide app tray). Ported from Longformer's
+ * HoverAppTray: rest at the bottom edge, peek a handle, then slide the
+ * dock fully open after a short pause.
  */
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useDismiss } from "../components/useDismiss";

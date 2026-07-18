@@ -88,6 +88,9 @@ function WindowContent({ winId }: { winId: string }) {
 export function Desktop() {
   const navExpanded = useOsStore((s) => s.navExpanded);
   const navVisible = useOsStore((s) => s.navVisible);
+  const dockVisible = useOsStore((s) => s.dockVisible);
+  const menuBarVisible = useOsStore((s) => s.menuBarVisible);
+  const menuBarVisibleInAppView = useOsStore((s) => s.menuBarVisibleInAppView);
   const shellView = useOsStore((s) => s.shellView);
   const appWindowHost = useOsStore((s) => s.appWindowHost);
   const refreshApps = useOsStore((s) => s.refreshApps);
@@ -127,10 +130,18 @@ export function Desktop() {
   }, [appWindowHost, shellView]);
 
   const appView = shellView === "app";
+  // Appearance can keep the status bar visible in App view; otherwise chrome auto-hides.
+  // Reveal again via edge hover (UI Experiments HoverStatusBar / HoverAppTray).
+  const hideMenuBar = appView ? !menuBarVisibleInAppView : !menuBarVisible;
+  const hideDock = appView || !dockVisible;
 
   useEffect(() => {
-    if (!appView) setMenuBarOpen(false);
-  }, [appView]);
+    if (!hideMenuBar) setMenuBarOpen(false);
+  }, [hideMenuBar]);
+
+  useEffect(() => {
+    if (!hideDock) setDockTrayOpen(false);
+  }, [hideDock]);
 
   useEffect(() => {
     constrainWindowsToViewport();
@@ -142,25 +153,31 @@ export function Desktop() {
   // MenuBar toggles visibility; NavRail's own chevron toggles collapsed (56px) vs expanded (200px).
   const navWidth = !navVisible ? "0px" : navExpanded ? "200px" : "56px";
   // Keep the on-screen keyboard above the dock/tray without covering it.
-  // Desktop dock is always visible (~80px); hover tray uses the open stack (112px).
-  const dockOffset = !appView ? "80px" : dockTrayOpen ? "112px" : "0px";
+  // Always-visible dock (~80px); hover tray uses the open stack (112px).
+  const dockOffset = !hideDock ? "80px" : dockTrayOpen ? "112px" : "0px";
 
   return (
     <div
-      className={["arco-desktop", appView && "arco-desktop--app-view"].filter(Boolean).join(" ")}
+      className={[
+        "arco-desktop",
+        appView && "arco-desktop--app-view",
+        hideMenuBar && "arco-desktop--menubar-auto",
+      ]
+        .filter(Boolean)
+        .join(" ")}
       // Maximized windows read this to sit flush against the rail edge.
       style={
         {
           "--arco-nav-width": navWidth,
           "--arco-dock-offset": dockOffset,
-          ...(appView && {
+          ...(hideMenuBar && {
             "--arco-menubar-offset": menuBarOpen ? "34px" : "0px",
           }),
         } as CSSProperties
       }
     >
       <WallpaperBackdrop />
-      <HoverMenuBar enabled={appView} onOpenChange={setMenuBarOpen}>
+      <HoverMenuBar enabled={hideMenuBar} onOpenChange={setMenuBarOpen}>
         <MenuBar />
       </HoverMenuBar>
       <NavRail />
@@ -171,7 +188,7 @@ export function Desktop() {
           </WindowFrame>
         ))}
       </div>
-      <HoverDock enabled={appView} onOpenChange={setDockTrayOpen}>
+      <HoverDock enabled={hideDock} onOpenChange={setDockTrayOpen}>
         <Dock />
       </HoverDock>
       <Notifications />

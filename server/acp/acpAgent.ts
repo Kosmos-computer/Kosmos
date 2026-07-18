@@ -42,6 +42,7 @@ import {
   type ReadTextFileResponse,
   type RequestPermissionRequest,
   type RequestPermissionResponse,
+  type SessionModelState,
   type SessionNotification,
   type WriteTextFileRequest,
   type WriteTextFileResponse,
@@ -76,6 +77,8 @@ interface AcpRun {
   /** Rejects when the subprocess dies — raced against prompt() so a crashed
    * agent fails the turn instead of hanging the SSE stream forever. */
   exited: Promise<never>;
+  /** Models advertised by the agent (unstable session models API in SDK 0.4). */
+  models: SessionModelState | null;
 }
 
 const runs = new Map<string, AcpRun>();
@@ -340,6 +343,7 @@ async function spawnRun(
     turnText: "",
     toolNames: new Map(),
     signal: undefined,
+    models: null,
     exited: new Promise<never>((_, reject) => {
       child.on("exit", (code) => {
         runs.delete(arcoSessionId);
@@ -368,6 +372,7 @@ async function spawnRun(
     await authenticateAcpAgent(run.conn, init, settings);
     const created = await run.conn.newSession({ cwd: getActiveRoot(), mcpServers: acpMcpServers() });
     run.acpSessionId = created.sessionId;
+    run.models = created.models ?? null;
   })();
 
   try {
@@ -468,4 +473,49 @@ export function stopAllAcpRuns(): void {
     run.child.kill();
     runs.delete(id);
   }
+}
+
+/** Peek cached ACP model state for a warm session key (no spawn). */
+export function peekAcpModels(sessionKey: string): SessionModelState | null {
+  return runs.get(sessionKey)?.models ?? null;
+}
+
+/**
+ * Ensure an ACP subprocess is warm for `sessionKey` and return its model list.
+ * Uses the unstable session `models` field (SDK 0.4); migrate to
+ * configOptions when the dependency is upgraded.
+ */
+export async function ensureAcpModels(
+  sessionKey: string,
+  acpCommand: string,
+): Promise<SessionModelState | null> {
+  const settings = loadSettings();
+  const run = await ensureRun(sessionKey, settings, () => {}, acpCommand);
+  return run.models;
+}
+
+/** Select a model on a warm (or freshly ensured) ACP session. */
+export async function setAcpSessionModel(
+  sessionKey: string,
+  modelId: string,
+  acpCommand?: string,
+): Promise<SessionModelState | null> {
+  const settings = loadSettings();
+  const run = await ensureRun(sessionKey, settings, () => {}, acpCommand);
+  await run.conn.setSessionModel({
+    sessionId: run.acpSessionId,
+    modelId,
+  });
+  if (run.models) {
+    run.models = {
+      ...run.models,
+      currentModelId: modelId,
+    };
+  } else {
+    run.models = {
+      availableModels: [{ modelId, name: modelId }],
+      currentModelId: modelId,
+    };
+  }
+  return run.models;
 }

@@ -1,7 +1,10 @@
-import type { ReactNode } from "react";
+import { useLayoutEffect, useState, type ReactNode } from "react";
 import type { StagedPhase } from "./useStagedList";
 
-/** Height-collapsing wrapper that plays enter/exit motion for Drive rows and cards. */
+/**
+ * Height accordion for Drive list/grid mutations.
+ * Enter mounts collapsed (0fr) then opens on the next frame; exit collapses to 0fr.
+ */
 export function DriveMotionSlot({
   phase,
   flash,
@@ -13,17 +16,41 @@ export function DriveMotionSlot({
   variant: "row" | "card";
   children: ReactNode;
 }) {
+  const [expanded, setExpanded] = useState(phase === "shown");
+
+  useLayoutEffect(() => {
+    if (phase === "exit") {
+      setExpanded(false);
+      return;
+    }
+    if (phase === "shown") {
+      setExpanded(true);
+      return;
+    }
+
+    // Enter: paint collapsed first, then open so grid-template-rows can transition.
+    setExpanded(false);
+    let innerRaf = 0;
+    const outerRaf = requestAnimationFrame(() => {
+      innerRaf = requestAnimationFrame(() => setExpanded(true));
+    });
+    return () => {
+      cancelAnimationFrame(outerRaf);
+      cancelAnimationFrame(innerRaf);
+    };
+  }, [phase]);
+
   return (
     <div
       className={[
         "arco-drive-motion",
         `arco-drive-motion--${variant}`,
-        phase === "enter" ? "arco-drive-motion--enter" : "",
-        phase === "exit" ? "arco-drive-motion--exit" : "",
+        expanded ? "arco-drive-motion--open" : "arco-drive-motion--collapsed",
         flash ? "arco-drive-motion--flash" : "",
       ]
         .filter(Boolean)
         .join(" ")}
+      aria-hidden={phase === "exit" ? true : undefined}
     >
       <div className="arco-drive-motion__inner">{children}</div>
     </div>

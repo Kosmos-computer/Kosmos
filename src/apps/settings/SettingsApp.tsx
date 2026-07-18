@@ -106,6 +106,12 @@ export function SettingsApp() {
     setSpacingPreset,
     blurEffects,
     setBlurEffects,
+    dockVisible,
+    setDockVisible,
+    menuBarVisible,
+    setMenuBarVisible,
+    menuBarVisibleInAppView,
+    setMenuBarVisibleInAppView,
     windowControlStyle,
     setWindowControlStyle,
     windowControlAlign,
@@ -433,6 +439,36 @@ export function SettingsApp() {
                       checked={blurEffects}
                       onChange={(event) => setBlurEffects(event.target.checked)}
                       aria-label="Blur effects"
+                    />
+                  </SettingsFieldRow>
+                  <SettingsFieldRow
+                    label="Hide status bar"
+                    hint="Hide the top menu bar in Desktop view. Hover the top edge to peek and open it again."
+                  >
+                    <Switch
+                      checked={!menuBarVisible}
+                      onChange={(event) => setMenuBarVisible(!event.target.checked)}
+                      aria-label="Hide status bar"
+                    />
+                  </SettingsFieldRow>
+                  <SettingsFieldRow
+                    label="Show status bar in App view"
+                    hint="Keep the top menu bar visible in App view. Off by default — hover the top edge to peek when hidden."
+                  >
+                    <Switch
+                      checked={menuBarVisibleInAppView}
+                      onChange={(event) => setMenuBarVisibleInAppView(event.target.checked)}
+                      aria-label="Show status bar in App view"
+                    />
+                  </SettingsFieldRow>
+                  <SettingsFieldRow
+                    label="Hide app tray"
+                    hint="Hide the bottom dock in Desktop view. Hover the bottom edge to peek and open it again."
+                  >
+                    <Switch
+                      checked={!dockVisible}
+                      onChange={(event) => setDockVisible(!event.target.checked)}
+                      aria-label="Hide app tray"
                     />
                   </SettingsFieldRow>
                   <SettingsFieldRow

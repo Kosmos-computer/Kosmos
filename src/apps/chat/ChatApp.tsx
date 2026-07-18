@@ -30,8 +30,15 @@ import { systemAppTitle } from "../../os/systemAppTitles";
 export function ChatApp() {
   const chat = useChat();
   const voice = useVoice();
-  const { profileId, agentLabel, agentItems, active } = useActiveAgentProfile();
-  const { modelLabel, modelItems } = useModelSelection(active);
+  const { profileId, agentLabel, agentItems, agents, active, setProfileId } =
+    useActiveAgentProfile();
+  const { modelLabel, modelItems, providers, activeProviderId, selectProvider } =
+    useModelSelection({
+      activeProfile: active,
+      agents,
+      setProfileId,
+      sessionId: chat.sessionId,
+    });
   const [draft, setDraft] = useState("");
   const [approvalMode, setApprovalMode] = useState<ApprovalMode>(DEFAULT_APPROVAL_MODE);
   const [toolsetIds, setToolsetIds] = useState<string[]>(() => [...DEFAULT_TOOLSET_IDS]);
@@ -162,6 +169,9 @@ export function ChatApp() {
           agentItems={agentItems}
           model={modelLabel}
           modelItems={modelItems}
+          modelProviders={providers}
+          activeModelProviderId={activeProviderId}
+          onModelProviderChange={selectProvider}
           onAddFile={attach.onAddFile}
           onFilesDropped={attach.onFilesDropped}
           onAddFolder={attach.onAddFolder}

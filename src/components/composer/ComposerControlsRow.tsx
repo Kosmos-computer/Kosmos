@@ -4,7 +4,8 @@ import i18n from "../../i18n/index";
  * ComposerControlsRow — the single row of controls under the textarea:
  * scrollable left cluster (attach, optional emoji, mode, approval, model)
  * and a docked right cluster (mic, send/stop). Tools and agent live inside
- * the "+" attach menu.
+ * the "+" attach menu. The model chip stays visible when a label is set and
+ * renders inactive (disabled) when there are no selectable modelItems.
  *
  * Narrow widths (the Studio chat pane is user-resizable) are handled the way
  * the design reference does: controls that no longer fit collapse, trailing
@@ -27,11 +28,15 @@ import {
   type ComposerConnector,
 } from "./ComposerAttachMenu";
 import { ComposerEmojiPicker } from "./ComposerEmojiPicker";
+import { ModelPickerMenu } from "./ModelPickerMenu";
+import type { ModelPickerProvider } from "./modelPickerTypes";
 import {
   APPROVAL_MODE_OPTIONS,
   approvalModeLabel,
 } from "./approvalModes";
 import { TOOLSETS } from "./toolsets";
+import { openShellWindow } from "../../os/shellNavigation";
+import { systemAppTitle } from "../../os/systemAppTitles";
 
 type ControlId =
   | "attach"
@@ -78,6 +83,10 @@ export interface ComposerControlsRowProps {
   agentItems?: MenuItem[];
   model?: string;
   modelItems?: MenuItem[];
+  /** Split provider/model picker (preferred over flat modelItems). */
+  modelProviders?: ModelPickerProvider[];
+  activeModelProviderId?: string;
+  onModelProviderChange?: (providerId: string) => void;
   /** Voice session wiring — when provided, the mic button toggles it. */
   voiceActive?: boolean;
   voiceAvailable?: boolean;
@@ -114,6 +123,9 @@ export function ComposerControlsRow({
   agentItems,
   model,
   modelItems,
+  modelProviders,
+  activeModelProviderId,
+  onModelProviderChange,
   voiceActive,
   voiceAvailable,
   onVoiceToggle,
@@ -131,17 +143,38 @@ export function ComposerControlsRow({
   const activeModeLabel = modes?.find((m) => m.id === activeModeId)?.label;
   const showApprovalMenu = Boolean(approvalMode && onApprovalModeChange);
   const activeApprovalLabel = approvalMode ? approvalModeLabel(approvalMode) : undefined;
-  const showModelMenu = Boolean(modelItems?.length);
+  const useSplitPicker = Boolean(modelProviders?.length);
+  // Keep the chip visible whenever a label or provider list is provided.
+  const showModelChip = Boolean(model) || useSplitPicker;
+  const modelInteractive = useSplitPicker || Boolean(modelItems?.length);
   const modelLabel = model ?? "Model";
+  const modelInactiveTitle = "This agent manages its own model";
+  const modelNavActions = useMemo(
+    () => [
+      {
+        id: "manage-models",
+        label: "Manage models…",
+        onSelect: () =>
+          openShellWindow({ type: "system", app: "models" }, systemAppTitle("models")),
+      },
+      {
+        id: "manage-agents",
+        label: "Manage agents…",
+        onSelect: () =>
+          openShellWindow({ type: "system", app: "agents" }, systemAppTitle("agents")),
+      },
+    ],
+    [],
+  );
 
   const controlIds = useMemo<ControlId[]>(() => {
     const ids: ControlId[] = ["attach"];
     if (emojiVisible) ids.push("emoji");
     if (showModeMenu) ids.push("mode");
     if (showApprovalMenu) ids.push("approval");
-    if (showModelMenu) ids.push("model");
+    if (showModelChip) ids.push("model");
     return ids;
-  }, [emojiVisible, showModeMenu, showApprovalMenu, showModelMenu]);
+  }, [emojiVisible, showModeMenu, showApprovalMenu, showModelChip]);
 
   // ── Overflow measurement ─────────────────────────────────────────────────
   // Drop controls from the end until the visible set (plus the overflow dock,
@@ -288,14 +321,25 @@ export function ComposerControlsRow({
       });
     }
 
-    if (overflowIds.includes("model") && modelItems) {
-      modelItems.forEach((item, i) => {
-        items.push({
-          ...item,
-          id: `of-model-${item.id}`,
-          separatorAbove: items.length > 0 && i === 0,
+    if (overflowIds.includes("model")) {
+      if (modelItems?.length) {
+        modelItems.forEach((item, i) => {
+          items.push({
+            ...item,
+            id: `of-model-${item.id}`,
+            separatorAbove: items.length > 0 && i === 0,
+          });
         });
-      });
+      } else if (model) {
+        items.push({
+          id: "of-model-inactive",
+          label: model,
+          description: modelInactiveTitle,
+          disabled: true,
+          separatorAbove: items.length > 0,
+          onSelect: () => {},
+        });
+      }
     }
 
     return items;
@@ -319,7 +363,9 @@ export function ComposerControlsRow({
     toolsetIds,
     onToolsetIdsChange,
     agentItems,
+    model,
     modelItems,
+    modelInactiveTitle,
   ]);
 
   const showOverflowDock = overflowIds.length > 0 && overflowItems.length > 0;
@@ -419,20 +465,49 @@ export function ComposerControlsRow({
               />
             </div>
           )}
-          {showModelMenu && (
+          {showModelChip && (
             <div ref={setItemRef("model")} className={controlClass("model")} aria-hidden={overflowIds.includes("model") || undefined}>
-              <Menu
-                side="top"
-                align="start"
-                aria-label={i18n.t(I18nKey.COMPONENTS$COMPOSER_CHOOSE_MODEL)}
-                items={modelItems ?? []}
-                trigger={
-                  <button type="button" className="arco-composer__pickertrigger">
-                    <span className="arco-composer__pickerlabel">{modelLabel}</span>
-                    <ChevronDown size={12} />
-                  </button>
-                }
-              />
+              {useSplitPicker ? (
+                <ModelPickerMenu
+                  side="top"
+                  align="start"
+                  aria-label={i18n.t(I18nKey.COMPONENTS$COMPOSER_CHOOSE_MODEL)}
+                  providers={modelProviders ?? []}
+                  activeProviderId={activeModelProviderId ?? modelProviders?.[0]?.id ?? "local"}
+                  onProviderChange={onModelProviderChange}
+                  navActions={modelNavActions}
+                  trigger={
+                    <button type="button" className="arco-composer__pickertrigger">
+                      <span className="arco-composer__pickerlabel">{modelLabel}</span>
+                      <ChevronDown size={12} />
+                    </button>
+                  }
+                />
+              ) : modelInteractive ? (
+                <Menu
+                  side="top"
+                  align="start"
+                  aria-label={i18n.t(I18nKey.COMPONENTS$COMPOSER_CHOOSE_MODEL)}
+                  items={modelItems ?? []}
+                  trigger={
+                    <button type="button" className="arco-composer__pickertrigger">
+                      <span className="arco-composer__pickerlabel">{modelLabel}</span>
+                      <ChevronDown size={12} />
+                    </button>
+                  }
+                />
+              ) : (
+                <button
+                  type="button"
+                  className="arco-composer__pickertrigger"
+                  disabled
+                  title={modelInactiveTitle}
+                  aria-label={`${modelLabel}. ${modelInactiveTitle}`}
+                >
+                  <span className="arco-composer__pickerlabel">{modelLabel}</span>
+                  <ChevronDown size={12} />
+                </button>
+              )}
             </div>
           )}
         </div>

@@ -38,7 +38,15 @@ export function LongformerEditorToolbar({ vm, detail }: LongformerEditorToolbarP
   return (
     <header className="arco-longformer-toolbar">
       <div className="arco-longformer-toolbar__left">
-        <button type="button" className="arco-longformer-toolbar__back" onClick={vm.closeEditor} aria-label={i18n.t(I18nKey.APPS$LONGFORMER_BACK_TO_LIBRARY)}>
+        <button
+          type="button"
+          className="arco-longformer-toolbar__back"
+          onClick={() => {
+            vm.closeEditor();
+            vm.setView("library");
+          }}
+          aria-label={i18n.t(I18nKey.APPS$LONGFORMER_BACK_TO_LIBRARY)}
+        >
           <ChevronLeft size={18} strokeWidth={1.75} />
         </button>
         <Breadcrumb

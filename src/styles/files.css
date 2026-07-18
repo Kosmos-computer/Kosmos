@@ -457,15 +457,20 @@ button.arco-drive-path__crumb:hover {
   transition: opacity var(--arco-dur-med) var(--arco-ease);
 }
 
-/* Enter / exit / flash motion for list + grid mutations */
+/* Accordion enter/exit (0fr ↔ 1fr) + flash highlight for list/grid mutations */
 .arco-drive-motion {
   display: grid;
-  grid-template-rows: 1fr;
+  grid-template-rows: 0fr;
   min-width: 0;
-  transition:
-    grid-template-rows var(--arco-dur-med) var(--arco-ease),
-    opacity var(--arco-dur-med) var(--arco-ease),
-    transform var(--arco-dur-med) var(--arco-ease);
+  transition: grid-template-rows var(--arco-dur-med) var(--arco-ease);
+}
+
+.arco-drive-motion--open {
+  grid-template-rows: 1fr;
+}
+
+.arco-drive-motion--collapsed {
+  pointer-events: none;
 }
 
 .arco-drive-motion__inner {
@@ -488,35 +493,9 @@ button.arco-drive-path__crumb:hover {
   min-width: 0;
 }
 
-.arco-drive-motion--enter {
-  animation: arco-drive-item-enter var(--arco-dur-med) var(--arco-ease) both;
-}
-
-.arco-drive-motion--exit {
-  grid-template-rows: 0fr;
-  opacity: 0;
-  transform: translateY(-6px);
-  pointer-events: none;
-}
-
-.arco-drive-motion--card.arco-drive-motion--exit {
-  transform: scale(0.96) translateY(-4px);
-}
-
 .arco-drive-motion--flash .arco-drive-row,
 .arco-drive-motion--flash .arco-drive-card {
   animation: arco-drive-item-flash 900ms var(--arco-ease);
-}
-
-@keyframes arco-drive-item-enter {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 @keyframes arco-drive-item-flash {
@@ -535,17 +514,14 @@ button.arco-drive-path__crumb:hover {
 
 @media (prefers-reduced-motion: reduce) {
   .arco-drive-motion,
-  .arco-drive-motion--enter,
-  .arco-drive-motion--exit,
   .arco-drive-motion--flash .arco-drive-row,
   .arco-drive-motion--flash .arco-drive-card,
   .arco-drive-item--cut {
     animation: none !important;
     transition: none !important;
-    transform: none !important;
   }
 
-  .arco-drive-motion--exit {
+  .arco-drive-motion--collapsed {
     display: none;
   }
 }

@@ -7,8 +7,8 @@ import { T } from "../i18n/T";
  * Escape dismissal, and arrow-key focus movement.
  *
  * Default panels position absolutely inside the trigger's wrapper. Pass
- * `anchorPoint` to pin the panel to viewport coordinates via a body portal
- * (context menus, overflow-clipped toolbars).
+ * `portal` to render a trigger-anchored panel via a body portal (overflow-
+ * clipped sidebars/toolbars), or `anchorPoint` for cursor-pinned context menus.
  */
 import {
   cloneElement,
@@ -79,17 +79,44 @@ export interface MenuProps {
   searchPlaceholder?: string;
   searchMinItems?: number;
   /**
+   * Render the panel in a body portal, positioned from the trigger rect.
+   * Use when a parent clips overflow (sidebars, window frames).
+   */
+  portal?: boolean;
+  /**
    * Viewport coordinates for a fixed, portaled panel (context menus). When set
    * while open, the panel ignores trigger-relative side/align placement.
    */
   anchorPoint?: MenuAnchorPoint | null;
 }
 
-function clampAnchor(x: number, y: number, width: number, height: number): CSSProperties {
+function clampFixed(x: number, y: number, width: number, height: number): CSSProperties {
   const pad = 8;
   const left = Math.min(Math.max(pad, x), Math.max(pad, window.innerWidth - width - pad));
   const top = Math.min(Math.max(pad, y), Math.max(pad, window.innerHeight - height - pad));
   return { position: "fixed", left, top, right: "auto", bottom: "auto" };
+}
+
+function triggerAnchoredStyle(
+  trigger: DOMRect,
+  panel: DOMRect,
+  side: "top" | "bottom" | "right",
+  align: "start" | "end",
+): CSSProperties {
+  const gap = 4;
+  let x = trigger.left;
+  let y = trigger.bottom + gap;
+
+  if (side === "top") {
+    y = trigger.top - panel.height - gap;
+  } else if (side === "right") {
+    x = trigger.right + 8;
+    y = trigger.top + trigger.height / 2 - panel.height / 2;
+  } else if (align === "end") {
+    x = trigger.right - panel.width;
+  }
+
+  return clampFixed(x, y, panel.width, panel.height);
 }
 
 export function Menu({
@@ -107,6 +134,7 @@ export function Menu({
   searchable = "auto",
   searchPlaceholder = "Search…",
   searchMinItems = 4,
+  portal = false,
   anchorPoint = null,
 }: MenuProps) {
   const [openState, setOpenState] = useState(false);
@@ -116,7 +144,7 @@ export function Menu({
   const setOpen = onOpenChange ?? setOpenState;
   const rootRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
-  const floating = Boolean(open && anchorPoint);
+  const floating = Boolean(open && (portal || anchorPoint));
 
   const showSearch =
     searchable === true || (searchable === "auto" && shouldShowListSearch(items.length, searchMinItems));
@@ -134,13 +162,22 @@ export function Menu({
   useDismiss(open, close, rootRef, panelRef);
 
   useLayoutEffect(() => {
-    if (!open || !anchorPoint || !panelRef.current) {
+    if (!open || !floating || !panelRef.current) {
       setFixedStyle(null);
       return;
     }
-    const rect = panelRef.current.getBoundingClientRect();
-    setFixedStyle(clampAnchor(anchorPoint.x, anchorPoint.y, rect.width, rect.height));
-  }, [anchorPoint, open, visibleItems.length]);
+    const panelRect = panelRef.current.getBoundingClientRect();
+    if (anchorPoint) {
+      setFixedStyle(clampFixed(anchorPoint.x, anchorPoint.y, panelRect.width, panelRect.height));
+      return;
+    }
+    const triggerRect = rootRef.current?.getBoundingClientRect();
+    if (!triggerRect) {
+      setFixedStyle(null);
+      return;
+    }
+    setFixedStyle(triggerAnchoredStyle(triggerRect, panelRect, side, align));
+  }, [align, anchorPoint, floating, open, side, visibleItems.length]);
 
   // Focus search (when present) or first enabled item on open.
   useEffect(() => {
@@ -196,11 +233,11 @@ export function Menu({
           floating
             ? (fixedStyle ?? {
                 position: "fixed",
-                left: anchorPoint!.x,
-                top: anchorPoint!.y,
+                left: anchorPoint?.x ?? 0,
+                top: anchorPoint?.y ?? 0,
                 right: "auto",
                 bottom: "auto",
-                visibility: fixedStyle ? "visible" : "hidden",
+                visibility: "hidden",
               })
             : undefined
         }

@@ -2,9 +2,12 @@ import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
 import { LongformerJobShell } from "./LongformerJobShell";
 import { LongformerJobSidebar } from "./LongformerJobSidebar";
+import { LongformerJobListView, LongformerUploadsActions } from "./LongformerJobListView";
 import { LongformerLibraryView } from "./LongformerLibraryView";
 import { LongformerPlaceholderView } from "./LongformerPlaceholderView";
+import { LongformerSettingsView } from "./LongformerSettingsView";
 import { LongformerSidebar } from "./LongformerSidebar";
+import { LongformerSourcesView } from "./LongformerSourcesView";
 import { SidebarPane } from "../../components/patterns";
 import type { LongformerViewModel } from "./longformerStore";
 
@@ -31,44 +34,30 @@ export function LongformerWorkspace({ vm }: LongformerWorkspaceProps) {
         return <LongformerLibraryView vm={vm} />;
       case "in-progress":
         return (
-          <LongformerPlaceholderView
+          <LongformerJobListView
+            vm={vm}
             title={i18n.t(I18nKey.APPS$LONGFORMER_IN_PROGRESS)}
-            description={
-              vm.data.processingCount > 0
-                ? `${vm.data.processingCount} job${vm.data.processingCount === 1 ? "" : "s"} transcribing. The library updates automatically.`
-                : "No jobs in progress. Upload audio from the Uploads tab to start."
-            }
-            actionLabel={vm.data.processingCount > 0 ? "View library" : "Upload file"}
-            onAction={vm.data.processingCount > 0 ? () => vm.setView("library") : vm.uploadFile}
+            description="Jobs that are queued or currently transcribing."
+            statuses={["queued", "processing"]}
+            emptyLabel="No jobs in progress. Upload audio from Uploads to start."
+            actions={<LongformerUploadsActions vm={vm} />}
           />
         );
       case "sources":
-        return (
-          <LongformerPlaceholderView
-            title={i18n.t(I18nKey.APPS$LONGFORMER_CONNECTED_SOURCES)}
-            description="Manage integrations for Zoom, Google Meet, podcast feeds, cloud storage, and in-app memory sync."
-          />
-        );
+        return <LongformerSourcesView vm={vm} />;
       case "uploads":
         return (
-          <LongformerPlaceholderView
+          <LongformerJobListView
+            vm={vm}
             title={i18n.t(I18nKey.APPS$LONGFORMER_UPLOADS)}
-            description={
-              vm.uploading
-                ? "Uploading and queuing transcription…"
-                : "Upload audio or video to transcribe — MP3, M4A, WAV, MP4, and more. Chapters and artifacts generate automatically after transcription."
-            }
-            actionLabel={vm.uploading ? undefined : "Upload file"}
-            onAction={vm.uploading ? undefined : vm.uploadFile}
+            description="Manual uploads from this computer or Arco Files."
+            sourceType="upload"
+            emptyLabel="No uploads yet. Choose a file to start transcription."
+            actions={<LongformerUploadsActions vm={vm} />}
           />
         );
       case "settings":
-        return (
-          <LongformerPlaceholderView
-            title={i18n.t(I18nKey.OS$APP_SETTINGS)}
-            description="Configure language detection, speaker diarization, export formats, filler-word removal, and auto-transcribe rules."
-          />
-        );
+        return <LongformerSettingsView />;
       default:
         return <LongformerLibraryView vm={vm} />;
     }

@@ -1226,8 +1226,42 @@ export const api = {
       (r) => json<ExternalAccessInfo>(r),
     ),
 
+  // ACP session models (composer provider picker)
+  ensureAcpModels: (body: { sessionKey: string; acpCommand: string }) =>
+    post<{
+      models: {
+        availableModels: { modelId: string; name: string; description?: string | null }[];
+        currentModelId: string;
+      } | null;
+    }>("/api/acp/models/ensure", body),
+  setAcpModel: (body: { sessionKey: string; acpCommand?: string; modelId: string }) =>
+    fetch("/api/acp/models", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }).then((r) =>
+      json<{
+        models: {
+          availableModels: { modelId: string; name: string; description?: string | null }[];
+          currentModelId: string;
+        } | null;
+      }>(r),
+    ),
+  peekAcpModels: (sessionKey: string) =>
+    fetch(`/api/acp/models/${encodeURIComponent(sessionKey)}`).then((r) =>
+      json<{
+        models: {
+          availableModels: { modelId: string; name: string; description?: string | null }[];
+          currentModelId: string;
+        } | null;
+      }>(r),
+    ),
+
   // Model registry (docs/model-hub-plan.md) — models, use-case slots, local engine
   getModels: () => fetch("/api/models").then((r) => json<ModelsResponse>(r)),
+  /** Models advertised by a remote OpenAI-compatible endpoint (Kosmos Cloud / custom). */
+  listRemoteLlmModels: (body?: { baseUrl?: string; apiKey?: string }) =>
+    post<{ models: { id: string; name: string }[]; baseUrl: string }>("/api/models/remote", body ?? {}),
   registerModel: (body: { manifest?: unknown; url?: string; apiKey?: string }) =>
     post<RegisteredModel>("/api/models", body),
   setModelEnabled: (id: string, enabled: boolean) =>

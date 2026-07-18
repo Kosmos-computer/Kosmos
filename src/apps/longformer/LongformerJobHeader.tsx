@@ -20,7 +20,10 @@ export function LongformerJobHeader({ vm, detail }: LongformerJobHeaderProps) {
         <button
           type="button"
           className="arco-longformer-job-header__back"
-          onClick={vm.closeEditor}
+          onClick={() => {
+            vm.closeEditor();
+            vm.setView("library");
+          }}
           aria-label={i18n.t(I18nKey.APPS$LONGFORMER_BACK_TO_LIBRARY)}
         >
           <ChevronLeft size={18} strokeWidth={1.75} />

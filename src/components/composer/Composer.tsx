@@ -14,6 +14,7 @@ import type { MenuItem } from "../Menu";
 import { ComposerControlsRow, type ComposerModeItem } from "./ComposerControlsRow";
 import { ComposerFormattingToolbar } from "./ComposerFormattingToolbar";
 import type { ComposerConnector } from "./ComposerAttachMenu";
+import type { ModelPickerProvider } from "./modelPickerTypes";
 import { ComposerSlashMenu } from "./ComposerSlashMenu";
 import {
   applySlashCommand,
@@ -68,9 +69,13 @@ export interface ComposerProps {
   /** Active agent profile label + menu inside the "+" menu. */
   agent?: string;
   agentItems?: MenuItem[];
-  /** Current model label + menu of alternatives. */
+  /** Current model label. Shown inactive when modelItems is empty (legacy). */
   model?: string;
   modelItems?: MenuItem[];
+  /** Split provider/model picker (preferred). */
+  modelProviders?: ModelPickerProvider[];
+  activeModelProviderId?: string;
+  onModelProviderChange?: (providerId: string) => void;
   /** Plus-menu wiring: attach actions and connectors. */
   onAddFile?: () => void;
   onAddFolder?: () => void;
@@ -117,6 +122,9 @@ export function Composer({
   agentItems,
   model,
   modelItems,
+  modelProviders,
+  activeModelProviderId,
+  onModelProviderChange,
   onAddFile,
   onAddFolder,
   onImportGitHubIssue,
@@ -152,11 +160,16 @@ export function Composer({
   }, [historyStorageKey]);
 
   // Auto-resize: collapse then grow to content, capped so long drafts scroll.
+  // Keep overflow hidden below the cap — overflow:auto + height=scrollHeight
+  // otherwise leaves a one-line scrollbar from subpixel rounding.
   useLayoutEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
+    el.style.overflowY = "hidden";
     el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, TEXTAREA_MAX_HEIGHT)}px`;
+    const next = Math.min(el.scrollHeight, TEXTAREA_MAX_HEIGHT);
+    el.style.height = `${next}px`;
+    el.style.overflowY = next >= TEXTAREA_MAX_HEIGHT ? "auto" : "hidden";
   }, [value]);
 
   const slashToken = useMemo(() => matchSlashToken(value), [value]);
@@ -386,6 +399,9 @@ export function Composer({
           agentItems={agentItems}
           model={model}
           modelItems={modelItems}
+          modelProviders={modelProviders}
+          activeModelProviderId={activeModelProviderId}
+          onModelProviderChange={onModelProviderChange}
           voiceActive={voiceActive}
           voiceAvailable={voiceAvailable}
           onVoiceToggle={onVoiceToggle}

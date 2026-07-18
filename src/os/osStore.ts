@@ -115,6 +115,21 @@ interface OsStore {
   navExpanded: boolean;
   /** Whether the left nav rail is shown at all (MenuBar drawer toggle). */
   navVisible: boolean;
+  /**
+   * Whether the bottom app tray (dock) stays visible. When false, edge-hover
+   * reveal (HoverDock / swipe) shows it — same pattern as UI Experiments HoverAppTray.
+   */
+  dockVisible: boolean;
+  /**
+   * Whether the top status / menu bar stays visible. When false, edge-hover
+   * reveal (HoverMenuBar / swipe) shows it — same pattern as UI Experiments HoverStatusBar.
+   */
+  menuBarVisible: boolean;
+  /**
+   * Whether the top status / menu bar stays visible in App view. Off by default
+   * (chromeless); when false, edge-hover / swipe reveal shows it.
+   */
+  menuBarVisibleInAppView: boolean;
   /** Which apps show on the nav rail, and in what order (windowKey ids). */
   navPinnedIds: string[];
   /** Which apps show on the dock, and in what order (windowKey ids) — independent from navPinnedIds. */
@@ -162,6 +177,9 @@ interface OsStore {
   setAgentBusy: (busy: boolean) => void;
   setNavExpanded: (expanded: boolean) => void;
   setNavVisible: (visible: boolean) => void;
+  setDockVisible: (visible: boolean) => void;
+  setMenuBarVisible: (visible: boolean) => void;
+  setMenuBarVisibleInAppView: (visible: boolean) => void;
   setNavPinnedIds: (updater: string[] | ((prev: string[]) => string[])) => void;
   setDockPinnedIds: (updater: string[] | ((prev: string[]) => string[])) => void;
   setShellView: (view: ShellView) => void;
@@ -216,6 +234,9 @@ export const useOsStore = create<OsStore>((set) => ({
   agentBusy: false,
   navExpanded: localStorage.getItem("arco:nav-expanded") === "true",
   navVisible: localStorage.getItem("arco:nav-visible") !== "false",
+  dockVisible: localStorage.getItem("arco:dock-visible") !== "false",
+  menuBarVisible: localStorage.getItem("arco:menubar-visible") !== "false",
+  menuBarVisibleInAppView: localStorage.getItem("arco:menubar-visible-in-app") === "true",
   navPinnedIds: loadPinnedIds("arco:nav-pinned"),
   dockPinnedIds: loadPinnedIds("arco:dock-pinned"),
   shellConfirms: [],
@@ -344,6 +365,21 @@ export const useOsStore = create<OsStore>((set) => ({
   setNavVisible: (visible) => {
     localStorage.setItem("arco:nav-visible", String(visible));
     set({ navVisible: visible });
+  },
+
+  setDockVisible: (visible) => {
+    localStorage.setItem("arco:dock-visible", String(visible));
+    set({ dockVisible: visible });
+  },
+
+  setMenuBarVisible: (visible) => {
+    localStorage.setItem("arco:menubar-visible", String(visible));
+    set({ menuBarVisible: visible });
+  },
+
+  setMenuBarVisibleInAppView: (visible) => {
+    localStorage.setItem("arco:menubar-visible-in-app", String(visible));
+    set({ menuBarVisibleInAppView: visible });
   },
 
   setNavPinnedIds: (updater) =>

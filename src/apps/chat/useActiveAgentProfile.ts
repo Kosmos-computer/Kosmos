@@ -69,12 +69,43 @@ export function useActiveAgentProfile() {
   const agentLabel = active?.name ?? "Arco";
 
   const agentItems: MenuItem[] = useMemo(() => {
-    const items: MenuItem[] = agents.map((a) => ({
-      id: a.id,
-      label: a.name,
-      checked: a.id === profileId,
-      onSelect: () => setProfileId(a.id),
-    }));
+    const personas = agents.filter((a) => a.runtime.kind === "builtin");
+    const providers = agents.filter((a) => a.runtime.kind !== "builtin");
+    const items: MenuItem[] = [];
+
+    if (personas.length > 0) {
+      items.push({
+        id: "_section:agents",
+        label: "Agents",
+        disabled: true,
+      });
+      for (const a of personas) {
+        items.push({
+          id: a.id,
+          label: a.name,
+          checked: a.id === profileId,
+          onSelect: () => setProfileId(a.id),
+        });
+      }
+    }
+
+    if (providers.length > 0) {
+      items.push({
+        id: "_section:providers",
+        label: "Providers",
+        disabled: true,
+        separatorAbove: personas.length > 0,
+      });
+      for (const a of providers) {
+        items.push({
+          id: a.id,
+          label: a.name,
+          checked: a.id === profileId,
+          onSelect: () => setProfileId(a.id),
+        });
+      }
+    }
+
     items.push({
       id: "_manage",
       label: "Manage agents…",

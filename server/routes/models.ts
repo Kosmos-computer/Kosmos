@@ -22,6 +22,8 @@ import { ZodError } from "zod";
 import { llamaEngine } from "../services/llamaEngine.js";
 import { modelStore } from "../stores/modelStore.js";
 import { loadSettings, saveSettings } from "../env.js";
+import { listRemoteLlmModels } from "../llm/remoteModels.js";
+import { requireCap } from "../auth/middleware.js";
 
 export const modelRoutes = new Hono();
 
@@ -35,6 +37,33 @@ function errorMessage(err: unknown): string {
 modelRoutes.get("/", (c) =>
   c.json({ models: modelStore.list(), slots: modelStore.slots() }),
 );
+
+/**
+ * List models from an OpenAI-compatible endpoint (Kosmos Cloud gateway or
+ * a custom baseUrl). Defaults to the saved Settings connection.
+ */
+modelRoutes.post("/remote", requireCap("chat"), async (c) => {
+  const body = (await c.req.json().catch(() => null)) as {
+    baseUrl?: string;
+    apiKey?: string;
+  } | null;
+  const settings = loadSettings();
+  const baseUrl = (body?.baseUrl ?? settings.baseUrl).trim();
+  if (!baseUrl) {
+    return c.json({ error: "No endpoint configured" }, 400);
+  }
+  const apiKey =
+    body?.apiKey?.trim() ||
+    settings.apiKey?.trim() ||
+    settings.apiKeys?.custom?.trim() ||
+    "";
+  try {
+    const models = await listRemoteLlmModels(baseUrl, apiKey);
+    return c.json({ models, baseUrl });
+  } catch (err) {
+    return c.json({ error: errorMessage(err) }, 502);
+  }
+});
 
 /**
  * Register a model. Three shapes, mirroring app installs:

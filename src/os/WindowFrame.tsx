@@ -27,9 +27,12 @@ export function WindowFrame({ win, focused, children }: Props) {
   const { i18n } = useTranslation();
   const title = useMemo(() => resolveWindowTitle(win), [win, i18n.language]);
   const shellView = useOsStore((s) => s.shellView);
+  const menuBarVisible = useOsStore((s) => s.menuBarVisible);
+  const menuBarVisibleInAppView = useOsStore((s) => s.menuBarVisibleInAppView);
   const windowControlAlign = useOsStore((s) => s.windowControlAlign);
   const windowControlStyle = useOsStore((s) => s.windowControlStyle);
   const appView = shellView === "app";
+  const hideMenuBar = appView ? !menuBarVisibleInAppView : !menuBarVisible;
   const { close, toggleMinimize, toggleMaximize, setRect } = useWindowStore();
   const dragState = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
   const resizeState = useRef<{
@@ -101,9 +104,9 @@ export function WindowFrame({ win, focused, children }: Props) {
   const style = win.maximized || appView
     ? {
         left: "var(--arco-nav-width, 0px)",
-        top: appView ? "var(--arco-menubar-offset, 0px)" : "var(--arco-window-top, 34px)",
+        top: hideMenuBar ? "var(--arco-menubar-offset, 0px)" : "var(--arco-window-top, 34px)",
         width: "calc(100% - var(--arco-nav-width, 0px))",
-        height: appView
+        height: hideMenuBar
           ? "calc(100% - var(--arco-menubar-offset, 0px))"
           : "calc(100% - var(--arco-window-top, 34px))",
         borderRadius: 0,

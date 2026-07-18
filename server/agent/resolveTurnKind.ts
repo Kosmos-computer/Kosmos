@@ -18,11 +18,12 @@ export function resolveAcpCommand(profile?: AgentProfile | null): string {
 }
 
 /**
- * Effective runtime kind for a turn: profile.runtime wins when set to a
- * non-builtin kind; otherwise fall back to Settings.agent (shell default).
+ * Effective runtime kind for a turn: the selected agent profile's runtime
+ * wins (including builtin). Settings.agent is only the fallback when no
+ * profile is attached to the turn.
  */
 export function resolveTurnKind(profile?: AgentProfile | null): AgentKind {
   const fromProfile = profile?.runtime.kind;
-  if (fromProfile && fromProfile !== "builtin") return fromProfile;
+  if (fromProfile) return fromProfile;
   return loadSettings().agent;
 }

@@ -629,7 +629,7 @@
   align-items: center;
   gap: var(--arco-space-m);
   padding: var(--arco-space-s) var(--arco-space-m);
-  background: var(--arco-bg-surface-solid);
+  background: transparent;
   flex-shrink: 0;
 }
 

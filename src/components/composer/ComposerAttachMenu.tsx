@@ -405,6 +405,18 @@ export function ComposerAttachMenu({
                   onMouseEnter={() => setFlyout("agent")}
                 >
                   {(agentItems ?? []).map((item) => {
+                    if (item.id.startsWith("_section:")) {
+                      return (
+                        <div key={item.id}>
+                          {item.separatorAbove && (
+                            <div className="arco-menu__separator" role="separator" />
+                          )}
+                          <div className="arco-menu__heading" role="presentation">
+                            {item.label}
+                          </div>
+                        </div>
+                      );
+                    }
                     const IconCmp = item.icon;
                     return (
                       <div key={item.id}>

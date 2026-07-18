@@ -111,25 +111,42 @@ export function ShareLinkModal({ file, open, onClose }: ShareLinkModalProps) {
           </p>
 
           <div style={{ display: "grid", gap: 8 }}>
-            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: "var(--arco-text-sm)" }}>
-              Access
+            <div>
+              <label className="arco-label" htmlFor="share-link-access">
+                Access
+              </label>
               <select
+                id="share-link-access"
+                className="arco-input"
                 value={mode}
                 onChange={(event) => setMode(event.target.value as "download" | "view")}
-                style={{ padding: "6px 8px", borderRadius: "var(--arco-radius-sm)" }}
               >
                 <option value="download">Download</option>
                 <option value="view">View only</option>
               </select>
-            </label>
-            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: "var(--arco-text-sm)" }}>
-              Password (optional)
-              <Input value={password} onChange={(event) => setPassword(event.target.value)} type="password" />
-            </label>
-            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: "var(--arco-text-sm)" }}>
-              Expires (optional, YYYY-MM-DD)
-              <Input value={expiresAt} onChange={(event) => setExpiresAt(event.target.value)} placeholder="2026-12-31" />
-            </label>
+            </div>
+            <div>
+              <label className="arco-label" htmlFor="share-link-password">
+                Password (optional)
+              </label>
+              <Input
+                id="share-link-password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                type="password"
+              />
+            </div>
+            <div>
+              <label className="arco-label" htmlFor="share-link-expires">
+                Expires (optional, YYYY-MM-DD)
+              </label>
+              <Input
+                id="share-link-expires"
+                value={expiresAt}
+                onChange={(event) => setExpiresAt(event.target.value)}
+                placeholder="2026-12-31"
+              />
+            </div>
           </div>
 
           {error ? (

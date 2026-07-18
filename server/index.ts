@@ -189,6 +189,7 @@ import { billingRoutes } from "./routes/billing.js";
 import { storageRoutes } from "./routes/storage.js";
 import { memoryRoutes } from "./routes/memory.js";
 import { agentRoutes } from "./routes/agents.js";
+import { acpRoutes } from "./routes/acp.js";
 import { startTranscriptionSupervisor } from "./transcription/supervisor.js";
 import { listRemoteVideos, listRemotePodcastEpisodes } from "./services/mediaRemoteService.js";
 import type { FileCreateInput } from "../shared/capabilities/files.js";
@@ -330,6 +331,7 @@ app.route("/v1", openaiCompatRoutes);
 app.route("/api/transcription", transcriptionRoutes);
 app.route("/api/memory", memoryRoutes);
 app.route("/api/agents", agentRoutes);
+app.route("/api/acp", acpRoutes);
 
 // ── Model registry (docs/model-hub-plan.md) ──────────────────────────────────
 app.route("/api/models", modelRoutes);

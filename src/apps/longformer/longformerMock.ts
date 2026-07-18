@@ -1,144 +1,4 @@
-import type { LongformerWorkspaceData, TranscriptDetail } from "./types";
-
-/** STUB: Beachcube demo project — mirrors Longformer reference layout. */
-export const BEACHCUBE_PODCAST_DETAIL: TranscriptDetail = {
-  id: "tr-beachcube-podcast",
-  title: "Podcast",
-  projectName: "Beachcube Demo Project",
-  status: "ready",
-  durationMs: 164_000,
-  currentMs: 5_710,
-  language: "English",
-  speakers: [
-    { id: "julian", name: "Julian", color: "var(--arco-longformer-speaker-julian)" },
-    { id: "hunter", name: "Hunter", color: "var(--arco-longformer-speaker-hunter)" },
-  ],
-  segments: [
-    {
-      id: "seg-1",
-      speakerId: "julian",
-      startMs: 0,
-      endMs: 4_200,
-      text: "Welcome back to the show. Today we're talking about surf culture and the songs that defined a generation on the West Coast.",
-      words: [],
-    },
-    {
-      id: "seg-2",
-      speakerId: "hunter",
-      startMs: 4_200,
-      endMs: 9_800,
-      text: "Yeah, I mean, you can't really separate the music from the beach. Like, Light My Fire — that whole Doors vibe — it's basically California in audio form.",
-      words: [
-        { id: "w-1", text: "Yeah,", startMs: 4_200, endMs: 4_450, speakerId: "hunter" },
-        { id: "w-2", text: "I", startMs: 4_450, endMs: 4_520, speakerId: "hunter", highlight: "filler" },
-        { id: "w-3", text: "mean,", startMs: 4_520, endMs: 4_780, speakerId: "hunter", highlight: "filler" },
-        { id: "w-4", text: "you", startMs: 4_780, endMs: 4_900, speakerId: "hunter" },
-        { id: "w-5", text: "can't", startMs: 4_900, endMs: 5_100, speakerId: "hunter" },
-        { id: "w-6", text: "really", startMs: 5_100, endMs: 5_350, speakerId: "hunter" },
-        { id: "w-7", text: "separate", startMs: 5_350, endMs: 5_710, speakerId: "hunter", highlight: "emphasis" },
-        { id: "w-8", text: "the", startMs: 5_710, endMs: 5_820, speakerId: "hunter" },
-        { id: "w-9", text: "music", startMs: 5_820, endMs: 6_100, speakerId: "hunter" },
-        { id: "w-10", text: "from", startMs: 6_100, endMs: 6_250, speakerId: "hunter" },
-        { id: "w-11", text: "the", startMs: 6_250, endMs: 6_350, speakerId: "hunter" },
-        { id: "w-12", text: "beach.", startMs: 6_350, endMs: 6_700, speakerId: "hunter" },
-      ],
-    },
-    {
-      id: "seg-3",
-      speakerId: "julian",
-      startMs: 9_800,
-      endMs: 15_400,
-      text: "Totally. And then you get California Girls — that harmonies thing. It's like the soundtrack to every sunset you've ever seen.",
-      words: [],
-    },
-    {
-      id: "seg-4",
-      speakerId: "hunter",
-      startMs: 15_400,
-      endMs: 22_000,
-      text: "Right, and that's what we're going to break down in this episode — how those tracks shaped the podcast format itself.",
-      words: [],
-    },
-  ],
-  chapters: [
-    { id: "ch-1", label: "Light My Fire", startMs: 0, endMs: 82_000, color: "var(--arco-longformer-chapter-1)" },
-    { id: "ch-2", label: "California Girls", startMs: 82_000, endMs: 164_000, color: "var(--arco-longformer-chapter-2)" },
-  ],
-  tracks: [
-    {
-      id: "track-chapters",
-      label: "Chapters",
-      kind: "chapters",
-      clips: [
-        { id: "clip-ch-1", label: "Light My Fire", startMs: 0, endMs: 82_000, trackId: "track-chapters" },
-        { id: "clip-ch-2", label: "California Girls", startMs: 82_000, endMs: 164_000, trackId: "track-chapters" },
-      ],
-    },
-    {
-      id: "track-words",
-      label: "Words",
-      kind: "words",
-      clips: [
-        { id: "clip-w-1", label: "Welcome back", startMs: 0, endMs: 1_200, trackId: "track-words" },
-        { id: "clip-w-2", label: "surf culture", startMs: 2_400, endMs: 3_600, trackId: "track-words" },
-        { id: "clip-w-3", label: "Light My Fire", startMs: 6_800, endMs: 8_200, trackId: "track-words" },
-        { id: "clip-w-4", label: "California Girls", startMs: 10_500, endMs: 12_000, trackId: "track-words" },
-        { id: "clip-w-5", label: "podcast format", startMs: 19_200, endMs: 21_000, trackId: "track-words" },
-      ],
-    },
-    {
-      id: "track-wave",
-      label: "Audio",
-      kind: "waveform",
-      clips: [
-        { id: "clip-a-1", label: "10.85s", startMs: 0, endMs: 10_850, trackId: "track-wave" },
-        { id: "clip-a-2", label: "5.53s", startMs: 10_850, endMs: 16_380, trackId: "track-wave" },
-        { id: "clip-a-3", label: "8.12s", startMs: 16_380, endMs: 24_500, trackId: "track-wave" },
-      ],
-    },
-  ],
-  mediaFiles: [
-    { id: "mf-1", name: "podcast-master", kind: "audio", extension: "mp3", durationMs: 164_000 },
-    { id: "mf-2", name: "intro-bed", kind: "audio", extension: "wav", durationMs: 12_000 },
-    { id: "mf-3", name: "cover-art", kind: "image", extension: "png" },
-    { id: "mf-4", name: "b-roll-clip", kind: "video", extension: "mp4", durationMs: 45_000 },
-    { id: "mf-5", name: "outro-mix", kind: "audio", extension: "m4a", durationMs: 8_500 },
-    { id: "mf-6", name: "raw-interview", kind: "audio", extension: "aac", durationMs: 210_000 },
-  ],
-  artifacts: [
-    {
-      id: "art-1",
-      kind: "summaries",
-      title: "Episode summary",
-      content:
-        "Julian and Hunter explore how West Coast surf culture and iconic tracks like Light My Fire and California Girls shaped modern podcast storytelling.",
-      createdAt: "Jul 6, 2026",
-      status: "ready",
-    },
-    {
-      id: "art-2",
-      kind: "chapters",
-      title: "Chapter markers",
-      content: "1. Light My Fire (0:00)\n2. California Girls (1:22)",
-      createdAt: "Jul 6, 2026",
-      status: "ready",
-    },
-    {
-      id: "art-3",
-      kind: "quotes",
-      title: "Pull quotes",
-      content:
-        '"You can\'t really separate the music from the beach."\n"California Girls — the soundtrack to every sunset you\'ve ever seen."',
-      createdAt: "Jul 6, 2026",
-      status: "ready",
-    },
-  ],
-  selectedClipId: "clip-a-2",
-  volumeDb: -3,
-  speed: 1,
-  compressorEnabled: true,
-  compressorPreset: "Classic Voiceover",
-};
+import type { LongformerWorkspaceData } from "./types";
 
 export const LONGFORMER_MOCK: LongformerWorkspaceData = {
   productName: "Longformer",
@@ -151,43 +11,14 @@ export const LONGFORMER_MOCK: LongformerWorkspaceData = {
     { id: "uploads", label: "Uploads", view: "uploads" },
     { id: "settings", label: "Settings", view: "settings" },
   ],
-  connectedSources: [
-    { id: "zoom", label: "Zoom", provider: "Zoom", status: "connected", lastSync: "2 min ago" },
-    { id: "meet", label: "Google Meet", provider: "Google", status: "connected", lastSync: "15 min ago" },
-    { id: "podcasts", label: "Podcast Feeds", provider: "RSS", status: "syncing", lastSync: "Syncing…" },
-    { id: "drive", label: "Google Drive", provider: "Google", status: "connected", lastSync: "1 hr ago" },
-    { id: "memory", label: "App Memory", provider: "Arco", status: "connected", lastSync: "Just now" },
-  ],
+  connectedSources: [],
   pinnedTranscripts: [
-    { id: "tr-beachcube-podcast", label: "Beachcube — Podcast", meta: "2:44" },
     { id: "tr-001", label: "Q2 Planning — All Hands", meta: "42:18" },
     { id: "tr-002", label: "Investor Call — Series B", meta: "1:05:22" },
   ],
-  processingCount: 3,
-  metrics: [
-    { id: "total", label: "Total Transcripts", value: 148, trend: 18, status: "ready" },
-    { id: "ready", label: "Ready", value: 132, trend: 12, status: "ready" },
-    { id: "processing", label: "Processing", value: 3, trend: -25, status: "processing" },
-    { id: "queued", label: "Queued", value: 5, trend: 40, status: "queued" },
-    { id: "sources", label: "Connected Sources", value: 5, trend: 25, status: "connected" },
-  ],
+  processingCount: 0,
+  metrics: [],
   transcripts: [
-    {
-      id: "tr-beachcube-podcast",
-      title: "Podcast",
-      projectName: "Beachcube Demo Project",
-      sourceType: "podcast",
-      sourceLabel: "Local upload",
-      status: "ready",
-      durationMs: 164_000,
-      wordCount: 186,
-      speakerCount: 2,
-      createdAt: "Jul 6, 2026",
-      createdAtMs: Date.parse("2026-07-06T10:00:00"),
-      excerpt: "…you can't really separate the music from the beach…",
-      language: "English",
-      pinned: true,
-    },
     {
       id: "tr-001",
       title: "Q2 Planning — All Hands",
@@ -307,7 +138,5 @@ export const LONGFORMER_MOCK: LongformerWorkspaceData = {
       language: "English",
     },
   ],
-  details: {
-    "tr-beachcube-podcast": BEACHCUBE_PODCAST_DETAIL,
-  },
+  details: {},
 };

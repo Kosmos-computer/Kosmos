@@ -8,8 +8,9 @@ export interface StagedEntry<T extends { id: string }> {
   key: string;
 }
 
+/** Match --arco-dur-med (240ms) plus a small buffer for accordion settle. */
 const EXIT_MS = 280;
-const ENTER_SETTLE_MS = 320;
+const ENTER_SETTLE_MS = 280;
 
 /**
  * Keeps leaving items in the list long enough to play an exit animation, and

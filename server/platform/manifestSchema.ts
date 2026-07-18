@@ -73,6 +73,11 @@ export const manifestSchema = z.object({
       subscribes: z.array(z.string()).optional(),
     })
     .optional(),
+  chrome: z
+    .object({
+      toolbar: z.boolean().optional(),
+    })
+    .optional(),
 });
 
 export function parseManifest(raw: unknown): { manifest?: AppManifest; error?: string } {

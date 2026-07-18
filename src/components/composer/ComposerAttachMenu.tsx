@@ -3,31 +3,31 @@ import i18n from "../../i18n/index";
 import { T } from "../../i18n/T";
 /**
  * ComposerAttachMenu — the "+" popover: attach actions, slash commands,
- * connectors submenu (with enable toggles), plugins, and optional workspace
- * panel switches. Uses shared .arco-menu panel styles directly (rather than
- * <Menu>) because the panel mixes dismiss-on-select rows with non-dismissing
- * switch rows and a nested flyout.
+ * connectors / tools / agent flyouts, plugins, and composer chrome toggles
+ * (emoji picker / rich-text toolbar). Uses shared .arco-menu panel styles
+ * directly (rather than <Menu>) because the panel mixes dismiss-on-select
+ * rows with non-dismissing switch rows and nested flyouts.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  Bot,
+  Check,
   ChevronRight,
   CircleDashed,
   Folder,
   LayoutGrid,
   Paperclip,
+  Pilcrow,
   Plus,
   Plug,
   Settings2,
+  Smile,
   SquareSlash,
+  Wrench,
 } from "lucide-react";
 import { useDismiss } from "../useDismiss";
-
-export interface ComposerPanelToggle {
-  id: string;
-  label: string;
-  visible: boolean;
-  onVisibleChange: (visible: boolean) => void;
-}
+import type { MenuItem } from "../Menu";
+import { TOOLSETS } from "./toolsets";
 
 export interface ComposerConnector {
   id: string;
@@ -35,6 +35,8 @@ export interface ComposerConnector {
   enabled: boolean;
   onEnabledChange: (enabled: boolean) => void;
 }
+
+type AttachFlyout = "connectors" | "tools" | "agent" | null;
 
 export interface ComposerAttachMenuProps {
   onAddFile?: () => void;
@@ -46,7 +48,18 @@ export interface ComposerAttachMenuProps {
   onBrowseConnectors?: () => void;
   /** Installed connectors shown as toggles in the Connectors flyout. */
   connectors?: ComposerConnector[];
-  panelToggles?: ComposerPanelToggle[];
+  /** Active toolset ids (multi-select). Hidden when unset. */
+  toolsetIds?: string[];
+  onToolsetIdsChange?: (ids: string[]) => void;
+  /** Active agent profile label + menu. */
+  agent?: string;
+  agentItems?: MenuItem[];
+  /** Show the emoji picker control in the composer row. */
+  emojiVisible?: boolean;
+  onEmojiVisibleChange?: (visible: boolean) => void;
+  /** Show the rich-text formatting toolbar above the textarea. */
+  richTextVisible?: boolean;
+  onRichTextVisibleChange?: (visible: boolean) => void;
   disabled?: boolean;
 }
 
@@ -65,26 +78,52 @@ export function ComposerAttachMenu({
   onManageConnectors,
   onBrowseConnectors,
   connectors: connectorsProp,
-  panelToggles,
+  toolsetIds,
+  onToolsetIdsChange,
+  agent,
+  agentItems,
+  emojiVisible = false,
+  onEmojiVisibleChange,
+  richTextVisible = false,
+  onRichTextVisibleChange,
   disabled,
 }: ComposerAttachMenuProps) {
   const [open, setOpen] = useState(false);
-  const [connectorsOpen, setConnectorsOpen] = useState(false);
+  const [flyout, setFlyout] = useState<AttachFlyout>(null);
   const [stubEnabled, setStubEnabled] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(STUB_CONNECTORS.map((c) => [c.id, c.enabled])),
   );
   const rootRef = useRef<HTMLDivElement>(null);
 
+  const showTools = Boolean(toolsetIds && onToolsetIdsChange);
+  const showAgent = Boolean(agentItems?.length);
+  const agentLabel = agent ?? "Agent";
+
   const close = useCallback(() => {
     setOpen(false);
-    setConnectorsOpen(false);
+    setFlyout(null);
   }, []);
 
   useDismiss(open, close, rootRef);
 
   useEffect(() => {
-    if (!open) setConnectorsOpen(false);
+    if (!open) setFlyout(null);
   }, [open]);
+
+  function toggleFlyout(next: Exclude<AttachFlyout, null>) {
+    setFlyout((current) => (current === next ? null : next));
+  }
+
+  function toggleToolset(setId: string) {
+    if (!toolsetIds || !onToolsetIdsChange) return;
+    const checked = toolsetIds.includes(setId);
+    if (checked) {
+      const next = toolsetIds.filter((id) => id !== setId);
+      onToolsetIdsChange(next.length > 0 ? next : [setId]);
+    } else {
+      onToolsetIdsChange([...toolsetIds, setId]);
+    }
+  }
 
   const fileShortcut =
     typeof navigator !== "undefined" && /Mac|iPhone|iPad/i.test(navigator.platform) ? "⌘U" : "Ctrl+U";
@@ -125,7 +164,7 @@ export function ComposerAttachMenu({
       {open && (
         <div
           role="menu"
-          aria-label={i18n.t(I18nKey.COMPONENTS$COMPOSER_ATTACH_AND_PANELS)}
+          aria-label={i18n.t(I18nKey.COMPONENTS$COMPOSER_ADD_OR_ATTACH)}
           className="arco-menu__panel arco-menu__panel--top arco-menu__panel--start arco-attach__panel"
         >
           <button
@@ -189,17 +228,17 @@ export function ComposerAttachMenu({
 
           <div
             className="arco-attach__submenu"
-            onMouseLeave={() => setConnectorsOpen(false)}
+            onMouseLeave={() => flyout === "connectors" && setFlyout(null)}
           >
             <button
               type="button"
               role="menuitem"
-              className={`arco-menu__item${connectorsOpen ? " arco-menu__item--active" : ""}`}
+              className={`arco-menu__item${flyout === "connectors" ? " arco-menu__item--active" : ""}`}
               aria-haspopup="menu"
-              aria-expanded={connectorsOpen}
-              onMouseEnter={() => setConnectorsOpen(true)}
-              onFocus={() => setConnectorsOpen(true)}
-              onClick={() => setConnectorsOpen((v) => !v)}
+              aria-expanded={flyout === "connectors"}
+              onMouseEnter={() => setFlyout("connectors")}
+              onFocus={() => setFlyout("connectors")}
+              onClick={() => toggleFlyout("connectors")}
             >
               <span className="arco-menu__icon" aria-hidden="true">
                 <LayoutGrid size={14} />
@@ -212,12 +251,12 @@ export function ComposerAttachMenu({
               </span>
             </button>
 
-            {connectorsOpen && (
+            {flyout === "connectors" && (
               <div
                 role="menu"
                 aria-label={i18n.t(I18nKey.COMPONENTS$COMPOSER_CONNECTORS)}
                 className="arco-menu__panel arco-attach__flyout"
-                onMouseEnter={() => setConnectorsOpen(true)}
+                onMouseEnter={() => setFlyout("connectors")}
               >
                 {connectors.length === 0 ? (
                   <div className="arco-menu__empty">No connectors installed</div>
@@ -274,6 +313,132 @@ export function ComposerAttachMenu({
             )}
           </div>
 
+          {showTools && (
+            <div
+              className="arco-attach__submenu"
+              onMouseLeave={() => flyout === "tools" && setFlyout(null)}
+            >
+              <button
+                type="button"
+                role="menuitem"
+                className={`arco-menu__item${flyout === "tools" ? " arco-menu__item--active" : ""}`}
+                aria-haspopup="menu"
+                aria-expanded={flyout === "tools"}
+                onMouseEnter={() => setFlyout("tools")}
+                onFocus={() => setFlyout("tools")}
+                onClick={() => toggleFlyout("tools")}
+              >
+                <span className="arco-menu__icon" aria-hidden="true">
+                  <Wrench size={14} />
+                </span>
+                <span className="arco-menu__itemlabel">Tools</span>
+                <span className="arco-menu__chevron" aria-hidden="true">
+                  <ChevronRight size={14} />
+                </span>
+              </button>
+
+              {flyout === "tools" && (
+                <div
+                  role="menu"
+                  aria-label="Agent toolsets"
+                  className="arco-menu__panel arco-menu__panel--rich arco-attach__flyout arco-attach__flyout--tools"
+                  onMouseEnter={() => setFlyout("tools")}
+                >
+                  <div className="arco-menu__heading">Which toolsets may the agent use?</div>
+                  {TOOLSETS.map((set) => {
+                    const checked = toolsetIds?.includes(set.id) ?? false;
+                    return (
+                      <button
+                        key={set.id}
+                        type="button"
+                        role="menuitemcheckbox"
+                        aria-checked={checked}
+                        className="arco-menu__item arco-menu__item--described"
+                        onClick={() => toggleToolset(set.id)}
+                      >
+                        <span className="arco-menu__itemlabel">
+                          <span className="arco-menu__itemtitle">{set.label}</span>
+                          <span className="arco-menu__itemdesc">{set.description}</span>
+                        </span>
+                        {checked && (
+                          <span className="arco-menu__check" aria-hidden="true">
+                            <Check size={13} />
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {showAgent && (
+            <div
+              className="arco-attach__submenu"
+              onMouseLeave={() => flyout === "agent" && setFlyout(null)}
+            >
+              <button
+                type="button"
+                role="menuitem"
+                className={`arco-menu__item${flyout === "agent" ? " arco-menu__item--active" : ""}`}
+                aria-haspopup="menu"
+                aria-expanded={flyout === "agent"}
+                onMouseEnter={() => setFlyout("agent")}
+                onFocus={() => setFlyout("agent")}
+                onClick={() => toggleFlyout("agent")}
+              >
+                <span className="arco-menu__icon" aria-hidden="true">
+                  <Bot size={14} />
+                </span>
+                <span className="arco-menu__itemlabel">{agentLabel}</span>
+                <span className="arco-menu__chevron" aria-hidden="true">
+                  <ChevronRight size={14} />
+                </span>
+              </button>
+
+              {flyout === "agent" && (
+                <div
+                  role="menu"
+                  aria-label="Choose agent"
+                  className="arco-menu__panel arco-attach__flyout"
+                  onMouseEnter={() => setFlyout("agent")}
+                >
+                  {(agentItems ?? []).map((item) => {
+                    const IconCmp = item.icon;
+                    return (
+                      <div key={item.id}>
+                        {item.separatorAbove && <div className="arco-menu__separator" role="separator" />}
+                        <button
+                          type="button"
+                          role="menuitem"
+                          disabled={item.disabled}
+                          className={`arco-menu__item${item.danger ? " arco-menu__item--danger" : ""}`}
+                          onClick={() => {
+                            item.onSelect?.();
+                            close();
+                          }}
+                        >
+                          {IconCmp && (
+                            <span className="arco-menu__icon" aria-hidden="true">
+                              <IconCmp size={14} />
+                            </span>
+                          )}
+                          <span className="arco-menu__itemlabel">{item.label}</span>
+                          {item.checked && (
+                            <span className="arco-menu__check" aria-hidden="true">
+                              <Check size={13} />
+                            </span>
+                          )}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           <button
             type="button"
             role="menuitem"
@@ -288,26 +453,47 @@ export function ComposerAttachMenu({
             </span>
           </button>
 
-          {panelToggles && panelToggles.length > 0 && (
+          {(onEmojiVisibleChange || onRichTextVisibleChange) && (
             <>
               <div className="arco-menu__separator" role="separator" />
-              <div className="arco-menu__sectionlabel">
-                <T k={I18nKey.COMPONENTS$COMPOSER_PANELS} />
-              </div>
-              {panelToggles.map((toggle) => (
-                <label key={toggle.id} className="arco-attach__togglerow">
-                  <span className="arco-attach__togglelabel">{toggle.label}</span>
+              {onEmojiVisibleChange && (
+                <label className="arco-attach__togglerow">
+                  <span className="arco-menu__icon" aria-hidden="true">
+                    <Smile size={14} />
+                  </span>
+                  <span className="arco-attach__togglelabel">
+                    <T k={I18nKey.COMPONENTS$COMPOSER_EMOJIS} />
+                  </span>
                   <span className="arco-switch">
                     <input
                       type="checkbox"
-                      checked={toggle.visible}
-                      onChange={(e) => toggle.onVisibleChange(e.target.checked)}
-                      aria-label={toggle.label}
+                      checked={emojiVisible}
+                      onChange={(e) => onEmojiVisibleChange(e.target.checked)}
+                      aria-label={i18n.t(I18nKey.COMPONENTS$COMPOSER_EMOJIS)}
                     />
                     <span className="arco-switch__track" />
                   </span>
                 </label>
-              ))}
+              )}
+              {onRichTextVisibleChange && (
+                <label className="arco-attach__togglerow">
+                  <span className="arco-menu__icon" aria-hidden="true">
+                    <Pilcrow size={14} />
+                  </span>
+                  <span className="arco-attach__togglelabel">
+                    <T k={I18nKey.COMPONENTS$COMPOSER_RICH_TEXT} />
+                  </span>
+                  <span className="arco-switch">
+                    <input
+                      type="checkbox"
+                      checked={richTextVisible}
+                      onChange={(e) => onRichTextVisibleChange(e.target.checked)}
+                      aria-label={i18n.t(I18nKey.COMPONENTS$COMPOSER_RICH_TEXT)}
+                    />
+                    <span className="arco-switch__track" />
+                  </span>
+                </label>
+              )}
             </>
           )}
         </div>

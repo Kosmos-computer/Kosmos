@@ -1,7 +1,7 @@
 /**
  * Composer — the rich chat input surface ported from the agent-studio design:
  * a bordered card holding an optional formatting toolbar, an auto-resizing
- * textarea, and a controls row (attach / emoji / formatting / mode / model /
+ * textarea, and a controls row (attach / optional emoji / mode / model /
  * mic / send), with a dockable notice banner and a usage status bar beneath.
  *
  * Fully controlled and app-agnostic: Studio (and later Chat) own the draft
@@ -13,7 +13,7 @@ import type { ApprovalMode } from "@shared/types";
 import type { MenuItem } from "../Menu";
 import { ComposerControlsRow, type ComposerModeItem } from "./ComposerControlsRow";
 import { ComposerFormattingToolbar } from "./ComposerFormattingToolbar";
-import type { ComposerConnector, ComposerPanelToggle } from "./ComposerAttachMenu";
+import type { ComposerConnector } from "./ComposerAttachMenu";
 import { ComposerSlashMenu } from "./ComposerSlashMenu";
 import {
   applySlashCommand,
@@ -62,16 +62,16 @@ export interface ComposerProps {
   /** Approval posture (Ask / Approve / Full). Shown when both are set. */
   approvalMode?: ApprovalMode;
   onApprovalModeChange?: (mode: ApprovalMode) => void;
-  /** Toolset chips (Hermes). Shown when both are set. */
+  /** Toolset options inside the "+" menu. Shown when both are set. */
   toolsetIds?: string[];
   onToolsetIdsChange?: (ids: string[]) => void;
-  /** Active agent profile label + menu. */
+  /** Active agent profile label + menu inside the "+" menu. */
   agent?: string;
   agentItems?: MenuItem[];
   /** Current model label + menu of alternatives. */
   model?: string;
   modelItems?: MenuItem[];
-  /** Plus-menu wiring: attach actions, connectors, and workspace panel switches. */
+  /** Plus-menu wiring: attach actions and connectors. */
   onAddFile?: () => void;
   onAddFolder?: () => void;
   onImportGitHubIssue?: () => void;
@@ -80,7 +80,6 @@ export interface ComposerProps {
   onManageConnectors?: () => void;
   onBrowseConnectors?: () => void;
   connectors?: ComposerConnector[];
-  panelToggles?: ComposerPanelToggle[];
   /** Voice session wiring — when provided, the mic button toggles it. */
   voiceActive?: boolean;
   voiceAvailable?: boolean;
@@ -126,7 +125,6 @@ export function Composer({
   onManageConnectors,
   onBrowseConnectors,
   connectors,
-  panelToggles,
   voiceActive,
   voiceAvailable,
   onVoiceToggle,
@@ -140,7 +138,8 @@ export function Composer({
 }: ComposerProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const draftBeforeHistoryRef = useRef("");
-  const [formattingVisible, setFormattingVisible] = useState(false);
+  const [emojiVisible, setEmojiVisible] = useState(false);
+  const [richTextVisible, setRichTextVisible] = useState(false);
   const [slashIndex, setSlashIndex] = useState(0);
   const [history, setHistory] = useState<string[]>(() => loadHistory(historyStorageKey));
   const [historyIndex, setHistoryIndex] = useState<number | null>(null);
@@ -334,7 +333,7 @@ export function Composer({
           if (e.dataTransfer.files?.length) onFilesDropped(e.dataTransfer.files);
         }}
       >
-        {formattingVisible && <ComposerFormattingToolbar onFormat={handleFormat} />}
+        {richTextVisible && <ComposerFormattingToolbar onFormat={handleFormat} />}
         <div className="arco-composer__inputwrap">
           {slashOpen && (
             <ComposerSlashMenu
@@ -371,10 +370,11 @@ export function Composer({
           onManageConnectors={onManageConnectors}
           onBrowseConnectors={onBrowseConnectors}
           connectors={connectors}
-          panelToggles={panelToggles}
+          emojiVisible={emojiVisible}
+          onEmojiVisibleChange={setEmojiVisible}
+          richTextVisible={richTextVisible}
+          onRichTextVisibleChange={setRichTextVisible}
           onInsertEmoji={(emoji) => insertAtCursor(textareaRef.current, value, emoji, onChange)}
-          formattingVisible={formattingVisible}
-          onToggleFormatting={() => setFormattingVisible((v) => !v)}
           modes={modes}
           activeModeId={activeModeId}
           onModeChange={onModeChange}

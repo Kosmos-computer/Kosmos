@@ -580,14 +580,26 @@
   display: flex;
   flex-direction: column;
   padding: var(--arco-space-m) var(--arco-space-s);
+  /* Chrome/backdrop live on ::before — backdrop-filter on this element would
+     clip overflowing menus/tooltips even with overflow: visible. */
+  background: transparent;
+  border-right: 1px solid transparent;
+  z-index: var(--arco-z-chrome);
+  transition: width var(--arco-dur-med) var(--arco-ease);
+  /* Visible so collapsed-state tooltips and "More apps" can escape the column. */
+  overflow: visible;
+}
+
+.arco-navrail::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
   background: var(--arco-bg-chrome);
   backdrop-filter: var(--arco-backdrop-blur);
   -webkit-backdrop-filter: var(--arco-backdrop-blur);
   border-right: 1px solid var(--arco-border);
-  z-index: var(--arco-z-chrome);
-  transition: width var(--arco-dur-med) var(--arco-ease);
-  /* Visible so collapsed-state tooltips can escape the 56px column. */
-  overflow: visible;
+  pointer-events: none;
 }
 
 .arco-navrail__brand-row {
@@ -687,7 +699,18 @@
 
 .arco-navrail__more-apps .arco-menu__panel {
   max-height: min(420px, calc(100vh - 80px));
-  overflow-y: auto;
+}
+
+.arco-navrail__more-apps .arco-menu__items {
+  max-height: min(360px, calc(100vh - 140px));
+}
+
+/* Footer trigger sits at the bottom of the rail — grow the panel upward so
+   desktop overflow:hidden doesn't clip the vertically-centered list. */
+.arco-navrail__more-apps .arco-menu__panel--right {
+  top: auto;
+  bottom: 0;
+  transform: none;
 }
 
 .arco-navrail__itemslot {
@@ -919,7 +942,11 @@
 .arco-dock__all-apps .arco-menu__panel,
 .arco-dock__more-apps .arco-menu__panel {
   max-height: min(420px, calc(100vh - 120px));
-  overflow-y: auto;
+}
+
+.arco-dock__all-apps .arco-menu__items,
+.arco-dock__more-apps .arco-menu__items {
+  max-height: min(360px, calc(100vh - 180px));
 }
 
 .arco-dock__item {
@@ -1210,21 +1237,42 @@
 }
 
 .arco-window__controls {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   flex-shrink: 0;
 }
 
-.arco-window__controls--traffic {
+.arco-window__controls--traffic,
+.arco-window__controls--circles,
+.arco-window__controls--outline,
+.arco-window__controls--capsules {
   gap: 7px;
 }
 
-.arco-window__titlebar--style-traffic.arco-window__titlebar--align-left .arco-window__controls--traffic {
+.arco-window__controls--circles,
+.arco-window__controls--outline {
+  gap: 6px;
+}
+
+.arco-window__controls--capsules {
+  gap: 5px;
+}
+
+/* Compact chip styles (traffic / circles / outline / capsules) pin to the edge. */
+.arco-window__titlebar--style-traffic.arco-window__titlebar--align-left .arco-window__controls--traffic,
+.arco-window__titlebar--style-circles.arco-window__titlebar--align-left .arco-window__controls--circles,
+.arco-window__titlebar--style-outline.arco-window__titlebar--align-left .arco-window__controls--outline,
+.arco-window__titlebar--style-capsules.arco-window__titlebar--align-left .arco-window__controls--capsules {
   position: absolute;
   left: var(--arco-space-m);
 }
 
-.arco-window__titlebar--style-traffic.arco-window__titlebar--align-right .arco-window__controls--traffic {
+.arco-window__titlebar--style-traffic.arco-window__titlebar--align-right .arco-window__controls--traffic,
+.arco-window__titlebar--style-circles.arco-window__titlebar--align-right .arco-window__controls--circles,
+.arco-window__titlebar--style-outline.arco-window__titlebar--align-right .arco-window__controls--outline,
+.arco-window__titlebar--style-capsules.arco-window__titlebar--align-right .arco-window__controls--capsules {
   position: absolute;
   right: var(--arco-space-m);
 }
@@ -1238,8 +1286,11 @@
   height: 100%;
 }
 
+.arco-window__titlebar--style-glyph.arco-window__titlebar--align-left {
+  padding-left: 0;
+}
+
 .arco-window__titlebar--style-glyph.arco-window__titlebar--align-left .arco-window__controls--glyph {
-  order: -1;
   height: 100%;
 }
 
@@ -1289,16 +1340,115 @@
   height: 12px;
 }
 
+/* Circle icons — soft filled discs with always-visible glyphs */
+.arco-window__circle {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--arco-bg-hover);
+  color: var(--arco-text-secondary);
+  cursor: pointer;
+  transition:
+    background var(--arco-dur-fast) var(--arco-ease),
+    color var(--arco-dur-fast) var(--arco-ease);
+}
+.arco-window__circle:hover {
+  background: var(--arco-bg-active, var(--arco-border-strong));
+  color: var(--arco-text-primary);
+}
+.arco-window__circle--close:hover {
+  background: var(--arco-danger);
+  color: var(--arco-text-inverted);
+}
+.arco-window__circle svg {
+  width: 10px;
+  height: 10px;
+}
+
+/* Outlined — stroked circles, icons tint on hover */
+.arco-window__outline {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--arco-border-strong);
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--arco-text-tertiary);
+  cursor: pointer;
+  transition:
+    border-color var(--arco-dur-fast) var(--arco-ease),
+    color var(--arco-dur-fast) var(--arco-ease),
+    background var(--arco-dur-fast) var(--arco-ease);
+}
+.arco-window__outline:hover {
+  border-color: var(--arco-text-secondary);
+  color: var(--arco-text-primary);
+  background: var(--arco-bg-hover);
+}
+.arco-window__outline--close:hover {
+  border-color: var(--arco-danger);
+  color: var(--arco-danger);
+  background: var(--arco-danger-soft);
+}
+.arco-window__outline svg {
+  width: 9px;
+  height: 9px;
+}
+
+/* Capsules — rounded chip buttons */
+.arco-window__capsule {
+  width: 22px;
+  height: 18px;
+  border-radius: 999px;
+  border: none;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--arco-bg-hover);
+  color: var(--arco-text-secondary);
+  cursor: pointer;
+  transition:
+    background var(--arco-dur-fast) var(--arco-ease),
+    color var(--arco-dur-fast) var(--arco-ease);
+}
+.arco-window__capsule:hover {
+  background: var(--arco-bg-active, var(--arco-border-strong));
+  color: var(--arco-text-primary);
+}
+.arco-window__capsule--close:hover {
+  background: var(--arco-danger);
+  color: var(--arco-text-inverted);
+}
+.arco-window__capsule svg {
+  width: 10px;
+  height: 10px;
+}
+
 .arco-window__title {
-  flex: 1;
+  /* True center across the full titlebar; side controls sit above via z-index. */
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   min-width: 0;
-  text-align: center;
+  padding: 0 72px;
   font-size: var(--arco-text-sm);
   font-weight: 600;
   color: var(--arco-text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  pointer-events: none;
 }
 
 .arco-window__title-version {
@@ -1306,18 +1456,15 @@
   color: var(--arco-text-tertiary);
 }
 
-.arco-window__titlebar--style-traffic.arco-window__titlebar--align-left .arco-window__title {
-  /* Balance the traffic dots so the title optically centers */
-  margin-right: 50px;
-}
-
-.arco-window__titlebar--style-traffic.arco-window__titlebar--align-right .arco-window__title {
-  margin-left: 50px;
-}
-
 .arco-window__titlebar--style-glyph .arco-window__title {
+  position: static;
+  inset: auto;
+  display: block;
+  flex: 1;
+  justify-content: flex-start;
+  padding: 0 0 0 var(--arco-space-xs);
   text-align: left;
-  padding-left: var(--arco-space-xs);
+  pointer-events: auto;
 }
 
 .arco-window__content {

@@ -9,6 +9,7 @@ import {
   type ShellRouteTarget,
 } from "@shared/shellRoutes";
 import type { SettingsSectionId } from "../apps/settings/settingsSections";
+import { useOsStore } from "./osStore";
 import { systemAppTitle } from "./systemAppTitles";
 import { useWindowStore, windowKey, type SystemAppId, type WindowKind } from "./windowStore";
 
@@ -73,11 +74,25 @@ export function shellTargetToWindowKind(target: ShellRouteTarget): WindowKind {
 }
 
 export function resolveTitleForKind(kind: WindowKind, title?: string): string {
-  if (title) return title;
-  if (kind.type === "system") return systemAppTitle(kind.app);
-  if (kind.type === "generated") return kind.appId;
-  if (kind.type === "installed") return kind.appId;
-  return kind.webAppId;
+  // Deep links / route sync often omit a title and used to fall back to the
+  // raw id ("core.calculator"). Look up the friendly name; keep an explicit
+  // non-id title (e.g. a document name) when one was provided.
+  const os = useOsStore.getState();
+  if (kind.type === "system") return title || systemAppTitle(kind.app);
+  if (kind.type === "installed") {
+    if (title && title !== kind.appId) return title;
+    return (
+      os.installedApps.find((entry) => entry.manifest.id === kind.appId)?.manifest.name ??
+      title ??
+      kind.appId
+    );
+  }
+  if (kind.type === "generated") {
+    if (title && title !== kind.appId) return title;
+    return os.apps.find((app) => app.id === kind.appId)?.title ?? title ?? kind.appId;
+  }
+  if (title && title !== kind.webAppId) return title;
+  return os.webApps.find((app) => app.id === kind.webAppId)?.name ?? title ?? kind.webAppId;
 }
 
 export function syncUrlToWindowKind(kind: WindowKind, section?: string, replace = true): void {

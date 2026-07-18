@@ -117,7 +117,9 @@ type IntentHandler = (params: Record<string, unknown>) => unknown | Promise<unkn
 
 const systemHandlers: Record<string, IntentHandler> = {
   "calculator.evaluate": (p) =>
-    calculatorService.evaluate(String(p.expression ?? "")),
+    calculatorService.evaluate(String(p.expression ?? ""), {
+      angleMode: p.angleMode === "RAD" ? "RAD" : "DEG",
+    }),
   "calculator.history.list": (p) =>
     calculatorService.listHistory({
       ...(typeof p.limit === "number" ? { limit: p.limit } : {}),

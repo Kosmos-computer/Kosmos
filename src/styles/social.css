@@ -5,6 +5,8 @@
   --social-nav-w: 220px;
   --social-feed-w: 600px;
   --social-sidebar-w: 320px;
+  /* UI chrome uses the OS accent; network brand colors override locally on rail tiles. */
+  --social-accent: var(--arco-accent);
   flex: 1;
   min-height: 0;
   display: flex;
@@ -83,8 +85,8 @@
   height: 36px;
   border: none;
   border-radius: var(--arco-radius-m);
-  background: var(--social-accent, var(--arco-accent));
-  color: #fff;
+  background: var(--social-accent);
+  color: var(--arco-text-inverted);
   font-size: var(--arco-text-xs);
   font-weight: 700;
   cursor: pointer;
@@ -118,7 +120,8 @@
   width: 16px;
   height: 16px;
   border-radius: 999px;
-  background: var(--social-accent, var(--arco-accent));
+  background: var(--social-accent);
+  /* Network brand badges stay high-contrast white on brand fills. */
   color: #fff;
   display: flex;
   align-items: center;
@@ -214,7 +217,8 @@
   width: 16px;
   height: 16px;
   border-radius: 999px;
-  background: var(--social-accent, #0085ff);
+  background: var(--social-accent);
+  /* Network brand badge — white on brand fill. */
   color: #fff;
   display: flex;
   align-items: center;
@@ -287,22 +291,22 @@
 
 .arco-social__nav-item--active {
   font-weight: 700;
-  background: color-mix(in srgb, #0085ff 12%, transparent);
-  color: #0085ff;
+  background: var(--arco-accent-soft);
+  color: var(--social-accent);
 }
 
 .arco-social__nav-item--compose {
   margin-top: var(--arco-space-xs);
   margin-bottom: var(--arco-space-s);
   justify-content: center;
-  background: #0085ff;
-  color: #fff;
+  background: var(--social-accent);
+  color: var(--arco-text-inverted);
   font-weight: 700;
 }
 
 .arco-social__nav-item--compose:hover {
-  background: color-mix(in srgb, #0085ff 88%, #000);
-  color: #fff;
+  background: var(--arco-accent-strong);
+  color: var(--arco-text-inverted);
 }
 
 .arco-social__section-pane {
@@ -371,7 +375,7 @@
   bottom: 0;
   height: 3px;
   border-radius: 0;
-  background: #0085ff;
+  background: var(--social-accent);
 }
 
 .arco-social__connect-banner {
@@ -400,8 +404,8 @@
   align-items: center;
   justify-content: center;
   border-radius: var(--arco-radius-l);
-  background: var(--social-accent, var(--arco-accent));
-  color: #fff;
+  background: var(--social-accent);
+  color: var(--arco-text-inverted);
 }
 
 .arco-social__composer {
@@ -458,7 +462,7 @@
 }
 
 .arco-social__post--highlight {
-  background: color-mix(in srgb, #0085ff 8%, transparent);
+  background: var(--arco-accent-soft);
 }
 
 .arco-social__avatar-btn,
@@ -666,7 +670,7 @@
 
 .arco-social__profile-banner {
   height: 140px;
-  background: color-mix(in srgb, #0085ff 35%, var(--arco-bg-elevated));
+  background: color-mix(in srgb, var(--social-accent) 35%, var(--arco-bg-elevated));
   overflow: hidden;
 }
 
@@ -793,7 +797,7 @@
 }
 
 .arco-social__stat-btn--active {
-  color: var(--arco-accent, #0085ff);
+  color: var(--social-accent);
 }
 
 .arco-social__stat-btn--liked {
@@ -997,7 +1001,7 @@
 }
 
 .arco-social__trend-btn:hover strong {
-  color: #0085ff;
+  color: var(--social-accent);
 }
 
 .arco-social__trend-btn span,
@@ -1041,7 +1045,7 @@
 }
 
 .arco-social__sidebar-actor-btn:hover strong {
-  color: #0085ff;
+  color: var(--social-accent);
 }
 
 .arco-social__suggestions li span {
@@ -1062,7 +1066,7 @@
 }
 
 .arco-social__sidebar-link:hover strong {
-  color: #0085ff;
+  color: var(--social-accent);
 }
 
 .arco-social__sidebar-link span {

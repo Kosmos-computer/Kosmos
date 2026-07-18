@@ -6845,6 +6845,20 @@
     "ja": "Panels",
     "zh-CN": "Panels"
   },
+  "COMPONENTS$COMPOSER_EMOJIS": {
+    "en": "Emojis",
+    "es": "Emojis",
+    "de": "Emojis",
+    "ja": "Emojis",
+    "zh-CN": "Emojis"
+  },
+  "COMPONENTS$COMPOSER_RICH_TEXT": {
+    "en": "Rich text",
+    "es": "Rich text",
+    "de": "Rich text",
+    "ja": "Rich text",
+    "zh-CN": "Rich text"
+  },
   "COMPONENTS$COMPOSER_ADD_FILE": {
     "en": "Add file",
     "es": "Add file",

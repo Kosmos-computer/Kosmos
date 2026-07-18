@@ -587,6 +587,7 @@
 .arco-window-control-preset-swatch__preview {
   display: flex;
   align-items: center;
+  justify-content: center;
   width: 72px;
   height: 22px;
   padding: 0 var(--arco-space-xs);
@@ -595,46 +596,71 @@
   background: var(--arco-bg-elevated);
 }
 
-.arco-window-control-preset-swatch__preview--traffic {
-  gap: 4px;
-}
-
-.arco-window-control-preset-swatch__preview--traffic::before,
-.arco-window-control-preset-swatch__preview--traffic::after {
+/* Shadow-chain previews: margin-right matches the farthest offset so the
+   full control cluster (not just the first pseudo-element) centers. */
+.arco-window-control-preset-swatch__preview--traffic::before {
   content: "";
   width: 7px;
   height: 7px;
   border-radius: 50%;
   flex-shrink: 0;
-}
-
-.arco-window-control-preset-swatch__preview--traffic::before {
   background: #ff5f57;
   box-shadow: 11px 0 0 #febc2e, 22px 0 0 #28c840;
+  margin-right: 22px;
 }
 
-.arco-window-control-preset-swatch__preview--traffic::after {
-  display: none;
-}
-
-.arco-window-control-preset-swatch__preview--glyph {
-  justify-content: flex-end;
-  gap: 1px;
-  padding-right: 0;
-}
-
-.arco-window-control-preset-swatch__preview--glyph::before,
-.arco-window-control-preset-swatch__preview--glyph::after {
+.arco-window-control-preset-swatch__preview--glyph::before {
   content: "";
   width: 10px;
   height: 10px;
   border-radius: 1px;
+  flex-shrink: 0;
   background: var(--arco-text-tertiary);
   opacity: 0.55;
+  box-shadow: 12px 0 0 var(--arco-text-tertiary), 24px 0 0 var(--arco-text-tertiary);
+  margin-right: 24px;
 }
 
-.arco-window-control-preset-swatch__preview--glyph::before {
-  box-shadow: -12px 0 0 var(--arco-text-tertiary), -24px 0 0 var(--arco-text-tertiary);
+.arco-window-control-preset-swatch__preview--circles::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--arco-text-tertiary);
+  opacity: 0.45;
+  box-shadow: 13px 0 0 var(--arco-text-tertiary), 26px 0 0 var(--arco-text-tertiary);
+  margin-right: 26px;
+}
+
+.arco-window-control-preset-swatch__preview--outline::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  border: 1.5px solid var(--arco-text-tertiary);
+  opacity: 0.75;
+  /* Hollow rings via cutout shadows over the elevated preview fill */
+  box-shadow:
+    13px 0 0 -1.5px var(--arco-bg-elevated),
+    13px 0 0 0 var(--arco-text-tertiary),
+    26px 0 0 -1.5px var(--arco-bg-elevated),
+    26px 0 0 0 var(--arco-text-tertiary);
+  margin-right: 26px;
+}
+
+.arco-window-control-preset-swatch__preview--capsules::before {
+  content: "";
+  width: 12px;
+  height: 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  background: var(--arco-text-tertiary);
+  opacity: 0.45;
+  box-shadow: 15px 0 0 var(--arco-text-tertiary), 30px 0 0 var(--arco-text-tertiary);
+  margin-right: 30px;
 }
 
 .arco-window-control-preset-swatch__label {

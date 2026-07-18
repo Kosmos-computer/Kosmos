@@ -14,37 +14,58 @@
   </head>
   <body>
     <div id="app" class="calc-workspace" aria-label="Calculator">
-      <header class="calc-header">
-        <div class="calc-header__title-row">
-          <svg class="calc-header__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <rect x="4" y="2" width="16" height="20" rx="2" />
-            <line x1="8" y1="6" x2="16" y2="6" />
-            <line x1="8" y1="10" x2="8" y2="10.01" />
-            <line x1="12" y1="10" x2="12" y2="10.01" />
-            <line x1="16" y1="10" x2="16" y2="10.01" />
-            <line x1="8" y1="14" x2="8" y2="14.01" />
-            <line x1="12" y1="14" x2="12" y2="14.01" />
-            <line x1="16" y1="14" x2="16" y2="14.01" />
-            <line x1="8" y1="18" x2="8" y2="18.01" />
-            <line x1="12" y1="18" x2="12" y2="18.01" />
-            <line x1="16" y1="18" x2="16" y2="18.01" />
-          </svg>
-          <div>
-            <div class="calc-header__title">Calculator</div>
-            <div id="subtitle" class="calc-header__subtitle">TI Datamath · LED display</div>
+      <div class="calc-stage">
+        <div id="calculator-wrap" class="calc-stage__pad"></div>
+        <div class="calc-menu">
+          <button
+            type="button"
+            id="menu-toggle"
+            class="calc-menu__toggle"
+            aria-label="Calculator options"
+            aria-haspopup="menu"
+            aria-expanded="false"
+            aria-controls="menu-panel"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <circle cx="12" cy="5" r="1.75" />
+              <circle cx="12" cy="12" r="1.75" />
+              <circle cx="12" cy="19" r="1.75" />
+            </svg>
+          </button>
+          <div id="menu-panel" class="calc-menu__panel" role="menu" hidden>
+            <div class="calc-menu__section" role="group" aria-label="Skin">
+              <div class="calc-menu__label">Skin</div>
+              <button type="button" class="calc-menu__item" role="menuitemradio" data-skin="datamath" aria-checked="true">
+                Datamath
+              </button>
+              <button type="button" class="calc-menu__item" role="menuitemradio" data-skin="omron" aria-checked="false">
+                Omron 86
+              </button>
+              <button type="button" class="calc-menu__item" role="menuitemradio" data-skin="scientific" aria-checked="false">
+                Scientific
+              </button>
+            </div>
+            <div class="calc-menu__divider" role="separator"></div>
+            <button type="button" id="history-toggle" class="calc-menu__item" role="menuitemcheckbox" aria-checked="false">
+              Show history
+            </button>
           </div>
         </div>
-        <div id="variant-chips" class="calc-header__chips" role="group" aria-label="Calculator style"></div>
-      </header>
-
-      <div class="calc-body">
-        <div id="calculator-wrap" class="calc-body__pad"></div>
-        <aside class="calc-history" aria-label="Recent calculations">
-          <h2 class="calc-history__title">History</h2>
-          <ul id="history-list" class="calc-history__list"></ul>
-          <p id="history-empty" class="calc-history__empty">No calculations yet.</p>
-        </aside>
       </div>
+
+      <aside id="history-panel" class="calc-history" aria-label="Recent calculations" hidden>
+        <div class="calc-history__head">
+          <h2 class="calc-history__title">History</h2>
+          <button type="button" id="history-close" class="calc-history__close" aria-label="Hide history">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
+            </svg>
+          </button>
+        </div>
+        <ul id="history-list" class="calc-history__list"></ul>
+        <p id="history-empty" class="calc-history__empty">No calculations yet.</p>
+      </aside>
 
       <div id="error" class="calc-error" hidden></div>
     </div>

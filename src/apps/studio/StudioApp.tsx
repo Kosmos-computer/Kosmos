@@ -177,26 +177,6 @@ export function StudioApp() {
 
   // ── Composer wiring ───────────────────────────────────────────────────────
 
-  // The "+" menu's panel switches drive the single workspace drawer: turning
-  // a panel on selects its tab and opens the drawer; off closes the drawer.
-  const panelToggles = useMemo(
-    () =>
-      DRAWER_TABS.map((tab) => ({
-        id: tab.id,
-        label: tab.label,
-        visible: drawerOpen && activeTab === tab.id,
-        onVisibleChange: (visible: boolean) => {
-          if (visible) {
-            setActiveTab(tab.id);
-            setDrawerOpen(true);
-          } else {
-            setDrawerOpen(false);
-          }
-        },
-      })),
-    [drawerOpen, activeTab, setActiveTab, setDrawerOpen],
-  );
-
   const openFilesPanel = useCallback(() => {
     setActiveTab("files");
     setDrawerOpen(true);
@@ -287,7 +267,6 @@ export function StudioApp() {
         onBrowseConnectors={attach.onBrowseConnectors}
         connectors={attach.connectors}
         onFilesDropped={attach.onFilesDropped}
-        panelToggles={panelToggles}
         voiceActive={voice.active}
         voiceAvailable={voice.available}
         onVoiceToggle={() => void voice.toggle().catch(() => {})}

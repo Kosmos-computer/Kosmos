@@ -72,8 +72,9 @@ export const installedAppStore = {
   },
 
   /**
-   * Seed core apps from ./apps/<dir>/manifest.json. Only installs ids not
-   * already present, so user uninstalls stick until a data reset.
+   * Seed core apps from ./apps/<dir>/manifest.json. Fresh ids are installed;
+   * already-seeded apps refresh their manifest in place so chrome/version
+   * updates land without a data reset. User uninstalls still stick.
    */
   ensureSeeds(): void {
     let dirs: string[];
@@ -85,7 +86,7 @@ export const installedAppStore = {
     } catch {
       return; // No apps folder — nothing to seed.
     }
-    const installed = new Set(load().map((e) => e.manifest.id));
+    const byId = new Map(load().map((e) => [e.manifest.id, e]));
     for (const dir of dirs) {
       const manifestPath = path.join(APPS_DIR, dir, "manifest.json");
       if (!fs.existsSync(manifestPath)) continue;
@@ -96,9 +97,14 @@ export const installedAppStore = {
           console.warn(`[platform] skipping app seed "${dir}": ${error}`);
           continue;
         }
-        if (!installed.has(manifest.id)) {
+        const existing = byId.get(manifest.id);
+        if (!existing) {
           this.install(manifest, "seed");
           console.log(`[platform] seeded app ${manifest.id} (${manifest.name})`);
+          continue;
+        }
+        if (existing.source === "seed") {
+          this.install(manifest, "seed");
         }
       } catch (err) {
         console.warn(`[platform] failed to read app seed "${dir}":`, err);

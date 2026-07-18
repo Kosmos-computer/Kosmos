@@ -12,7 +12,6 @@ import {
   Link2,
   List,
   ListOrdered,
-  Pilcrow,
   Quote,
   Strikethrough,
 } from "lucide-react";
@@ -53,27 +52,5 @@ export function ComposerFormattingToolbar({ onFormat }: ComposerFormattingToolba
         </button>
       ))}
     </div>
-  );
-}
-
-export interface ComposerFormattingToggleProps {
-  visible: boolean;
-  onToggle: () => void;
-}
-
-/** Controls-row button that shows or hides the formatting toolbar. */
-export function ComposerFormattingToggle({ visible, onToggle }: ComposerFormattingToggleProps) {
-  const label = visible ? "Hide formatting toolbar" : "Show formatting toolbar";
-  return (
-    <button
-      type="button"
-      className="arco-btn arco-btn--ghost arco-btn--icon"
-      aria-label={label}
-      title={label}
-      aria-pressed={visible}
-      onClick={onToggle}
-    >
-      <Pilcrow size={14} />
-    </button>
   );
 }

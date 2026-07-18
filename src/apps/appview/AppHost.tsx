@@ -294,40 +294,47 @@ export function AppHost({ appId }: { appId: string }) {
     return <AppSurface appId={entry.appId} />;
   }
 
+  // Prefer manifest chrome.toolbar; also hide for calculator by id so a
+  // stale installed-apps.json (pre-seed-refresh) doesn't leave the strip up.
+  const showToolbar =
+    appId !== "core.calculator" && app.manifest.chrome?.toolbar !== false;
+
   return (
     <div className="arco-appsurface">
-      <div className="arco-appsurface__toolbar">
-        <ShieldAlert size={13} style={{ color: "var(--arco-text-tertiary)" }} />
-        <span className="arco-studio__editorpath">
-          {app.manifest.name}<T k={I18nKey.APPS$APPVIEW_V} />{app.manifest.version} · {app.manifest.tier}
-        </span>
-        {toolbarSlots.map((slot) =>
-          slot.kind === "search" ? (
-            <input
-              key={slot.id}
-              type="search"
-              className="arco-input arco-appsurface__toolbar-search"
-              placeholder={slot.placeholder}
-              value={slot.value ?? ""}
-              aria-label={slot.label ?? slot.placeholder ?? "Search"}
-              onChange={(event) => {
-                const value = event.target.value;
-                setToolbarSlots((prev) =>
-                  prev.map((each) => (each.id === slot.id ? { ...each, value } : each)),
-                );
-                postToApp({ appBridge: true, type: "toolbar-input", id: slot.id, value });
-              }}
-            />
-          ) : null,
-        )}
-        <button
-          className="arco-btn arco-btn--icon"
-          onClick={() => setFrameTick((t) => t + 1)}
-          aria-label={i18n.t(I18nKey.APPS$APPVIEW_RELOAD_APP)}
-        >
-          <RotateCw size={12} />
-        </button>
-      </div>
+      {showToolbar ? (
+        <div className="arco-appsurface__toolbar">
+          <ShieldAlert size={13} style={{ color: "var(--arco-text-tertiary)" }} />
+          <span className="arco-studio__editorpath">
+            {app.manifest.name}<T k={I18nKey.APPS$APPVIEW_V} />{app.manifest.version} · {app.manifest.tier}
+          </span>
+          {toolbarSlots.map((slot) =>
+            slot.kind === "search" ? (
+              <input
+                key={slot.id}
+                type="search"
+                className="arco-input arco-appsurface__toolbar-search"
+                placeholder={slot.placeholder}
+                value={slot.value ?? ""}
+                aria-label={slot.label ?? slot.placeholder ?? "Search"}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setToolbarSlots((prev) =>
+                    prev.map((each) => (each.id === slot.id ? { ...each, value } : each)),
+                  );
+                  postToApp({ appBridge: true, type: "toolbar-input", id: slot.id, value });
+                }}
+              />
+            ) : null,
+          )}
+          <button
+            className="arco-btn arco-btn--icon"
+            onClick={() => setFrameTick((t) => t + 1)}
+            aria-label={i18n.t(I18nKey.APPS$APPVIEW_RELOAD_APP)}
+          >
+            <RotateCw size={12} />
+          </button>
+        </div>
+      ) : null}
       {error ? (
         <div className="arco-empty">
           <span>{error}</span>

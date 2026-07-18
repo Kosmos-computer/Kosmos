@@ -54,6 +54,9 @@ select {
   color: var(--arco-text-secondary);
   background: var(--arco-bg-hover);
   border: 1px solid var(--arco-border);
+  /* Icon + label buttons (e.g. "New agent") stay on one line in tight headers. */
+  white-space: nowrap;
+  flex-shrink: 0;
   transition: background var(--arco-dur-fast), color var(--arco-dur-fast);
 }
 .arco-btn:hover {
@@ -125,8 +128,17 @@ select {
   top: 50%;
   transform: translateY(-50%);
 }
-.arco-menu__panel--start { left: 0; }
-.arco-menu__panel--end { right: 0; }
+/* Horizontal align only applies when the panel opens above/below the trigger.
+   Otherwise --start's `left: 0` steals placement from side=right. */
+.arco-menu__panel--bottom.arco-menu__panel--start,
+.arco-menu__panel--top.arco-menu__panel--start {
+  left: 0;
+}
+.arco-menu__panel--bottom.arco-menu__panel--end,
+.arco-menu__panel--top.arco-menu__panel--end {
+  left: auto;
+  right: 0;
+}
 
 .arco-menu__item {
   display: flex;
@@ -283,6 +295,8 @@ select {
   padding: 4px;
   display: flex;
   flex-direction: column;
+  scrollbar-width: thin;
+  scrollbar-color: var(--arco-border-strong) transparent;
 }
 
 .arco-menu__empty {

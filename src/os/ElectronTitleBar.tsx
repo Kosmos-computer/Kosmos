@@ -42,6 +42,7 @@ export function ElectronTitleBar({ windowKey }: { windowKey?: string }) {
       </span>
       <WindowControls
         controlStyle={controlStyle}
+        align={align}
         onClose={() => void desktop.closeWindow()}
         onMinimize={() => void desktop.minimizeWindow()}
         onMaximize={() => void desktop.maximizeWindow()}

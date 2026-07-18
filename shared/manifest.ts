@@ -82,6 +82,11 @@ export interface AppManifest {
   tools?: ToolContribution[];
   /** Event topics this app announces and listens for (bridge-gated). */
   events?: { emits?: string[]; subscribes?: string[] };
+  /**
+   * Optional AppHost chrome. When toolbar is false, the host skips the
+   * version/reload strip so the OS titlebar sits directly on the app.
+   */
+  chrome?: { toolbar?: boolean };
 }
 
 // ── Installation & grants ────────────────────────────────────────────────────

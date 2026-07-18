@@ -92,11 +92,11 @@ function ApiDetailOverlay({
                 {typeof api.rating === "number" ? ` · ${api.rating.toFixed(1)}` : ""}
               </p>
             </div>
-            <div className="arco-module-card__actions">
-              <Button size="icon" onClick={onClose} aria-label={i18n.t(I18nKey.COMMON$CLOSE)}>
-                <X size={14} />
-              </Button>
-            </div>
+          </div>
+          <div className="arco-module-card__actions">
+            <Button size="icon" onClick={onClose} aria-label={i18n.t(I18nKey.COMMON$CLOSE)}>
+              <X size={14} />
+            </Button>
           </div>
         </div>
 

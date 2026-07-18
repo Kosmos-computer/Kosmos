@@ -81,6 +81,8 @@ interface OsStore {
   agentBusy: boolean;
   /** Left nav rail: collapsed icon rail (false) vs expanded icon+label list (true). */
   navExpanded: boolean;
+  /** Whether the left nav rail is shown at all (MenuBar drawer toggle). */
+  navVisible: boolean;
   /** Which apps show on the nav rail, and in what order (windowKey ids). */
   navPinnedIds: string[];
   /** Which apps show on the dock, and in what order (windowKey ids) — independent from navPinnedIds. */
@@ -97,6 +99,11 @@ interface OsStore {
    * (Onboarding, Setup, Generator, Pay, Image Gen). Off by default.
    */
   developerApps: boolean;
+  /**
+   * When true, desktop windows may hang past the browser edge (titlebar
+   * grab strip stays on-screen). When false, windows stay inside the viewport.
+   */
+  windowsOffscreen: boolean;
 
   setTheme: (theme: Theme) => void;
   setAccentPreset: (preset: AccentPreset) => void;
@@ -114,11 +121,13 @@ interface OsStore {
   refreshApps: () => Promise<void>;
   setAgentBusy: (busy: boolean) => void;
   setNavExpanded: (expanded: boolean) => void;
+  setNavVisible: (visible: boolean) => void;
   setNavPinnedIds: (updater: string[] | ((prev: string[]) => string[])) => void;
   setDockPinnedIds: (updater: string[] | ((prev: string[]) => string[])) => void;
   setShellView: (view: ShellView) => void;
   setAppWindowHost: (host: AppWindowHost) => void;
   setDeveloperApps: (enabled: boolean) => void;
+  setWindowsOffscreen: (enabled: boolean) => void;
   addShellConfirm: (confirm: ShellConfirm) => void;
   removeShellConfirm: (confirmId: string) => void;
 }
@@ -161,6 +170,7 @@ export const useOsStore = create<OsStore>((set) => ({
   installedApps: [],
   agentBusy: false,
   navExpanded: localStorage.getItem("arco:nav-expanded") === "true",
+  navVisible: localStorage.getItem("arco:nav-visible") !== "false",
   navPinnedIds: loadPinnedIds("arco:nav-pinned"),
   dockPinnedIds: loadPinnedIds("arco:dock-pinned"),
   shellConfirms: [],
@@ -168,6 +178,7 @@ export const useOsStore = create<OsStore>((set) => ({
   appWindowHost: localStorage.getItem("arco:app-window-host") === "native" ? "native" : "embedded",
   navBrandImage: localStorage.getItem("arco:nav-brand-image"),
   developerApps: localStorage.getItem("arco:developer-apps") === "true",
+  windowsOffscreen: localStorage.getItem("arco:windows-offscreen") !== "false",
 
   setTheme: (theme) => {
     localStorage.setItem("arco:theme", theme);
@@ -277,6 +288,11 @@ export const useOsStore = create<OsStore>((set) => ({
     set({ navExpanded: expanded });
   },
 
+  setNavVisible: (visible) => {
+    localStorage.setItem("arco:nav-visible", String(visible));
+    set({ navVisible: visible });
+  },
+
   setNavPinnedIds: (updater) =>
     set((s) => {
       const navPinnedIds = typeof updater === "function" ? updater(s.navPinnedIds) : updater;
@@ -306,5 +322,10 @@ export const useOsStore = create<OsStore>((set) => ({
   setDeveloperApps: (developerApps) => {
     localStorage.setItem("arco:developer-apps", String(developerApps));
     set({ developerApps });
+  },
+
+  setWindowsOffscreen: (windowsOffscreen) => {
+    localStorage.setItem("arco:windows-offscreen", String(windowsOffscreen));
+    set({ windowsOffscreen });
   },
 }));

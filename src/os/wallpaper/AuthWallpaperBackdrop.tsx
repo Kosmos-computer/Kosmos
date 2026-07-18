@@ -18,7 +18,6 @@ export function AuthWallpaperBackdrop() {
     return (
       <div className="arco-wallpaper arco-auth-wallpaper arco-auth-wallpaper--photo" aria-hidden>
         <img className="arco-auth-wallpaper__photo" src={resolved.url} alt="" decoding="async" />
-        <div className="arco-wallpaper__veil arco-auth-wallpaper__veil" />
       </div>
     );
   }

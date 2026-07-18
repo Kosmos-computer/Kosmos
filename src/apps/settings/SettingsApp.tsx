@@ -59,7 +59,7 @@ import {
   SidebarPane,
 } from "../../components/patterns";
 import { useWindowStore } from "../../os/windowStore";
-import { Button, Chip, EmptyState, Input } from "../../components/ui";
+import { Button, Chip, EmptyState, Input, Switch } from "../../components/ui";
 import { SettingsNav } from "./SettingsNav";
 import { NavBrandMark } from "../../os/NavBrandMark";
 import {
@@ -106,12 +106,15 @@ export function SettingsApp() {
     setWindowControlStyle,
     windowControlAlign,
     setWindowControlAlign,
+    windowsOffscreen,
+    setWindowsOffscreen,
     navBrandImage,
     setNavBrandImage,
     appWindowHost,
     setAppWindowHost,
     notify,
   } = useOsStore();
+  const constrainWindowsToViewport = useWindowStore((s) => s.constrainToViewport);
   const faceBg = useFacePreferencesStore((s) => s.faceBg);
   const setFaceBg = useFacePreferencesStore((s) => s.setFaceBg);
   const faceRigId = useFacePreferencesStore((s) => s.faceRigId);
@@ -554,6 +557,20 @@ export function SettingsApp() {
                         </Chip>
                       ))}
                     </SettingsChipRow>
+                  </SettingsFieldRow>
+                  <SettingsFieldRow
+                    label="Allow windows off-screen"
+                    hint="Let desktop windows hang past the browser edge. A strip of the title bar stays on-screen so you can drag them back."
+                  >
+                    <Switch
+                      checked={windowsOffscreen}
+                      onChange={(event) => {
+                        const enabled = event.target.checked;
+                        setWindowsOffscreen(enabled);
+                        if (!enabled) constrainWindowsToViewport();
+                      }}
+                      aria-label="Allow windows off-screen"
+                    />
                   </SettingsFieldRow>
                   {isArcoDesktop() && (
                     <SettingsFieldRow

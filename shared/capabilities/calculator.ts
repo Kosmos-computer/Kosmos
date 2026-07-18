@@ -28,7 +28,13 @@ export const CALCULATOR_INTENT_SCHEMAS: Record<CalculatorIntentId, Record<string
     properties: {
       expression: {
         type: "string",
-        description: 'Arithmetic expression (+, -, *, /, %, parentheses), e.g. "(2 + 3) * 4"',
+        description:
+          'Math expression with +, -, *, /, %, ^, parentheses, factorial (!), and functions sin/cos/tan/asin/acos/atan/log/ln/sqrt/abs plus constants pi and e. Example: "sin(45) + sqrt(16)"',
+      },
+      angleMode: {
+        type: "string",
+        enum: ["DEG", "RAD"],
+        description: "Angle mode for trig functions (default DEG)",
       },
     },
     required: ["expression"],

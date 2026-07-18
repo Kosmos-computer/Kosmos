@@ -1,6 +1,7 @@
 /**
- * Calculator — retro keypad UI over os.calculator@1.
- * Styles ported from UI Experiments (Datamath + Omron 86 variants).
+ * Calculator — Datamath / Omron / Scientific skins over os.calculator@1.
+ * Scientific mode uses expression-buffer + server-side shunting-yard eval
+ * (same pattern as common open-source scientific calculators).
  */
 import { createAppClient } from "/app-sdk.js";
 
@@ -72,9 +73,57 @@ const OMRON_CALCULATOR_KEYS = [
   ],
 ];
 
-const VARIANTS = [
-  { id: "datamath", label: "Datamath", subtitle: "TI Datamath · LED display" },
-  { id: "omron", label: "Omron 86", subtitle: "Omron 86 · VFD display" },
+/** Scientific keypad — expression-buffer actions (open-source sci-calc pattern). */
+const SCIENTIFIC_KEYS = [
+  [
+    { label: "sin", value: "sin", variant: "fn" },
+    { label: "cos", value: "cos", variant: "fn" },
+    { label: "tan", value: "tan", variant: "fn" },
+    { label: "π", value: "pi", variant: "fn" },
+    { label: "e", value: "e", variant: "fn" },
+  ],
+  [
+    { label: "ln", value: "ln", variant: "fn" },
+    { label: "log", value: "log", variant: "fn" },
+    { label: "√", value: "sqrt", variant: "fn" },
+    { label: "x²", value: "square", variant: "fn" },
+    { label: "xʸ", value: "^", variant: "op" },
+  ],
+  [
+    { label: "(", value: "(", variant: "op" },
+    { label: ")", value: ")", variant: "op" },
+    { label: "n!", value: "!", variant: "fn" },
+    { label: "÷", value: "/", variant: "op" },
+    { label: "×", value: "*", variant: "op" },
+  ],
+  [
+    { label: "7", value: "7", variant: "numeric" },
+    { label: "8", value: "8", variant: "numeric" },
+    { label: "9", value: "9", variant: "numeric" },
+    { label: "−", value: "-", variant: "op" },
+    { label: "+", value: "+", variant: "op" },
+  ],
+  [
+    { label: "4", value: "4", variant: "numeric" },
+    { label: "5", value: "5", variant: "numeric" },
+    { label: "6", value: "6", variant: "numeric" },
+    { label: "%", value: "%", variant: "op" },
+    { label: "±", value: "sign", variant: "fn" },
+  ],
+  [
+    { label: "1", value: "1", variant: "numeric" },
+    { label: "2", value: "2", variant: "numeric" },
+    { label: "3", value: "3", variant: "numeric" },
+    { label: "←", value: "backspace", variant: "danger" },
+    { label: "C", value: "c", variant: "danger" },
+  ],
+  [
+    { label: "0", value: "0", variant: "numeric" },
+    { label: ".", value: ".", variant: "numeric" },
+    { label: "CE", value: "ce", variant: "danger" },
+    { label: "1/x", value: "inv", variant: "fn" },
+    { label: "=", value: "=", variant: "eq" },
+  ],
 ];
 
 function compute(a, b, operator) {
@@ -84,7 +133,7 @@ function compute(a, b, operator) {
     case "-":
       return a - b;
     case "*":
-      return b === 0 ? Number.NaN : a * b;
+      return a * b;
     case "/":
       return b === 0 ? Number.NaN : a / b;
     default:
@@ -215,19 +264,315 @@ function createCalculator(initialValue = "0") {
   };
 }
 
+/**
+ * Expression-buffer scientific calculator (OSS pattern):
+ * keys append to an expression string; "=" evaluates via os.calculator@1.
+ */
+function createScientificCalculator() {
+  const state = {
+    expression: "",
+    display: "0",
+    justEvaluated: false,
+    angleMode: "DEG",
+    busy: false,
+  };
+
+  function pretty(expr) {
+    return expr.replace(/\*/g, "×").replace(/\//g, "÷").replace(/-/g, "−").replace(/\^/g, "^");
+  }
+
+  function endsWithOperator(expr = state.expression) {
+    return /[+\-*/%^]$/.test(expr);
+  }
+
+  function appendNumber(ch) {
+    if (state.justEvaluated) {
+      state.expression = ch;
+      state.justEvaluated = false;
+    } else if (state.expression === "0" && ch !== ".") {
+      state.expression = ch;
+    } else {
+      state.expression += ch;
+    }
+    state.display = pretty(state.expression) || "0";
+  }
+
+  function appendDot() {
+    if (state.justEvaluated) {
+      state.expression = "0.";
+      state.justEvaluated = false;
+      state.display = "0.";
+      return;
+    }
+    const parts = state.expression.split(/[+\-*/%^()]/);
+    const last = parts[parts.length - 1] ?? "";
+    if (last.includes(".")) return;
+    if (!state.expression || endsWithOperator() || /\($/.test(state.expression)) {
+      state.expression += "0.";
+    } else {
+      state.expression += ".";
+    }
+    state.display = pretty(state.expression);
+  }
+
+  function appendOperator(op) {
+    if (state.justEvaluated) {
+      state.expression = state.display === "Error" ? "" : `${state.display}${op}`;
+      state.justEvaluated = false;
+    } else if (!state.expression && op === "-") {
+      state.expression = "-";
+    } else if (state.expression) {
+      state.expression = endsWithOperator() ? state.expression.slice(0, -1) + op : state.expression + op;
+    }
+    state.display = pretty(state.expression) || "0";
+  }
+
+  function appendFunction(name) {
+    if (state.justEvaluated && state.display !== "Error") {
+      state.expression = `${name}(${state.display})`;
+      state.justEvaluated = false;
+    } else if (/\d$|pi$|e$|\)$/.test(state.expression)) {
+      state.expression += `*${name}(`;
+    } else {
+      state.expression += `${name}(`;
+    }
+    state.display = pretty(state.expression);
+  }
+
+  function appendConstant(name) {
+    if (state.justEvaluated) {
+      state.expression = name;
+      state.justEvaluated = false;
+    } else if (/\d$|pi$|e$|\)$/.test(state.expression)) {
+      state.expression += `*${name}`;
+    } else {
+      state.expression += name;
+    }
+    state.display = pretty(state.expression);
+  }
+
+  function backspace() {
+    if (state.justEvaluated) {
+      state.expression = "";
+      state.display = "0";
+      state.justEvaluated = false;
+      return;
+    }
+    const funcMatch = state.expression.match(/(sin|cos|tan|asin|acos|atan|log|ln|sqrt|abs)\($/);
+    if (funcMatch) {
+      state.expression = state.expression.slice(0, -funcMatch[0].length);
+    } else {
+      state.expression = state.expression.slice(0, -1);
+    }
+    state.display = pretty(state.expression) || "0";
+  }
+
+  function clearAll() {
+    state.expression = "";
+    state.display = "0";
+    state.justEvaluated = false;
+  }
+
+  function toggleSign() {
+    if (state.justEvaluated && state.display !== "Error") {
+      if (state.display.startsWith("-")) state.display = state.display.slice(1);
+      else if (state.display !== "0") state.display = `-${state.display}`;
+      state.expression = state.display;
+      return;
+    }
+    if (!state.expression) {
+      state.expression = "-";
+      state.display = "−";
+      return;
+    }
+    const match = state.expression.match(/^(.*?)(-?\d+\.?\d*(?:[eE][+-]?\d+)?|pi|e)$/);
+    if (!match) return;
+    const head = match[1];
+    const tail = match[2];
+    if (tail.startsWith("-")) state.expression = head + tail.slice(1);
+    else state.expression = `${head}-${tail}`;
+    state.display = pretty(state.expression);
+  }
+
+  async function evaluate() {
+    if (!state.expression || state.busy) return;
+    let expr = state.expression;
+    const opens = (expr.match(/\(/g) || []).length;
+    const closes = (expr.match(/\)/g) || []).length;
+    for (let i = 0; i < opens - closes; i += 1) expr += ")";
+
+    state.busy = true;
+    try {
+      const entry = await os.intents.invoke("calculator.evaluate", {
+        expression: expr,
+        angleMode: state.angleMode,
+      });
+      state.display = entry.result;
+      state.expression = entry.result === "Error" ? "" : entry.result;
+      state.justEvaluated = true;
+      showError(null);
+    } catch (err) {
+      state.display = "Error";
+      state.justEvaluated = true;
+      showError(err.message);
+    } finally {
+      state.busy = false;
+    }
+  }
+
+  async function press(key) {
+    if (state.busy && key !== "c") return;
+
+    if (/^\d$/.test(key)) {
+      appendNumber(key);
+      return;
+    }
+    if (key === ".") {
+      appendDot();
+      return;
+    }
+    if (["+", "-", "*", "/", "%", "^"].includes(key)) {
+      appendOperator(key);
+      return;
+    }
+    if (key === "(") {
+      if (state.justEvaluated) {
+        state.expression = "(";
+        state.justEvaluated = false;
+      } else if (/\d$|pi$|e$|\)$/.test(state.expression)) {
+        state.expression += "*(";
+      } else {
+        state.expression += "(";
+      }
+      state.display = pretty(state.expression);
+      return;
+    }
+    if (key === ")") {
+      const opens = (state.expression.match(/\(/g) || []).length;
+      const closes = (state.expression.match(/\)/g) || []).length;
+      if (opens > closes) {
+        state.expression += ")";
+        state.display = pretty(state.expression);
+      }
+      return;
+    }
+    if (["sin", "cos", "tan", "asin", "acos", "atan", "log", "ln", "sqrt", "abs"].includes(key)) {
+      appendFunction(key);
+      return;
+    }
+    if (key === "pi" || key === "e") {
+      appendConstant(key);
+      return;
+    }
+    if (key === "square") {
+      if (state.justEvaluated && state.display !== "Error") {
+        state.expression = `(${state.display})^2`;
+        state.justEvaluated = false;
+      } else if (state.expression) {
+        state.expression = `(${state.expression})^2`;
+      }
+      state.display = pretty(state.expression) || "0";
+      return;
+    }
+    if (key === "inv") {
+      if (state.justEvaluated && state.display !== "Error") {
+        state.expression = `1/(${state.display})`;
+        state.justEvaluated = false;
+      } else if (state.expression) {
+        state.expression = `1/(${state.expression})`;
+      }
+      state.display = pretty(state.expression) || "0";
+      return;
+    }
+    if (key === "!") {
+      if (state.justEvaluated && state.display !== "Error") {
+        state.expression = `${state.display}!`;
+        await evaluate();
+        return;
+      }
+      if (/[\d)]$/.test(state.expression)) {
+        state.expression += "!";
+        state.display = pretty(state.expression);
+      }
+      return;
+    }
+    if (key === "sign") {
+      toggleSign();
+      return;
+    }
+    if (key === "backspace") {
+      backspace();
+      return;
+    }
+    if (key === "c" || key === "ce") {
+      clearAll();
+      return;
+    }
+    if (key === "=") {
+      await evaluate();
+    }
+  }
+
+  return {
+    get display() {
+      return state.display;
+    },
+    get expression() {
+      return pretty(state.expression);
+    },
+    get angleMode() {
+      return state.angleMode;
+    },
+    toggleAngleMode() {
+      state.angleMode = state.angleMode === "DEG" ? "RAD" : "DEG";
+    },
+    press,
+    clearAll,
+  };
+}
+
+const appEl = document.getElementById("app");
 const calculatorWrap = document.getElementById("calculator-wrap");
-const subtitleEl = document.getElementById("subtitle");
-const variantChipsEl = document.getElementById("variant-chips");
+const menuToggle = document.getElementById("menu-toggle");
+const menuPanel = document.getElementById("menu-panel");
+const historyToggle = document.getElementById("history-toggle");
+const historyPanel = document.getElementById("history-panel");
+const historyClose = document.getElementById("history-close");
 const historyListEl = document.getElementById("history-list");
 const historyEmptyEl = document.getElementById("history-empty");
 const errorBox = document.getElementById("error");
+const skinButtons = Array.from(menuPanel.querySelectorAll("[data-skin]"));
 
 let variant = "datamath";
+let historyOpen = false;
 const calc = createCalculator();
+const sci = createScientificCalculator();
 
 function showError(message) {
   errorBox.hidden = !message;
   errorBox.textContent = message ?? "";
+}
+
+function setMenuOpen(open) {
+  menuPanel.hidden = !open;
+  menuToggle.setAttribute("aria-expanded", String(open));
+}
+
+function setHistoryOpen(open) {
+  historyOpen = open;
+  historyPanel.hidden = !open;
+  historyToggle.setAttribute("aria-checked", String(open));
+  historyToggle.textContent = open ? "Hide history" : "Show history";
+  if (open) void loadHistory();
+}
+
+function syncSkinMenu() {
+  for (const btn of skinButtons) {
+    btn.setAttribute("aria-checked", String(btn.dataset.skin === variant));
+  }
+  appEl.classList.toggle("calc-workspace--datamath", variant === "datamath");
+  appEl.classList.toggle("calc-workspace--omron", variant === "omron");
+  appEl.classList.toggle("calc-workspace--scientific", variant === "scientific");
 }
 
 function datamathKeyClass(key) {
@@ -328,6 +673,9 @@ function renderOmron(onPress) {
   displayWrap.appendChild(display);
   body.appendChild(displayWrap);
 
+  const keypad = document.createElement("div");
+  keypad.className = "omron-pad__keypad";
+
   const grid = document.createElement("div");
   grid.className = "omron-pad__grid";
 
@@ -350,8 +698,89 @@ function renderOmron(onPress) {
     }
   }
 
-  body.appendChild(grid);
+  keypad.appendChild(grid);
+  body.appendChild(keypad);
   pad.appendChild(body);
+  return pad;
+}
+
+function renderScientific() {
+  const pad = document.createElement("div");
+  pad.className = "sci-pad";
+  pad.setAttribute("role", "group");
+  pad.setAttribute("aria-label", "Scientific calculator");
+
+  const display = document.createElement("div");
+  display.className = "sci-pad__display";
+
+  const meta = document.createElement("div");
+  meta.className = "sci-pad__meta";
+
+  const modeBtn = document.createElement("button");
+  modeBtn.type = "button";
+  modeBtn.className = "sci-pad__mode";
+  modeBtn.textContent = sci.angleMode;
+  modeBtn.setAttribute("aria-label", `Angle mode ${sci.angleMode}`);
+  modeBtn.addEventListener("click", () => {
+    sci.toggleAngleMode();
+    modeBtn.textContent = sci.angleMode;
+    modeBtn.setAttribute("aria-label", `Angle mode ${sci.angleMode}`);
+  });
+
+  const brand = document.createElement("span");
+  brand.className = "sci-pad__brand";
+  brand.textContent = "Scientific";
+  meta.append(modeBtn, brand);
+
+  const exprEl = document.createElement("div");
+  exprEl.className = "sci-pad__expression";
+  exprEl.textContent = sci.expression || " ";
+
+  const resultEl = document.createElement("div");
+  resultEl.className = "sci-pad__result";
+  resultEl.setAttribute("aria-live", "polite");
+  resultEl.textContent = sci.display;
+
+  display.append(meta, exprEl, resultEl);
+  pad.appendChild(display);
+
+  function refresh() {
+    exprEl.textContent = sci.expression || " ";
+    resultEl.textContent = sci.display;
+    resultEl.classList.toggle("sci-pad__result--error", sci.display === "Error");
+  }
+
+  const keypad = document.createElement("div");
+  keypad.className = "sci-pad__keypad";
+  const grid = document.createElement("div");
+  grid.className = "sci-pad__grid";
+
+  for (const row of SCIENTIFIC_KEYS) {
+    for (const key of row) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = [
+        "sci-pad__key",
+        key.variant === "fn" && "sci-pad__key--fn",
+        key.variant === "op" && "sci-pad__key--op",
+        key.variant === "eq" && "sci-pad__key--eq",
+        key.variant === "danger" && "sci-pad__key--danger",
+      ]
+        .filter(Boolean)
+        .join(" ");
+      btn.setAttribute("aria-label", key.label);
+      btn.textContent = key.label;
+      btn.addEventListener("click", () => {
+        void sci.press(key.value).then(refresh);
+        refresh();
+      });
+      grid.appendChild(btn);
+    }
+  }
+
+  keypad.appendChild(grid);
+  pad.appendChild(keypad);
+  refresh();
   return pad;
 }
 
@@ -374,25 +803,14 @@ function handleKeyPress(key) {
 
 function renderPad() {
   calculatorWrap.replaceChildren();
-  calculatorWrap.appendChild(variant === "datamath" ? renderDatamath(handleKeyPress) : renderOmron(handleKeyPress));
-}
-
-function renderVariantChips() {
-  variantChipsEl.replaceChildren();
-  for (const item of VARIANTS) {
-    const chip = document.createElement("button");
-    chip.type = "button";
-    chip.className = `calc-chip${variant === item.id ? " calc-chip--active" : ""}`;
-    chip.textContent = item.label;
-    chip.setAttribute("aria-pressed", String(variant === item.id));
-    chip.addEventListener("click", () => {
-      variant = item.id;
-      subtitleEl.textContent = item.subtitle;
-      renderVariantChips();
-      renderPad();
-    });
-    variantChipsEl.appendChild(chip);
+  if (variant === "scientific") {
+    calculatorWrap.appendChild(renderScientific());
+  } else if (variant === "omron") {
+    calculatorWrap.appendChild(renderOmron(handleKeyPress));
+  } else {
+    calculatorWrap.appendChild(renderDatamath(handleKeyPress));
   }
+  syncSkinMenu();
 }
 
 async function loadHistory() {
@@ -420,8 +838,44 @@ function escapeHtml(text) {
     .replace(/"/g, "&quot;");
 }
 
-os.events.on("calculator.changed", () => void loadHistory());
+menuToggle.addEventListener("click", (event) => {
+  event.stopPropagation();
+  setMenuOpen(menuPanel.hidden);
+});
 
-renderVariantChips();
+for (const btn of skinButtons) {
+  btn.addEventListener("click", () => {
+    const next = btn.dataset.skin;
+    variant = next === "omron" || next === "scientific" ? next : "datamath";
+    if (variant !== "scientific") calc.clearAll();
+    else sci.clearAll();
+    setMenuOpen(false);
+    renderPad();
+  });
+}
+
+historyToggle.addEventListener("click", () => {
+  setHistoryOpen(!historyOpen);
+  setMenuOpen(false);
+});
+
+historyClose.addEventListener("click", () => setHistoryOpen(false));
+
+document.addEventListener("click", (event) => {
+  if (!menuPanel.hidden && !menuToggle.contains(event.target) && !menuPanel.contains(event.target)) {
+    setMenuOpen(false);
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    if (!menuPanel.hidden) setMenuOpen(false);
+    else if (historyOpen) setHistoryOpen(false);
+  }
+});
+
+os.events.on("calculator.changed", () => {
+  if (historyOpen) void loadHistory();
+});
+
 renderPad();
-void loadHistory();

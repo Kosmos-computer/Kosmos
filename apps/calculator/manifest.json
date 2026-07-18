@@ -1,11 +1,12 @@
 {
   "id": "core.calculator",
   "name": "Calculator",
-  "version": "0.1.0",
-  "description": "Retro calculator with Datamath and Omron skins — evaluates arithmetic and logs history via os.calculator@1.",
+  "version": "0.2.0",
+  "description": "Calculator with Datamath, Omron, and Scientific skins — evaluates arithmetic/scientific expressions via os.calculator@1.",
   "icon": "calculator",
   "tier": "code",
   "entry": { "kind": "bundle", "path": "calculator" },
+  "chrome": { "toolbar": false },
   "implements": ["os.calculator@1"],
   "permissions": [
     { "kind": "contract", "id": "os.calculator@1", "access": "read" },
@@ -15,13 +16,18 @@
   "tools": [
     {
       "name": "evaluate",
-      "description": "Evaluate a basic arithmetic expression (+, -, *, /, %, parentheses). Returns the numeric result and logs it to calculator history.",
+      "description": "Evaluate a math expression (arithmetic + scientific: sin/cos/tan/log/ln/sqrt/^/!/pi/e). Returns the numeric result and logs it to calculator history.",
       "parameters": {
         "type": "object",
         "properties": {
           "expression": {
             "type": "string",
-            "description": "Arithmetic expression, e.g. \"(12 + 8) / 4\""
+            "description": "Math expression, e.g. \"sin(45) + sqrt(16)\" or \"(12 + 8) / 4\""
+          },
+          "angleMode": {
+            "type": "string",
+            "enum": ["DEG", "RAD"],
+            "description": "Angle mode for trig (default DEG)"
           }
         },
         "required": ["expression"]

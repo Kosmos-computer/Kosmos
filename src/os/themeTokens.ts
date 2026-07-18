@@ -10,8 +10,15 @@ export type TextScalePreset = "compact" | "default" | "comfortable" | "large";
 
 export type SpacingPreset = "compact" | "default" | "comfortable" | "spacious";
 
-/** macOS-style colored dots vs Windows-style icon buttons (Longformer WindowFrame). */
-export type WindowControlStyle = "traffic" | "glyph";
+/**
+ * Window chrome control looks:
+ * - traffic: macOS colored dots
+ * - glyph: Windows-style full-height icon buttons
+ * - circles: icons in soft filled circles
+ * - outline: icons in stroked circles
+ * - capsules: icons in rounded capsule chips
+ */
+export type WindowControlStyle = "traffic" | "glyph" | "circles" | "outline" | "capsules";
 
 /** Where window close/minimize/maximize controls sit in the title bar. */
 export type WindowControlAlign = "left" | "right";
@@ -106,6 +113,9 @@ export const SPACING_PRESET_OPTIONS: ScalePresetOption<SpacingPreset>[] = [
 export const WINDOW_CONTROL_STYLE_OPTIONS: ScalePresetOption<WindowControlStyle>[] = [
   { id: "traffic", label: "Traffic lights" },
   { id: "glyph", label: "Glyph buttons" },
+  { id: "circles", label: "Circle icons" },
+  { id: "outline", label: "Outlined" },
+  { id: "capsules", label: "Capsules" },
 ];
 
 export const WINDOW_CONTROL_ALIGN_OPTIONS: ScalePresetOption<WindowControlAlign>[] = [

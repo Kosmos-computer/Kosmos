@@ -87,6 +87,7 @@ function WindowContent({ winId }: { winId: string }) {
 
 export function Desktop() {
   const navExpanded = useOsStore((s) => s.navExpanded);
+  const navVisible = useOsStore((s) => s.navVisible);
   const shellView = useOsStore((s) => s.shellView);
   const appWindowHost = useOsStore((s) => s.appWindowHost);
   const refreshApps = useOsStore((s) => s.refreshApps);
@@ -134,9 +135,10 @@ export function Desktop() {
     constrainWindowsToViewport();
     window.addEventListener("resize", constrainWindowsToViewport);
     return () => window.removeEventListener("resize", constrainWindowsToViewport);
-  }, [constrainWindowsToViewport, navExpanded]);
+  }, [constrainWindowsToViewport, navExpanded, navVisible]);
 
   const focusedId = [...embeddedWindows.filter((w) => !w.minimized)].sort((a, b) => b.z - a.z)[0]?.id;
+  const navWidth = !navVisible ? "0px" : navExpanded ? "200px" : "56px";
 
   return (
     <div
@@ -144,7 +146,7 @@ export function Desktop() {
       // Maximized windows read this to sit flush against the rail edge.
       style={
         {
-          "--arco-nav-width": navExpanded ? "200px" : "56px",
+          "--arco-nav-width": navWidth,
           ...(appView && {
             "--arco-menubar-offset": menuBarOpen ? "34px" : "0px",
           }),
@@ -155,7 +157,7 @@ export function Desktop() {
       <HoverMenuBar enabled={appView} onOpenChange={setMenuBarOpen}>
         <MenuBar />
       </HoverMenuBar>
-      <NavRail />
+      {navVisible ? <NavRail /> : null}
       <div className="arco-window-layer">
         {embeddedWindows.map((win) => (
           <WindowFrame key={win.id} win={win} focused={win.id === focusedId}>

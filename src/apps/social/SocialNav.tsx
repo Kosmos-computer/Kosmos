@@ -1,4 +1,4 @@
-import type { LucideIcon } from "lucide-react";
+import type { CSSProperties } from "react";
 import {
   Bell,
   Bookmark,
@@ -12,6 +12,7 @@ import {
   Settings,
   Unplug,
   User,
+  type LucideIcon,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Menu, type MenuItem } from "../../components/Menu";
@@ -82,7 +83,7 @@ export function SocialNav({
   handle,
   avatar,
   network = "bluesky",
-  accent = "#0085ff",
+  accent,
   onDisconnect,
 }: SocialNavProps) {
   const { t } = useTranslation();
@@ -117,11 +118,7 @@ export function SocialNav({
           aria-label={profileName}
           items={menuItems}
           trigger={
-            <button
-              type="button"
-              className="arco-social__nav-brand-trigger"
-              style={{ ["--social-accent" as string]: accent }}
-            >
+            <button type="button" className="arco-social__nav-brand-trigger">
               <span className="arco-social__nav-brand-avatar-wrap">
                 <Avatar
                   name={profileName}
@@ -129,7 +126,11 @@ export function SocialNav({
                   size="md"
                   className="arco-social__nav-brand-avatar"
                 />
-                <span className="arco-social__nav-brand-badge" aria-hidden="true">
+                <span
+                  className="arco-social__nav-brand-badge"
+                  aria-hidden="true"
+                  style={accent ? ({ ["--social-accent" as string]: accent } as CSSProperties) : undefined}
+                >
                   <SocialNetworkIcon network={network} size={10} />
                 </span>
               </span>

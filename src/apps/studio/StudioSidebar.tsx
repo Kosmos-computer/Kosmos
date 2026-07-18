@@ -13,6 +13,7 @@ import { useAuthStore } from "../../os/auth/authStore";
 import { useWindowStore } from "../../os/windowStore";
 import { systemAppTitle } from "../../os/systemAppTitles";
 import { Menu, type MenuItem } from "../../components/Menu";
+import { openApisApp } from "../apis/apisNavStore";
 import { StudioConversationGroups } from "./StudioConversationGroups";
 import { StudioSidebarFilterMenu } from "./StudioSidebarFilterMenu";
 import { StudioLogoMark } from "../../components/StudioLogoMark";
@@ -82,7 +83,7 @@ export function StudioSidebar({
   const togglePinned = useSidebarPreferencesStore((s) => s.togglePinned);
   const prunePinned = useSidebarPreferencesStore((s) => s.prunePinned);
 
-  const openSystem = (app: "automations" | "apps" | "skills") =>
+  const openSystem = (app: "automations" | "skills") =>
     openWindow({ type: "system", app }, systemAppTitle(app));
 
   const visibleSessions = useMemo(() => {
@@ -164,7 +165,7 @@ export function StudioSidebar({
           <button
             type="button"
             className="arco-sidenav__quicklink"
-            onClick={() => openSystem("apps")}
+            onClick={() => openApisApp("marketplace")}
           >
             <LayoutGrid size={14} /><T k={I18nKey.APPS$STUDIO_PLUGINS} /></button>
         </div>

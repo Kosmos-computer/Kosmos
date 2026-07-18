@@ -156,10 +156,6 @@
   object-position: center;
 }
 
-.arco-auth-wallpaper__veil {
-  background: color-mix(in srgb, var(--arco-bg-desktop) 42%, transparent);
-}
-
 .arco-auth-wallpaper-swatch__preview--photo {
   background-size: cover;
   background-position: center;

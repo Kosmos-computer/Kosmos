@@ -158,7 +158,7 @@ export function Menu({
               />
             </div>
           ) : null}
-          <div className="arco-menu__items">
+          <div className="arco-menu__items arco-scroll">
             {visibleItems.length === 0 ? (
               <div className="arco-menu__empty"><T k={I18nKey.COMPONENTS$MENU_NO_MATCHES} /></div>
             ) : (

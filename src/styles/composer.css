@@ -236,6 +236,10 @@
   z-index: calc(var(--arco-z-overlay) + 1);
 }
 
+.arco-attach__flyout--tools {
+  width: 280px;
+}
+
 .arco-attach__togglerow {
   display: flex;
   align-items: center;
@@ -515,6 +519,11 @@
 .arco-composer__statusbar--split {
   justify-content: space-between;
   gap: var(--arco-space-s);
+  min-width: 0;
+}
+
+.arco-composer__statusbar--split > :last-child {
+  flex-shrink: 0;
 }
 
 .arco-usage__trigger {

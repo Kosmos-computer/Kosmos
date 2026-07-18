@@ -6,6 +6,7 @@
  */
 import { create } from "zustand";
 import { syncNativeClose, syncNativeFocus, syncNativeOpen } from "./nativeAppWindows";
+import { useOsStore } from "./osStore";
 
 export type SystemAppId =
   | "chat"
@@ -181,12 +182,16 @@ const DEFAULT_SIZES: Record<string, { w: number; h: number }> = {
   "system:terminal": { w: 640, h: 440 },
   "system:settings": { w: 560, h: 620 },
   "system:startup": { w: 980, h: 720 },
+  // Calculator is a device-sized widget — titlebar sits directly on the pad.
+  "installed:core.calculator": { w: 400, h: 680 },
 };
 
 const MENUBAR_HEIGHT = 34;
 const WINDOW_MARGIN = 12;
 const MIN_W = 320;
 const MIN_H = 220;
+/** Min on-screen strip so a window dragged past the viewport edge stays recoverable. */
+const TITLEBAR_REACH = 48;
 
 function navWidth(): number {
   if (typeof window === "undefined") return 56;
@@ -196,7 +201,12 @@ function navWidth(): number {
   return Number.isFinite(parsed) ? parsed : 56;
 }
 
-/** Keep restored windows reachable — persisted layouts can land off-screen. */
+/**
+ * Keep windows reachable. When Settings → "Allow windows off-screen" is on,
+ * position may hang past the browser edge (titlebar grab strip stays visible).
+ * When off, windows stay fully inside the desktop work area.
+ * Size is always capped so a window cannot exceed the work area.
+ */
 function ensureVisibleRect(key: string, rect: WindowRect, index: number): WindowRect {
   if (typeof window === "undefined") return rect;
   const vw = window.innerWidth;
@@ -213,8 +223,14 @@ function ensureVisibleRect(key: string, rect: WindowRect, index: number): Window
 
   w = Math.min(Math.max(MIN_W, w), maxW);
   h = Math.min(Math.max(MIN_H, h), maxH);
-  x = Math.max(leftBound, Math.min(x, vw - w - WINDOW_MARGIN));
-  y = Math.max(topBound, Math.min(y, vh - h - WINDOW_MARGIN));
+
+  if (useOsStore.getState().windowsOffscreen) {
+    x = Math.max(TITLEBAR_REACH - w, Math.min(x, vw - TITLEBAR_REACH));
+    y = Math.max(topBound, Math.min(y, vh - TITLEBAR_REACH));
+  } else {
+    x = Math.max(leftBound, Math.min(x, vw - w - WINDOW_MARGIN));
+    y = Math.max(topBound, Math.min(y, vh - h - WINDOW_MARGIN));
+  }
   return { x, y, w, h };
 }
 
@@ -369,16 +385,7 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
     set((state) => {
       const current = state.windows.find((w) => w.id === id);
       if (!current) return state;
-      const boundedPatch = { ...rect };
-      if (typeof window !== "undefined") {
-        if (boundedPatch.w != null) {
-          boundedPatch.w = Math.min(boundedPatch.w, window.innerWidth - current.x - WINDOW_MARGIN);
-        }
-        if (boundedPatch.h != null) {
-          boundedPatch.h = Math.min(boundedPatch.h, window.innerHeight - current.y - WINDOW_MARGIN);
-        }
-      }
-      const nextRect = ensureVisibleRect(id, { ...current, ...boundedPatch }, state.windows.indexOf(current));
+      const nextRect = ensureVisibleRect(id, { ...current, ...rect }, state.windows.indexOf(current));
       const next = {
         ...state,
         windows: state.windows.map((w) => (w.id === id ? { ...w, ...nextRect } : w)),

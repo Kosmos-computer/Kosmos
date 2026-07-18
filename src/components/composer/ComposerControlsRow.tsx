@@ -2,8 +2,9 @@ import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
 /**
  * ComposerControlsRow — the single row of controls under the textarea:
- * scrollable left cluster (attach, emoji, formatting toggle, mode, approval,
- * model) and a docked right cluster (mic, send/stop).
+ * scrollable left cluster (attach, optional emoji, mode, approval, model)
+ * and a docked right cluster (mic, send/stop). Tools and agent live inside
+ * the "+" attach menu.
  *
  * Narrow widths (the Studio chat pane is user-resizable) are handled the way
  * the design reference does: controls that no longer fit collapse, trailing
@@ -24,24 +25,19 @@ import { Menu, type MenuItem } from "../Menu";
 import {
   ComposerAttachMenu,
   type ComposerConnector,
-  type ComposerPanelToggle,
 } from "./ComposerAttachMenu";
 import { ComposerEmojiPicker } from "./ComposerEmojiPicker";
-import { ComposerFormattingToggle } from "./ComposerFormattingToolbar";
 import {
   APPROVAL_MODE_OPTIONS,
   approvalModeLabel,
 } from "./approvalModes";
-import { TOOLSETS, toolsetsLabel } from "./toolsets";
+import { TOOLSETS } from "./toolsets";
 
 type ControlId =
   | "attach"
   | "emoji"
-  | "formatting"
   | "mode"
   | "approval"
-  | "toolset"
-  | "agent"
   | "model";
 
 const CONTROL_GAP = 4;
@@ -63,10 +59,11 @@ export interface ComposerControlsRowProps {
   onManageConnectors?: () => void;
   onBrowseConnectors?: () => void;
   connectors?: ComposerConnector[];
-  panelToggles?: ComposerPanelToggle[];
+  emojiVisible?: boolean;
+  onEmojiVisibleChange?: (visible: boolean) => void;
+  richTextVisible?: boolean;
+  onRichTextVisibleChange?: (visible: boolean) => void;
   onInsertEmoji: (emoji: string) => void;
-  formattingVisible: boolean;
-  onToggleFormatting: () => void;
   modes?: ComposerModeItem[];
   activeModeId?: string;
   onModeChange?: (id: string) => void;
@@ -101,10 +98,11 @@ export function ComposerControlsRow({
   onManageConnectors,
   onBrowseConnectors,
   connectors,
-  panelToggles,
+  emojiVisible = false,
+  onEmojiVisibleChange,
+  richTextVisible = false,
+  onRichTextVisibleChange,
   onInsertEmoji,
-  formattingVisible,
-  onToggleFormatting,
   modes,
   activeModeId,
   onModeChange,
@@ -133,22 +131,17 @@ export function ComposerControlsRow({
   const activeModeLabel = modes?.find((m) => m.id === activeModeId)?.label;
   const showApprovalMenu = Boolean(approvalMode && onApprovalModeChange);
   const activeApprovalLabel = approvalMode ? approvalModeLabel(approvalMode) : undefined;
-  const showToolsetMenu = Boolean(toolsetIds && onToolsetIdsChange);
-  const activeToolsetLabel = toolsetIds ? toolsetsLabel(toolsetIds) : undefined;
-  const showAgentMenu = Boolean(agentItems?.length);
-  const agentLabel = agent ?? "Agent";
   const showModelMenu = Boolean(modelItems?.length);
   const modelLabel = model ?? "Model";
 
   const controlIds = useMemo<ControlId[]>(() => {
-    const ids: ControlId[] = ["attach", "emoji", "formatting"];
+    const ids: ControlId[] = ["attach"];
+    if (emojiVisible) ids.push("emoji");
     if (showModeMenu) ids.push("mode");
     if (showApprovalMenu) ids.push("approval");
-    if (showToolsetMenu) ids.push("toolset");
-    if (showAgentMenu) ids.push("agent");
     if (showModelMenu) ids.push("model");
     return ids;
-  }, [showModeMenu, showApprovalMenu, showToolsetMenu, showAgentMenu, showModelMenu]);
+  }, [emojiVisible, showModeMenu, showApprovalMenu, showModelMenu]);
 
   // ── Overflow measurement ─────────────────────────────────────────────────
   // Drop controls from the end until the visible set (plus the overflow dock,
@@ -188,7 +181,7 @@ export function ComposerControlsRow({
 
   useLayoutEffect(() => {
     measureOverflow();
-  }, [measureOverflow, formattingVisible, activeModeLabel, activeApprovalLabel, agent, model, disabled]);
+  }, [measureOverflow, emojiVisible, activeModeLabel, activeApprovalLabel, model, disabled]);
 
   useEffect(() => {
     const row = rowRef.current;
@@ -220,23 +213,53 @@ export function ComposerControlsRow({
           onSelect: () => connector.onEnabledChange(!connector.enabled),
         });
       });
-      panelToggles?.forEach((toggle) => {
+      if (onEmojiVisibleChange) {
         items.push({
-          id: `of-panel-${toggle.id}`,
-          label: toggle.label,
-          checked: toggle.visible,
-          onSelect: () => toggle.onVisibleChange(!toggle.visible),
+          id: "of-emoji-toggle",
+          label: i18n.t(I18nKey.COMPONENTS$COMPOSER_EMOJIS),
+          checked: emojiVisible,
+          separatorAbove: true,
+          onSelect: () => onEmojiVisibleChange(!emojiVisible),
         });
-      });
-    }
-
-    if (overflowIds.includes("formatting")) {
-      items.push({
-        id: "of-formatting",
-        label: formattingVisible ? "Hide formatting toolbar" : "Show formatting toolbar",
-        separatorAbove: items.length > 0,
-        onSelect: onToggleFormatting,
-      });
+      }
+      if (onRichTextVisibleChange) {
+        items.push({
+          id: "of-richtext-toggle",
+          label: i18n.t(I18nKey.COMPONENTS$COMPOSER_RICH_TEXT),
+          checked: richTextVisible,
+          separatorAbove: !onEmojiVisibleChange,
+          onSelect: () => onRichTextVisibleChange(!richTextVisible),
+        });
+      }
+      if (toolsetIds && onToolsetIdsChange) {
+        TOOLSETS.forEach((set, i) => {
+          const checked = toolsetIds.includes(set.id);
+          items.push({
+            id: `of-toolset-${set.id}`,
+            label: set.label,
+            description: set.description,
+            checked,
+            separatorAbove: i === 0,
+            onSelect: () => {
+              if (checked) {
+                const next = toolsetIds.filter((id) => id !== set.id);
+                onToolsetIdsChange(next.length > 0 ? next : [set.id]);
+              } else {
+                onToolsetIdsChange([...toolsetIds, set.id]);
+              }
+            },
+          });
+        });
+      }
+      if (agentItems?.length) {
+        agentItems.forEach((item, i) => {
+          items.push({
+            ...item,
+            id: `of-agent-${item.id}`,
+            separatorAbove: i === 0 || item.separatorAbove,
+          });
+        });
+      }
     }
 
     if (overflowIds.includes("mode") && modes) {
@@ -265,37 +288,6 @@ export function ComposerControlsRow({
       });
     }
 
-    if (overflowIds.includes("toolset") && toolsetIds && onToolsetIdsChange) {
-      TOOLSETS.forEach((set, i) => {
-        const checked = toolsetIds.includes(set.id);
-        items.push({
-          id: `of-toolset-${set.id}`,
-          label: set.label,
-          description: set.description,
-          checked,
-          separatorAbove: items.length > 0 && i === 0,
-          onSelect: () => {
-            if (checked) {
-              const next = toolsetIds.filter((id) => id !== set.id);
-              onToolsetIdsChange(next.length > 0 ? next : [set.id]);
-            } else {
-              onToolsetIdsChange([...toolsetIds, set.id]);
-            }
-          },
-        });
-      });
-    }
-
-    if (overflowIds.includes("agent") && agentItems) {
-      agentItems.forEach((item, i) => {
-        items.push({
-          ...item,
-          id: `of-agent-${item.id}`,
-          separatorAbove: items.length > 0 && i === 0,
-        });
-      });
-    }
-
     if (overflowIds.includes("model") && modelItems) {
       modelItems.forEach((item, i) => {
         items.push({
@@ -315,9 +307,10 @@ export function ComposerControlsRow({
     onSlashCommands,
     onAddPlugins,
     connectors,
-    panelToggles,
-    formattingVisible,
-    onToggleFormatting,
+    emojiVisible,
+    onEmojiVisibleChange,
+    richTextVisible,
+    onRichTextVisibleChange,
     modes,
     activeModeId,
     onModeChange,
@@ -362,29 +355,6 @@ export function ComposerControlsRow({
     [approvalMode, onApprovalModeChange],
   );
 
-  const toolsetItems = useMemo<MenuItem[]>(
-    () =>
-      TOOLSETS.map((set) => {
-        const checked = toolsetIds?.includes(set.id) ?? false;
-        return {
-          id: set.id,
-          label: set.label,
-          description: set.description,
-          checked,
-          onSelect: () => {
-            if (!toolsetIds || !onToolsetIdsChange) return;
-            if (checked) {
-              const next = toolsetIds.filter((id) => id !== set.id);
-              onToolsetIdsChange(next.length > 0 ? next : [set.id]);
-            } else {
-              onToolsetIdsChange([...toolsetIds, set.id]);
-            }
-          },
-        };
-      }),
-    [toolsetIds, onToolsetIdsChange],
-  );
-
   return (
     <div ref={rowRef} className="arco-composer__controls">
       <div className="arco-composer__controlsleft">
@@ -400,15 +370,21 @@ export function ComposerControlsRow({
               onManageConnectors={onManageConnectors}
               onBrowseConnectors={onBrowseConnectors}
               connectors={connectors}
-              panelToggles={panelToggles}
+              toolsetIds={toolsetIds}
+              onToolsetIdsChange={onToolsetIdsChange}
+              agent={agent}
+              agentItems={agentItems}
+              emojiVisible={emojiVisible}
+              onEmojiVisibleChange={onEmojiVisibleChange}
+              richTextVisible={richTextVisible}
+              onRichTextVisibleChange={onRichTextVisibleChange}
             />
           </div>
-          <div ref={setItemRef("emoji")} className={controlClass("emoji")} aria-hidden={overflowIds.includes("emoji") || undefined}>
-            <ComposerEmojiPicker disabled={disabled} onSelect={onInsertEmoji} />
-          </div>
-          <div ref={setItemRef("formatting")} className={controlClass("formatting")} aria-hidden={overflowIds.includes("formatting") || undefined}>
-            <ComposerFormattingToggle visible={formattingVisible} onToggle={onToggleFormatting} />
-          </div>
+          {emojiVisible && (
+            <div ref={setItemRef("emoji")} className={controlClass("emoji")} aria-hidden={overflowIds.includes("emoji") || undefined}>
+              <ComposerEmojiPicker disabled={disabled} onSelect={onInsertEmoji} />
+            </div>
+          )}
           {showModeMenu && (
             <div ref={setItemRef("mode")} className={controlClass("mode")} aria-hidden={overflowIds.includes("mode") || undefined}>
               <Menu
@@ -437,40 +413,6 @@ export function ComposerControlsRow({
                 trigger={
                   <button type="button" className="arco-composer__pickertrigger">
                     <span className="arco-composer__pickerlabel">{activeApprovalLabel}</span>
-                    <ChevronDown size={12} />
-                  </button>
-                }
-              />
-            </div>
-          )}
-          {showToolsetMenu && (
-            <div ref={setItemRef("toolset")} className={controlClass("toolset")} aria-hidden={overflowIds.includes("toolset") || undefined}>
-              <Menu
-                side="top"
-                align="start"
-                heading="Which toolsets may the agent use?"
-                aria-label="Agent toolsets"
-                items={toolsetItems}
-                searchable={false}
-                trigger={
-                  <button type="button" className="arco-composer__pickertrigger">
-                    <span className="arco-composer__pickerlabel">{activeToolsetLabel}</span>
-                    <ChevronDown size={12} />
-                  </button>
-                }
-              />
-            </div>
-          )}
-          {showAgentMenu && (
-            <div ref={setItemRef("agent")} className={controlClass("agent")} aria-hidden={overflowIds.includes("agent") || undefined}>
-              <Menu
-                side="top"
-                align="start"
-                aria-label="Choose agent"
-                items={agentItems ?? []}
-                trigger={
-                  <button type="button" className="arco-composer__pickertrigger">
-                    <span className="arco-composer__pickerlabel">{agentLabel}</span>
                     <ChevronDown size={12} />
                   </button>
                 }

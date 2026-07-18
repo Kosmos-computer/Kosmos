@@ -1,8 +1,8 @@
 import { I18nKey } from "../i18n/declaration";
 import i18n from "../i18n/index";
-/** Top chrome: settings menu, focused window title, shell view toggle, bento drawer, clock, theme toggle, lock. */
+/** Top chrome: left-nav drawer toggle, settings menu, focused window title, shell view toggle, bento drawer, clock, theme toggle, lock. */
 import { useEffect, useMemo, useState } from "react";
-import { AppWindow, LayoutGrid, Lock, LogOut, Monitor, Moon, Search, Settings, Sun } from "lucide-react";
+import { AppWindow, LayoutGrid, Lock, LogOut, Monitor, Moon, PanelLeft, Search, Settings, Sun } from "lucide-react";
 import { Menu, type MenuItem } from "../components/Menu";
 import { openSettingsApp } from "../apps/settings/settingsStore";
 import { visibleSettingsNavGroups } from "../apps/settings/settingsSections";
@@ -15,6 +15,7 @@ import { MenuBarLanguageSwitcher } from "./MenuBarLanguageSwitcher";
 import { MenuBarToolsStatus } from "./MenuBarToolsStatus";
 import { MenuBarVolumeControl } from "./MenuBarVolumeControl";
 import { useOsStore } from "./osStore";
+import { resolveWindowTitle } from "./resolveWindowTitle";
 import { useWindowStore } from "./windowStore";
 
 function useClock(): string {
@@ -33,7 +34,7 @@ function useClock(): string {
 }
 
 export function MenuBar() {
-  const { theme, setTheme, shellView, setShellView } = useOsStore();
+  const { theme, setTheme, shellView, setShellView, navVisible, setNavVisible } = useOsStore();
   const bentoOpen = useBentoStore((s) => s.open);
   const toggleBento = useBentoStore((s) => s.toggleOpen);
   const user = useAuthStore((s) => s.user);
@@ -66,6 +67,16 @@ export function MenuBar() {
   return (
     <header className="arco-menubar">
       <div className="arco-menubar__left">
+        <button
+          type="button"
+          className={`arco-menubar__icon-btn${navVisible ? " arco-menubar__icon-btn--active" : ""}`}
+          onClick={() => setNavVisible(!navVisible)}
+          aria-label={navVisible ? "Hide left navigation" : "Show left navigation"}
+          aria-pressed={navVisible}
+          title={navVisible ? "Hide left navigation" : "Show left navigation"}
+        >
+          <PanelLeft size={14} />
+        </button>
         <Menu
           trigger={
             <button
@@ -91,7 +102,7 @@ export function MenuBar() {
           <Search size={14} />
         </button>
       </div>
-      <span className="arco-menubar__title">{focused?.title ?? ""}</span>
+      <span className="arco-menubar__title">{focused ? resolveWindowTitle(focused) : ""}</span>
       <div className="arco-menubar__right">
         <button
           type="button"

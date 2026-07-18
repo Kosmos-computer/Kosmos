@@ -141,13 +141,16 @@ export function WindowFrame({ win, focused, children }: Props) {
           onPointerUp={onTitlePointerUp}
           onDoubleClick={() => toggleMaximize(win.id)}
         >
+          {/* Title before controls when right-aligned so glyphs sit on the far edge. */}
+          {windowControlAlign === "right" && <span className="arco-window__title">{title}</span>}
           <WindowControls
             controlStyle={windowControlStyle}
+            align={windowControlAlign}
             onClose={() => close(win.id)}
             onMinimize={() => toggleMinimize(win.id)}
             onMaximize={() => toggleMaximize(win.id)}
           />
-          <span className="arco-window__title">{title}</span>
+          {windowControlAlign === "left" && <span className="arco-window__title">{title}</span>}
         </header>
       )}
       <div className="arco-window__content">{children}</div>

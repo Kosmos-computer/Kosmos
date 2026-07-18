@@ -241,8 +241,9 @@
 
 .arco-sidenav__groupadd {
   flex-shrink: 0;
-  width: 24px;
-  height: 24px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
   margin-right: 2px;
   color: var(--arco-text-tertiary);
   opacity: 0;
@@ -1365,7 +1366,14 @@
   align-items: center;
   gap: 6px;
   min-width: 0;
-  flex-wrap: wrap;
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.arco-workspacechrome::-webkit-scrollbar {
+  display: none;
 }
 
 .arco-workspacechrome__chipwrap {

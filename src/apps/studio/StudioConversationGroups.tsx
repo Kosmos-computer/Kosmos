@@ -220,7 +220,7 @@ function GroupFolder({
             onNewChat();
           }}
         >
-          <Plus size={13} />
+          <Plus size={14} />
         </button>
       </div>
       {expanded && (

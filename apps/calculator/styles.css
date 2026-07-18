@@ -1,6 +1,6 @@
 /*
  * Calculator app — retro Datamath / Omron skins ported from UI Experiments.
- * Shell chrome uses --os-* tokens; device skins use fixed calculator palettes.
+ * Device fills the window under the OS titlebar; chrome is a ⋮ menu only.
  */
 * {
   box-sizing: border-box;
@@ -51,102 +51,151 @@ body {
 }
 
 .calc-workspace {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100vh;
   min-height: 0;
-}
-
-/* ── Header ── */
-.calc-header {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--os-space-l, 16px);
-  padding: var(--os-space-l, 16px);
-  border-bottom: 1px solid var(--os-border, rgba(255, 255, 255, 0.09));
-}
-
-.calc-header__title-row {
-  display: flex;
-  align-items: center;
-  gap: var(--os-space-s, 8px);
-}
-
-.calc-header__icon {
-  flex-shrink: 0;
-  color: var(--os-text-secondary, #a8b0bf);
-}
-
-.calc-header__title {
-  font-size: var(--os-text-xl, 20px);
-  font-weight: 700;
-  color: var(--os-text-primary, #eef1f6);
-}
-
-.calc-header__subtitle {
-  font-size: var(--os-text-sm, 12.5px);
-  color: var(--os-text-tertiary, #6d7585);
-}
-
-.calc-header__chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--os-space-s, 8px);
-}
-
-.calc-chip {
-  font: inherit;
-  font-size: var(--os-text-sm, 12.5px);
-  padding: 5px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--os-border, rgba(255, 255, 255, 0.09));
-  background: var(--os-bg-hover, rgba(255, 255, 255, 0.06));
-  color: var(--os-text-secondary, #a8b0bf);
-  cursor: pointer;
-}
-
-.calc-chip:hover {
-  background: var(--os-bg-active, rgba(255, 255, 255, 0.1));
-}
-
-.calc-chip--active {
-  background: var(--os-accent-soft, rgba(124, 157, 255, 0.16));
-  border-color: var(--os-accent, #7c9dff);
-  color: var(--os-text-primary, #eef1f6);
-}
-
-/* ── Body layout ── */
-.calc-body {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  gap: var(--os-space-xl, 24px);
-  padding: var(--os-space-xl, 24px) var(--os-space-l, 16px);
   overflow: hidden;
 }
 
-.calc-body__pad {
+.calc-stage {
+  position: relative;
   flex: 1;
+  min-height: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 0;
 }
 
-/* ── History panel ── */
+.calc-stage__pad {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+}
+
+.calc-stage__pad > * {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* ── Overflow menu ── */
+.calc-menu {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 5;
+}
+
+.calc-menu__toggle {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.35);
+  color: rgba(255, 255, 255, 0.92);
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+}
+
+.calc-menu__toggle:hover,
+.calc-menu__toggle[aria-expanded="true"] {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.calc-menu__panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 168px;
+  padding: 6px;
+  border-radius: 10px;
+  background: var(--os-bg-raised, #22262f);
+  border: 1px solid var(--os-border, rgba(255, 255, 255, 0.09));
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+}
+
+.calc-menu__panel[hidden] {
+  display: none;
+}
+
+.calc-menu__section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.calc-menu__label {
+  padding: 6px 10px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--os-text-tertiary, #6d7585);
+}
+
+.calc-menu__item {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin: 0;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--os-text-primary, #eef1f6);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.calc-menu__item:hover {
+  background: var(--os-bg-hover, rgba(255, 255, 255, 0.06));
+}
+
+.calc-menu__item[aria-checked="true"] {
+  background: var(--os-accent-soft, rgba(124, 157, 255, 0.16));
+  color: var(--os-text-primary, #eef1f6);
+}
+
+.calc-menu__divider {
+  height: 1px;
+  margin: 6px 4px;
+  background: var(--os-border, rgba(255, 255, 255, 0.09));
+}
+
+/* ── History overlay ── */
 .calc-history {
-  flex-shrink: 0;
-  width: min(240px, 32vw);
+  position: absolute;
+  inset: 0;
+  z-index: 4;
   display: flex;
   flex-direction: column;
   gap: var(--os-space-s, 8px);
   padding: var(--os-space-m, 12px);
-  border-radius: var(--os-radius-m, 10px);
-  background: var(--os-bg-sunk, rgba(12, 14, 18, 0.4));
-  border: 1px solid var(--os-border, rgba(255, 255, 255, 0.09));
+  background: color-mix(in srgb, var(--os-bg-surface-solid, #181b22) 94%, transparent);
+  backdrop-filter: blur(10px);
   overflow: hidden;
+}
+
+.calc-history[hidden] {
+  display: none;
+}
+
+.calc-history__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .calc-history__title {
@@ -156,6 +205,26 @@ body {
   color: var(--os-text-secondary, #a8b0bf);
   text-transform: uppercase;
   letter-spacing: 0.06em;
+}
+
+.calc-history__close {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 7px;
+  background: var(--os-bg-hover, rgba(255, 255, 255, 0.06));
+  color: var(--os-text-secondary, #a8b0bf);
+  cursor: pointer;
+}
+
+.calc-history__close:hover {
+  background: var(--os-bg-active, rgba(255, 255, 255, 0.1));
+  color: var(--os-text-primary, #eef1f6);
 }
 
 .calc-history__list {
@@ -204,13 +273,10 @@ body {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  width: min(100%, 340px);
+  width: 100%;
+  height: 100%;
   padding: 20px;
-  border-radius: 14px;
   background: var(--calculator-case);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.35),
-    0 10px 28px rgba(0, 0, 0, 0.28);
 }
 
 .calc-pad__brand {
@@ -219,6 +285,7 @@ body {
   justify-content: space-between;
   padding: 0 4px;
   min-height: 22px;
+  padding-right: 40px;
 }
 
 .calc-pad__brand-name {
@@ -238,6 +305,8 @@ body {
 
 .calc-pad__display {
   flex-shrink: 0;
+  position: relative;
+  z-index: 1;
   min-height: 56px;
   padding: 12px 16px;
   border-radius: 6px;
@@ -256,19 +325,31 @@ body {
 }
 
 .calc-pad__keypad {
+  flex: 1;
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 0;
+  overflow: hidden;
   padding: 16px;
   border-radius: 10px;
   background: var(--calculator-keypad-bg);
   box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.55);
+  container-type: size;
 }
 
 .calc-pad__grid {
+  --calc-gap: 12px;
+  --calc-cols: 4;
+  --calc-rows: 5;
+  --calc-cell: min(
+    calc((100cqw - var(--calc-gap) * (var(--calc-cols) - 1)) / var(--calc-cols)),
+    calc((100cqh - var(--calc-gap) * (var(--calc-rows) - 1)) / var(--calc-rows))
+  );
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(4, var(--calc-cell));
+  grid-template-rows: repeat(5, var(--calc-cell));
+  gap: var(--calc-gap);
 }
 
 .calc-pad__key {
@@ -276,9 +357,9 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
+  width: var(--calc-cell);
+  height: var(--calc-cell);
   aspect-ratio: 1;
-  min-height: 0;
   padding: 12px;
   border: none;
   border-radius: 4px;
@@ -328,7 +409,8 @@ body {
 
 .calc-pad__spacer {
   display: block;
-  width: 100%;
+  width: var(--calc-cell);
+  height: var(--calc-cell);
   aspect-ratio: 1;
 }
 
@@ -336,18 +418,18 @@ body {
 .omron-pad {
   display: flex;
   flex-direction: column;
-  width: min(100%, 340px);
-  border-radius: 24px;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
   background: var(--omron-body);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
 }
 
 .omron-pad__header {
   position: relative;
   flex-shrink: 0;
-  min-height: 110px;
-  padding: 20px;
+  min-height: 64px;
+  padding: 16px 20px;
+  padding-right: 48px;
   background: var(--omron-orange);
 }
 
@@ -365,14 +447,17 @@ body {
 }
 
 .omron-pad__body {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 20px;
+  gap: 12px;
+  min-height: 0;
+  padding: 16px 20px 20px;
   background: var(--omron-body);
 }
 
 .omron-pad__display-wrap {
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -412,10 +497,34 @@ body {
   white-space: nowrap;
 }
 
+.omron-pad__keypad {
+  /* Keys live only in the space under the LED — sized to fit, never clipped. */
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: stretch;
+  overflow: hidden;
+  container-type: size;
+}
+
 .omron-pad__grid {
+  --calc-gap: 12px;
+  --calc-cols: 5;
+  --calc-rows: 4;
+  /* Fit both the screen width and the remaining height under the LED. */
+  --calc-cell: min(
+    calc((100cqw - var(--calc-gap) * (var(--calc-cols) - 1)) / var(--calc-cols)),
+    calc((100cqh - var(--calc-gap) * (var(--calc-rows) - 1)) / var(--calc-rows))
+  );
+  width: 100%;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(5, var(--calc-cell));
+  grid-template-rows: repeat(4, var(--calc-cell));
+  gap: var(--calc-gap);
+  /* Keep outer keys on the LED’s left/right edges when height caps size. */
+  justify-content: space-between;
 }
 
 .omron-pad__key {
@@ -423,9 +532,9 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: var(--calc-cell);
+  height: var(--calc-cell);
   aspect-ratio: 1;
-  width: 100%;
-  min-height: 0;
   padding: 8px;
   border: none;
   border-radius: 50%;
@@ -469,24 +578,185 @@ body {
     inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
+/* ── Scientific pad ── */
+.sci-pad {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 12px;
+  gap: 10px;
+  background: #12151c;
+  color: #e8edf5;
+}
+
+.sci-pad__display {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #0a0c10;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sci-pad__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sci-pad__mode {
+  appearance: none;
+  margin: 0;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(124, 157, 255, 0.45);
+  background: rgba(124, 157, 255, 0.14);
+  color: #c9d6ff;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.sci-pad__mode:hover {
+  background: rgba(124, 157, 255, 0.22);
+}
+
+.sci-pad__brand {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6d7585;
+}
+
+.sci-pad__expression {
+  min-height: 18px;
+  font-family: var(--calc-font-display);
+  font-size: 13px;
+  color: #6d7585;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sci-pad__result {
+  min-height: 36px;
+  font-family: var(--calc-font-display);
+  font-size: 28px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  text-align: right;
+  color: #e8edf5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sci-pad__result--error {
+  color: #e5737d;
+}
+
+.sci-pad__keypad {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: flex-start;
+  overflow: hidden;
+  container-type: size;
+}
+
+.sci-pad__grid {
+  --calc-gap: 8px;
+  --calc-cols: 5;
+  --calc-rows: 7;
+  --calc-cell: min(
+    calc((100cqw - var(--calc-gap) * (var(--calc-cols) - 1)) / var(--calc-cols)),
+    calc((100cqh - var(--calc-gap) * (var(--calc-rows) - 1)) / var(--calc-rows))
+  );
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(5, var(--calc-cell));
+  grid-template-rows: repeat(7, var(--calc-cell));
+  gap: var(--calc-gap);
+  justify-content: space-between;
+}
+
+.sci-pad__key {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--calc-cell);
+  height: var(--calc-cell);
+  aspect-ratio: 1;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  color: #e8edf5;
+  background: #1c212b;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.sci-pad__key:active {
+  transform: translateY(1px);
+  background: #252b38;
+}
+
+.sci-pad__key--fn {
+  background: #243049;
+  color: #c9d6ff;
+}
+
+.sci-pad__key--op {
+  background: #2a2433;
+  color: #e2c6ff;
+}
+
+.sci-pad__key--eq {
+  background: #3d5afe;
+  color: #fff;
+}
+
+.sci-pad__key--danger {
+  background: #3a2226;
+  color: #ffb4ba;
+}
+
+/* Datamath menu toggle contrast on light case */
+.calc-workspace--datamath .calc-menu__toggle {
+  background: rgba(0, 0, 0, 0.18);
+  color: rgba(26, 26, 27, 0.85);
+}
+
+.calc-workspace--datamath .calc-menu__toggle:hover,
+.calc-workspace--datamath .calc-menu__toggle[aria-expanded="true"] {
+  background: rgba(0, 0, 0, 0.28);
+}
+
 /* ── Errors ── */
 .calc-error {
-  margin: 0 var(--os-space-l, 16px) var(--os-space-l, 16px);
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 6;
   padding: 8px 12px;
   font-size: var(--os-text-sm, 12.5px);
   color: var(--os-danger, #e5737d);
   background: var(--os-danger-soft, rgba(229, 115, 125, 0.14));
   border: 1px solid var(--os-danger, #e5737d);
   border-radius: var(--os-radius-s, 6px);
-}
-
-@media (max-width: 720px) {
-  .calc-body {
-    flex-direction: column;
-  }
-
-  .calc-history {
-    width: 100%;
-    max-height: 160px;
-  }
 }

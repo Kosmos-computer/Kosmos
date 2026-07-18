@@ -56,11 +56,6 @@ export function KamijiApp() {
   return (
     <div className="arco-kamiji">
       <div className="arco-kamiji__device">
-        <div className="arco-kamiji__header">
-          <h1 className="arco-kamiji__title"><T k={I18nKey.APPS$KAMIJI_KAMIJI} /></h1>
-          <span className="arco-kamiji__subtitle"><T k={I18nKey.APPS$KAMIJI_VIRTUAL_PET} /></span>
-        </div>
-
         <div className={`arco-kamiji__screen ${!isLightsOn ? "arco-kamiji__screen--dark" : ""}`}>
           <div className="arco-kamiji__screen-info">
             <span>{stageLabels[pet.stage]}</span>

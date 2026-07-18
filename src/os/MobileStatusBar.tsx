@@ -5,13 +5,15 @@
  */
 import { I18nKey } from "../i18n/declaration";
 import i18n from "../i18n/index";
-import { AppWindow, ChevronLeft, Monitor, Search, Settings } from "lucide-react";
+import { AppWindow, ChevronLeft, Maximize, Minimize, Monitor, Search, Settings } from "lucide-react";
 import { useMemo } from "react";
 import { Menu, type MenuItem } from "../components/Menu";
+import { Badge } from "../components/ui/Badge";
 import { openSettingsApp } from "../apps/settings/settingsStore";
 import { visibleSettingsNavGroups } from "../apps/settings/settingsSections";
 import { useCan } from "./auth/authStore";
 import { useCommandPaletteStore } from "./commandPaletteStore";
+import { useDocumentFullscreen } from "./useDocumentFullscreen";
 import { useOsStore } from "./osStore";
 import type { OsWindow } from "./windowStore";
 import { resolveWindowTitle } from "./resolveWindowTitle";
@@ -24,6 +26,7 @@ export interface MobileStatusBarProps {
 export function MobileStatusBar({ active, onBack }: MobileStatusBarProps) {
   const { shellView, setShellView } = useOsStore();
   const openPalette = useCommandPaletteStore((s) => s.openPalette);
+  const { fullscreen, toggle: toggleFullscreen } = useDocumentFullscreen();
   const canManageUsers = useCan("users:manage");
   const canWriteSettings = useCan("settings:write");
 
@@ -71,9 +74,22 @@ export function MobileStatusBar({ active, onBack }: MobileStatusBarProps) {
             searchPlaceholder={i18n.t(I18nKey.APPS$SETTINGS_SEARCH_SETTINGS)}
           />
         )}
+        <strong className="arco-mobile-statusbar__title">{title}</strong>
       </div>
-      <strong className="arco-mobile-statusbar__title">{title}</strong>
+      <Badge className="arco-mobile-statusbar__beta" aria-label="Beta">
+        Beta
+      </Badge>
       <div className="arco-mobile-statusbar__right">
+        <button
+          type="button"
+          className="arco-mobile-statusbar__icon-btn"
+          onClick={() => void toggleFullscreen()}
+          aria-label={fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+          aria-pressed={fullscreen}
+          title={fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+        >
+          {fullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
+        </button>
         <button
           type="button"
           className="arco-mobile-statusbar__icon-btn"

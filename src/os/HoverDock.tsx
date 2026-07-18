@@ -9,6 +9,8 @@ import { useDismiss } from "../components/useDismiss";
 export interface HoverDockProps {
   /** When false, children render unchanged (desktop view). */
   enabled?: boolean;
+  /** Fires when the hover tray fully opens or closes. */
+  onOpenChange?: (open: boolean) => void;
   children: ReactNode;
 }
 
@@ -16,7 +18,7 @@ type DockPhase = "idle" | "peaked" | "open";
 
 const PEAK_DELAY_MS = 480;
 
-export function HoverDock({ enabled = true, children }: HoverDockProps) {
+export function HoverDock({ enabled = true, onOpenChange, children }: HoverDockProps) {
   const [phase, setPhase] = useState<DockPhase>("idle");
   const openTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const trayRef = useRef<HTMLDivElement>(null);
@@ -45,6 +47,10 @@ export function HoverDock({ enabled = true, children }: HoverDockProps) {
       setPhase("idle");
     }
   }, [enabled]);
+
+  useEffect(() => {
+    onOpenChange?.(enabled && phase === "open");
+  }, [enabled, phase, onOpenChange]);
 
   function handleHoverEnter() {
     if (phase !== "idle") return;

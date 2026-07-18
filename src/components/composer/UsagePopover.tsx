@@ -2,9 +2,9 @@ import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
 import { T } from "../../i18n/T";
 /**
- * UsagePopover — the context-usage indicator under the composer: a colored
- * dot + label trigger ("42% context" → "Context over limit") opening a
- * popover with a context-window meter and plan usage rows.
+ * UsagePopover — the context-usage indicator under the composer: a ring dial
+ * + label trigger ("42% context" → "Context over limit") opening a popover
+ * with a context-window meter and plan usage rows.
  *
  * Tone thresholds: normal < 80% ≤ warning < 100% ≤ danger.
  */
@@ -43,6 +43,34 @@ function tone(percent: number): "normal" | "warning" | "danger" {
   return "normal";
 }
 
+const RING_RADIUS = 4.5;
+const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
+
+function UsageRing({ percent, usageTone }: { percent: number; usageTone: ReturnType<typeof tone> }) {
+  const fill = Math.min(100, Math.max(0, percent));
+  const dashOffset = RING_CIRCUMFERENCE * (1 - fill / 100);
+
+  return (
+    <svg
+      className="arco-usage__ring"
+      viewBox="0 0 12 12"
+      width="12"
+      height="12"
+      aria-hidden="true"
+    >
+      <circle className="arco-usage__ring-track" cx="6" cy="6" r={RING_RADIUS} />
+      <circle
+        className={`arco-usage__ring-fill arco-usage__ring-fill--${usageTone}`}
+        cx="6"
+        cy="6"
+        r={RING_RADIUS}
+        strokeDasharray={RING_CIRCUMFERENCE}
+        strokeDashoffset={dashOffset}
+      />
+    </svg>
+  );
+}
+
 export function UsagePopover({ stats, onPlanUsageClick }: UsagePopoverProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -62,7 +90,7 @@ export function UsagePopover({ stats, onPlanUsageClick }: UsagePopoverProps) {
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
       >
-        <span className={`arco-usage__dot arco-usage__dot--${usageTone}`} aria-hidden="true" />
+        <UsageRing percent={percent} usageTone={usageTone} />
         <span className={`arco-usage__label arco-usage__label--${usageTone}`}>{label}</span>
       </button>
 

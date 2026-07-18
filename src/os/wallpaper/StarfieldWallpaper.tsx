@@ -35,7 +35,7 @@ function readDesktopBg(theme: Theme): string {
   const styles = getComputedStyle(document.documentElement);
   const token = styles.getPropertyValue("--arco-bg-desktop").trim();
   if (token) return token;
-  return theme === "light" ? "#e8ecf4" : "#0b0d12";
+  return theme === "light" ? "#e8ecf4" : "#0d0d0f";
 }
 
 export function StarfieldWallpaper({ theme }: { theme: Theme }) {

@@ -1,21 +1,16 @@
 /**
  * Sign-in screen backgrounds — separate from the desktop wallpaper so the
- * auth layer can default to a photo while the shell keeps gradient presets.
+ * auth layer can keep its own preference while still sharing the photo,
+ * gradient, and live catalogs.
  */
 import {
   WALLPAPER_GROUPS,
+  getWallpaperImageUrl,
   normalizeWallpaper,
   type WallpaperId,
 } from "./wallpapers";
 
-/** Pexels: galaxy-of-many-shiny-stars-in-dark-sky-4719340 */
-export const GALAXY_WALLPAPER_URL =
-  "https://images.pexels.com/photos/4719340/pexels-photo-4719340.jpeg?auto=compress&cs=tinysrgb&w=1920";
-
-export type AuthWallpaperId =
-  | "galaxy"
-  | "desktop"
-  | WallpaperId;
+export type AuthWallpaperId = "desktop" | WallpaperId;
 
 export interface AuthWallpaperOption {
   id: AuthWallpaperId;
@@ -30,6 +25,10 @@ export interface AuthWallpaperGroup {
   options: AuthWallpaperOption[];
 }
 
+const PHOTO_OPTIONS: AuthWallpaperOption[] = WALLPAPER_GROUPS.find(
+  (g) => g.label === "Photos",
+)!.options.map((o) => ({ id: o.id, label: o.label, imageUrl: o.imageUrl }));
+
 const GRADIENT_OPTIONS: AuthWallpaperOption[] = WALLPAPER_GROUPS.find(
   (g) => g.label === "Gradients",
 )!.options.map((o) => ({ id: o.id, label: o.label }));
@@ -42,7 +41,7 @@ export const AUTH_WALLPAPER_GROUPS: AuthWallpaperGroup[] = [
   {
     label: "Sign-in screen",
     options: [
-      { id: "galaxy", label: "Galaxy", imageUrl: GALAXY_WALLPAPER_URL },
+      ...PHOTO_OPTIONS,
       { id: "desktop", label: "Match desktop" },
       ...GRADIENT_OPTIONS,
       ...LIVE_OPTIONS,
@@ -56,10 +55,11 @@ export const AUTH_WALLPAPER_IDS = AUTH_WALLPAPER_GROUPS.flatMap((g) =>
 
 const AUTH_WALLPAPER_SET = new Set<string>(AUTH_WALLPAPER_IDS);
 
-/** Coerce persisted values; unknown ids fall back to the galaxy photo. */
+/** Coerce persisted values; unknown ids fall back to the space photo. */
 export function normalizeAuthWallpaper(value: string | null | undefined): AuthWallpaperId {
+  if (value === "galaxy") return "space";
   if (value && AUTH_WALLPAPER_SET.has(value)) return value as AuthWallpaperId;
-  return "galaxy";
+  return "space";
 }
 
 export function getAuthWallpaperOption(id: AuthWallpaperId): AuthWallpaperOption | undefined {
@@ -79,11 +79,14 @@ export function resolveAuthWallpaper(
   authWallpaper: AuthWallpaperId,
   desktopWallpaper: WallpaperId,
 ): ResolvedAuthWallpaper {
-  if (authWallpaper === "galaxy") {
-    return { kind: "photo", url: GALAXY_WALLPAPER_URL };
-  }
   if (authWallpaper === "desktop") {
+    const desktopUrl = getWallpaperImageUrl(desktopWallpaper);
+    if (desktopUrl) return { kind: "photo", url: desktopUrl };
     return { kind: "wallpaper", id: desktopWallpaper };
   }
+
+  const photoUrl = getWallpaperImageUrl(authWallpaper);
+  if (photoUrl) return { kind: "photo", url: photoUrl };
+
   return { kind: "wallpaper", id: normalizeWallpaper(authWallpaper) };
 }

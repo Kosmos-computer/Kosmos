@@ -538,14 +538,36 @@
   color: var(--arco-text-secondary);
 }
 
-.arco-usage__dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--arco-accent);
+.arco-usage__ring {
+  flex-shrink: 0;
+  transform: rotate(-90deg);
 }
-.arco-usage__dot--warning { background: var(--arco-warning); }
-.arco-usage__dot--danger { background: var(--arco-danger); }
+
+.arco-usage__ring-track,
+.arco-usage__ring-fill {
+  fill: none;
+  stroke-width: 2px;
+}
+
+.arco-usage__ring-track {
+  stroke: var(--arco-bg-active);
+}
+
+.arco-usage__ring-fill {
+  stroke: var(--arco-accent);
+  stroke-linecap: round;
+  transition:
+    stroke-dashoffset var(--arco-dur-med),
+    stroke var(--arco-dur-fast);
+}
+
+.arco-usage__ring-fill--warning {
+  stroke: var(--arco-warning);
+}
+
+.arco-usage__ring-fill--danger {
+  stroke: var(--arco-danger);
+}
 
 .arco-usage__label {
   font-size: var(--arco-text-xs);

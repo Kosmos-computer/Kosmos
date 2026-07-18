@@ -30,8 +30,8 @@ import { systemAppTitle } from "../../os/systemAppTitles";
 export function ChatApp() {
   const chat = useChat();
   const voice = useVoice();
-  const { modelLabel, modelItems } = useModelSelection();
-  const { profileId, agentLabel, agentItems } = useActiveAgentProfile();
+  const { profileId, agentLabel, agentItems, active } = useActiveAgentProfile();
+  const { modelLabel, modelItems } = useModelSelection(active);
   const [draft, setDraft] = useState("");
   const [approvalMode, setApprovalMode] = useState<ApprovalMode>(DEFAULT_APPROVAL_MODE);
   const [toolsetIds, setToolsetIds] = useState<string[]>(() => [...DEFAULT_TOOLSET_IDS]);

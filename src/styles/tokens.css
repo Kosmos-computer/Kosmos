@@ -62,21 +62,21 @@
 html[data-theme="dark"] {
   color-scheme: dark;
 
-  --arco-bg-desktop: #0b0d12;
-  --arco-bg-surface: rgba(24, 27, 34, 0.92);
-  --arco-bg-surface-solid: #181b22;
-  --arco-bg-sunk: rgba(12, 14, 18, 0.75);
-  --arco-bg-elevated: rgba(38, 42, 52, 0.95);
+  --arco-bg-desktop: #0d0d0f;
+  --arco-bg-surface: rgba(26, 26, 28, 0.92);
+  --arco-bg-surface-solid: #1a1a1c;
+  --arco-bg-sunk: rgba(14, 14, 16, 0.75);
+  --arco-bg-elevated: rgba(40, 40, 44, 0.95);
   --arco-bg-hover: rgba(255, 255, 255, 0.06);
   --arco-bg-active: rgba(255, 255, 255, 0.1);
-  --arco-bg-chrome: rgba(16, 18, 24, 0.78);
+  --arco-bg-chrome: rgba(18, 18, 20, 0.78);
 
-  --arco-text-primary: #eef1f6;
-  --arco-text-secondary: #a8b0bf;
-  --arco-text-tertiary: #6d7585;
-  --arco-text-dim: #6d7585;
-  --arco-text-disabled: rgba(109, 117, 133, 0.72);
-  --arco-text-inverted: #10131a;
+  --arco-text-primary: #ececee;
+  --arco-text-secondary: #a8a8ae;
+  --arco-text-tertiary: #717178;
+  --arco-text-dim: #717178;
+  --arco-text-disabled: rgba(113, 113, 120, 0.72);
+  --arco-text-inverted: #121214;
 
   /* Semantic aliases — forwarded to installed apps as --os-* */
   --arco-bg-base: var(--arco-bg-desktop);
@@ -239,7 +239,7 @@ html[data-theme="light"][data-accent="cyan"] {
 }
 
 html[data-theme="dark"][data-accent="monochrome"] {
-  --arco-accent: #eef1f6;
+  --arco-accent: #ececee;
   --arco-accent-strong: #ffffff;
   --arco-accent-soft: rgba(255, 255, 255, 0.12);
 }
@@ -342,4 +342,30 @@ html[data-spacing="spacious"] {
   --arco-space-l: 20px;
   --arco-space-xl: 32px;
   --arco-space-2xl: 42px;
+}
+
+/* Blur off — no frosted glass; solid surfaces so chrome stays opaque */
+html[data-blur="off"] {
+  --arco-backdrop-blur: none;
+}
+
+html[data-theme="dark"][data-blur="off"] {
+  --arco-bg-surface: var(--arco-bg-surface-solid);
+  --arco-bg-sunk: #0e0e10;
+  --arco-bg-elevated: #28282c;
+  --arco-bg-chrome: #121214;
+}
+
+html[data-theme="light"][data-blur="off"] {
+  --arco-bg-surface: var(--arco-bg-surface-solid);
+  --arco-bg-sunk: #e8ecf3;
+  --arco-bg-elevated: #ffffff;
+  --arco-bg-chrome: #f8fafd;
+}
+
+html[data-blur="off"] *,
+html[data-blur="off"] *::before,
+html[data-blur="off"] *::after {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }

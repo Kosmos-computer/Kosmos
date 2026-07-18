@@ -1,7 +1,9 @@
 import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
 import { T } from "../../i18n/T";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Info } from "lucide-react";
+import { useDismiss } from "../../components/useDismiss";
 import { KamijiPet } from "./KamijiPet";
 import { StatusMeters } from "./StatusMeters";
 import { ActionPanel } from "./ActionPanel";
@@ -47,6 +49,9 @@ export function KamijiApp() {
     resetPet,
     dismissMessage,
   } = usePetStore();
+  const [hintOpen, setHintOpen] = useState(false);
+  const hintRef = useRef<HTMLDivElement>(null);
+  useDismiss(hintOpen, () => setHintOpen(false), hintRef);
 
   useEffect(() => {
     startKamijiClock();
@@ -111,13 +116,34 @@ export function KamijiApp() {
           >
             {isLightsOn ? "💡" : "🌑"}
           </button>
+          <div className="arco-kamiji__hint-menu" ref={hintRef}>
+            <button
+              type="button"
+              className="arco-kamiji__hint-btn"
+              aria-label="How to care for your Kamiji"
+              aria-haspopup="dialog"
+              aria-expanded={hintOpen}
+              onClick={() => setHintOpen((v) => !v)}
+            >
+              <Info size={16} strokeWidth={2.25} aria-hidden="true" />
+            </button>
+            {hintOpen && (
+              <div
+                role="dialog"
+                aria-label="How to care for your Kamiji"
+                className="arco-kamiji__hint-panel"
+              >
+                <p className="arco-kamiji__hint">
+                  <T k={I18nKey.APPS$KAMIJI_FEED_PLAY_AND_CLEAN_YOUR_KAMIJI_TURN_OFF_THE_LIGHTS_SO_T} />
+                </p>
+              </div>
+            )}
+          </div>
           {pet.isDead && (
             <button type="button" className="arco-kamiji__reset-btn" onClick={resetPet}><T k={I18nKey.APPS$KAMIJI_NEW_EGG} /></button>
           )}
         </div>
       </div>
-
-      <p className="arco-kamiji__hint"><T k={I18nKey.APPS$KAMIJI_FEED_PLAY_AND_CLEAN_YOUR_KAMIJI_TURN_OFF_THE_LIGHTS_SO_T} /></p>
     </div>
   );
 }

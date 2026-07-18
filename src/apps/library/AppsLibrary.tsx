@@ -57,23 +57,41 @@ function iconMarkStyle(seed: string): CSSProperties {
 }
 
 function ViewToggle({ view, onChange }: { view: LibraryView; onChange: (view: LibraryView) => void }) {
+  const ViewIcon = view === "icons" ? LayoutGrid : List;
+  const items: MenuItem[] = [
+    {
+      id: "icons",
+      label: i18n.t(I18nKey.APPS$LIBRARY_ICONS),
+      icon: LayoutGrid,
+      checked: view === "icons",
+      onSelect: () => onChange("icons"),
+    },
+    {
+      id: "list",
+      label: i18n.t(I18nKey.APPS$LIBRARY_LIST),
+      icon: List,
+      checked: view === "list",
+      onSelect: () => onChange("list"),
+    },
+  ];
+
   return (
-    <div className="arco-chip-row" role="group" aria-label={i18n.t(I18nKey.APPS$LIBRARY_APPS_VIEW)}>
-      <button
-        type="button"
-        className={`arco-chip${view === "icons" ? " arco-chip--active" : ""}`}
-        aria-pressed={view === "icons"}
-        onClick={() => onChange("icons")}
-      >
-        <LayoutGrid size={13} aria-hidden="true" /><T k={I18nKey.APPS$LIBRARY_ICONS} /></button>
-      <button
-        type="button"
-        className={`arco-chip${view === "list" ? " arco-chip--active" : ""}`}
-        aria-pressed={view === "list"}
-        onClick={() => onChange("list")}
-      >
-        <List size={13} aria-hidden="true" /><T k={I18nKey.APPS$LIBRARY_LIST} /></button>
-    </div>
+    <Menu
+      align="end"
+      side="bottom"
+      aria-label={i18n.t(I18nKey.APPS$LIBRARY_APPS_VIEW)}
+      searchable={false}
+      items={items}
+      trigger={
+        <button
+          type="button"
+          className="arco-btn arco-btn--icon"
+          aria-label={i18n.t(I18nKey.APPS$LIBRARY_APPS_VIEW)}
+        >
+          <ViewIcon size={13} aria-hidden="true" />
+        </button>
+      }
+    />
   );
 }
 
@@ -425,8 +443,6 @@ export function AppsLibrary() {
     );
   }
 
-  const noUserApps = apps.length === 0 && webApps.length === 0;
-
   return (
     <div className={`arco-panel arco-panel--apps-library${view === "icons" ? " arco-panel--apps-launcher" : " arco-scroll"}`}>
       <div className="arco-panel__header">
@@ -479,11 +495,6 @@ export function AppsLibrary() {
               })}
             </div>
           </section>
-
-          {noUserApps && (
-            <p className="arco-apps-home__hint">
-              <Sparkles size={14} aria-hidden="true" /><T k={I18nKey.APPS$LIBRARY_ASK_ARCO_TO_BUILD_AN_APP_IN_CHAT_OR_ADD_A_PROJECT_FROM_S} /></p>
-          )}
         </div>
       ) : (
         <>
@@ -554,11 +565,6 @@ export function AppsLibrary() {
               </div>
             );
           })}
-
-          {noUserApps && (
-            <p className="arco-apps-home__hint">
-              <Sparkles size={14} aria-hidden="true" /><T k={I18nKey.APPS$LIBRARY_ASK_ARCO_TO_BUILD_AN_APP_IN_CHAT_OR_ADD_A_PROJECT_FROM_S} /></p>
-          )}
         </>
       )}
     </div>

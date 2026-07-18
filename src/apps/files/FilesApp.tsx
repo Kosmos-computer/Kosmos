@@ -63,6 +63,11 @@ export function FilesApp() {
         onSearchChange={drive.setSearchQuery}
         viewMode={drive.viewMode}
         onViewModeChange={drive.setViewMode}
+        sortBy={drive.sortBy}
+        sortDir={drive.sortDir}
+        onSortByChange={drive.setSortBy}
+        kindFilter={drive.kindFilter}
+        onKindFilterChange={drive.setKindFilter}
         selectedId={drive.selectedId}
         onSelectFile={handleSelectFile}
         previewText={drive.previewText}
@@ -83,7 +88,13 @@ export function FilesApp() {
         onMoveFile={(file) => drive.setMoveFile(file)}
         onShareFile={(file) => drive.setShareFile(file)}
         onDownloadFile={(file) => void drive.downloadFile(file)}
+        onCutFile={drive.cutFile}
+        onCopyFile={drive.copyFile}
+        onDuplicateFile={(file) => void drive.duplicateFile(file)}
+        onPaste={(intoFolderId) => void drive.pasteClipboard(intoFolderId)}
+        clipboard={drive.clipboard}
         onUpload={drive.triggerUpload}
+        onRefresh={() => void drive.refresh()}
       />
       {drive.shareFile ? (
         <ShareLinkModal

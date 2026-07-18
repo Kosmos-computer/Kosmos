@@ -29,19 +29,19 @@ function layout(title: string, body: string): string {
   <title>${title}</title>
   <style>
     :root { color-scheme: dark; font-family: ui-sans-serif, system-ui, sans-serif; }
-    body { margin: 0; min-height: 100vh; background: #0b0d12; color: #e8ecf4; display: grid; place-items: center; }
+    body { margin: 0; min-height: 100vh; background: #0d0d0f; color: #ececee; display: grid; place-items: center; }
     main { width: min(480px, 92vw); padding: 2rem; border: 1px solid #222836; border-radius: 16px; background: #12151d; }
     h1 { margin: 0 0 0.5rem; font-size: 1.5rem; }
     p { color: #9aa6bd; line-height: 1.5; }
     label { display: block; margin: 1rem 0 0.35rem; font-size: 0.9rem; }
-    input { width: 100%; box-sizing: border-box; padding: 0.7rem 0.8rem; border-radius: 8px; border: 1px solid #2a3142; background: #0b0d12; color: inherit; }
+    input { width: 100%; box-sizing: border-box; padding: 0.7rem 0.8rem; border-radius: 8px; border: 1px solid #2a2a30; background: #0d0d0f; color: inherit; }
     button { margin-top: 1.25rem; width: 100%; padding: 0.85rem; border: 0; border-radius: 10px; background: #4f7cff; color: white; font-weight: 600; cursor: pointer; }
     button:hover { background: #3f6aef; }
     .hint { font-size: 0.85rem; margin-top: 0.35rem; }
     .error { color: #ff8f8f; margin-top: 1rem; }
     .ok { color: #7ddea6; }
     a { color: #8eb4ff; }
-    code { background: #0b0d12; padding: 0.1rem 0.35rem; border-radius: 4px; }
+    code { background: #0d0d0f; padding: 0.1rem 0.35rem; border-radius: 4px; }
   </style>
 </head>
 <body><main>${body}</main></body></html>`;

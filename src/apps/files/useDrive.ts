@@ -21,7 +21,13 @@ import {
   type DriveCrumb,
   type DriveFileItem,
   type DriveNewItemType,
+  defaultSortDir,
+  driveCopyName,
+  type DriveClipboard,
+  type FilesKindFilter,
   type FilesLocation,
+  type FilesSortBy,
+  type FilesSortDir,
   type FilesViewMode,
   MUSIC_FOLDER_NAME,
 } from "./types";
@@ -69,6 +75,20 @@ export function useDrive() {
   const [entries, setEntries] = useState<FileEntry[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<FilesViewMode>("list");
+  const [sortBy, setSortByState] = useState<FilesSortBy>("name");
+  const [sortDir, setSortDir] = useState<FilesSortDir>("asc");
+  const [kindFilter, setKindFilter] = useState<FilesKindFilter>("all");
+  const sortByRef = useRef(sortBy);
+  sortByRef.current = sortBy;
+
+  const setSortBy = useCallback((next: FilesSortBy) => {
+    if (sortByRef.current === next) {
+      setSortDir((dir) => (dir === "asc" ? "desc" : "asc"));
+      return;
+    }
+    setSortByState(next);
+    setSortDir(defaultSortDir(next));
+  }, []);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [previewText, setPreviewText] = useState<string | undefined>();
   const [sidebarWidth, setSidebarWidth] = useState(260);
@@ -81,6 +101,7 @@ export function useDrive() {
   const [pdfFile, setPdfFile] = useState<{ id: string; name: string } | null>(null);
   const [shareFile, setShareFile] = useState<DriveFileItem | null>(null);
   const [moveFile, setMoveFile] = useState<DriveFileItem | null>(null);
+  const [clipboard, setClipboard] = useState<DriveClipboard | null>(null);
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
 
   const currentFolderId = folderPath[folderPath.length - 1]?.id ?? null;
@@ -161,10 +182,47 @@ export function useDrive() {
     });
   }, []);
 
-  const files: DriveFileItem[] = useMemo(
-    () => entries.map((entry) => entryToDriveItem(entry, ownerName)),
-    [entries, ownerName],
-  );
+  const files: DriveFileItem[] = useMemo(() => {
+    const entryById = new Map(entries.map((entry) => [entry.id, entry]));
+    let items = entries.map((entry) => entryToDriveItem(entry, ownerName));
+    if (kindFilter !== "all") {
+      items = items.filter((file) => file.kind === kindFilter);
+    }
+    const dir = sortDir === "asc" ? 1 : -1;
+    return [...items].sort((a, b) => {
+      if (a.kind === "folder" && b.kind !== "folder") return -1;
+      if (b.kind === "folder" && a.kind !== "folder") return 1;
+      const left = entryById.get(a.id);
+      const right = entryById.get(b.id);
+      let cmp = 0;
+      switch (sortBy) {
+        case "modified": {
+          const leftTime = left ? new Date(left.updatedAt).getTime() : 0;
+          const rightTime = right ? new Date(right.updatedAt).getTime() : 0;
+          cmp = leftTime - rightTime;
+          break;
+        }
+        case "size": {
+          cmp = (left?.size ?? 0) - (right?.size ?? 0);
+          break;
+        }
+        case "owner":
+          cmp = (a.owner?.name ?? "").localeCompare(b.owner?.name ?? "", undefined, { sensitivity: "base" });
+          break;
+        case "type":
+          cmp = a.kind.localeCompare(b.kind);
+          break;
+        case "name":
+        default:
+          cmp = a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+          break;
+      }
+      if (cmp === 0) {
+        cmp = a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+      }
+      return cmp * dir;
+    });
+  }, [entries, kindFilter, ownerName, sortBy, sortDir]);
 
   const selectedFile = useMemo(
     () => files.find((file) => file.id === selectedId) ?? null,
@@ -377,6 +435,100 @@ export function useDrive() {
     }
   }, []);
 
+  const cutFile = useCallback((file: DriveFileItem) => {
+    setClipboard({ id: file.id, name: file.name, mode: "cut" });
+  }, []);
+
+  const copyFile = useCallback((file: DriveFileItem) => {
+    setClipboard({ id: file.id, name: file.name, mode: "copy" });
+  }, []);
+
+  const duplicateEntryTree = useCallback(async (sourceId: string, parentId: string | null, name: string) => {
+    const source = await api.getDriveEntry(sourceId);
+    if (source.mimeType === FOLDER_MIME) {
+      const folder = await api.createDriveEntry({
+        name,
+        kind: "folder",
+        parentId,
+      });
+      const children = await api.listDriveEntries({ parentId: source.id });
+      for (const child of children) {
+        await duplicateEntryTree(child.id, folder.id, child.name);
+      }
+      return folder;
+    }
+
+    try {
+      const text = await api.readDriveContent(source.id);
+      return api.createDriveEntry({
+        name,
+        kind: "file",
+        mimeType: source.mimeType,
+        parentId,
+        content: text.content,
+      });
+    } catch {
+      const blob = await api.fetchDriveBlob(source.id);
+      const contentBase64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const dataUrl = String(reader.result ?? "");
+          const base64 = dataUrl.includes(",") ? dataUrl.split(",")[1] : dataUrl;
+          if (!base64) reject(new Error("Could not encode file"));
+          else resolve(base64);
+        };
+        reader.onerror = () => reject(reader.error ?? new Error("Could not read file"));
+        reader.readAsDataURL(blob);
+      });
+      return api.createDriveEntry({
+        name,
+        kind: "file",
+        mimeType: source.mimeType,
+        parentId,
+        contentBase64,
+      });
+    }
+  }, []);
+
+  const duplicateFile = useCallback(
+    async (file: DriveFileItem) => {
+      try {
+        const parentId = location === "drive" || location === "music" ? currentFolderId : file.parentId;
+        await duplicateEntryTree(file.id, parentId, driveCopyName(file.name));
+        await refresh();
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Could not duplicate item");
+      }
+    },
+    [currentFolderId, duplicateEntryTree, location, refresh],
+  );
+
+  const pasteClipboard = useCallback(
+    async (intoFolderId?: string | null) => {
+      if (!clipboard) return;
+      const parentId =
+        intoFolderId !== undefined
+          ? intoFolderId
+          : location === "drive" || location === "music"
+            ? currentFolderId
+            : null;
+      try {
+        if (clipboard.mode === "cut") {
+          await api.patchDriveEntry(clipboard.id, { parentId });
+          setClipboard(null);
+        } else {
+          await duplicateEntryTree(clipboard.id, parentId, driveCopyName(clipboard.name));
+        }
+        await refresh();
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Could not paste item");
+      }
+    },
+    [clipboard, currentFolderId, duplicateEntryTree, location, refresh],
+  );
+
   const uploadFiles = useCallback(
     async (fileList: FileList | File[]) => {
       const files = Array.from(fileList);
@@ -441,6 +593,11 @@ export function useDrive() {
     setSearchQuery,
     viewMode,
     setViewMode,
+    sortBy,
+    sortDir,
+    setSortBy,
+    kindFilter,
+    setKindFilter,
     selectedId,
     setSelectedId,
     selectedFile,
@@ -459,6 +616,7 @@ export function useDrive() {
     setShareFile,
     moveFile,
     setMoveFile,
+    clipboard,
     uploadInputRef,
     openFile,
     openFileEditor,
@@ -472,6 +630,10 @@ export function useDrive() {
     renameFile,
     moveFileTo,
     downloadFile,
+    cutFile,
+    copyFile,
+    duplicateFile,
+    pasteClipboard,
     uploadFiles,
     triggerUpload,
     refresh,

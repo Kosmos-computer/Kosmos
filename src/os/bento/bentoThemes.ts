@@ -64,7 +64,7 @@ export const BENTO_CARD_THEMES: BentoCardTheme[] = [
     group: "surface",
     source: "Arco shell",
     description: "Standard elevated surface — matches the default bento tile.",
-    swatch: ["#181b22", "#eef1f6"],
+    swatch: ["#1a1a1c", "#ececee"],
   },
   {
     id: "surface-sunken",
@@ -72,7 +72,7 @@ export const BENTO_CARD_THEMES: BentoCardTheme[] = [
     group: "surface",
     source: "InsightCard",
     description: "Inset panel with subtle border — dashboard insight cards.",
-    swatch: ["#12151c", "#6d7585"],
+    swatch: ["#141416", "#717178"],
   },
   {
     id: "surface-accent-soft",
@@ -152,7 +152,7 @@ export const BENTO_CARD_THEMES: BentoCardTheme[] = [
     group: "stat",
     source: "StatCard",
     description: "Muted surface with accent data highlights.",
-    swatch: ["#262834", "#eef1f6"],
+    swatch: ["#28282c", "#ececee"],
   },
   {
     id: "stat-accent",

@@ -259,18 +259,6 @@
   color: var(--arco-text-primary);
 }
 
-.arco-apps-home__hint {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--arco-space-xs);
-  margin-top: var(--arco-space-xl);
-  padding: 0 var(--arco-space-m);
-  font-size: var(--arco-text-sm);
-  color: var(--arco-text-tertiary);
-  text-align: center;
-}
-
 /* Toggle switch */
 .arco-switch {
   position: relative;

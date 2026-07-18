@@ -1455,15 +1455,55 @@
 
 /* ── Workspace chrome (composer status chip row) ──────────────────────────── */
 
+.arco-workspacechrome-wrap {
+  position: relative;
+  min-width: 0;
+  flex: 1 1 auto;
+  /* Opaque surface — matches the window chrome behind the status row. */
+  --arco-workspacechrome-fade-color: var(--arco-bg-surface-solid);
+}
+
 .arco-workspacechrome {
   display: flex;
   align-items: center;
   gap: 6px;
   min-width: 0;
-  flex: 1 1 auto;
   flex-wrap: nowrap;
   overflow-x: auto;
   scrollbar-width: none;
+}
+
+.arco-workspacechrome__fade {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 28px;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 1;
+  transition: opacity var(--arco-dur-fast);
+}
+
+.arco-workspacechrome__fade--visible {
+  opacity: 1;
+}
+
+.arco-workspacechrome__fade--left {
+  left: 0;
+  background: linear-gradient(
+    to right,
+    var(--arco-workspacechrome-fade-color) 0%,
+    transparent 100%
+  );
+}
+
+.arco-workspacechrome__fade--right {
+  right: 0;
+  background: linear-gradient(
+    to left,
+    var(--arco-workspacechrome-fade-color) 0%,
+    transparent 100%
+  );
 }
 
 .arco-workspacechrome::-webkit-scrollbar {

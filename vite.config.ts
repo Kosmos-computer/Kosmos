@@ -50,7 +50,9 @@ export default defineConfig({
         },
       },
       // Installed-app bundles + the app SDK are served by the Arco server.
-      "/apps": {
+      // Use `/apps/` (trailing slash) so bare `/apps` stays a shell route for
+      // the Apps library — otherwise the proxy swallows it and the API 404s.
+      "/apps/": {
         target: apiOrigin,
         changeOrigin: true,
       },

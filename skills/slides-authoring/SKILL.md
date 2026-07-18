@@ -33,7 +33,7 @@ Build complete, viewable decks — never empty shells. Slides is `control: open_
           "y": 180,
           "w": 840,
           "h": 100,
-          "color": "#eef1f6",
+          "color": "#ececee",
           "textAlign": "center",
           "content": "Quarterly Review"
         },
@@ -59,7 +59,7 @@ Build complete, viewable decks — never empty shells. Slides is `control: open_
 
 | kind | Required | Notes |
 |------|----------|-------|
-| `text` | `x,y,w,h` + `content` | `content` may be a **plain string** or TipTap `{type:"doc",...}`. Set `color` (e.g. `#eef1f6`). |
+| `text` | `x,y,w,h` + `content` | `content` may be a **plain string** or TipTap `{type:"doc",...}`. Set `color` (e.g. `#ececee`). |
 | `shape` | `x,y,w,h` | `shape`: `rect` \| `ellipse` \| `triangle` \| `diamond` \| `line`. Set `fill` / `stroke`. |
 | `image` | `x,y,w,h` + `content` | `content` = data-URL or https URL. |
 

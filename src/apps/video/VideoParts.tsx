@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
 import { T } from "../../i18n/T";
@@ -13,6 +14,7 @@ import {
   Plus,
   Search,
   Tv,
+  Video,
   Volume2,
 } from "lucide-react";
 import { ConnectServiceModal } from "../../components/patterns/ConnectServiceModal";
@@ -31,6 +33,10 @@ const NAV_ITEMS: { id: VideoNavSection; label: string; icon: typeof Home }[] = [
   { id: "library", label: "Library", icon: Library },
   { id: "history", label: "History", icon: History },
 ];
+
+function VideoMainShell({ children }: { children: ReactNode }) {
+  return <main className="arco-video__main">{children}</main>;
+}
 
 function VideoThumbnail({ video }: { video: VideoItem }) {
   return (
@@ -67,7 +73,9 @@ export function VideoSidebar({ vm, connectOpen, onOpenConnect, onCloseConnect }:
           className="arco-video-sidebar-nav"
           header={
             <div className="arco-video-sidebar-nav__brand">
-              <span className="arco-video-sidebar-nav__logo" aria-hidden="true">▶</span>
+              <span className="arco-video-sidebar-nav__logo" aria-hidden="true">
+                <Video size={16} strokeWidth={1.75} />
+              </span>
               <span><T k={I18nKey.APPS$VIDEO_VIDEO} /></span>
             </div>
           }
@@ -173,23 +181,31 @@ export function VideoFeed({ vm }: VideoFeedProps) {
   );
 
   if (vm.loading) {
-    return <EmptyState title={i18n.t(I18nKey.APPS$VIDEO_LOADING_VIDEOS)}><T k={I18nKey.APPS$VIDEO_SCANNING_YOUR_LOCAL_LIBRARY} /></EmptyState>;
+    return (
+      <VideoMainShell>
+        <EmptyState title={i18n.t(I18nKey.APPS$VIDEO_LOADING_VIDEOS)}><T k={I18nKey.APPS$VIDEO_SCANNING_YOUR_LOCAL_LIBRARY} /></EmptyState>
+      </VideoMainShell>
+    );
   }
 
   if (isRemote && !connection) {
     return (
-      <EmptyState title={`Connect ${vm.providerLabel}`}><T k={I18nKey.APPS$VIDEO_LINK_YOUR_ACCOUNT_TO_BROWSE_SUBSCRIPTIONS_AND_RECOMMENDA} />{vm.providerLabel}.
-      </EmptyState>
+      <VideoMainShell>
+        <EmptyState title={`Connect ${vm.providerLabel}`}><T k={I18nKey.APPS$VIDEO_LINK_YOUR_ACCOUNT_TO_BROWSE_SUBSCRIPTIONS_AND_RECOMMENDA} />{vm.providerLabel}.
+        </EmptyState>
+      </VideoMainShell>
     );
   }
 
   if (vm.visibleVideos.length === 0) {
     return (
-      <EmptyState title={i18n.t(I18nKey.APPS$VIDEO_NO_VIDEOS_FOUND)}>
-        {vm.sourceFilter === "local"
-          ? "Add MP4/MOV files to ~/Movies or set VIDEO_SEED_DIR."
-          : `Connect ${vm.providerLabel} with a valid token to load remote videos.`}
-      </EmptyState>
+      <VideoMainShell>
+        <EmptyState title={i18n.t(I18nKey.APPS$VIDEO_NO_VIDEOS_FOUND)}>
+          {vm.sourceFilter === "local"
+            ? "Add MP4/MOV files to ~/Movies or set VIDEO_SEED_DIR."
+            : `Connect ${vm.providerLabel} with a valid token to load remote videos.`}
+        </EmptyState>
+      </VideoMainShell>
     );
   }
 

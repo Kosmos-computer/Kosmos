@@ -6,21 +6,24 @@ import { T } from "../i18n/T";
  * element, an anchored panel of descriptor-driven items, outside-click /
  * Escape dismissal, and arrow-key focus movement.
  *
- * Panels position absolutely inside the trigger's wrapper (no portal), which
- * is enough inside Arco windows and keeps stacking simple via
- * --arco-z-overlay.
+ * Default panels position absolutely inside the trigger's wrapper. Pass
+ * `anchorPoint` to pin the panel to viewport coordinates via a body portal
+ * (context menus, overflow-clipped toolbars).
  */
 import {
   cloneElement,
   isValidElement,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type ReactElement,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 import { Check } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { filterMenuItems, shouldShowListSearch } from "../lib/listSearch";
@@ -42,6 +45,11 @@ export interface MenuItem {
   /** Renders a divider above this item. */
   separatorAbove?: boolean;
   onSelect?: () => void;
+}
+
+export interface MenuAnchorPoint {
+  x: number;
+  y: number;
 }
 
 export interface MenuProps {
@@ -70,6 +78,18 @@ export interface MenuProps {
   searchable?: boolean | "auto";
   searchPlaceholder?: string;
   searchMinItems?: number;
+  /**
+   * Viewport coordinates for a fixed, portaled panel (context menus). When set
+   * while open, the panel ignores trigger-relative side/align placement.
+   */
+  anchorPoint?: MenuAnchorPoint | null;
+}
+
+function clampAnchor(x: number, y: number, width: number, height: number): CSSProperties {
+  const pad = 8;
+  const left = Math.min(Math.max(pad, x), Math.max(pad, window.innerWidth - width - pad));
+  const top = Math.min(Math.max(pad, y), Math.max(pad, window.innerHeight - height - pad));
+  return { position: "fixed", left, top, right: "auto", bottom: "auto" };
 }
 
 export function Menu({
@@ -87,13 +107,16 @@ export function Menu({
   searchable = "auto",
   searchPlaceholder = "Search…",
   searchMinItems = 4,
+  anchorPoint = null,
 }: MenuProps) {
   const [openState, setOpenState] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [fixedStyle, setFixedStyle] = useState<CSSProperties | null>(null);
   const open = openProp ?? openState;
   const setOpen = onOpenChange ?? setOpenState;
   const rootRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const floating = Boolean(open && anchorPoint);
 
   const showSearch =
     searchable === true || (searchable === "auto" && shouldShowListSearch(items.length, searchMinItems));
@@ -108,7 +131,16 @@ export function Menu({
     setSearchQuery("");
   }, [setOpen]);
 
-  useDismiss(open, close, rootRef);
+  useDismiss(open, close, rootRef, panelRef);
+
+  useLayoutEffect(() => {
+    if (!open || !anchorPoint || !panelRef.current) {
+      setFixedStyle(null);
+      return;
+    }
+    const rect = panelRef.current.getBoundingClientRect();
+    setFixedStyle(clampAnchor(anchorPoint.x, anchorPoint.y, rect.width, rect.height));
+  }, [anchorPoint, open, visibleItems.length]);
 
   // Focus search (when present) or first enabled item on open.
   useEffect(() => {
@@ -144,56 +176,73 @@ export function Menu({
   const rich = Boolean(heading || items.some((item) => item.description));
   const hasFooter = Boolean(footerHeader || (footerItems && footerItems.length > 0));
 
+  const panel =
+    open ? (
+      <div
+        ref={panelRef}
+        role="menu"
+        aria-label={ariaLabel}
+        className={[
+          "arco-menu__panel",
+          floating ? "arco-menu__panel--fixed" : `arco-menu__panel--${side}`,
+          floating ? "" : `arco-menu__panel--${align}`,
+          showSearch && "arco-menu__panel--searchable",
+          rich && "arco-menu__panel--rich",
+          hasFooter && "arco-menu__panel--footer",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+        style={
+          floating
+            ? (fixedStyle ?? {
+                position: "fixed",
+                left: anchorPoint!.x,
+                top: anchorPoint!.y,
+                right: "auto",
+                bottom: "auto",
+                visibility: fixedStyle ? "visible" : "hidden",
+              })
+            : undefined
+        }
+        onKeyDown={onPanelKeyDown}
+      >
+        {heading ? <div className="arco-menu__heading">{heading}</div> : null}
+        {showSearch ? (
+          <div className="arco-menu__search">
+            <ListSearch
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder={searchPlaceholder}
+              ariaLabel={`Search ${ariaLabel ?? "menu"}`}
+              compact
+              autoFocus
+            />
+          </div>
+        ) : null}
+        <div className="arco-menu__items arco-scroll">
+          {visibleItems.length === 0 ? (
+            <div className="arco-menu__empty">
+              <T k={I18nKey.COMPONENTS$MENU_NO_MATCHES} />
+            </div>
+          ) : (
+            visibleItems.map((item) => <MenuRow key={item.id} item={item} onClose={close} />)
+          )}
+        </div>
+        {hasFooter ? (
+          <div className="arco-menu__footer">
+            {footerHeader ? <div className="arco-menu__footer-header">{footerHeader}</div> : null}
+            {footerItems?.map((item) => (
+              <MenuRow key={item.id} item={item} onClose={close} />
+            ))}
+          </div>
+        ) : null}
+      </div>
+    ) : null;
+
   return (
     <div className={`arco-menu ${className ?? ""}`} ref={rootRef}>
       {triggerEl}
-      {open && (
-        <div
-          ref={panelRef}
-          role="menu"
-          aria-label={ariaLabel}
-          className={[
-            "arco-menu__panel",
-            `arco-menu__panel--${side}`,
-            `arco-menu__panel--${align}`,
-            showSearch && "arco-menu__panel--searchable",
-            rich && "arco-menu__panel--rich",
-            hasFooter && "arco-menu__panel--footer",
-          ]
-            .filter(Boolean)
-            .join(" ")}
-          onKeyDown={onPanelKeyDown}
-        >
-          {heading ? <div className="arco-menu__heading">{heading}</div> : null}
-          {showSearch ? (
-            <div className="arco-menu__search">
-              <ListSearch
-                value={searchQuery}
-                onChange={setSearchQuery}
-                placeholder={searchPlaceholder}
-                ariaLabel={`Search ${ariaLabel ?? "menu"}`}
-                compact
-                autoFocus
-              />
-            </div>
-          ) : null}
-          <div className="arco-menu__items arco-scroll">
-            {visibleItems.length === 0 ? (
-              <div className="arco-menu__empty"><T k={I18nKey.COMPONENTS$MENU_NO_MATCHES} /></div>
-            ) : (
-              visibleItems.map((item) => <MenuRow key={item.id} item={item} onClose={close} />)
-            )}
-          </div>
-          {hasFooter ? (
-            <div className="arco-menu__footer">
-              {footerHeader ? <div className="arco-menu__footer-header">{footerHeader}</div> : null}
-              {footerItems?.map((item) => (
-                <MenuRow key={item.id} item={item} onClose={close} />
-              ))}
-            </div>
-          ) : null}
-        </div>
-      )}
+      {floating && panel ? createPortal(panel, document.body) : panel}
     </div>
   );
 }

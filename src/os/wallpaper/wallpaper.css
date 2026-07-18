@@ -121,7 +121,7 @@
 .arco-wallpaper-swatch__preview.arco-wallpaper-starfield {
   background:
     radial-gradient(circle at 50% 60%, rgba(255, 255, 255, 0.35) 0%, transparent 42%),
-    linear-gradient(180deg, #12141c 0%, #0b0d12 100%);
+    linear-gradient(180deg, #141416 0%, #0d0d0f 100%);
 }
 
 .arco-wallpaper-swatch__preview.arco-wallpaper-nebula {
@@ -142,11 +142,13 @@
   color: var(--arco-text-primary);
 }
 
-/* Sign-in photo backdrop and picker swatches */
+/* Bundled photo wallpapers (desktop + sign-in) */
+.arco-wallpaper--photo,
 .arco-auth-wallpaper--photo {
   background: var(--arco-bg-desktop);
 }
 
+.arco-wallpaper__photo,
 .arco-auth-wallpaper__photo {
   position: absolute;
   inset: 0;
@@ -156,6 +158,7 @@
   object-position: center;
 }
 
+.arco-wallpaper-swatch__preview--photo,
 .arco-auth-wallpaper-swatch__preview--photo {
   background-size: cover;
   background-position: center;

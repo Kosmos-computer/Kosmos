@@ -31,6 +31,9 @@
         if (textScale && textScale !== "default") document.documentElement.dataset.textScale = textScale;
         var spacing = localStorage.getItem("arco:spacing-preset");
         if (spacing && spacing !== "default") document.documentElement.dataset.spacing = spacing;
+        if (localStorage.getItem("arco:blur-effects") === "false") {
+          document.documentElement.dataset.blur = "off";
+        }
         var fb = localStorage.getItem("arco:face-bg") || "mono";
         if (fb !== "mono") {
           var rootStyle = document.documentElement.style;

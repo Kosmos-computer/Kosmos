@@ -95,6 +95,7 @@ export function Desktop() {
   const windows = useWindowStore((s) => s.windows);
   const constrainWindowsToViewport = useWindowStore((s) => s.constrainToViewport);
   const [menuBarOpen, setMenuBarOpen] = useState(false);
+  const [dockTrayOpen, setDockTrayOpen] = useState(false);
   const nativeHost = shouldUseNativeAppWindows();
   const embeddedWindows = nativeHost ? [] : windows;
 
@@ -140,6 +141,9 @@ export function Desktop() {
   const focusedId = [...embeddedWindows.filter((w) => !w.minimized)].sort((a, b) => b.z - a.z)[0]?.id;
   // MenuBar toggles visibility; NavRail's own chevron toggles collapsed (56px) vs expanded (200px).
   const navWidth = !navVisible ? "0px" : navExpanded ? "200px" : "56px";
+  // Keep the on-screen keyboard above the dock/tray without covering it.
+  // Desktop dock is always visible (~80px); hover tray uses the open stack (112px).
+  const dockOffset = !appView ? "80px" : dockTrayOpen ? "112px" : "0px";
 
   return (
     <div
@@ -148,6 +152,7 @@ export function Desktop() {
       style={
         {
           "--arco-nav-width": navWidth,
+          "--arco-dock-offset": dockOffset,
           ...(appView && {
             "--arco-menubar-offset": menuBarOpen ? "34px" : "0px",
           }),
@@ -166,7 +171,7 @@ export function Desktop() {
           </WindowFrame>
         ))}
       </div>
-      <HoverDock enabled={appView}>
+      <HoverDock enabled={appView} onOpenChange={setDockTrayOpen}>
         <Dock />
       </HoverDock>
       <Notifications />

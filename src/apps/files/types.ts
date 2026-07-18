@@ -38,10 +38,44 @@ export type DriveNewItemType = DriveNewFileType | "folder";
 
 export type FilesViewMode = "list" | "grid" | "gallery";
 
+export type FilesSortBy = "name" | "owner" | "modified" | "size" | "type";
+
+export type FilesSortDir = "asc" | "desc";
+
+/** Default direction when switching to a sort column. */
+export function defaultSortDir(sortBy: FilesSortBy): FilesSortDir {
+  return sortBy === "modified" || sortBy === "size" ? "desc" : "asc";
+}
+
+/** Kind filter for the Drive toolbar. `"all"` shows every item. */
+export type FilesKindFilter =
+  | "all"
+  | "folder"
+  | "doc"
+  | "sheet"
+  | "slides"
+  | "pdf"
+  | "image"
+  | "audio"
+  | "video"
+  | "task"
+  | "schedule";
+
 export type FilesLocation = "home" | "drive" | "music" | "recent" | "starred" | "trash";
+
+/** In-app cut/copy clipboard for Drive paste. */
+export interface DriveClipboard {
+  id: string;
+  name: string;
+  mode: "copy" | "cut";
+}
 
 /** Root Music folder name — must match server seed catalog. */
 export const MUSIC_FOLDER_NAME = "Music";
+
+export function driveCopyName(name: string): string {
+  return name.startsWith("Copy of ") ? `${name} 2` : `Copy of ${name}`;
+}
 
 export interface DriveFileItem {
   id: string;

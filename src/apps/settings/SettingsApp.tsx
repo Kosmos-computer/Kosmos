@@ -7,6 +7,8 @@ import { T } from "../../i18n/T";
 import { useEffect, useMemo, useState } from "react";
 import type { LlmProvider, Settings } from "@shared/types";
 import { ACP_PRESETS, PROVIDER_PRESETS } from "@shared/types";
+import { llmProviderLabel } from "@shared/llmProviderLabels";
+import { useDeployment } from "../../hooks/useDeployment";
 import { api } from "../../lib/api";
 import { useCan } from "../../os/auth/authStore";
 import { useOsStore, type AppWindowHost } from "../../os/osStore";
@@ -76,14 +78,14 @@ import { useSettingsStub } from "./useSettingsStub";
 import { applyArcoLocale, AvailableLanguages, DEFAULT_LOCALE } from "../../i18n";
 import { I18nKey } from "../../i18n/declaration";
 
-const PROVIDERS: { id: LlmProvider; label: string }[] = [
-  { id: "mock", label: "Mock (no key needed)" },
-  { id: "openai", label: "OpenAI" },
-  { id: "anthropic", label: "Anthropic" },
-  { id: "openrouter", label: "OpenRouter" },
-  { id: "ollama", label: "Ollama (local)" },
-  { id: "local", label: "Arco Models (local)" },
-  { id: "custom", label: "Custom endpoint" },
+const PROVIDERS: { id: LlmProvider }[] = [
+  { id: "mock" },
+  { id: "openai" },
+  { id: "anthropic" },
+  { id: "openrouter" },
+  { id: "ollama" },
+  { id: "local" },
+  { id: "custom" },
 ];
 
 const NAV_BRAND_MAX_BYTES = 512 * 1024;
@@ -102,12 +104,16 @@ export function SettingsApp() {
     setTextScalePreset,
     spacingPreset,
     setSpacingPreset,
+    blurEffects,
+    setBlurEffects,
     windowControlStyle,
     setWindowControlStyle,
     windowControlAlign,
     setWindowControlAlign,
     windowsOffscreen,
     setWindowsOffscreen,
+    showBootScreen,
+    setShowBootScreen,
     navBrandImage,
     setNavBrandImage,
     appWindowHost,
@@ -129,6 +135,7 @@ export function SettingsApp() {
   const [sidebarWidth, setSidebarWidth] = useState(220);
   const [navSearch, setNavSearch] = useState("");
   const settingsStub = useSettingsStub();
+  const { deployment } = useDeployment();
 
   const navGroups = useMemo(
     () => visibleSettingsNavGroups({ canWriteSettings, canManageUsers }),
@@ -330,7 +337,7 @@ export function SettingsApp() {
                           active={settings.provider === p.id}
                           onClick={() => pickProvider(p.id)}
                         >
-                          {p.label}
+                          {llmProviderLabel(p.id, settings.baseUrl, deployment)}
                         </Chip>
                       ))}
                     </SettingsChipRow>
@@ -417,6 +424,26 @@ export function SettingsApp() {
                         </Chip>
                       ))}
                     </SettingsChipRow>
+                  </SettingsFieldRow>
+                  <SettingsFieldRow
+                    label="Blur effects"
+                    hint="Frosted glass on the menu bar, dock, and windows. Turn off for solid chrome and better performance."
+                  >
+                    <Switch
+                      checked={blurEffects}
+                      onChange={(event) => setBlurEffects(event.target.checked)}
+                      aria-label="Blur effects"
+                    />
+                  </SettingsFieldRow>
+                  <SettingsFieldRow
+                    label="Show loading screen"
+                    hint="Logo splash on every page refresh. Off by default — turn on to keep the boot animation."
+                  >
+                    <Switch
+                      checked={showBootScreen}
+                      onChange={(event) => setShowBootScreen(event.target.checked)}
+                      aria-label="Show loading screen"
+                    />
                   </SettingsFieldRow>
                   <SettingsFieldRow
                     label={i18n.t(I18nKey.APPS$SETTINGS_UI_FONT)}

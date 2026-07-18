@@ -11,7 +11,10 @@
  */
 import fs from "node:fs";
 import path from "node:path";
+import { customEndpointModelName } from "../../shared/llmProviderLabels.js";
 import type { Settings } from "../../shared/types.js";
+import { getKosmosDeployment } from "../system/kosmosDeployment.js";
+import { isHostedRuntime } from "../system/workspaceFeatures.js";
 import {
   DEFAULT_ASSIGNMENTS,
   LOCAL_ENGINE_BASE_URL,
@@ -89,6 +92,14 @@ function slugifyLabel(label: string): string {
 
 function ggufStem(file: string): string {
   return file.replace(/\.gguf$/i, "");
+}
+
+function kosmosLabelContext() {
+  return getKosmosDeployment(isHostedRuntime());
+}
+
+function customEndpointName(baseUrl: string): string {
+  return customEndpointModelName(baseUrl, kosmosLabelContext());
 }
 
 /** The provider label the legacy settings mirror uses for a manifest. */
@@ -371,6 +382,18 @@ export const modelStore = {
     }
     if (changed) saveModels(models);
 
+    const settings = loadSettings();
+    const custom = models.find((m) => m.manifest.id === "user.custom");
+    if (custom?.manifest.runtime.kind === "openai-compatible") {
+      const nextName = customEndpointName(
+        custom.manifest.runtime.baseUrl || settings.baseUrl,
+      );
+      if (custom.manifest.name !== nextName) {
+        custom.manifest.name = nextName;
+        saveModels(models);
+      }
+    }
+
     const assignments = loadAssignments();
     let assignmentsChanged = false;
     for (const [slot, modelId] of Object.entries(DEFAULT_ASSIGNMENTS)) {
@@ -412,6 +435,11 @@ export const modelStore = {
     let modelId: string;
     if (match) {
       modelId = match.manifest.id;
+      const nextName = customEndpointName(settings.baseUrl);
+      if (match.manifest.id === "user.custom" && match.manifest.name !== nextName) {
+        match.manifest.name = nextName;
+        saveModels(models);
+      }
       // Migrate the legacy single key into the per-provider key store.
       const rt = match.manifest.runtime;
       if (rt.kind === "openai-compatible" && rt.apiKeyRef && settings.apiKey) {
@@ -423,7 +451,7 @@ export const modelStore = {
     } else {
       const manifest: ModelManifest = {
         id: "user.custom",
-        name: "Custom endpoint",
+        name: customEndpointName(settings.baseUrl),
         description: "The OpenAI-compatible endpoint configured in Settings.",
         capabilities: ["text.chat"],
         runtime: {

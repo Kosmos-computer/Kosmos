@@ -4,8 +4,7 @@
  */
 import type { StubSettingsNavGroup, StubSettingsWorkspaceData } from "./settingsStubTypes";
 
-const DEFAULT_WALLPAPER_URL =
-  "https://images.pexels.com/photos/268533/pexels-photo-268533.jpeg?auto=compress&cs=tinysrgb&w=1920";
+const DEFAULT_WALLPAPER_URL = "/wallpapers/space.jpg";
 
 export const SETTINGS_STUB_NAV_GROUPS: StubSettingsNavGroup[] = [
   {
@@ -337,28 +336,34 @@ export const SETTINGS_STUB_DATA: StubSettingsWorkspaceData = {
   ],
   wallpaperPresets: [
     {
+      id: "space",
+      label: "Space",
+      url: DEFAULT_WALLPAPER_URL,
+      credit: "Pexels",
+    },
+    {
       id: "talisker-bay",
       label: "Talisker Bay",
-      url: DEFAULT_WALLPAPER_URL,
+      url: "/wallpapers/talisker-bay.jpg",
       credit: "Aaron Mridha · Pexels",
     },
     {
-      id: "aurora",
+      id: "northern-lights",
       label: "Northern lights",
-      url: "https://images.pexels.com/photos/1933239/pexels-photo-1933239.jpeg?auto=compress&cs=tinysrgb&w=1920",
+      url: "/wallpapers/northern-lights.jpg",
       credit: "Vincent Rivaud · Pexels",
     },
     {
       id: "desert-dunes",
       label: "Desert dunes",
-      url: "https://images.pexels.com/photos/2387873/pexels-photo-2387873.jpeg?auto=compress&cs=tinysrgb&w=1920",
+      url: "/wallpapers/desert-dunes.jpg",
       credit: "Alex Azabache · Pexels",
     },
     {
-      id: "solid-dark",
-      label: "Solid dark",
-      url: "https://images.pexels.com/photos/325044/pexels-photo-325044.jpeg?auto=compress&cs=tinysrgb&w=1920",
-      credit: "Minimal gradient",
+      id: "mountain-lake",
+      label: "Mountain lake",
+      url: "/wallpapers/mountain-lake.jpg",
+      credit: "Pexels",
     },
   ],
 };

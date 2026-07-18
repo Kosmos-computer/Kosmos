@@ -61,7 +61,14 @@ html[data-theme="light"] .arco-video {
 }
 
 .arco-video-sidebar-nav__logo {
-  color: #ff0000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--arco-radius-s);
+  background: var(--arco-accent-soft);
+  color: var(--arco-accent-strong);
 }
 
 .arco-video__provider-badge {
@@ -80,8 +87,17 @@ html[data-theme="light"] .arco-video {
 .arco-video__main {
   flex: 1;
   min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
+}
+
+.arco-video__main > .arco-empty {
+  flex: 1;
+  min-height: 0;
+  max-width: 28rem;
+  margin-inline: auto;
+  width: 100%;
 }
 
 .arco-video__toolbar {

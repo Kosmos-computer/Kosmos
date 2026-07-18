@@ -121,6 +121,16 @@ select {
   box-shadow: var(--arco-shadow-chrome);
   z-index: var(--arco-z-overlay);
 }
+/* Portaled cursor menus — position comes from inline fixed left/top. */
+.arco-menu__panel--fixed {
+  position: fixed;
+  top: auto;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  transform: none;
+  z-index: calc(var(--arco-z-overlay) + 50);
+}
 .arco-menu__panel--bottom { top: calc(100% + 4px); }
 .arco-menu__panel--top { bottom: calc(100% + 4px); }
 .arco-menu__panel--right {

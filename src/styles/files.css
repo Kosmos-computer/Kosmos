@@ -81,6 +81,14 @@
   background: var(--arco-bg-sunk);
 }
 
+.arco-drive-toolbar__menu {
+  position: relative;
+}
+
+.arco-drive-toolbar__menu .arco-menu__panel {
+  min-width: 200px;
+}
+
 .arco-drive-new-menu {
   flex: 1;
   min-width: 0;
@@ -137,13 +145,38 @@
   justify-content: center;
 }
 
+.arco-drive__list {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  --arco-drive-col-owner: 160px;
+  --arco-drive-col-modified: 120px;
+  --arco-drive-col-size: 90px;
+  /* Name fills leftover space and truncates; other columns keep a shared width. */
+  --arco-drive-cols: minmax(0, 1fr) var(--arco-drive-col-owner) var(--arco-drive-col-modified) var(--arco-drive-col-size) 56px;
+}
+
+.arco-drive__list > .arco-drive__scroll {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
 .arco-drive__column-header {
-  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 1;
   display: grid;
-  grid-template-columns: 1fr 160px 120px 90px 32px;
+  grid-template-columns: var(--arco-drive-cols);
   gap: var(--arco-space-m);
+  width: 100%;
+  box-sizing: border-box;
   padding: var(--arco-space-s) var(--arco-space-l);
   border-bottom: 1px solid var(--arco-border);
+  background: var(--arco-bg-surface-solid);
   font-size: var(--arco-text-xs);
   font-weight: 600;
   color: var(--arco-text-tertiary);
@@ -151,16 +184,100 @@
   letter-spacing: 0.03em;
 }
 
+.arco-drive__column-header-name {
+  min-width: 0;
+}
+
 .arco-drive__column-header-owner,
 .arco-drive__column-header-modified,
 .arco-drive__column-header-size {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.arco-drive__column-header-size {
+  justify-content: flex-end;
+}
+
+.arco-drive__column-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+  border-radius: var(--arco-radius-s);
+}
+
+.arco-drive__column-sort:hover,
+.arco-drive__column-sort--active {
+  color: var(--arco-text-primary);
+}
+
+.arco-drive__column-sort--end {
+  justify-content: flex-end;
+  margin-left: auto;
+}
+
+.arco-drive__column-sort-label {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.arco-drive__column-header-size {
-  text-align: right;
+.arco-drive__column-sort svg {
+  flex-shrink: 0;
+}
+
+/* Hit target always present; the line only appears on header/handle hover. */
+.arco-drive__col-resize {
+  position: absolute;
+  left: calc(var(--arco-space-m) / -2 - 3px);
+  top: -6px;
+  bottom: -6px;
+  width: 6px;
+  z-index: 2;
+  cursor: col-resize;
+  touch-action: none;
+  background: transparent;
+}
+
+.arco-drive__col-resize::after {
+  content: "";
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: var(--arco-accent);
+  opacity: 0;
+  transition: opacity var(--arco-dur-fast) var(--arco-ease), width var(--arco-dur-fast) var(--arco-ease);
+}
+
+.arco-drive__column-header:hover .arco-drive__col-resize::after,
+.arco-drive__col-resize:hover::after,
+.arco-drive__col-resize:focus-visible::after,
+.arco-drive__col-resize--active::after {
+  opacity: 1;
+}
+
+.arco-drive__col-resize:hover::after,
+.arco-drive__col-resize:focus-visible::after,
+.arco-drive__col-resize--active::after {
+  width: 2px;
 }
 
 .arco-drive__scroll {
@@ -202,6 +319,66 @@
   border-bottom: 1px solid var(--arco-border);
 }
 
+.arco-drive-path {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-xs) var(--arco-space-m);
+  border-bottom: 1px solid var(--arco-border);
+  background: var(--arco-bg-surface-solid);
+  min-width: 0;
+}
+
+.arco-drive-path__crumbs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  font-size: var(--arco-text-sm);
+  color: var(--arco-text-secondary);
+}
+
+.arco-drive-path__segment {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.arco-drive-path__sep {
+  flex-shrink: 0;
+  color: var(--arco-text-tertiary);
+}
+
+.arco-drive-path__crumb {
+  margin: 0;
+  padding: 2px 6px;
+  border: none;
+  border-radius: var(--arco-radius-s);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 16rem;
+}
+
+button.arco-drive-path__crumb:hover {
+  background: var(--arco-bg-hover);
+  color: var(--arco-text-primary);
+}
+
+.arco-drive-path__crumb--current {
+  color: var(--arco-text-primary);
+  font-weight: 600;
+  cursor: default;
+}
+
 .arco-drive__path-bar {
   flex-shrink: 0;
   display: flex;
@@ -220,11 +397,14 @@
 /* List rows */
 
 .arco-drive-row {
+  position: relative;
   display: grid;
-  grid-template-columns: 1fr 160px 120px 90px 32px;
+  grid-template-columns: var(--arco-drive-cols);
   align-items: center;
   gap: var(--arco-space-m);
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   padding: var(--arco-space-s) var(--arco-space-l);
   border: none;
   border-bottom: 1px solid var(--arco-border);
@@ -232,6 +412,56 @@
   text-align: left;
   cursor: pointer;
   color: inherit;
+}
+
+.arco-drive-item--cut {
+  opacity: 0.55;
+}
+
+/* Keep the context-menu anchor out of the row grid so it can't add a bottom gap. */
+.arco-drive-row > .arco-drive-item__ctx,
+.arco-drive-card > .arco-drive-item__ctx {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.arco-drive-row__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  min-width: 0;
+}
+
+.arco-drive-item__more {
+  display: flex;
+  opacity: 0;
+  transition: opacity var(--arco-dur-fast) var(--arco-ease);
+}
+
+.arco-drive-row:hover .arco-drive-item__more,
+.arco-drive-row:focus-within .arco-drive-item__more,
+.arco-drive-card:hover .arco-drive-item__more,
+.arco-drive-card:focus-within .arco-drive-item__more,
+.arco-drive-item__more:focus-within,
+.arco-drive-item__more:has([aria-expanded="true"]) {
+  opacity: 1;
+}
+
+.arco-drive-item__more-menu {
+  position: relative;
+}
+
+.arco-drive-item__more .arco-btn {
+  width: 24px;
+  height: 24px;
 }
 
 .arco-drive-row:hover {
@@ -248,6 +478,7 @@
   align-items: center;
   gap: var(--arco-space-m);
   min-width: 0;
+  overflow: hidden;
 }
 
 .arco-drive-row__icon {
@@ -286,6 +517,8 @@
 }
 
 .arco-drive-row__name {
+  min-width: 0;
+  flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -367,6 +600,13 @@
     border-color var(--arco-dur-fast) var(--arco-ease),
     box-shadow var(--arco-dur-fast) var(--arco-ease),
     background var(--arco-dur-fast) var(--arco-ease);
+}
+
+.arco-drive-card .arco-drive-item__more {
+  position: absolute;
+  top: var(--arco-space-s);
+  right: calc(var(--arco-space-s) + 28px);
+  z-index: 1;
 }
 
 .arco-drive-card:hover {
@@ -793,8 +1033,8 @@
 }
 
 @media (max-width: 720px) {
-  .arco-drive__column-header {
-    grid-template-columns: 1fr 32px;
+  .arco-drive__list {
+    --arco-drive-cols: minmax(0, 1fr) 56px;
   }
 
   .arco-drive__column-header-owner,
@@ -804,7 +1044,7 @@
   }
 
   .arco-drive-row {
-    grid-template-columns: 1fr 32px;
+    min-width: 0;
   }
 
   .arco-drive-row__owner-cell,

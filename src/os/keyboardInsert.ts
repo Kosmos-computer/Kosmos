@@ -84,3 +84,82 @@ export function backspaceAtTarget(target: HTMLElement | null): void {
 export function enterAtTarget(target: HTMLElement | null): void {
   insertAtTarget(target, "\n");
 }
+
+export type ChordModifiers = {
+  ctrl?: boolean;
+  alt?: boolean;
+  meta?: boolean;
+  shift?: boolean;
+};
+
+function eventCodeForKey(key: string): string {
+  if (/^F([1-9]|1[0-2])$/.test(key)) return key;
+  if (key.length === 1 && /[a-z]/i.test(key)) return `Key${key.toUpperCase()}`;
+  if (key.length === 1 && /[0-9]/.test(key)) return `Digit${key}`;
+  if (key === " ") return "Space";
+  if (key === "Tab" || key === "Escape" || key === "Enter" || key === "Backspace") return key;
+  return key;
+}
+
+/** Dispatch a synthetic key chord (for sticky Ctrl/Alt/Meta + letter / F-keys). */
+export function dispatchChordAtTarget(
+  target: HTMLElement | null,
+  key: string,
+  mods: ChordModifiers,
+): boolean {
+  const element = target && isEditableElement(target) ? target : captureEditableTarget();
+  if (!element) return false;
+
+  const code = eventCodeForKey(key);
+  const keyCode =
+    key.length === 1
+      ? key.toUpperCase().charCodeAt(0)
+      : key === "Tab"
+        ? 9
+        : key === "Escape"
+          ? 27
+          : key === "Enter"
+            ? 13
+            : key === "Backspace"
+              ? 8
+              : /^F([1-9]|1[0-2])$/.test(key)
+                ? 111 + Number(key.slice(1))
+                : 0;
+
+  const init: KeyboardEventInit = {
+    key,
+    code,
+    keyCode,
+    which: keyCode,
+    bubbles: true,
+    cancelable: true,
+    ctrlKey: Boolean(mods.ctrl),
+    altKey: Boolean(mods.alt),
+    metaKey: Boolean(mods.meta),
+    shiftKey: Boolean(mods.shift),
+  };
+
+  element.focus();
+  const down = new KeyboardEvent("keydown", init);
+  const press = new KeyboardEvent("keypress", init);
+  const up = new KeyboardEvent("keyup", init);
+  element.dispatchEvent(down);
+  if (!down.defaultPrevented && key.length === 1) element.dispatchEvent(press);
+  element.dispatchEvent(up);
+  return down.defaultPrevented;
+}
+
+/** Tab — prefer a real Tab event; fall back to inserting a tab character. */
+export function tabAtTarget(target: HTMLElement | null, mods: ChordModifiers = {}): void {
+  const element = target && isEditableElement(target) ? target : captureEditableTarget();
+  if (!element) return;
+  const prevented = dispatchChordAtTarget(element, "Tab", mods);
+  if (prevented) return;
+  if (!mods.ctrl && !mods.alt && !mods.meta) {
+    insertAtTarget(element, "\t");
+  }
+}
+
+export function escapeAtTarget(target: HTMLElement | null, mods: ChordModifiers = {}): void {
+  dispatchChordAtTarget(target, "Escape", mods);
+}

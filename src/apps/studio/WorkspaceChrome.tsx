@@ -100,7 +100,10 @@ export function WorkspaceChrome() {
   const [repoSearch, setRepoSearch] = useState("");
   const [loadingRepos, setLoadingRepos] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const branchSearchRef = useRef<HTMLInputElement>(null);
+  const [fadeLeft, setFadeLeft] = useState(false);
+  const [fadeRight, setFadeRight] = useState(false);
 
   const primary = workspace.roots.find((r) => r.role === "primary") ?? null;
   const additional = workspace.roots.filter((r) => r.role === "additional");
@@ -122,6 +125,35 @@ export function WorkspaceChrome() {
     void refreshWorkspace();
     void api.workspaceFeatures().then(setFeatures).catch(() => setFeatures(null));
   }, [refreshWorkspace]);
+
+  const updateScrollFades = useCallback(() => {
+    const node = scrollRef.current;
+    if (!node) return;
+    const maxScroll = node.scrollWidth - node.clientWidth;
+    setFadeLeft(node.scrollLeft > 4);
+    setFadeRight(maxScroll > 4 && node.scrollLeft < maxScroll - 4);
+  }, []);
+
+  useEffect(() => {
+    updateScrollFades();
+    const node = scrollRef.current;
+    if (!node) return;
+    node.addEventListener("scroll", updateScrollFades, { passive: true });
+    const observer = new ResizeObserver(updateScrollFades);
+    observer.observe(node);
+    return () => {
+      node.removeEventListener("scroll", updateScrollFades);
+      observer.disconnect();
+    };
+  }, [
+    updateScrollFades,
+    additional.length,
+    showGit,
+    branchName,
+    primary?.name,
+    displayBackend,
+    workspace.roots.length,
+  ]);
 
   useEffect(() => {
     if (!menu) return;
@@ -582,7 +614,8 @@ export function WorkspaceChrome() {
   );
 
   return (
-    <div className="arco-workspacechrome" ref={rootRef}>
+    <div className="arco-workspacechrome-wrap" ref={rootRef}>
+      <div className="arco-workspacechrome" ref={scrollRef}>
       {/* Backend chip */}
       <div className="arco-workspacechrome__chipwrap">
         <button
@@ -764,6 +797,15 @@ export function WorkspaceChrome() {
         </button>
         {menu === "add" && addMode && renderFolderMenu()}
       </div>
+      </div>
+      <div
+        className={`arco-workspacechrome__fade arco-workspacechrome__fade--left${fadeLeft ? " arco-workspacechrome__fade--visible" : ""}`}
+        aria-hidden="true"
+      />
+      <div
+        className={`arco-workspacechrome__fade arco-workspacechrome__fade--right${fadeRight ? " arco-workspacechrome__fade--visible" : ""}`}
+        aria-hidden="true"
+      />
     </div>
   );
 }

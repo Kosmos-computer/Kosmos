@@ -108,8 +108,8 @@ export function StudioApp() {
   const [noticeDismissedFor, setNoticeDismissedFor] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const { onDividerPointerDown, isResizing } = useResizableSplit(containerRef);
-  const { modelLabel, modelItems } = useModelSelection();
-  const { profileId, agentLabel, agentItems } = useActiveAgentProfile();
+  const { profileId, agentLabel, agentItems, active } = useActiveAgentProfile();
+  const { modelLabel, modelItems } = useModelSelection(active);
   const { scrollRef, onScroll, showJump, scrollToLatest, pinToLatest } =
     useThreadScroll(chat.items);
 

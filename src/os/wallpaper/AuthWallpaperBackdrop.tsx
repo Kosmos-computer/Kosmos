@@ -1,6 +1,6 @@
 /**
  * Sign-in layer backdrop — reads authWallpaper from osStore, which defaults to
- * the galaxy photo and can be changed independently of the desktop wallpaper.
+ * the space photo and can be changed independently of the desktop wallpaper.
  */
 import { useOsStore } from "../osStore";
 import { isAnimatedWallpaper } from "./wallpapers";
@@ -16,8 +16,8 @@ export function AuthWallpaperBackdrop() {
 
   if (resolved.kind === "photo") {
     return (
-      <div className="arco-wallpaper arco-auth-wallpaper arco-auth-wallpaper--photo" aria-hidden>
-        <img className="arco-auth-wallpaper__photo" src={resolved.url} alt="" decoding="async" />
+      <div className="arco-wallpaper arco-wallpaper--photo arco-auth-wallpaper arco-auth-wallpaper--photo" aria-hidden>
+        <img className="arco-wallpaper__photo arco-auth-wallpaper__photo" src={resolved.url} alt="" decoding="async" />
       </div>
     );
   }

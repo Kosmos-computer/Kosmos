@@ -36,9 +36,9 @@ monaco.editor.defineTheme("arco-dark", {
   inherit: true,
   rules: [],
   colors: {
-    "editor.background": "#14161c",
-    "editor.lineHighlightBackground": "#1c1f27",
-    "editorGutter.background": "#14161c",
+    "editor.background": "#1a1a1c",
+    "editor.lineHighlightBackground": "#242428",
+    "editorGutter.background": "#1a1a1c",
   },
 });
 

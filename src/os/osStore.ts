@@ -12,12 +12,15 @@ import { normalizeAuthWallpaper, type AuthWallpaperId } from "./wallpaper/authWa
 import {
   ACCENT_PRESET_STORAGE_KEY,
   applyAccentPreset,
+  applyBlurEffects,
   applyFontPreset,
   applyRadiusPreset,
   applySpacingPreset,
   applyTextScalePreset,
+  BLUR_EFFECTS_STORAGE_KEY,
   FONT_PRESET_STORAGE_KEY,
   normalizeAccentPreset,
+  normalizeBlurEffects,
   normalizeFontPreset,
   normalizeRadiusPreset,
   normalizeSpacingPreset,
@@ -97,6 +100,8 @@ interface OsStore {
   fontPreset: FontPreset;
   textScalePreset: TextScalePreset;
   spacingPreset: SpacingPreset;
+  /** Frosted-glass backdrop blur on shell chrome. */
+  blurEffects: boolean;
   windowControlStyle: WindowControlStyle;
   windowControlAlign: WindowControlAlign;
   wallpaper: WallpaperId;
@@ -131,6 +136,11 @@ interface OsStore {
    * grab strip stays on-screen). When false, windows stay inside the viewport.
    */
   windowsOffscreen: boolean;
+  /**
+   * When true, AuthGate shows the logo splash for a minimum duration on every
+   * refresh. Off by default — skip straight to login/desktop once auth resolves.
+   */
+  showBootScreen: boolean;
   /** Auto-lock after inactivity; `"never"` turns the idle timer off. */
   idleLockTimeout: IdleLockTimeout;
 
@@ -140,6 +150,7 @@ interface OsStore {
   setFontPreset: (preset: FontPreset) => void;
   setTextScalePreset: (preset: TextScalePreset) => void;
   setSpacingPreset: (preset: SpacingPreset) => void;
+  setBlurEffects: (enabled: boolean) => void;
   setWindowControlStyle: (style: WindowControlStyle) => void;
   setWindowControlAlign: (align: WindowControlAlign) => void;
   setWallpaper: (wallpaper: WallpaperId) => void;
@@ -157,6 +168,7 @@ interface OsStore {
   setAppWindowHost: (host: AppWindowHost) => void;
   setDeveloperApps: (enabled: boolean) => void;
   setWindowsOffscreen: (enabled: boolean) => void;
+  setShowBootScreen: (enabled: boolean) => void;
   setIdleLockTimeout: (timeout: IdleLockTimeout) => void;
   addShellConfirm: (confirm: ShellConfirm) => void;
   removeShellConfirm: (confirmId: string) => void;
@@ -177,11 +189,13 @@ const initialRadiusPreset = normalizeRadiusPreset(localStorage.getItem(RADIUS_PR
 const initialFontPreset = normalizeFontPreset(localStorage.getItem(FONT_PRESET_STORAGE_KEY));
 const initialTextScalePreset = normalizeTextScalePreset(localStorage.getItem(TEXT_SCALE_PRESET_STORAGE_KEY));
 const initialSpacingPreset = normalizeSpacingPreset(localStorage.getItem(SPACING_PRESET_STORAGE_KEY));
+const initialBlurEffects = normalizeBlurEffects(localStorage.getItem(BLUR_EFFECTS_STORAGE_KEY));
 applyAccentPreset(initialAccentPreset);
 applyRadiusPreset(initialRadiusPreset);
 applyFontPreset(initialFontPreset);
 applyTextScalePreset(initialTextScalePreset);
 applySpacingPreset(initialSpacingPreset);
+applyBlurEffects(initialBlurEffects);
 
 export const useOsStore = create<OsStore>((set) => ({
   theme: (localStorage.getItem("arco:theme") as Theme) || "dark",
@@ -190,6 +204,7 @@ export const useOsStore = create<OsStore>((set) => ({
   fontPreset: initialFontPreset,
   textScalePreset: initialTextScalePreset,
   spacingPreset: initialSpacingPreset,
+  blurEffects: initialBlurEffects,
   windowControlStyle: normalizeWindowControlStyle(localStorage.getItem(WINDOW_CONTROL_STYLE_STORAGE_KEY)),
   windowControlAlign: normalizeWindowControlAlign(localStorage.getItem(WINDOW_CONTROL_ALIGN_STORAGE_KEY)),
   wallpaper: normalizeWallpaper(localStorage.getItem("arco:wallpaper")),
@@ -209,6 +224,7 @@ export const useOsStore = create<OsStore>((set) => ({
   navBrandImage: localStorage.getItem("arco:nav-brand-image"),
   developerApps: localStorage.getItem("arco:developer-apps") === "true",
   windowsOffscreen: localStorage.getItem("arco:windows-offscreen") !== "false",
+  showBootScreen: localStorage.getItem("arco:show-boot-screen") === "true",
   idleLockTimeout: normalizeIdleLockTimeout(localStorage.getItem(IDLE_LOCK_STORAGE_KEY)),
 
   setTheme: (theme) => {
@@ -246,6 +262,12 @@ export const useOsStore = create<OsStore>((set) => ({
     localStorage.setItem(SPACING_PRESET_STORAGE_KEY, spacingPreset);
     applySpacingPreset(spacingPreset);
     set({ spacingPreset });
+  },
+
+  setBlurEffects: (blurEffects) => {
+    localStorage.setItem(BLUR_EFFECTS_STORAGE_KEY, String(blurEffects));
+    applyBlurEffects(blurEffects);
+    set({ blurEffects });
   },
 
   setWindowControlStyle: (windowControlStyle) => {
@@ -358,6 +380,11 @@ export const useOsStore = create<OsStore>((set) => ({
   setWindowsOffscreen: (windowsOffscreen) => {
     localStorage.setItem("arco:windows-offscreen", String(windowsOffscreen));
     set({ windowsOffscreen });
+  },
+
+  setShowBootScreen: (showBootScreen) => {
+    localStorage.setItem("arco:show-boot-screen", String(showBootScreen));
+    set({ showBootScreen });
   },
 
   setIdleLockTimeout: (idleLockTimeout) => {

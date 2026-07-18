@@ -388,7 +388,7 @@ export function App() {
         y: 80,
         w: 480,
         h: 96,
-        color: "#eef1f6",
+        color: "#ececee",
         content: textToDoc("New text"),
       },
     ]);
@@ -999,7 +999,7 @@ export function App() {
             <input
               type="color"
               disabled={!primaryBox || primaryBox.kind !== "text"}
-              value={primaryBox?.color ?? "#eef1f6"}
+              value={primaryBox?.color ?? "#ececee"}
               onChange={(e) => patchSelected({ color: e.target.value })}
             />
           </label>

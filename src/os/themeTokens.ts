@@ -28,6 +28,7 @@ export const RADIUS_PRESET_STORAGE_KEY = "arco:radius-preset";
 export const FONT_PRESET_STORAGE_KEY = "arco:font-preset";
 export const TEXT_SCALE_PRESET_STORAGE_KEY = "arco:text-scale-preset";
 export const SPACING_PRESET_STORAGE_KEY = "arco:spacing-preset";
+export const BLUR_EFFECTS_STORAGE_KEY = "arco:blur-effects";
 export const WINDOW_CONTROL_STYLE_STORAGE_KEY = "arco:window-control-style";
 export const WINDOW_CONTROL_ALIGN_STORAGE_KEY = "arco:window-control-align";
 
@@ -199,6 +200,18 @@ export function applySpacingPreset(preset: SpacingPreset): void {
   const root = document.documentElement;
   if (preset === "default") delete root.dataset.spacing;
   else root.dataset.spacing = preset;
+}
+
+/** Frosted-glass blur on chrome; off sets html[data-blur="off"] for solid surfaces. */
+export function applyBlurEffects(enabled: boolean): void {
+  const root = document.documentElement;
+  if (enabled) delete root.dataset.blur;
+  else root.dataset.blur = "off";
+}
+
+/** Default on — only `"false"` disables blur. */
+export function normalizeBlurEffects(raw: string | null): boolean {
+  return raw !== "false";
 }
 
 export function applyThemeTokens(

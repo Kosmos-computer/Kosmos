@@ -104,9 +104,11 @@ function useIdleLock(enabled: boolean) {
 export function AuthGate({ children, standalone = false }: { children: ReactNode; standalone?: boolean }) {
   const phase = useAuthStore((s) => s.phase);
   const init = useAuthStore((s) => s.init);
+  const showBootScreen = useOsStore((s) => s.showBootScreen);
   const [bootElapsed, setBootElapsed] = useState(false);
   const bootTest = useBootTestMode();
-  const minBootMs = bootTest ? BOOT_TEST_MS : standalone ? 0 : MIN_BOOT_MS;
+  const splashEnabled = !standalone && showBootScreen;
+  const minBootMs = bootTest ? BOOT_TEST_MS : splashEnabled ? MIN_BOOT_MS : 0;
 
   useEffect(() => {
     void init();
@@ -119,8 +121,10 @@ export function AuthGate({ children, standalone = false }: { children: ReactNode
   // Hold the splash until both the minimum duration and the status fetch
   // finish — the bar completes, then the real screen cross-fades in.
   // ?boottest=1 keeps the boot splash up for previewing the sprite animation.
+  // When the Appearance toggle is off, skip the splash and wait on a blank
+  // gate until auth resolves to setup / login / locked / ready.
   const screen: ScreenKey =
-    bootTest || !bootElapsed || phase === "booting" ? "boot" : phase;
+    bootTest || (splashEnabled && (!bootElapsed || phase === "booting")) ? "boot" : phase;
 
   return (
     <FadeSwitch screenKey={screen}>

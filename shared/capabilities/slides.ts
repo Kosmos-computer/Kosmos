@@ -85,7 +85,7 @@ function normalizeBox(raw: unknown, index: number): AnyBox {
   if (typeof box.groupId === "string") next.groupId = box.groupId;
   if (kind === "shape" && !next.shape) next.shape = "rect";
   if (kind === "shape" && typeof next.fill !== "string") next.fill = "#6ea8fe";
-  if (kind === "text" && typeof next.color !== "string") next.color = "#eef1f6";
+  if (kind === "text" && typeof next.color !== "string") next.color = "#ececee";
   return next;
 }
 

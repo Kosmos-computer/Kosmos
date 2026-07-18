@@ -101,7 +101,7 @@ const DEFAULT_SETTINGS: Settings = {
   baseUrl: process.env.LLM_BASE_URL ?? "https://api.openai.com/v1",
   apiKey: process.env.LLM_API_KEY ?? "",
   model: process.env.LLM_MODEL ?? "gpt-5.5",
-  wallpaper: "aurora",
+  wallpaper: "space",
   agent: "builtin",
   acpCommand: "",
   cursorApiKey: process.env.CURSOR_API_KEY ?? "",

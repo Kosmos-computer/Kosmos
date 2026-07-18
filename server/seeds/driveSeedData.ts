@@ -210,7 +210,7 @@ export const DRIVE_SEED_FILES: DriveSeedFile[] = [
                 y: 180,
                 w: 840,
                 h: 100,
-                color: "#eef1f6",
+                color: "#ececee",
                 textAlign: "center",
                 content: {
                   type: "doc",
@@ -244,7 +244,7 @@ export const DRIVE_SEED_FILES: DriveSeedFile[] = [
                 y: 80,
                 w: 840,
                 h: 80,
-                color: "#eef1f6",
+                color: "#ececee",
                 content: {
                   type: "doc",
                   content: [
@@ -262,7 +262,7 @@ export const DRIVE_SEED_FILES: DriveSeedFile[] = [
                 y: 180,
                 w: 840,
                 h: 200,
-                color: "#a8b0bf",
+                color: "#a8a8ae",
                 content: {
                   type: "doc",
                   content: [
@@ -285,7 +285,7 @@ export const DRIVE_SEED_FILES: DriveSeedFile[] = [
                 y: 180,
                 w: 840,
                 h: 120,
-                color: "#eef1f6",
+                color: "#ececee",
                 textAlign: "center",
                 content: {
                   type: "doc",

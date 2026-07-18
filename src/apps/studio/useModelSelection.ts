@@ -1,17 +1,28 @@
 /**
- * useModelSelection — feeds the composer's brain picker from the model
- * registry (the agent.chat use-case slot), plus Cursor (when an API key is
- * saved) and ACP agents. Selecting a registry model assigns the slot; the
+ * useModelSelection — feeds the composer's model picker from the runtime
+ * that owns the turn.
+ *
+ * Agent profiles (composer agent chip) pick the runtime: builtin / ACP /
+ * Cursor / …. Models are scoped to that runtime — never listed as peers of
+ * ACP servers. Selecting a registry model assigns the agent.chat slot; the
  * server mirrors it into legacy settings for older consumers.
+ *
+ *   builtin → registry eligible models
+ *   cursor  → Cursor cloud models (or connect CTA)
+ *   acp     → empty (ACP CLIs own their own model picker; hide the chip)
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ACP_PRESETS,
   CURSOR_DEFAULT_MODEL,
+  type AgentKind,
   type CursorModelInfo,
   type Settings,
 } from "@shared/types";
+import type { AgentProfile } from "@shared/agents";
 import type { UseCaseSlotState } from "@shared/models";
+import { customEndpointModelName } from "@shared/llmProviderLabels";
+import type { KosmosDeployment } from "@shared/types";
 import { api } from "../../lib/api";
 import { useAuthStore } from "../../os/auth/authStore";
 import { useOsStore } from "../../os/osStore";
@@ -25,46 +36,85 @@ function hasCursorKey(settings: Settings | null): boolean {
   return Boolean(settings?.cursorApiKey?.trim());
 }
 
+/**
+ * Same rule as server resolveTurnKind: non-builtin profile.runtime wins;
+ * otherwise Settings.agent (shell default / Cursor via Settings).
+ */
+function resolveModelRuntime(
+  profile: AgentProfile | null | undefined,
+  settings: Settings | null,
+): AgentKind {
+  const fromProfile = profile?.runtime.kind;
+  if (fromProfile && fromProfile !== "builtin") return fromProfile;
+  return settings?.agent ?? "builtin";
+}
+
 function cursorLabel(settings: Settings, cursorModels: CursorModelInfo[]): string {
   const modelId = settings.cursorModel?.trim() || CURSOR_DEFAULT_MODEL;
   const display = cursorModels.find((m) => m.id === modelId)?.displayName ?? modelId;
   return `Cursor · ${display}`;
 }
 
-function acpLabel(settings: Settings): string {
+function acpLabel(profile: AgentProfile | null | undefined, settings: Settings | null): string {
+  if (profile?.runtime.kind === "acp") {
+    const fromPreset = ACP_PRESETS.find((p) => p.id === profile.runtime.acpPresetId);
+    return fromPreset?.label ?? profile.name;
+  }
+  if (!settings) return "ACP";
   const preset = ACP_PRESETS.find((p) => p.command === settings.acpCommand);
   return preset?.label ?? "Custom ACP";
 }
 
+function registryModelLabel(
+  model: { id: string; name: string },
+  settings: Settings | null,
+  deployment: KosmosDeployment | null,
+): string {
+  if (model.id !== "user.custom" && model.name !== "Custom endpoint") return model.name;
+  return customEndpointModelName(settings?.baseUrl ?? "", deployment);
+}
+
 function displayLabel(
+  runtime: AgentKind,
   settings: Settings | null,
   cursorModels: CursorModelInfo[],
   agentSlot: UseCaseSlotState | null,
+  deployment: KosmosDeployment | null,
+  profile: AgentProfile | null | undefined,
 ): string {
+  if (runtime === "cursor" && settings) return cursorLabel(settings, cursorModels);
+  if (runtime === "acp") return acpLabel(profile, settings);
   if (!settings) return DEFAULT_MODEL_LABEL;
-  if (settings.agent === "cursor") return cursorLabel(settings, cursorModels);
-  if (settings.agent === "acp") return acpLabel(settings);
-  // Built-in agent → whatever the agent.chat slot resolves to.
-  return agentSlot?.effective?.name ?? settings.model ?? DEFAULT_MODEL_LABEL;
+  const effective = agentSlot?.effective;
+  if (effective?.modelId) {
+    return registryModelLabel({ id: effective.modelId, name: effective.name }, settings, deployment);
+  }
+  return settings.model ?? DEFAULT_MODEL_LABEL;
 }
 
-export function useModelSelection(): { modelLabel: string; modelItems: MenuItem[] } {
+export function useModelSelection(
+  activeProfile?: AgentProfile | null,
+): { modelLabel: string; modelItems: MenuItem[] } {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [cursorModels, setCursorModels] = useState<CursorModelInfo[]>([]);
   const [agentSlot, setAgentSlot] = useState<UseCaseSlotState | null>(null);
+  const [deployment, setDeployment] = useState<KosmosDeployment | null>(null);
   const authPhase = useAuthStore((s) => s.phase);
   const settingsRevision = useSettingsStore((s) => s.settingsRevision);
   const bumpSettingsRevision = useSettingsStore((s) => s.bumpSettingsRevision);
   const notify = useOsStore((s) => s.notify);
 
+  const runtime = resolveModelRuntime(activeProfile, settings);
+
   useEffect(() => {
     if (authPhase !== "ready") return;
     let cancelled = false;
-    void Promise.all([api.getSettings(), api.getModels()])
-      .then(([loaded, registry]) => {
+    void Promise.all([api.getSettings(), api.getModels(), api.workspaceFeatures()])
+      .then(([loaded, registry, features]) => {
         if (cancelled) return;
         setSettings(loaded);
         setAgentSlot(registry.slots.find((s) => s.id === "agent.chat") ?? null);
+        setDeployment(features.kosmos ?? null);
       })
       .catch(() => {
         // Keep the default chip label; switching still surfaces a permission error.
@@ -75,7 +125,7 @@ export function useModelSelection(): { modelLabel: string; modelItems: MenuItem[
   }, [authPhase, settingsRevision]);
 
   useEffect(() => {
-    if (authPhase !== "ready" || !hasCursorKey(settings)) return;
+    if (authPhase !== "ready" || runtime !== "cursor" || !hasCursorKey(settings)) return;
     let cancelled = false;
     api
       .listCursorModels()
@@ -88,7 +138,7 @@ export function useModelSelection(): { modelLabel: string; modelItems: MenuItem[
     return () => {
       cancelled = true;
     };
-  }, [authPhase, settings?.cursorApiKey]);
+  }, [authPhase, runtime, settings?.cursorApiKey]);
 
   const save = useCallback(
     async (patch: Partial<Settings>, errorMessage: string) => {
@@ -139,23 +189,49 @@ export function useModelSelection(): { modelLabel: string; modelItems: MenuItem[
     [notify, save, settings],
   );
 
-  const selectAcp = useCallback(
-    (command: string) => {
-      void save(
-        { agent: "acp", acpCommand: command },
-        "Could not switch agent — check Settings permissions",
-      );
-    },
-    [save],
-  );
-
   const modelItems = useMemo<MenuItem[]>(() => {
-    const builtin = settings?.agent ?? "builtin";
+    // ACP / OpenHands / Kosmos runtimes own their own brains — no Arco model list.
+    if (runtime === "acp" || runtime === "openhands" || runtime === "kosmos") {
+      return [];
+    }
+
+    if (runtime === "cursor") {
+      if (!hasCursorKey(settings)) {
+        return [
+          {
+            id: "cursor-connect",
+            label: "Cursor — connect in Settings",
+            onSelect: () => {
+              openSettingsApp("agent");
+              notify("Add a Cursor API key in Settings → Agent");
+            },
+          },
+        ];
+      }
+      if (cursorModels.length === 0) {
+        return [
+          {
+            id: "cursor-default",
+            label: cursorLabel(settings!, cursorModels),
+            checked: true,
+            onSelect: () => selectCursor(),
+          },
+        ];
+      }
+      return cursorModels.map((model) => ({
+        id: `cursor-${model.id}`,
+        label: model.displayName,
+        checked: (settings?.cursorModel || CURSOR_DEFAULT_MODEL) === model.id,
+        onSelect: () => selectCursor(model.id),
+      }));
+    }
+
+    // Built-in runtime → registry models only.
     const effectiveId = agentSlot?.effective?.modelId ?? null;
     const items: MenuItem[] = (agentSlot?.eligible ?? []).map((m) => ({
       id: `model-${m.id}`,
-      label: m.name,
-      checked: builtin === "builtin" && effectiveId === m.id,
+      label: registryModelLabel(m, settings, deployment),
+      checked: effectiveId === m.id,
       onSelect: () => void selectRegistryModel(m.id),
     }));
 
@@ -167,52 +243,20 @@ export function useModelSelection(): { modelLabel: string; modelItems: MenuItem[
       });
     }
 
-    if (hasCursorKey(settings)) {
-      const cursorEntries =
-        cursorModels.length > 0
-          ? cursorModels.map((model, index) => ({
-              id: `cursor-${model.id}`,
-              label: `Cursor · ${model.displayName}`,
-              checked:
-                settings?.agent === "cursor" &&
-                (settings.cursorModel || CURSOR_DEFAULT_MODEL) === model.id,
-              separatorAbove: index === 0,
-              onSelect: () => selectCursor(model.id),
-            }))
-          : [
-              {
-                id: "cursor-default",
-                label: cursorLabel(settings!, cursorModels),
-                checked: settings?.agent === "cursor",
-                separatorAbove: true,
-                onSelect: () => selectCursor(),
-              },
-            ];
-      items.push(...cursorEntries);
-    } else {
-      items.push({
-        id: "cursor-connect",
-        label: "Cursor — connect in Settings",
-        separatorAbove: true,
-        onSelect: () => {
-          openSettingsApp("agent");
-          notify("Add a Cursor API key in Settings → Agent");
-        },
-      });
-    }
-
-    ACP_PRESETS.forEach((preset, index) => {
-      items.push({
-        id: `acp-${preset.id}`,
-        label: preset.label,
-        checked: settings?.agent === "acp" && settings.acpCommand === preset.command,
-        separatorAbove: index === 0,
-        onSelect: () => selectAcp(preset.command),
-      });
-    });
-
     return items;
-  }, [agentSlot, cursorModels, notify, selectAcp, selectCursor, selectRegistryModel, settings]);
+  }, [
+    agentSlot,
+    cursorModels,
+    deployment,
+    notify,
+    runtime,
+    selectCursor,
+    selectRegistryModel,
+    settings,
+  ]);
 
-  return { modelLabel: displayLabel(settings, cursorModels, agentSlot), modelItems };
+  return {
+    modelLabel: displayLabel(runtime, settings, cursorModels, agentSlot, deployment, activeProfile),
+    modelItems,
+  };
 }

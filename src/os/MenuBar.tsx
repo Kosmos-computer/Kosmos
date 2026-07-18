@@ -2,8 +2,9 @@ import { I18nKey } from "../i18n/declaration";
 import i18n from "../i18n/index";
 /** Top chrome: left-nav visibility toggle, search, focused window title, status tray, clock, settings. */
 import { useEffect, useMemo, useState } from "react";
-import { AppWindow, LayoutGrid, Lock, LogOut, Monitor, Moon, PanelLeft, Search, Settings, Sun } from "lucide-react";
+import { AppWindow, LayoutGrid, Lock, LogOut, Maximize, Minimize, Monitor, Moon, PanelLeft, Search, Settings, Sun } from "lucide-react";
 import { Menu, type MenuItem } from "../components/Menu";
+import { Badge } from "../components/ui/Badge";
 import { openSettingsApp } from "../apps/settings/settingsStore";
 import { visibleSettingsNavGroups } from "../apps/settings/settingsSections";
 import { useCan, useAuthStore } from "./auth/authStore";
@@ -14,6 +15,7 @@ import { MenuBarKeyboardControl } from "./MenuBarKeyboardControl";
 import { MenuBarLanguageSwitcher } from "./MenuBarLanguageSwitcher";
 import { MenuBarToolsStatus } from "./MenuBarToolsStatus";
 import { MenuBarVolumeControl } from "./MenuBarVolumeControl";
+import { useDocumentFullscreen } from "./useDocumentFullscreen";
 import { useOsStore } from "./osStore";
 import { resolveWindowTitle } from "./resolveWindowTitle";
 import { useWindowStore } from "./windowStore";
@@ -44,6 +46,7 @@ export function MenuBar() {
   const canWriteSettings = useCan("settings:write");
   const windows = useWindowStore((s) => s.windows);
   const openPalette = useCommandPaletteStore((s) => s.openPalette);
+  const { fullscreen, toggle: toggleFullscreen } = useDocumentFullscreen();
   const clock = useClock();
 
   const settingsMenuItems = useMemo<MenuItem[]>(() => {
@@ -105,8 +108,11 @@ export function MenuBar() {
         >
           <Search size={14} />
         </button>
+        <span className="arco-menubar__title">{focused ? resolveWindowTitle(focused) : ""}</span>
       </div>
-      <span className="arco-menubar__title">{focused ? resolveWindowTitle(focused) : ""}</span>
+      <Badge className="arco-menubar__beta" aria-label="Beta">
+        Beta
+      </Badge>
       <div className="arco-menubar__right">
         <button
           type="button"
@@ -144,6 +150,16 @@ export function MenuBar() {
             <AppWindow size={14} />
           </button>
         </div>
+        <button
+          type="button"
+          className="arco-menubar__icon-btn"
+          onClick={() => void toggleFullscreen()}
+          aria-label={fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+          aria-pressed={fullscreen}
+          title={fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+        >
+          {fullscreen ? <Minimize size={14} /> : <Maximize size={14} />}
+        </button>
         <button
           className="arco-menubar__icon-btn"
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}

@@ -4,7 +4,7 @@ export type TitleBarTheme = "dark" | "light";
 
 /** Solid fills derived from `--arco-bg-surface-solid` in tokens.css. */
 export const TITLE_BAR_THEME: Record<TitleBarTheme, { color: string; symbolColor: string }> = {
-  dark: { color: "#181b22", symbolColor: "#a8b0bf" },
+  dark: { color: "#1a1a1c", symbolColor: "#a8a8ae" },
   light: { color: "#fcfdff", symbolColor: "#4e5665" },
 };
 

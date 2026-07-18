@@ -131,6 +131,21 @@ export const SYSTEM_APPS: SystemAppDef[] = [
   { id: "onboarding", titleKey: I18nKey.OS$APP_ONBOARDING, icon: GraduationCap, component: OnboardingApp },
 ];
 
+/** Hidden from launchers unless Settings → Advanced → Developer Apps is on. */
+export const DEVELOPER_SYSTEM_APP_IDS = [
+  "onboarding",
+  "startup",
+  "generator",
+  "pay",
+  "imagegen",
+] as const satisfies readonly SystemAppId[];
+
+const DEVELOPER_SYSTEM_APP_ID_SET = new Set<string>(DEVELOPER_SYSTEM_APP_IDS);
+
+export function isDeveloperSystemApp(id: string): boolean {
+  return DEVELOPER_SYSTEM_APP_ID_SET.has(id);
+}
+
 export function systemApp(id: SystemAppId): SystemAppDef {
   const def = SYSTEM_APPS.find((a) => a.id === id);
   if (!def) throw new Error(`Unknown system app: ${id}`);

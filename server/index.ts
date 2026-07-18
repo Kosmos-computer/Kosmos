@@ -37,7 +37,6 @@ import { requireAuth, requireCap, currentUser, type AuthEnv } from "./auth/middl
 import { authRoutes } from "./auth/routes.js";
 import { mobileShellCors } from "./cors.js";
 import { createEntryGate } from "./security/entryGate.js";
-import { enqueueSessionResult } from "./agent/sessionQueue.js";
 import {
   pickTurnRunner,
   resolveAcpCommand,
@@ -411,31 +410,29 @@ app.post("/api/chat", requireCap("chat"), async (c) => {
     emit({ type: "session", sessionId: session.id });
     try {
       // Profile.runtime.kind wins when set; otherwise Settings.agent (shell default).
-      // Serialize turns per session so concurrent sends cannot interleave
-      // tool races (OpenClaw session-lane pattern; shared with channels).
-      await enqueueSessionResult(`chat:${session.id}`, async () => {
-        const profile = resolveProfileForTurn({
-          profileId: body.profileId ?? session.profileId,
-          sessionProfileId: session.profileId,
-        });
-        const kind = resolveTurnKind(profile);
-        const turnRunner = pickTurnRunner(kind);
-        await withProfileActivity(profile.id, () =>
-          turnRunner({
-            sessionId: session.id,
-            userMessage: message,
-            emit,
-            signal: turnController.signal,
-            interactive: true,
-            readOnly: body.mode === "ask",
-            approvalMode,
-            userId: currentUser(c).id,
-            profileId: profile.id,
-            ...(toolsetIds && toolsetIds.length > 0 ? { toolsetIds } : {}),
-            ...(kind === "acp" ? { acpCommand: resolveAcpCommand(profile) } : {}),
-          }),
-        );
+      // Concurrent turns are rejected above via activeChatTurns (409); the client
+      // queues follow-ups. Cancel uses turnController — see POST …/cancel.
+      const profile = resolveProfileForTurn({
+        profileId: body.profileId ?? session.profileId,
+        sessionProfileId: session.profileId,
       });
+      const kind = resolveTurnKind(profile);
+      const turnRunner = pickTurnRunner(kind);
+      await withProfileActivity(profile.id, () =>
+        turnRunner({
+          sessionId: session.id,
+          userMessage: message,
+          emit,
+          signal: turnController.signal,
+          interactive: true,
+          readOnly: body.mode === "ask",
+          approvalMode,
+          userId: currentUser(c).id,
+          profileId: profile.id,
+          ...(toolsetIds && toolsetIds.length > 0 ? { toolsetIds } : {}),
+          ...(kind === "acp" ? { acpCommand: resolveAcpCommand(profile) } : {}),
+        }),
+      );
       emit({ type: "done" });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Agent turn failed";

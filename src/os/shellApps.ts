@@ -9,7 +9,7 @@ import { useTranslation } from "react-i18next";
 import { Globe, type LucideIcon } from "lucide-react";
 import { useOsStore } from "./osStore";
 import { windowKey, type WindowKind } from "./windowStore";
-import { SYSTEM_APPS } from "./systemApps";
+import { isDeveloperSystemApp, SYSTEM_APPS } from "./systemApps";
 import { appIcon } from "../apps/appview/appIcon";
 
 export interface ShellAppEntry {
@@ -24,6 +24,7 @@ export function useShellApps(): ShellAppEntry[] {
   const { t } = useTranslation();
   const apps = useOsStore((s) => s.apps);
   const webApps = useOsStore((s) => s.webApps);
+  const developerApps = useOsStore((s) => s.developerApps);
   // Select the raw (store-stable) array and filter inside the memo below —
   // filtering inline in the selector would return a new array every render,
   // which would defeat the memo and re-trigger effects that key off it.
@@ -34,6 +35,7 @@ export function useShellApps(): ShellAppEntry[] {
     const installedApps = installedAppsRaw.filter((e) => e.enabled);
 
     for (const def of SYSTEM_APPS) {
+      if (!developerApps && isDeveloperSystemApp(def.id)) continue;
       const kind: WindowKind = { type: "system", app: def.id };
       entries.push({ id: windowKey(kind), title: t(def.titleKey), icon: def.icon, kind, generated: false });
     }
@@ -57,5 +59,5 @@ export function useShellApps(): ShellAppEntry[] {
     }
 
     return entries;
-  }, [apps, webApps, installedAppsRaw, t]);
+  }, [apps, webApps, developerApps, installedAppsRaw, t]);
 }

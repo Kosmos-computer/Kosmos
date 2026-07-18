@@ -92,6 +92,11 @@ interface OsStore {
   appWindowHost: AppWindowHost;
   /** Custom nav rail brand image (data URL). Null shows the default logo mark. */
   navBrandImage: string | null;
+  /**
+   * When true, developer/setup system apps appear in launchers
+   * (Onboarding, Setup, Generator, Pay, Image Gen). Off by default.
+   */
+  developerApps: boolean;
 
   setTheme: (theme: Theme) => void;
   setAccentPreset: (preset: AccentPreset) => void;
@@ -113,6 +118,7 @@ interface OsStore {
   setDockPinnedIds: (updater: string[] | ((prev: string[]) => string[])) => void;
   setShellView: (view: ShellView) => void;
   setAppWindowHost: (host: AppWindowHost) => void;
+  setDeveloperApps: (enabled: boolean) => void;
   addShellConfirm: (confirm: ShellConfirm) => void;
   removeShellConfirm: (confirmId: string) => void;
 }
@@ -161,6 +167,7 @@ export const useOsStore = create<OsStore>((set) => ({
   shellView: localStorage.getItem("arco:shell-view") === "app" ? "app" : "desktop",
   appWindowHost: localStorage.getItem("arco:app-window-host") === "native" ? "native" : "embedded",
   navBrandImage: localStorage.getItem("arco:nav-brand-image"),
+  developerApps: localStorage.getItem("arco:developer-apps") === "true",
 
   setTheme: (theme) => {
     localStorage.setItem("arco:theme", theme);
@@ -294,5 +301,10 @@ export const useOsStore = create<OsStore>((set) => ({
   setAppWindowHost: (appWindowHost) => {
     localStorage.setItem("arco:app-window-host", appWindowHost);
     set({ appWindowHost });
+  },
+
+  setDeveloperApps: (developerApps) => {
+    localStorage.setItem("arco:developer-apps", String(developerApps));
+    set({ developerApps });
   },
 }));

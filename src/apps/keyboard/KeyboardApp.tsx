@@ -4,9 +4,6 @@
  * Computer-keyboard playback only runs while this app's window is focused.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Piano } from "lucide-react";
-import { I18nKey } from "../../i18n/declaration";
-import { T } from "../../i18n/T";
 import { useWindowStore, windowKey } from "../../os/windowStore";
 import { BLACK_NOTES, NOTE_BY_KEY, WHITE_NOTES } from "./notes";
 import { noteOff, noteOn, releaseAll, resumeAudio } from "./pianoAudio";
@@ -95,20 +92,6 @@ export function KeyboardApp() {
 
   return (
     <div className="arco-piano">
-      <header className="arco-piano__header">
-        <div className="arco-piano__brand">
-          <Piano size={22} aria-hidden />
-          <div>
-            <h1 className="arco-piano__title">
-              <T k={I18nKey.OS$APP_KEYBOARD} />
-            </h1>
-            <p className="arco-piano__subtitle">
-              <T k={I18nKey.APPS$KEYBOARD_HINT} />
-            </p>
-          </div>
-        </div>
-      </header>
-
       <div className="arco-piano__stage" role="application" aria-label="Piano keyboard">
         <div className="arco-piano__board" style={{ ["--piano-white-count" as string]: whiteCount }}>
           <div className="arco-piano__whites">
@@ -160,6 +143,7 @@ export function KeyboardApp() {
                   onPointerCancel={() => release(note.id)}
                   onLostPointerCapture={() => release(note.id)}
                 >
+                  <span className="arco-piano__key-label">{note.label}</span>
                   <span className="arco-piano__key-shortcut">{note.key}</span>
                 </button>
               );

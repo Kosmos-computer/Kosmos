@@ -63,10 +63,16 @@ import type {
   WebApp,
   WebAppLaunchStatus,
   WorkspaceEntry,
+  ChannelKind,
 } from "@shared/types";
 import type { CreateUseCaseSlotInput, EngineStatus, RegisteredModel, UseCaseSlotState } from "@shared/models";
 import type { CalendarEvent, CalendarEventInput } from "@shared/capabilities/calendar";
 import type { Task, TaskInput, TaskStatus } from "@shared/capabilities/tasks";
+import type {
+  BoardColumnId,
+  WorkItem,
+  WorkItemInput,
+} from "@shared/capabilities/board";
 import type { FileCreateInput, FileEntry } from "@shared/capabilities/files";
 import type { DownloadsSettingsDto, DownloadsStatsDto, TorrentDto } from "@shared/capabilities/downloads";
 import type { ShareCreateInput, ShareRecord } from "@shared/capabilities/shares";
@@ -213,6 +219,49 @@ export const api = {
         busyProfileIds?: string[];
       }>(r),
     ),
+  getContentPack: () =>
+    fetch("/api/packs/content").then((r) =>
+      json<{
+        id: string;
+        name: string;
+        description: string;
+        installed: boolean;
+        profileId: string;
+        checklist: {
+          brandVoice: boolean;
+          slackConnected: boolean;
+          peerPaired: boolean;
+          peerBoundToContent: boolean;
+          automationEnabled: boolean;
+          firstAskDone: boolean;
+        };
+        automations: Array<{
+          id: string;
+          name: string;
+          enabled: boolean;
+          schedule: string;
+          deliver: { channelId: string; chatId: string } | null;
+        }>;
+      }>(r),
+    ),
+  installContentPack: () =>
+    post<{
+      packId: string;
+      profile: import("@shared/agents").AgentProfile;
+      createdProfile: boolean;
+      skillIds: string[];
+      automations: import("@shared/types").Automation[];
+      firstAsk: string;
+      brandPrompt: string;
+      checklist: {
+        brandVoice: boolean;
+        slackConnected: boolean;
+        peerPaired: boolean;
+        peerBoundToContent: boolean;
+        automationEnabled: boolean;
+        firstAskDone: boolean;
+      };
+    }>("/api/packs/content/install"),
   getAgent: (id: string) =>
     fetch(`/api/agents/${encodeURIComponent(id)}`).then((r) =>
       json<import("@shared/agents").AgentProfile>(r),
@@ -341,6 +390,70 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title }),
     }).then((r) => json<Session>(r)),
+  bindSessionWorkItem: (id: string, workItemId: string | null) =>
+    fetch(`/api/sessions/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ workItemId }),
+    }).then((r) => json<Session>(r)),
+  /** Duplicate a session through a message index into a new independent thread. */
+  forkSession: (id: string, upToMessageIndex: number) =>
+    fetch(`/api/sessions/${encodeURIComponent(id)}/fork`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ upToMessageIndex }),
+    }).then((r) => json<Session>(r)),
+  /** Keep the first `keepCount` messages; used before regenerate / edit-resubmit. */
+  truncateSession: (id: string, keepCount: number) =>
+    fetch(`/api/sessions/${encodeURIComponent(id)}/truncate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ keepCount }),
+    }).then((r) => json<Session>(r)),
+  /** How many tracked agent file edits sit at/after this user message. */
+  checkpointEditCount: (id: string, fromUserMessageIndex: number) =>
+    fetch(
+      `/api/sessions/${encodeURIComponent(id)}/checkpoint-edits?fromUserMessageIndex=${fromUserMessageIndex}`,
+    ).then((r) => json<{ editCount: number }>(r)),
+  /**
+   * Restore a checkpoint (Claude Code / Cursor style).
+   * both → files + conversation; conversation → chat only; code → files only.
+   */
+  restoreCheckpoint: (
+    id: string,
+    opts: {
+      upToUserMessageIndex: number;
+      mode: "both" | "conversation" | "code";
+    },
+  ) =>
+    fetch(`/api/sessions/${encodeURIComponent(id)}/restore-checkpoint`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(opts),
+    }).then((r) =>
+      json<{
+        session: Session;
+        restoredFiles: { path: string; content: string | null }[];
+        editCount: number;
+        canUndo: boolean;
+      }>(r),
+    ),
+  /** Undo the last restore before the next turn (Cursor “Redo checkpoint”). */
+  redoCheckpoint: (id: string) =>
+    fetch(`/api/sessions/${encodeURIComponent(id)}/redo-checkpoint`, {
+      method: "POST",
+    }).then((r) =>
+      json<{
+        session: Session | null;
+        reappliedFiles: { path: string; content: string | null }[];
+        redoFiles: { path: string; content: string | null; diffBefore: string | null }[];
+        mode: "both" | "conversation" | "code";
+      }>(r),
+    ),
+  dismissRestoreUndo: (id: string) =>
+    fetch(`/api/sessions/${encodeURIComponent(id)}/restore-undo`, { method: "DELETE" }).then((r) =>
+      json<{ ok: true }>(r),
+    ),
 
   // Automations — paginated list, detail, runs, dispatch.
   automationHealth: () =>
@@ -622,6 +735,42 @@ export const api = {
     }).then((r) => json<Task>(r)),
   deleteTask: (id: string) =>
     fetch(`/api/tasks/${encodeURIComponent(id)}`, { method: "DELETE" }).then((r) =>
+      json<{ deleted: boolean }>(r),
+    ),
+
+  listWorkItems: (
+    params: { columnId?: BoardColumnId; projectId?: string | null; archived?: boolean } = {},
+  ) => {
+    const qs = new URLSearchParams();
+    if (params.columnId) qs.set("columnId", params.columnId);
+    if (params.projectId === null) qs.set("projectId", "null");
+    else if (params.projectId) qs.set("projectId", params.projectId);
+    if (params.archived !== undefined) qs.set("archived", String(params.archived));
+    const query = qs.toString();
+    return fetch(`/api/board/items${query ? `?${query}` : ""}`).then((r) => json<WorkItem[]>(r));
+  },
+  getWorkItem: (id: string) =>
+    fetch(`/api/board/items/${encodeURIComponent(id)}`).then((r) => json<WorkItem>(r)),
+  createWorkItem: (input: WorkItemInput) =>
+    fetch("/api/board/items", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    }).then((r) => json<WorkItem>(r)),
+  updateWorkItem: (id: string, patch: Partial<WorkItemInput>) =>
+    fetch(`/api/board/items/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    }).then((r) => json<WorkItem>(r)),
+  moveWorkItem: (id: string, columnId: BoardColumnId, position?: number) =>
+    fetch(`/api/board/items/${encodeURIComponent(id)}/move`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ columnId, position }),
+    }).then((r) => json<WorkItem>(r)),
+  deleteWorkItem: (id: string) =>
+    fetch(`/api/board/items/${encodeURIComponent(id)}`, { method: "DELETE" }).then((r) =>
       json<{ deleted: boolean }>(r),
     ),
 
@@ -1168,11 +1317,28 @@ export const api = {
   followSocialActor: (input: SocialFollowInput) =>
     post<{ ok: true; followUri?: string }>("/api/social/actors/follow", input),
 
-  // Channels (external messaging: Telegram, Discord, …)
+  // Channels (external messaging — see shared/channelCatalog)
   listChannels: () => fetch("/api/channels").then((r) => json<ChannelInfo[]>(r)),
-  addChannel: (data: { kind: "telegram" | "discord"; name: string; token: string }) =>
-    post<ChannelInfo>("/api/channels", data),
-  updateChannel: (id: string, patch: { name?: string; token?: string; enabled?: boolean; requireMention?: boolean }) =>
+  channelCatalog: () =>
+    fetch("/api/channels/catalog").then((r) => json<import("@shared/channelCatalog").ChannelKindMeta[]>(r)),
+  addChannel: (data: {
+    kind: ChannelKind;
+    name: string;
+    token: string;
+    appToken?: string;
+    options?: Record<string, string>;
+  }) => post<ChannelInfo>("/api/channels", data),
+  updateChannel: (
+    id: string,
+    patch: {
+      name?: string;
+      token?: string;
+      appToken?: string;
+      options?: Record<string, string>;
+      enabled?: boolean;
+      requireMention?: boolean;
+    },
+  ) =>
     fetch(`/api/channels/${encodeURIComponent(id)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },

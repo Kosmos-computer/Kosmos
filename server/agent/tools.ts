@@ -50,6 +50,7 @@ import {
   resolveProjectPath,
   toWorkspaceRelative,
 } from "../stores/workspaceStore.js";
+import { checkpointStore } from "../stores/checkpointStore.js";
 import { resolveSystemAppId } from "../../shared/systemApps.js";
 import { dbExecute, dbQuery } from "../stores/db.js";
 import { skillStore } from "../skills/skillStore.js";
@@ -430,13 +431,15 @@ async function agentInvokeIntent(
   const caller = { kind: "agent" as const, sessionId: ctx.sessionId };
   const isWrite = intentMeta(intentId)?.access === "write";
   if (isWrite) {
+    // Lifecycle column moves are expected mid-turn — don't interrupt for confirm.
+    const skipConfirm = intentId === "board.move";
     // Headless never auto-writes via intents, even in full approval mode.
-    if (!ctx.interactive) {
+    if (!ctx.interactive && !skipConfirm) {
       appendAudit({ caller, method: `intent.invoke:${intentId}`, detail: description, allowed: false });
       return { error: "This action requires user approval and no user is attached. Skipped." };
     }
     // Smart mode shows the confirm card; strict already paused in applyPolicy.
-    if (shouldConfirmInternally(ctx)) {
+    if (!skipConfirm && shouldConfirmInternally(ctx)) {
       const { confirmId, verdict } = requestConfirmation(ctx.signal);
       ctx.emit({ type: "confirm_required", confirmId, command: description });
       const { approved } = await verdict;
@@ -635,6 +638,7 @@ export const agentTools: AgentTool[] = [
         }
         const result = writeDriveWorkspace(pathStr, content);
         ctx.emit({ type: "file_changed", path: pathStr, before, after: content });
+        void checkpointStore.recordEdit(ctx.sessionId, { path: pathStr, before, after: content });
         return result;
       }
       const abs = resolveProjectPath(String(args.path ?? ""));
@@ -653,7 +657,9 @@ export const agentTools: AgentTool[] = [
       await fs.mkdir(path.dirname(abs), { recursive: true });
       await fs.writeFile(abs, content, "utf-8");
       invalidateWorkspaceUsage();
-      ctx.emit({ type: "file_changed", path: String(args.path ?? ""), before, after: content });
+      const relPath = String(args.path ?? "");
+      ctx.emit({ type: "file_changed", path: relPath, before, after: content });
+      void checkpointStore.recordEdit(ctx.sessionId, { path: relPath, before, after: content });
       return { path: args.path, bytes: content.length };
     },
   },
@@ -1327,6 +1333,144 @@ export const agentTools: AgentTool[] = [
         "tasks.delete",
         args,
         `Delete task ${String(args.id ?? "")}`,
+        ctx,
+      ),
+  },
+
+  // ── Board work items (os.board@1) ──────────────────────────────────────────
+  {
+    name: "board_list",
+    description:
+      "List SDLC work items on the Board. Columns: backlog, ready, in_progress, review, done. Prefer this over tasks_* for shipping jobs tied to Studio sessions.",
+    parameters: {
+      type: "object",
+      properties: {
+        columnId: {
+          type: "string",
+          enum: ["backlog", "ready", "in_progress", "review", "done"],
+        },
+        projectId: { type: "string" },
+        archived: { type: "boolean" },
+      },
+    },
+    execute: async (args, ctx) =>
+      agentInvokeIntent(
+        "board.list",
+        {
+          ...(typeof args.columnId === "string" ? { columnId: args.columnId } : {}),
+          ...(typeof args.projectId === "string" ? { projectId: args.projectId } : {}),
+          ...(typeof args.archived === "boolean" ? { archived: args.archived } : {}),
+        },
+        "List board work items",
+        ctx,
+      ),
+  },
+  {
+    name: "board_get",
+    description: "Get a Board work item by id (includes linked sessionIds, branch, worktree).",
+    parameters: {
+      type: "object",
+      properties: { id: { type: "string" } },
+      required: ["id"],
+    },
+    execute: async (args, ctx) =>
+      agentInvokeIntent("board.get", args, `Get work item ${String(args.id ?? "")}`, ctx),
+  },
+  {
+    name: "board_create",
+    description: "Create a Board work item. Pauses for user approval.",
+    parameters: {
+      type: "object",
+      properties: {
+        title: { type: "string" },
+        description: { type: "string" },
+        columnId: {
+          type: "string",
+          enum: ["backlog", "ready", "in_progress", "review", "done"],
+        },
+        priority: { type: "string", enum: ["low", "medium", "high"] },
+        projectId: { type: "string" },
+        worktreePath: { type: "string" },
+        branch: { type: "string" },
+        sessionIds: { type: "array", items: { type: "string" } },
+      },
+      required: ["title"],
+    },
+    execute: async (args, ctx) =>
+      agentInvokeIntent(
+        "board.create",
+        args,
+        `Create work item "${String(args.title ?? "")}"`,
+        ctx,
+      ),
+  },
+  {
+    name: "board_update",
+    description: "Update a Board work item by id. Pauses for user approval.",
+    parameters: {
+      type: "object",
+      properties: {
+        id: { type: "string" },
+        title: { type: "string" },
+        description: { type: "string" },
+        columnId: {
+          type: "string",
+          enum: ["backlog", "ready", "in_progress", "review", "done"],
+        },
+        priority: { type: "string", enum: ["low", "medium", "high"] },
+        projectId: { type: "string" },
+        worktreePath: { type: "string" },
+        branch: { type: "string" },
+        sessionIds: { type: "array", items: { type: "string" } },
+        archived: { type: "boolean" },
+      },
+      required: ["id"],
+    },
+    execute: async (args, ctx) =>
+      agentInvokeIntent(
+        "board.update",
+        args,
+        `Update work item ${String(args.id ?? "")}`,
+        ctx,
+      ),
+  },
+  {
+    name: "board_move",
+    description:
+      "Move a Board work item to a lifecycle column. Use when the job's meaning changes: start work → in_progress; ready for human/PR check → review; accepted/merged → done. Do NOT move to done merely because a turn finished. No confirmation pause.",
+    parameters: {
+      type: "object",
+      properties: {
+        id: { type: "string" },
+        columnId: {
+          type: "string",
+          enum: ["backlog", "ready", "in_progress", "review", "done"],
+        },
+        position: { type: "number" },
+      },
+      required: ["id", "columnId"],
+    },
+    execute: async (args, ctx) =>
+      agentInvokeIntent(
+        "board.move",
+        args,
+        `Move work item ${String(args.id ?? "")} → ${String(args.columnId ?? "")}`,
+        ctx,
+      ),
+  },
+  {
+    name: "board_delete",
+    description: "Permanently delete a Board work item. Pauses for user approval.",
+    parameters: {
+      type: "object",
+      properties: { id: { type: "string" } },
+      required: ["id"],
+    },
+    execute: async (args, ctx) =>
+      agentInvokeIntent(
+        "board.delete",
+        args,
+        `Delete work item ${String(args.id ?? "")}`,
         ctx,
       ),
   },

@@ -24,6 +24,9 @@ import { SHARES_CONTRACT_ID } from "../../shared/capabilities/shares.js";
 import type { ShareCreateInput } from "../../shared/capabilities/shares.js";
 import { TASKS_CONTRACT_ID } from "../../shared/capabilities/tasks.js";
 import type { TaskInput, TaskStatus } from "../../shared/capabilities/tasks.js";
+import { BOARD_CONTRACT_ID } from "../../shared/capabilities/board.js";
+import type { BoardColumnId, WorkItemInput } from "../../shared/capabilities/board.js";
+import { boardService } from "../services/boardService.js";
 import { intentMeta } from "../../shared/capabilities/index.js";
 import {
   exportDoc,
@@ -67,6 +70,7 @@ const DEFAULT_PROVIDERS: Record<string, string> = {
   [SLIDES_CONTRACT_ID]: "system",
   [VOICE_CONTRACT_ID]: "system",
   [TASKS_CONTRACT_ID]: "system",
+  [BOARD_CONTRACT_ID]: "system",
   [SHARES_CONTRACT_ID]: "system",
 };
 
@@ -164,6 +168,26 @@ const systemHandlers: Record<string, IntentHandler> = {
   "tasks.archive": (p) =>
     tasksService.archive(String(p.id ?? ""), p.archived !== false),
   "tasks.delete": (p) => ({ deleted: tasksService.delete(String(p.id ?? "")) }),
+
+  "board.list": (p) =>
+    boardService.list({
+      ...(typeof p.columnId === "string" ? { columnId: p.columnId as BoardColumnId } : {}),
+      ...(typeof p.projectId === "string" ? { projectId: p.projectId } : {}),
+      ...(typeof p.archived === "boolean" ? { archived: p.archived } : {}),
+    }),
+  "board.get": (p) => {
+    const item = boardService.get(String(p.id ?? ""));
+    if (!item) throw new Error(`Work item not found: ${String(p.id)}`);
+    return item;
+  },
+  "board.create": (p) => boardService.create(p as unknown as WorkItemInput),
+  "board.update": (p) => {
+    const { id, ...patch } = p;
+    return boardService.update(String(id ?? ""), patch as Partial<WorkItemInput>);
+  },
+  "board.move": (p) =>
+    boardService.move(String(p.id ?? ""), p.columnId as BoardColumnId, typeof p.position === "number" ? p.position : undefined),
+  "board.delete": (p) => ({ deleted: boardService.delete(String(p.id ?? "")) }),
 
   // os.files@1 — the OS-owned virtual file store (server/services/filesService.ts)
   "files.list": (p) =>

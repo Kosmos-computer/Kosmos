@@ -25,14 +25,18 @@ function localizedWeekdayLabels(locale: string): string[] {
 }
 
 function deliveryOptions(channels: ChannelInfo[]): { value: string; label: string }[] {
-  return channels
+  const opts = channels
     .filter((ch) => ch.config.enabled)
     .flatMap((ch) =>
       ch.peers.map((p) => ({
         value: `${ch.config.id}:${p.chatId}`,
         label: `${ch.config.name} · ${p.label}`,
+        kind: ch.config.kind,
       })),
     );
+  // Slack peers first — Content pack journey prefers Slack delivery.
+  opts.sort((a, b) => Number(b.kind === "slack") - Number(a.kind === "slack"));
+  return opts.map(({ value, label }) => ({ value, label }));
 }
 
 function parseTarget(value: string): DeliveryTarget | undefined {
@@ -317,6 +321,13 @@ export function EditAutomationModal({
               </p>
             </>
           )}
+
+          {profileId === "agent:user:content" ? (
+            <p className="arco-listrow__sub">
+              Content Agent tip: pick a Slack (or Telegram) peer so weekly drafts land where you
+              review them. Prefer Slack peers when available.
+            </p>
+          ) : null}
 
           {deliveryOptions(channels).length > 0 ? (
             <>

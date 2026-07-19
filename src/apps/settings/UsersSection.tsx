@@ -11,6 +11,7 @@ import { api } from "../../lib/api";
 import { useAuthStore } from "../../os/auth/authStore";
 import {
   ListSearch,
+  ModuleFilterSelect,
   SettingsAlert,
   SettingsEmpty,
   SettingsFieldRow,
@@ -32,6 +33,8 @@ const ROLES: { id: Role; label: string; hint: string }[] = [
   { id: "viewer", label: "Viewer", hint: "Read-only file access" },
   { id: "owner", label: "Owner", hint: "Full control including accounts" },
 ];
+
+const ROLE_OPTIONS = ROLES.map((r) => ({ value: r.id, label: r.label }));
 
 export function UsersSection() {
   const me = useAuthStore((s) => s.user);
@@ -111,86 +114,87 @@ export function UsersSection() {
       <SettingsSection intro={i18n.t(I18nKey.APPS$SETTINGS_CREATE_ACCOUNTS_ASSIGN_ROLES_AND_RESET_PASSWORDS_THE_SER)}>
         {error ? <SettingsAlert tone="error">{error}</SettingsAlert> : null}
 
-        <SettingsStack>
-          {users.length > 0 ? (
-            <ListSearch
-              value={searchQuery}
-              onChange={setSearchQuery}
-              placeholder={i18n.t(I18nKey.APPS$SETTINGS_SEARCH_USERS)}
-              ariaLabel="Search users"
-            />
-          ) : null}
-          {filteredUsers.length === 0 && users.length > 0 ? (
-            <SettingsEmpty><T k={I18nKey.APPS$SETTINGS_NO_USERS_MATCH_YOUR_SEARCH} /></SettingsEmpty>
-          ) : null}
-          {filteredUsers.map((u) => (
-            <SettingsPanel key={u.id}>
-              <SettingsPanelHeader>
-                <div className="arco-settings-row__control" style={{ flexDirection: "column", alignItems: "flex-start", gap: 2 }}>
-                  <span className="arco-settings-panel__title">
-                    {u.displayName}
-                    {u.id === me?.id ? <span className="arco-settings-panel__meta"><T k={I18nKey.APPS$SETTINGS_YOU} /></span> : null}
-                  </span>
-                  <span className="arco-settings-panel__meta">@{u.username}</span>
-                </div>
-                <SettingsRowActions>
-                  <select
-                    className="arco-input arco-input--auto"
-                    value={u.role}
-                    aria-label={`Role for ${u.username}`}
-                    onChange={(e) => void changeRole(u.id, e.target.value as Role)}
-                    disabled={u.id === me?.id}
-                  >
-                    {ROLES.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.label}
-                      </option>
-                    ))}
-                  </select>
-                  <Button
-                    onClick={() => {
-                      setResetValue("");
-                      setResetId(resetId === u.id ? null : u.id);
-                    }}
-                    disabled={u.id === me?.id}
-                    aria-label={`Reset password for ${u.username}`}
-                    aria-expanded={resetId === u.id}
-                    title={i18n.t(I18nKey.APPS$SETTINGS_RESET_PASSWORD)}
-                  >
-                    <KeyRound size={13} />
-                  </Button>
-                  <Button
-                    variant="danger"
-                    onClick={() => void remove(u.id)}
-                    disabled={u.id === me?.id}
-                    aria-label={`Delete ${u.username}`}
-                  >
-                    <Trash2 size={13} />
-                  </Button>
-                </SettingsRowActions>
-              </SettingsPanelHeader>
-              {resetId === u.id && (
-                <SettingsPanelBody>
-                  <form onSubmit={(e) => void resetPassword(e)} className="arco-settings-tool-row">
-                    <Input
-                      type="password"
-                      placeholder={i18n.t(I18nKey.APPS$SETTINGS_NEW_PASSWORD_8_CHARS)}
-                      aria-label={`New password for ${u.username}`}
-                      autoComplete="new-password"
-                      autoFocus
-                      minLength={8}
-                      value={resetValue}
-                      onChange={(e) => setResetValue(e.target.value)}
-                      required
+        {users.length > 0 ? (
+          <ListSearch
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder={i18n.t(I18nKey.APPS$SETTINGS_SEARCH_USERS)}
+            ariaLabel="Search users"
+          />
+        ) : null}
+        {filteredUsers.length === 0 && users.length > 0 ? (
+          <SettingsEmpty><T k={I18nKey.APPS$SETTINGS_NO_USERS_MATCH_YOUR_SEARCH} /></SettingsEmpty>
+        ) : null}
+        {filteredUsers.length > 0 ? (
+          <SettingsStack>
+            {filteredUsers.map((u) => (
+              <SettingsPanel key={u.id}>
+                <SettingsPanelHeader>
+                  <div className="arco-settings-panel__identity">
+                    <span className="arco-settings-panel__title">
+                      {u.displayName}
+                      {u.id === me?.id ? (
+                        <span className="arco-settings-panel__meta">
+                          {" "}
+                          <T k={I18nKey.APPS$SETTINGS_YOU} />
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="arco-settings-panel__meta">@{u.username}</span>
+                  </div>
+                  <SettingsRowActions>
+                    <ModuleFilterSelect
+                      label={`Role for ${u.username}`}
+                      value={u.role}
+                      options={ROLE_OPTIONS}
+                      disabled={u.id === me?.id}
+                      onChange={(next) => void changeRole(u.id, next)}
                     />
-                    <Button variant="primary" type="submit"><T k={I18nKey.APPS$SETTINGS_SET} /></Button>
-                    <Button type="button" onClick={() => setResetId(null)}><T k={I18nKey.COMMON$CANCEL} /></Button>
-                  </form>
-                </SettingsPanelBody>
-              )}
-            </SettingsPanel>
-          ))}
-        </SettingsStack>
+                    <Button
+                      onClick={() => {
+                        setResetValue("");
+                        setResetId(resetId === u.id ? null : u.id);
+                      }}
+                      disabled={u.id === me?.id}
+                      aria-label={`Reset password for ${u.username}`}
+                      aria-expanded={resetId === u.id}
+                      title={i18n.t(I18nKey.APPS$SETTINGS_RESET_PASSWORD)}
+                    >
+                      <KeyRound size={13} />
+                    </Button>
+                    <Button
+                      variant="danger"
+                      onClick={() => void remove(u.id)}
+                      disabled={u.id === me?.id}
+                      aria-label={`Delete ${u.username}`}
+                    >
+                      <Trash2 size={13} />
+                    </Button>
+                  </SettingsRowActions>
+                </SettingsPanelHeader>
+                {resetId === u.id && (
+                  <SettingsPanelBody>
+                    <form onSubmit={(e) => void resetPassword(e)} className="arco-settings-tool-row">
+                      <Input
+                        type="password"
+                        placeholder={i18n.t(I18nKey.APPS$SETTINGS_NEW_PASSWORD_8_CHARS)}
+                        aria-label={`New password for ${u.username}`}
+                        autoComplete="new-password"
+                        autoFocus
+                        minLength={8}
+                        value={resetValue}
+                        onChange={(e) => setResetValue(e.target.value)}
+                        required
+                      />
+                      <Button variant="primary" type="submit"><T k={I18nKey.APPS$SETTINGS_SET} /></Button>
+                      <Button type="button" onClick={() => setResetId(null)}><T k={I18nKey.COMMON$CANCEL} /></Button>
+                    </form>
+                  </SettingsPanelBody>
+                )}
+              </SettingsPanel>
+            ))}
+          </SettingsStack>
+        ) : null}
 
         <SettingsSubhead><T k={I18nKey.APPS$SETTINGS_ADD_ACCOUNT} /></SettingsSubhead>
         <form onSubmit={(e) => void create(e)}>
@@ -218,18 +222,12 @@ export function UsersSection() {
               />
             </SettingsFieldRow>
             <SettingsFieldRow label={i18n.t(I18nKey.APPS$SETTINGS_ROLE)}>
-              <select
-                className="arco-input arco-input--auto"
+              <ModuleFilterSelect
+                label={i18n.t(I18nKey.APPS$SETTINGS_ROLE_FOR_THE_NEW_ACCOUNT)}
                 value={role}
-                aria-label={i18n.t(I18nKey.APPS$SETTINGS_ROLE_FOR_THE_NEW_ACCOUNT)}
-                onChange={(e) => setRole(e.target.value as Role)}
-              >
-                {ROLES.map((r) => (
-                  <option key={r.id} value={r.id} title={r.hint}>
-                    {r.label}
-                  </option>
-                ))}
-              </select>
+                options={ROLE_OPTIONS}
+                onChange={setRole}
+              />
             </SettingsFieldRow>
             <SettingsFieldRow label=" " hint={ROLES.find((r) => r.id === role)?.hint}>
               <Button variant="primary" type="submit" disabled={busy}>

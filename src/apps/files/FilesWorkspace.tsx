@@ -77,6 +77,7 @@ export interface FilesWorkspaceProps {
   flashIds?: string[];
   onUpload?: () => void;
   onRefresh?: () => void;
+  onNewWindow?: () => void;
 }
 
 export function FilesWorkspace({
@@ -121,6 +122,7 @@ export function FilesWorkspace({
   flashIds = [],
   onUpload,
   onRefresh,
+  onNewWindow,
 }: FilesWorkspaceProps) {
   const pageTitle =
     location === "drive" && !searchQuery.trim()
@@ -252,6 +254,7 @@ export function FilesWorkspace({
           inTrash={location === "trash"}
           onUpload={location === "drive" || location === "music" ? onUpload : undefined}
           onRefresh={onRefresh}
+          onNewWindow={onNewWindow}
           onCreateFolder={location !== "trash" ? () => onCreateNew("folder") : undefined}
           onOpenSelected={
             selectedFile

@@ -104,6 +104,11 @@
   border-color: var(--arco-accent);
 }
 
+.arco-module__filter-trigger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .arco-module__filter-label {
   min-width: 0;
   overflow: hidden;

@@ -130,6 +130,129 @@ export function sessionToFeed(session: Session): ChatItem[] {
   return items;
 }
 
+/**
+ * Map an assistant feed bubble back to its persisted message index.
+ * Prefers content+timestamp, then Nth non-empty assistant message in the feed.
+ */
+export function findForkMessageIndex(
+  session: Session,
+  item: Extract<ChatItem, { kind: "assistant" }>,
+  feedItems: ChatItem[],
+): number {
+  if (session.messages.length === 0) return 0;
+
+  if (item.timestamp) {
+    for (let i = 0; i < session.messages.length; i++) {
+      const m = session.messages[i];
+      if (
+        m?.role === "assistant" &&
+        m.content === item.text &&
+        m.timestamp === item.timestamp
+      ) {
+        return i;
+      }
+    }
+  }
+
+  const occurrence = feedItems
+    .filter((it): it is Extract<ChatItem, { kind: "assistant" }> => it.kind === "assistant")
+    .findIndex((it) => it.id === item.id);
+
+  if (occurrence >= 0) {
+    let seen = 0;
+    for (let i = 0; i < session.messages.length; i++) {
+      const m = session.messages[i];
+      if (m?.role !== "assistant" || !m.content.trim()) continue;
+      if (seen === occurrence) return i;
+      seen += 1;
+    }
+  }
+
+  for (let i = session.messages.length - 1; i >= 0; i--) {
+    const m = session.messages[i];
+    if (m?.role === "assistant" && m.content === item.text) return i;
+  }
+
+  return session.messages.length - 1;
+}
+
+/** User bubble that prompted this assistant reply (scan backward in the feed). */
+export function findPrecedingUserItem(
+  items: ChatItem[],
+  assistant: Extract<ChatItem, { kind: "assistant" }>,
+): Extract<ChatItem, { kind: "user" }> | null {
+  const idx = items.findIndex((it) => it.id === assistant.id);
+  if (idx < 0) return null;
+  for (let i = idx - 1; i >= 0; i--) {
+    const it = items[i];
+    if (it?.kind === "user") return it;
+  }
+  return null;
+}
+
+/** Index of the user message that prompted the assistant turn at `assistantIndex`. */
+export function findPrecedingUserMessageIndex(session: Session, assistantIndex: number): number {
+  for (let i = assistantIndex - 1; i >= 0; i--) {
+    if (session.messages[i]?.role === "user") return i;
+  }
+  return -1;
+}
+
+/**
+ * Map a user feed bubble back to its persisted message index.
+ * Prefers content+timestamp, then Nth user message in the feed.
+ */
+export function findUserMessageIndex(
+  session: Session,
+  item: Extract<ChatItem, { kind: "user" }>,
+  feedItems: ChatItem[],
+): number {
+  if (session.messages.length === 0) return 0;
+
+  if (item.timestamp) {
+    for (let i = 0; i < session.messages.length; i++) {
+      const m = session.messages[i];
+      if (m?.role === "user" && m.content === item.text && m.timestamp === item.timestamp) {
+        return i;
+      }
+    }
+  }
+
+  const occurrence = feedItems
+    .filter((it): it is Extract<ChatItem, { kind: "user" }> => it.kind === "user")
+    .findIndex((it) => it.id === item.id);
+
+  if (occurrence >= 0) {
+    let seen = 0;
+    for (let i = 0; i < session.messages.length; i++) {
+      const m = session.messages[i];
+      if (m?.role !== "user") continue;
+      if (seen === occurrence) return i;
+      seen += 1;
+    }
+  }
+
+  for (let i = session.messages.length - 1; i >= 0; i--) {
+    const m = session.messages[i];
+    if (m?.role === "user" && m.content === item.text) return i;
+  }
+
+  // Never return a non-user index — truncating at an assistant/tool index
+  // leaves the original user turn in place, then send() appends another user
+  // (consecutive users → provider 400).
+  for (let i = session.messages.length - 1; i >= 0; i--) {
+    if (session.messages[i]?.role === "user") return i;
+  }
+  return 0;
+}
+
+/** How many feed items sit after this one (for rewind confirmation copy). */
+export function countItemsAfter(items: ChatItem[], itemId: string): number {
+  const idx = items.findIndex((it) => it.id === itemId);
+  if (idx < 0) return 0;
+  return Math.max(0, items.length - idx - 1);
+}
+
 function applyAgentEvent(buffer: SessionBuffer, event: AgentEvent): void {
   switch (event.type) {
     case "text_delta":
@@ -228,6 +351,14 @@ function collectStreamingSessions(buffers: Map<string, SessionBuffer>): string[]
   return ids;
 }
 
+/** Short-lived undo after restore — cleared on next send (Cursor “Redo checkpoint”). */
+export interface PendingRestoreUndo {
+  sessionKey: string;
+  mode: "both" | "conversation" | "code";
+  /** Feed snapshot before restore (used for draft / instant conversation redo). */
+  previousItems: ChatItem[];
+}
+
 export function useChat(opts?: { activeProjectId?: string | null; persistedSessionKey?: string }) {
   const [items, setItems] = useState<ChatItem[]>([]);
   const [sessionId, setSessionId] = useState<string | undefined>(undefined);
@@ -235,6 +366,7 @@ export function useChat(opts?: { activeProjectId?: string | null; persistedSessi
   const [streaming, setStreaming] = useState(false);
   const [streamingSessions, setStreamingSessions] = useState<string[]>([]);
   const [turnMeta, setTurnMeta] = useState<TurnMeta | null>(null);
+  const [pendingRestoreUndo, setPendingRestoreUndo] = useState<PendingRestoreUndo | null>(null);
   const buffersRef = useRef<Map<string, SessionBuffer>>(new Map());
   const queuedTurnsRef = useRef<Map<string, QueuedTurn[]>>(new Map());
   const abortControllersRef = useRef<Map<string, AbortController>>(new Map());
@@ -322,6 +454,7 @@ export function useChat(opts?: { activeProjectId?: string | null; persistedSessi
       activeKeyRef.current = id;
       persistActiveSession(id);
       useStudioStore.getState().setActiveSession(id);
+      setPendingRestoreUndo((prev) => (prev?.sessionKey === id ? prev : null));
       const session = await api.getSession(id);
       if (!buffersRef.current.has(id)) {
         buffersRef.current.set(id, {
@@ -376,6 +509,7 @@ export function useChat(opts?: { activeProjectId?: string | null; persistedSessi
     activeKeyRef.current = DRAFT_KEY;
     useStudioStore.getState().setActiveSession(null);
     persistActiveSession();
+    setPendingRestoreUndo(null);
     syncActive(DRAFT_KEY);
     refreshStreamingSessions();
   }, [persistActiveSession, syncActive, refreshStreamingSessions]);
@@ -405,6 +539,34 @@ export function useChat(opts?: { activeProjectId?: string | null; persistedSessi
     [refreshSessions],
   );
 
+  /**
+   * Branch into a new conversation with history through this assistant message.
+   * Original session is unchanged (ChatGPT / TypingMind fork semantics).
+   */
+  const forkConversation = useCallback(
+    async (item: Extract<ChatItem, { kind: "assistant" }>) => {
+      const sourceId = activeKeyRef.current;
+      if (sourceId === DRAFT_KEY) {
+        useOsStore.getState().notify("Save the chat first — fork needs a persisted session");
+        return;
+      }
+      try {
+        const session = await api.getSession(sourceId);
+        const feed = buffersRef.current.get(sourceId)?.items ?? items;
+        const upToMessageIndex = findForkMessageIndex(session, item, feed);
+        const forked = await api.forkSession(sourceId, upToMessageIndex);
+        await loadSession(forked.id);
+        void refreshSessions();
+        useOsStore.getState().notify(`Forked into “${forked.title}”`);
+      } catch (err) {
+        useOsStore
+          .getState()
+          .notify(err instanceof Error ? err.message : "Could not fork conversation");
+      }
+    },
+    [items, loadSession, refreshSessions],
+  );
+
   const send = useCallback(
     async (text: string, opts?: {
       mode?: "agent" | "ask";
@@ -416,6 +578,9 @@ export function useChat(opts?: { activeProjectId?: string | null; persistedSessi
       const streamKey = activeKeyRef.current;
       const buffer = buffersRef.current.get(streamKey) ?? emptyBuffer();
       if (!trimmed) return;
+
+      // Committing a new turn dismisses Cursor-style “Redo checkpoint”.
+      setPendingRestoreUndo(null);
 
       if (buffer.streaming) {
         const queue = queuedTurnsRef.current.get(streamKey) ?? [];
@@ -517,6 +682,257 @@ export function useChat(opts?: { activeProjectId?: string | null; persistedSessi
     [activeProjectId, migrateBuffer, persistActiveSession, refreshSessions, updateBuffer],
   );
 
+  /**
+   * Regenerate — drop this assistant reply (and everything after), then resubmit
+   * the preceding user prompt. Overwrite semantics (ChatGPT / Claude style MVP).
+   */
+  const regenerateResponse = useCallback(
+    async (item: Extract<ChatItem, { kind: "assistant" }>) => {
+      const key = activeKeyRef.current;
+      const buffer = buffersRef.current.get(key) ?? emptyBuffer();
+      if (buffer.streaming) {
+        useOsStore.getState().notify("Wait for the current response to finish");
+        return;
+      }
+
+      const feed = buffer.items;
+      const userItem = findPrecedingUserItem(feed, item);
+      if (!userItem) {
+        useOsStore.getState().notify("Nothing to regenerate — no prior user message");
+        return;
+      }
+      const feedUserIdx = feed.findIndex((it) => it.id === userItem.id);
+      if (feedUserIdx < 0) return;
+
+      if (key !== DRAFT_KEY) {
+        try {
+          const session = await api.getSession(key);
+          const assistantIdx = findForkMessageIndex(session, item, feed);
+          const userMsgIdx = findPrecedingUserMessageIndex(session, assistantIdx);
+          if (userMsgIdx < 0) {
+            useOsStore.getState().notify("Nothing to regenerate — no prior user message");
+            return;
+          }
+          await api.truncateSession(key, userMsgIdx);
+          void refreshSessions();
+        } catch (err) {
+          useOsStore
+            .getState()
+            .notify(err instanceof Error ? err.message : "Could not regenerate response");
+          return;
+        }
+      }
+
+      queuedTurnsRef.current.delete(key);
+      updateBuffer(key, (buf) => {
+        buf.items = buf.items.slice(0, feedUserIdx);
+        buf.streaming = false;
+        buf.turnMeta = null;
+      });
+
+      // Don't await — streaming UI owns the rest; awaiting would pin a spinner
+      // on a footer that unmounts when this bubble is removed.
+      void send(userItem.text);
+    },
+    [refreshSessions, send, updateBuffer],
+  );
+
+  /**
+   * Edit + resend — Cursor/ChatGPT style: drop this user turn and everything
+   * after, then submit the edited prompt. Caller should confirm first.
+   */
+  const editAndResend = useCallback(
+    async (item: Extract<ChatItem, { kind: "user" }>, nextText: string) => {
+      const trimmed = nextText.trim();
+      if (!trimmed) {
+        useOsStore.getState().notify("Message can’t be empty");
+        return;
+      }
+
+      const key = activeKeyRef.current;
+      const buffer = buffersRef.current.get(key) ?? emptyBuffer();
+      if (buffer.streaming) {
+        useOsStore.getState().notify("Wait for the current response to finish");
+        return;
+      }
+
+      const feed = buffer.items;
+      const feedIdx = feed.findIndex((it) => it.id === item.id);
+      if (feedIdx < 0) return;
+
+      if (key !== DRAFT_KEY) {
+        try {
+          const session = await api.getSession(key);
+          const userMsgIdx = findUserMessageIndex(session, item, feed);
+          await api.truncateSession(key, userMsgIdx);
+          void refreshSessions();
+        } catch (err) {
+          useOsStore
+            .getState()
+            .notify(err instanceof Error ? err.message : "Could not edit message");
+          return;
+        }
+      }
+
+      queuedTurnsRef.current.delete(key);
+      updateBuffer(key, (buf) => {
+        buf.items = buf.items.slice(0, feedIdx);
+        buf.streaming = false;
+        buf.turnMeta = null;
+      });
+
+      void send(trimmed);
+    },
+    [refreshSessions, send, updateBuffer],
+  );
+
+  /**
+   * Restore checkpoint — Claude Code / Cursor style.
+   * mode "both" reverts tracked write_file/ACP edits and rewinds the chat;
+   * "conversation" keeps files; "code" keeps the chat.
+   * Leaves a pending undo (“Redo checkpoint”) until the next send.
+   * Returns the message text to load into the composer (when conversation rewound).
+   */
+  const restoreCheckpoint = useCallback(
+    async (
+      item: Extract<ChatItem, { kind: "user" }>,
+      mode: "both" | "conversation" | "code" = "both",
+    ): Promise<string | null> => {
+      const key = activeKeyRef.current;
+      const buffer = buffersRef.current.get(key) ?? emptyBuffer();
+      if (buffer.streaming) {
+        useOsStore.getState().notify("Wait for the current response to finish");
+        return null;
+      }
+
+      const feed = buffer.items;
+      const feedIdx = feed.findIndex((it) => it.id === item.id);
+      if (feedIdx < 0) return null;
+      const previousItems = feed.map((it) => ({ ...it }));
+
+      if (key === DRAFT_KEY) {
+        // No persisted session — conversation rewind only.
+        if (mode === "code") {
+          useOsStore.getState().notify("No tracked file edits to restore yet");
+          return null;
+        }
+        queuedTurnsRef.current.delete(key);
+        updateBuffer(key, (buf) => {
+          buf.items = buf.items.slice(0, feedIdx + 1);
+          buf.streaming = false;
+          buf.turnMeta = null;
+        });
+        setPendingRestoreUndo({ sessionKey: key, mode: "conversation", previousItems });
+        useOsStore.getState().notify("Restored conversation to this message");
+        return item.text;
+      }
+
+      try {
+        const session = await api.getSession(key);
+        const userMsgIdx = findUserMessageIndex(session, item, feed);
+        const result = await api.restoreCheckpoint(key, {
+          upToUserMessageIndex: userMsgIdx,
+          mode,
+        });
+        if (result.restoredFiles.length > 0) {
+          useStudioStore.getState().applyRestoredFiles(result.restoredFiles, key);
+        }
+        void refreshSessions();
+
+        if (mode === "both" || mode === "conversation") {
+          queuedTurnsRef.current.delete(key);
+          updateBuffer(key, (buf) => {
+            buf.items = buf.items.slice(0, feedIdx + 1);
+            buf.streaming = false;
+            buf.turnMeta = null;
+          });
+        }
+
+        if (result.canUndo) {
+          setPendingRestoreUndo({ sessionKey: key, mode, previousItems });
+        }
+
+        const fileNote =
+          result.restoredFiles.length === 0
+            ? "no tracked file edits"
+            : result.restoredFiles.length === 1
+              ? "1 file reverted"
+              : `${result.restoredFiles.length} files reverted`;
+        if (mode === "both") {
+          useOsStore.getState().notify(`Restored code and conversation (${fileNote})`);
+        } else if (mode === "conversation") {
+          useOsStore.getState().notify("Restored conversation — files left unchanged");
+        } else {
+          useOsStore.getState().notify(`Restored code (${fileNote})`);
+        }
+
+        return mode === "code" ? null : item.text;
+      } catch (err) {
+        useOsStore
+          .getState()
+          .notify(err instanceof Error ? err.message : "Could not restore checkpoint");
+        return null;
+      }
+    },
+    [refreshSessions, updateBuffer],
+  );
+
+  /** Undo the last restore before the next turn (Cursor “Redo checkpoint”). */
+  const redoCheckpoint = useCallback(async () => {
+    const pending = pendingRestoreUndo;
+    if (!pending) return;
+    const key = pending.sessionKey;
+
+    if (key === DRAFT_KEY) {
+      updateBuffer(key, (buf) => {
+        buf.items = pending.previousItems;
+        buf.streaming = false;
+        buf.turnMeta = null;
+      });
+      setPendingRestoreUndo(null);
+      useOsStore.getState().notify("Redid checkpoint — restored previous chat");
+      return;
+    }
+
+    try {
+      const result = await api.redoCheckpoint(key);
+      if (result.redoFiles.length > 0) {
+        useStudioStore.getState().applyRestoredFiles(result.redoFiles, key);
+      }
+      if (result.mode === "both" || result.mode === "conversation") {
+        // Prefer server transcript; fall back to the pre-restore feed snapshot.
+        if (result.session) {
+          updateBuffer(key, (buf) => {
+            buf.items = sessionToFeed(result.session!);
+            buf.streaming = false;
+            buf.turnMeta = null;
+          });
+        } else {
+          updateBuffer(key, (buf) => {
+            buf.items = pending.previousItems;
+            buf.streaming = false;
+            buf.turnMeta = null;
+          });
+        }
+      }
+      void refreshSessions();
+      setPendingRestoreUndo(null);
+      useOsStore.getState().notify("Redid checkpoint");
+    } catch (err) {
+      useOsStore
+        .getState()
+        .notify(err instanceof Error ? err.message : "Could not redo checkpoint");
+    }
+  }, [pendingRestoreUndo, refreshSessions, updateBuffer]);
+
+  const dismissRestoreUndo = useCallback(async () => {
+    const pending = pendingRestoreUndo;
+    if (!pending) return;
+    if (pending.sessionKey !== DRAFT_KEY) {
+      void api.dismissRestoreUndo(pending.sessionKey).catch(() => {});
+    }
+    setPendingRestoreUndo(null);
+  }, [pendingRestoreUndo]);
 
   const stop = useCallback(() => {
     const key = activeKeyRef.current;
@@ -592,6 +1008,13 @@ export function useChat(opts?: { activeProjectId?: string | null; persistedSessi
     newChat,
     removeSession,
     renameSession,
+    forkConversation,
+    regenerateResponse,
+    editAndResend,
+    restoreCheckpoint,
+    pendingRestoreUndo,
+    redoCheckpoint,
+    dismissRestoreUndo,
     applyVoiceEvent,
   };
 }

@@ -15,6 +15,8 @@ import { api } from "../../lib/api";
 import { onAppEvent } from "../../os/appEventBus";
 import { useAuthStore } from "../../os/auth/authStore";
 import { useDriveNavigateStore } from "../../os/driveNavigateStore";
+import { useWindowId } from "../../os/windowIdContext";
+import { findFrontmostAppWindow, useWindowStore } from "../../os/windowStore";
 import { openDriveFile } from "../../os/openDriveFile";
 import {
   entryToDriveItem,
@@ -67,6 +69,7 @@ export type DriveViewModel = ReturnType<typeof useDrive>;
 
 /** Drive browser state — backed by os.files@1 via /api/drive. */
 export function useDrive() {
+  const windowId = useWindowId();
   const user = useAuthStore((s) => s.user);
   const ownerName = user?.displayName ?? user?.username ?? "You";
 
@@ -185,15 +188,25 @@ export function useDrive() {
       }
     };
 
-    const existing = useDriveNavigateStore.getState().consume();
-    if (existing) void applyNavigate(existing);
+    const isFrontmostDrive = () => {
+      if (!windowId) return true;
+      const front = findFrontmostAppWindow(useWindowStore.getState().windows, "system:files");
+      return !front || front.id === windowId;
+    };
+
+    const consumeIfFrontmost = () => {
+      if (!isFrontmostDrive()) return;
+      const pending = useDriveNavigateStore.getState().consume();
+      if (pending) void applyNavigate(pending);
+    };
+
+    consumeIfFrontmost();
 
     return useDriveNavigateStore.subscribe((state, prev) => {
       if (!state.pending || state.pending === prev.pending) return;
-      const pending = useDriveNavigateStore.getState().consume();
-      if (pending) void applyNavigate(pending);
+      consumeIfFrontmost();
     });
-  }, []);
+  }, [windowId]);
 
   const files: DriveFileItem[] = useMemo(() => {
     const entryById = new Map(entries.map((entry) => [entry.id, entry]));

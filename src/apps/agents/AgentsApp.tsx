@@ -21,6 +21,7 @@ import {
 import { Button, EmptyState, Input, Switch } from "../../components/ui";
 import { AgentAvatar } from "./AgentAvatar";
 import { AgentDetailPanel } from "./AgentDetailPanel";
+import { ContentPackPanel } from "./ContentPackPanel";
 import { filterAgents, runtimeLabel } from "./agentFilters";
 import type { AgentProfile, AgentRuntimeFilter, AgentStatusFilter } from "./types";
 import { useAgents, type AgentsViewModel } from "./useAgents";
@@ -202,6 +203,8 @@ export function AgentsApp() {
           {showCreate ? (
             <CreateAgentPanel vm={vm} onCancel={() => setShowCreate(false)} />
           ) : null}
+
+          <ContentPackPanel onInstalled={() => void vm.refresh()} />
 
           {vm.error ? (
             <EmptyState title="Could not load agents">{vm.error}</EmptyState>

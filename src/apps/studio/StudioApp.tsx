@@ -17,6 +17,7 @@ import {
   Globe,
   PanelRight,
   SquareTerminal,
+  Undo2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { ApprovalMode, WorkspaceTab } from "@shared/types";
@@ -40,11 +41,14 @@ import { useModelSelection } from "./useModelSelection";
 import { WorkspaceChrome } from "./WorkspaceChrome";
 import { StudioSidebar } from "./StudioSidebar";
 import { StudioConversationHeader } from "./StudioConversationHeader";
+import { StudioBoardPanel } from "./StudioBoardPanel";
 import { FilesTab } from "./tabs/FilesTab";
 import { GitTab } from "./tabs/GitTab";
 import { TerminalTab } from "./tabs/TerminalTab";
 import { BrowserTab } from "./tabs/BrowserTab";
 import { useComposerAttach } from "../../components/composer/useComposerAttach";
+import { useBoardLaunchStore } from "../board/boardLaunchStore";
+import { api } from "../../lib/api";
 
 // ---------------------------------------------------------------------------
 // Drawer tab registry — adding a tab is one entry here plus its component.
@@ -124,6 +128,8 @@ export function StudioApp() {
   const setNavOpen = useStudioStore((s) => s.setNavOpen);
   const drawerOpen = useStudioStore((s) => s.drawerOpen);
   const setDrawerOpen = useStudioStore((s) => s.setDrawerOpen);
+  const mainSurface = useStudioStore((s) => s.mainSurface);
+  const setMainSurface = useStudioStore((s) => s.setMainSurface);
   const activeTab = useStudioStore((s) => s.activeTab);
   const setActiveTab = useStudioStore((s) => s.setActiveTab);
   const chatWidthPct = useStudioStore((s) => s.chatWidthPct);
@@ -188,12 +194,78 @@ export function StudioApp() {
   }, [setActiveTab, setDrawerOpen]);
 
   const openFolder = useStudioStore((s) => s.openFolder);
+  const setWorkspaceState = useStudioStore((s) => s.setWorkspaceState);
+  const boardLaunchPending = useBoardLaunchStore((s) => s.pending);
+  const consumeBoardLaunch = useBoardLaunchStore((s) => s.consume);
+  const armSessionLink = useBoardLaunchStore((s) => s.armSessionLink);
+  const consumeSessionLink = useBoardLaunchStore((s) => s.consumeSessionLink);
+  const pendingLinkWorkItemId = useBoardLaunchStore((s) => s.pendingLinkWorkItemId);
   const attach = useComposerAttach({
     onOpenFilesPanel: openFilesPanel,
     onOpenFolder: (path) => openFolder(path),
     onInsertDraft: (text) =>
       setDraft((current) => (current.trim() ? `${current.trim()}\n\n${text}` : text)),
   });
+
+  // Board → Studio handoff: apply project/worktree, open session, seed/send composer.
+  useEffect(() => {
+    if (!boardLaunchPending) return;
+    const launch = consumeBoardLaunch();
+    if (!launch) return;
+
+    void (async () => {
+      try {
+        setMainSurface("chat");
+        if (launch.projectId !== undefined && launch.projectId !== projectsInfo.activeId) {
+          await switchProject(launch.projectId ?? null).catch(() => {});
+        }
+        if (launch.worktreePath) {
+          const next = await api.setWorkspaceWorktree(launch.worktreePath);
+          setWorkspaceState(next);
+        }
+        if (launch.startNewChat) {
+          chat.newChat();
+          armSessionLink(launch.workItemId);
+        } else if (launch.sessionId) {
+          await chat.loadSession(launch.sessionId).catch(() => {});
+          armSessionLink(launch.workItemId);
+        } else {
+          armSessionLink(launch.workItemId);
+        }
+
+        const brief = launch.composerText?.trim() ?? "";
+        if (brief && launch.submitComposer) {
+          setDraft("");
+          pinToLatest();
+          void chat.send(brief, { profileId });
+        } else if (brief) {
+          setDraft(brief);
+        }
+
+      } catch {
+        // Leave Studio as-is if the launch context cannot be applied.
+      }
+    })();
+  }, [
+    boardLaunchPending,
+    consumeBoardLaunch,
+    setMainSurface,
+    armSessionLink,
+    projectsInfo.activeId,
+    switchProject,
+    setWorkspaceState,
+    chat,
+    pinToLatest,
+    profileId,
+  ]);
+
+  // After a board-started draft chat persists, bind session ↔ work item.
+  useEffect(() => {
+    if (!pendingLinkWorkItemId || !chat.sessionId) return;
+    const workItemId = consumeSessionLink();
+    if (!workItemId) return;
+    void api.bindSessionWorkItem(chat.sessionId, workItemId).catch(() => {});
+  }, [pendingLinkWorkItemId, chat.sessionId, consumeSessionLink]);
 
   const usage = useMemo(() => estimateUsage(chat.items), [chat.items]);
   const usagePercent = contextPercent(usage);
@@ -215,6 +287,7 @@ export function StudioApp() {
 
   const selectSession = useCallback(
     (id: string) => {
+      setMainSurface("chat");
       void (async () => {
         try {
           const session = await chat.loadSession(id);
@@ -231,14 +304,20 @@ export function StudioApp() {
         }
       })();
     },
-    [chat.loadSession, projectsInfo.activeId, switchProject],
+    [chat.loadSession, projectsInfo.activeId, setMainSurface, switchProject],
   );
+
+  const handleNewChat = useCallback(() => {
+    setMainSurface("chat");
+    chat.newChat();
+  }, [chat, setMainSurface]);
 
   const newChatInProject = useCallback(
     (projectId: string | null) => {
+      setMainSurface("chat");
       void switchProject(projectId).then(() => chat.newChat());
     },
-    [chat, switchProject],
+    [chat, setMainSurface, switchProject],
   );
 
   const composer = (
@@ -281,11 +360,21 @@ export function StudioApp() {
         usage={usage}
         statusStart={<WorkspaceChrome />}
         notice={
-          showLimitNotice ? (
+          chat.pendingRestoreUndo ? (
+            <ComposerNotice
+              tone="info"
+              icon={Undo2}
+              actionLabel="Redo checkpoint"
+              onAction={() => void chat.redoCheckpoint()}
+              onDismiss={() => void chat.dismissRestoreUndo()}
+            >
+              Restore undone until you send again — redo to put the previous state back
+            </ComposerNotice>
+          ) : showLimitNotice ? (
             <ComposerNotice
               tone={usagePercent >= 100 ? "danger" : "warning"}
               actionLabel="New session"
-              onAction={chat.newChat}
+              onAction={handleNewChat}
               onDismiss={() => setNoticeDismissedFor(noticeKey)}
             >
               {usagePercent >= 100
@@ -305,23 +394,31 @@ export function StudioApp() {
         <StudioSidebar
           sessions={chat.sessions}
           projects={projectsInfo.projects}
-          activeSessionId={chat.sessionId}
+          activeSessionId={mainSurface === "chat" ? chat.sessionId : undefined}
+          mainSurface={mainSurface}
           collapsed={!navOpen}
           onSelect={selectSession}
           onDelete={(id) => void chat.removeSession(id)}
-          onNewChat={chat.newChat}
+          onNewChat={handleNewChat}
           onNewChatInProject={newChatInProject}
+          onSelectBoard={() => setMainSurface("board")}
           onToggleCollapsed={() => setNavOpen(!navOpen)}
         />
 
-        {/* Chat + drawer split — resize % is relative to this pane only. */}
+        {/* Main + drawer split — resize % is relative to this pane only. */}
         <div className="arco-studio__split" ref={containerRef}>
-          {/* ── Center: chat thread + composer ───────────────────────────── */}
+          {/* ── Center: chat thread or Board ─────────────────────────────── */}
           <section
             className="arco-studio__chat"
-            style={drawerOpen ? { width: `${chatWidthPct}%`, flex: "none" } : undefined}
+            style={
+              mainSurface !== "board" && drawerOpen
+                ? { width: `${chatWidthPct}%`, flex: "none" }
+                : undefined
+            }
           >
-            {isEmpty ? (
+            {mainSurface === "board" ? (
+              <StudioBoardPanel />
+            ) : isEmpty ? (
               <div className="arco-studio__empty">
                 {voice.active ? (
                   <VoiceBar voice={voice} placement="expanded" />
@@ -346,7 +443,7 @@ export function StudioApp() {
                         ? (title) => chat.renameSession(chat.sessionId!, title)
                         : undefined
                     }
-                    onNewChat={chat.newChat}
+                    onNewChat={handleNewChat}
                     onDelete={
                       chat.sessionId ? () => chat.removeSession(chat.sessionId!) : undefined
                     }
@@ -361,9 +458,15 @@ export function StudioApp() {
                   <div className="arco-studio__content-inner">
                     <ChatThread
                       items={chat.items}
+                      sessionId={chat.sessionId}
                       streaming={chat.streaming}
                       turnMeta={chat.turnMeta}
                       onFollowUp={submit}
+                      onFork={(item) => chat.forkConversation(item)}
+                      onRegenerate={(item) => chat.regenerateResponse(item)}
+                      onEditAndResend={(item, text) => chat.editAndResend(item, text)}
+                      onRestoreCheckpoint={(item, mode) => chat.restoreCheckpoint(item, mode)}
+                      onPrimeComposer={(text) => setDraft(text)}
                     />
                   </div>
                 </div>
@@ -378,83 +481,84 @@ export function StudioApp() {
             )}
           </section>
 
-          {/* ── Divider + right drawer ───────────────────────────────────── */}
-          {drawerOpen ? (
-            <>
-              <div
-                className={[
-                  "arco-resize-handle",
-                  isResizing ? "arco-resize-handle--active" : "",
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-                role="separator"
-                aria-orientation="vertical"
-                aria-label={i18n.t(I18nKey.APPS$STUDIO_RESIZE_WORKSPACE_DRAWER)}
-                onPointerDown={onDividerPointerDown}
-              >
-                <span className="arco-resize-handle__grip" aria-hidden="true" />
-              </div>
-              <section className="arco-studio__drawer" aria-label={i18n.t(I18nKey.APPS$STUDIO_WORKSPACE_2)}>
-                <div className="arco-studio__tabbar">
-                  <div className="arco-studio__tabs" role="tablist">
-                    {DRAWER_TABS.map(({ id, label, icon: Icon }) => (
+          {/* Workspace drawer is chat-only — Board uses the full main pane. */}
+          {mainSurface !== "board" &&
+            (drawerOpen ? (
+              <>
+                <div
+                  className={[
+                    "arco-resize-handle",
+                    isResizing ? "arco-resize-handle--active" : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                  role="separator"
+                  aria-orientation="vertical"
+                  aria-label={i18n.t(I18nKey.APPS$STUDIO_RESIZE_WORKSPACE_DRAWER)}
+                  onPointerDown={onDividerPointerDown}
+                >
+                  <span className="arco-resize-handle__grip" aria-hidden="true" />
+                </div>
+                <section className="arco-studio__drawer" aria-label={i18n.t(I18nKey.APPS$STUDIO_WORKSPACE_2)}>
+                  <div className="arco-studio__tabbar">
+                    <div className="arco-studio__tabs" role="tablist">
+                      {DRAWER_TABS.map(({ id, label, icon: Icon }) => (
+                        <button
+                          key={id}
+                          role="tab"
+                          aria-selected={activeTab === id}
+                          aria-label={label}
+                          className={`arco-studio__tab ${activeTab === id ? "arco-studio__tab--active" : ""}`}
+                          onClick={() => setActiveTab(id)}
+                        >
+                          <Icon size={13} />
+                          <span className="arco-studio__tablabel">{label}</span>
+                          {id === "diffs" && changeCount > 0 && (
+                            <span className="arco-studio__tabbadge">{changeCount}</span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="arco-studio__tabactions">
                       <button
-                        key={id}
-                        role="tab"
-                        aria-selected={activeTab === id}
-                        aria-label={label}
-                        className={`arco-studio__tab ${activeTab === id ? "arco-studio__tab--active" : ""}`}
-                        onClick={() => setActiveTab(id)}
+                        type="button"
+                        className="arco-btn arco-btn--icon"
+                        onClick={() => setDrawerOpen(false)}
+                        aria-pressed
+                        aria-label={i18n.t(I18nKey.APPS$STUDIO_HIDE_WORKSPACE_DRAWER)}
                       >
-                        <Icon size={13} />
-                        <span className="arco-studio__tablabel">{label}</span>
-                        {id === "diffs" && changeCount > 0 && (
-                          <span className="arco-studio__tabbadge">{changeCount}</span>
-                        )}
+                        <PanelRight size={14} />
                       </button>
-                    ))}
+                    </div>
                   </div>
-                  <div className="arco-studio__tabactions">
-                    <button
-                      type="button"
-                      className="arco-btn arco-btn--icon"
-                      onClick={() => setDrawerOpen(false)}
-                      aria-pressed
-                      aria-label={i18n.t(I18nKey.APPS$STUDIO_HIDE_WORKSPACE_DRAWER)}
-                    >
-                      <PanelRight size={14} />
-                    </button>
+                  <div className="arco-studio__tabcontent">
+                    {activeTab === "files" && <FilesTab />}
+                    {activeTab === "diffs" && <GitTab />}
+                    {activeTab === "terminal" && <TerminalTab />}
+                    {activeTab === "browser" && (
+                      <BrowserTab
+                        onInsertDraft={(text) =>
+                          setDraft((current) => (current.trim() ? `${current.trim()}\n\n${text}` : text))
+                        }
+                        onSubmitMessage={(text) => submit(text)}
+                      />
+                    )}
                   </div>
-                </div>
-                <div className="arco-studio__tabcontent">
-                  {activeTab === "files" && <FilesTab />}
-                  {activeTab === "diffs" && <GitTab />}
-                  {activeTab === "terminal" && <TerminalTab />}
-                  {activeTab === "browser" && (
-                    <BrowserTab
-                      onInsertDraft={(text) =>
-                        setDraft((current) => (current.trim() ? `${current.trim()}\n\n${text}` : text))
-                      }
-                      onSubmitMessage={(text) => submit(text)}
-                    />
-                  )}
-                </div>
-              </section>
-            </>
-          ) : (
-            <div className="arco-studio__rail arco-studio__rail--right">
-              <button
-                type="button"
-                className="arco-btn arco-btn--icon"
-                onClick={() => setDrawerOpen(true)}
-                aria-pressed={false}
-                aria-label={i18n.t(I18nKey.APPS$STUDIO_SHOW_WORKSPACE_DRAWER)}
-              >
-                <PanelRight size={14} />
-              </button>
-            </div>
-          )}
+                </section>
+              </>
+            ) : (
+              <div className="arco-studio__rail arco-studio__rail--right">
+                <button
+                  type="button"
+                  className="arco-btn arco-btn--icon"
+                  onClick={() => setDrawerOpen(true)}
+                  aria-pressed={false}
+                  aria-label={i18n.t(I18nKey.APPS$STUDIO_SHOW_WORKSPACE_DRAWER)}
+                >
+                  <PanelRight size={14} />
+                </button>
+              </div>
+            ))}
         </div>
       </div>
     </div>

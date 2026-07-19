@@ -111,7 +111,12 @@ export function createTelegramAdapter(
         const updates = await callApi<TgUpdate[]>(
           token,
           "getUpdates",
-          { offset, timeout: POLL_TIMEOUT_S, allowed_updates: ["message"] },
+          {
+            offset,
+            timeout: POLL_TIMEOUT_S,
+            // Align with OpenClaw allowed-updates (text path still filters to .message).
+            allowed_updates: ["message", "channel_post", "edited_message"],
+          },
           AbortSignal.any([abort.signal, AbortSignal.timeout((POLL_TIMEOUT_S + 10) * 1000)]),
         );
         for (const update of updates) {
@@ -142,6 +147,15 @@ export function createTelegramAdapter(
     async start() {
       const me = await callApi<TgUser>(token, "getMe", undefined, AbortSignal.timeout(10_000));
       botUsername = me.username;
+      // Clear any leftover webhook so getUpdates does not 409-conflict.
+      await callApi(token, "deleteWebhook", { drop_pending_updates: false }, AbortSignal.timeout(10_000)).catch(
+        (err) => {
+          console.warn(
+            "[telegram] deleteWebhook:",
+            err instanceof Error ? err.message : err,
+          );
+        },
+      );
       void pollLoop();
       return { botName: me.username ? `@${me.username}` : undefined };
     },

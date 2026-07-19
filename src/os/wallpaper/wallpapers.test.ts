@@ -3,9 +3,10 @@ import { describe, it } from "node:test";
 import { normalizeWallpaper } from "./wallpapers.js";
 
 describe("normalizeWallpaper", () => {
-  it("keeps known photo, static, and animated wallpaper ids", () => {
+  it("keeps known photo, static, custom, and animated wallpaper ids", () => {
     assert.equal(normalizeWallpaper("space"), "space");
     assert.equal(normalizeWallpaper("forest"), "forest");
+    assert.equal(normalizeWallpaper("custom"), "custom");
     assert.equal(normalizeWallpaper("starfield"), "starfield");
     assert.equal(normalizeWallpaper("overworld"), "overworld");
   });

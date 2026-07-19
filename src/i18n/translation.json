@@ -580,6 +580,13 @@
     "ja": "タスク",
     "zh-CN": "任务"
   },
+  "OS$APP_BOARD": {
+    "en": "Board",
+    "es": "Tablero",
+    "de": "Board",
+    "ja": "ボード",
+    "zh-CN": "看板"
+  },
   "OS$APP_CONTACTS": {
     "en": "Contacts",
     "es": "Contactos",

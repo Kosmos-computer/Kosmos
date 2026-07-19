@@ -16,6 +16,7 @@ import {
   Shield,
   X,
 } from "lucide-react";
+import { ModuleFilterSelect } from "../../components/patterns";
 import {
   SettingsFieldRow,
   SettingsGroupLabel,
@@ -24,6 +25,20 @@ import {
   SettingsStack,
 } from "../../components/patterns/SettingsLayout";
 import { Badge, Button, Chip, Input, Switch } from "../../components/ui";
+
+const AGENT_RUNTIME_OPTIONS = [
+  { value: "builtin", label: "Builtin" },
+  { value: "acp:claude-code", label: "ACP · Claude Code" },
+  { value: "acp:codex", label: "ACP · Codex" },
+  { value: "acp:gemini", label: "ACP · Gemini CLI" },
+  { value: "cursor", label: "Cursor" },
+] as const;
+
+const SAFETY_LEVEL_OPTIONS = [
+  { value: "restricted", label: "restricted" },
+  { value: "standard", label: "standard" },
+  { value: "elevated", label: "elevated" },
+] as const;
 import { openSettingsApp } from "../settings/settingsStore";
 import { openShellWindow } from "../../os/shellNavigation";
 import { systemAppTitle } from "../../os/systemAppTitles";
@@ -142,16 +157,15 @@ function ProfileTab({
           {agent.source === "seed" && agent.id.startsWith("agent:acp:") ? (
             <Chip>{runtimeLabel(agent.runtime)}</Chip>
           ) : (
-            <select
-              className="arco-input"
-              aria-label="Agent runtime"
+            <ModuleFilterSelect
+              label="Agent runtime"
               value={
                 agent.runtime === "acp"
                   ? `acp:${agent.acpPresetId ?? "claude-code"}`
                   : agent.runtime
               }
-              onChange={(e) => {
-                const value = e.target.value;
+              options={AGENT_RUNTIME_OPTIONS}
+              onChange={(value) => {
                 if (value.startsWith("acp:")) {
                   void vm.updateAgent(agent.id, {
                     runtime: "acp",
@@ -164,14 +178,7 @@ function ProfileTab({
                   });
                 }
               }}
-              style={{ minWidth: "10rem" }}
-            >
-              <option value="builtin">Builtin</option>
-              <option value="acp:claude-code">ACP · Claude Code</option>
-              <option value="acp:codex">ACP · Codex</option>
-              <option value="acp:gemini">ACP · Gemini CLI</option>
-              <option value="cursor">Cursor</option>
-            </select>
+            />
           )}
         </SettingsFieldRow>
         <SettingsFieldRow label={<T k={I18nKey.APPS$AGENTS_PRINCIPAL} />}>
@@ -358,21 +365,12 @@ function AccessTab({
           <Chip>{agent.policyLevel}</Chip>
         </SettingsFieldRow>
         <SettingsFieldRow label={<T k={I18nKey.APPS$AGENTS_SAFETY_LEVEL} />}>
-          <select
-            className="arco-input"
-            aria-label="Safety level"
+          <ModuleFilterSelect
+            label="Safety level"
             value={agent.safetyLevel}
-            onChange={(e) =>
-              void vm.updateAgent(agent.id, {
-                safetyLevel: e.target.value as AgentProfile["safetyLevel"],
-              })
-            }
-            style={{ minWidth: "8rem" }}
-          >
-            <option value="restricted">restricted</option>
-            <option value="standard">standard</option>
-            <option value="elevated">elevated</option>
-          </select>
+            options={SAFETY_LEVEL_OPTIONS}
+            onChange={(safetyLevel) => void vm.updateAgent(agent.id, { safetyLevel })}
+          />
         </SettingsFieldRow>
       </SettingsStack>
 

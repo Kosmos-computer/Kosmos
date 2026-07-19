@@ -10,6 +10,7 @@ export type WallpaperId =
   | "northern-lights"
   | "desert-dunes"
   | "mountain-lake"
+  | "custom"
   | "aurora"
   | "dusk"
   | "graphite"
@@ -65,7 +66,8 @@ export const WALLPAPER_GROUPS: WallpaperGroup[] = [
 
 export const WALLPAPER_IDS = WALLPAPER_GROUPS.flatMap((g) => g.options.map((o) => o.id));
 
-const WALLPAPER_SET = new Set<string>(WALLPAPER_IDS);
+/** User-uploaded / Files-picked image — rendered via customWallpaperImage in osStore. */
+const WALLPAPER_SET = new Set<string>([...WALLPAPER_IDS, "custom"]);
 
 const WALLPAPER_BY_ID = new Map(
   WALLPAPER_GROUPS.flatMap((g) => g.options.map((o) => [o.id, o] as const)),
@@ -83,11 +85,16 @@ export function getWallpaperOption(id: WallpaperId): WallpaperOption | undefined
   return WALLPAPER_BY_ID.get(id);
 }
 
-export function getWallpaperImageUrl(id: WallpaperId): string | undefined {
+export function getWallpaperImageUrl(
+  id: WallpaperId,
+  customImage?: string | null,
+): string | undefined {
+  if (id === "custom") return customImage ?? undefined;
   return WALLPAPER_BY_ID.get(id)?.imageUrl;
 }
 
-export function isPhotoWallpaper(id: string): boolean {
+export function isPhotoWallpaper(id: string, customImage?: string | null): boolean {
+  if (id === "custom") return Boolean(customImage);
   return Boolean(WALLPAPER_BY_ID.get(id as WallpaperId)?.imageUrl);
 }
 

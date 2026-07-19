@@ -453,6 +453,39 @@
   word-break: break-word;
 }
 
+.arco-chat__user-edit {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.arco-chat__user-edit-input {
+  width: 100%;
+  min-height: 4.5rem;
+  padding: 10px 12px;
+  border: 1px solid var(--arco-border-strong, var(--arco-border));
+  border-radius: 12px;
+  background: var(--arco-bg-surface-solid);
+  color: var(--arco-text-primary);
+  font: inherit;
+  font-size: var(--arco-text-md);
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.arco-chat__user-edit-input:focus {
+  outline: 2px solid color-mix(in srgb, var(--arco-accent) 45%, transparent);
+  outline-offset: 1px;
+}
+
+.arco-chat__user-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .arco-chat__assistant {
   align-self: stretch;
   display: flex;
@@ -515,9 +548,8 @@
   opacity: 1;
 }
 
-/* Not-yet-wired actions (edit, restore, regenerate, feedback, share, fork):
-   stay dimmer than the active actions even when revealed, and don't react
-   to hover, so they read as present-but-inert rather than clickable. */
+/* Ghosted bubble actions (feedback, share, …): stay dimmer than active
+   actions even when revealed, and don't react to hover. */
 .arco-chat__bubble-action--ghost {
   cursor: default;
 }

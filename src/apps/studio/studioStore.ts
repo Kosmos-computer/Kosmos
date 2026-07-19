@@ -81,11 +81,15 @@ function patchActivity(
 
 const LAYOUT_KEY = "arco:studio:v1";
 
+/** Center pane in Studio — chat thread or the Board ops surface. */
+export type StudioMainSurface = "chat" | "board";
+
 interface PersistedStudioLayout {
   chatWidthPct: number;
   activeTab: WorkspaceTab;
   drawerOpen: boolean;
   navOpen: boolean;
+  mainSurface: StudioMainSurface;
 }
 
 const WORKSPACE_TABS: WorkspaceTab[] = ["files", "diffs", "terminal", "browser"];
@@ -99,7 +103,11 @@ function loadLayout(): PersistedStudioLayout {
         parsed.activeTab && WORKSPACE_TABS.includes(parsed.activeTab as WorkspaceTab)
           ? (parsed.activeTab as WorkspaceTab)
           : DEFAULT_LAYOUT.activeTab;
-      return { ...DEFAULT_LAYOUT, ...parsed, activeTab };
+      const mainSurface =
+        parsed.mainSurface && MAIN_SURFACES.includes(parsed.mainSurface as StudioMainSurface)
+          ? (parsed.mainSurface as StudioMainSurface)
+          : DEFAULT_LAYOUT.mainSurface;
+      return { ...DEFAULT_LAYOUT, ...parsed, activeTab, mainSurface };
     }
   } catch {
     // Corrupt layout — fall through to defaults.
@@ -107,11 +115,14 @@ function loadLayout(): PersistedStudioLayout {
   return DEFAULT_LAYOUT;
 }
 
+const MAIN_SURFACES: StudioMainSurface[] = ["chat", "board"];
+
 const DEFAULT_LAYOUT: PersistedStudioLayout = {
   chatWidthPct: 45,
   activeTab: "files",
   drawerOpen: true,
   navOpen: true,
+  mainSurface: "chat",
 };
 
 function persistLayout(state: StudioStore): void {
@@ -120,6 +131,7 @@ function persistLayout(state: StudioStore): void {
     activeTab: state.activeTab,
     drawerOpen: state.drawerOpen,
     navOpen: state.navOpen,
+    mainSurface: state.mainSurface,
   };
   try {
     localStorage.setItem(LAYOUT_KEY, JSON.stringify(payload));
@@ -149,6 +161,7 @@ interface StudioStore extends PersistedStudioLayout {
   setActiveTab: (tab: WorkspaceTab) => void;
   setDrawerOpen: (open: boolean) => void;
   setNavOpen: (open: boolean) => void;
+  setMainSurface: (surface: StudioMainSurface) => void;
   setChatWidthPct: (pct: number) => void;
   requestFile: (path: string | null) => void;
   setActiveSession: (sessionId: string | null) => void;
@@ -157,6 +170,11 @@ interface StudioStore extends PersistedStudioLayout {
   appendUserCommand: (entry: CommandEntry) => void;
   updateUserCommand: (id: string, patch: Partial<CommandEntry>) => void;
   clearActivity: () => void;
+  /** After checkpoint restore/redo — sync Diffs tab to file contents. */
+  applyRestoredFiles: (
+    restoredFiles: { path: string; content: string | null; diffBefore?: string | null }[],
+    sessionKey?: string | null,
+  ) => void;
   ingestAgentEvent: (event: AgentEvent, sessionKey?: string | null) => void;
   refreshProjects: () => Promise<void>;
   refreshWorkspace: () => Promise<void>;
@@ -205,6 +223,13 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
   setNavOpen: (open) =>
     set((s) => {
       const next = { ...s, navOpen: open };
+      persistLayout(next as StudioStore);
+      return next;
+    }),
+
+  setMainSurface: (surface) =>
+    set((s) => {
+      const next = { ...s, mainSurface: surface };
       persistLayout(next as StudioStore);
       return next;
     }),
@@ -272,6 +297,41 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
     set((s) => ({
       sessionActivity: patchActivity(s.sessionActivity, s.activeSessionKey, emptyActivity()),
     })),
+
+  applyRestoredFiles: (restoredFiles, sessionKey) =>
+    set((s) => {
+      const key = sessionActivityKey(sessionKey ?? s.activeSessionKey);
+      if (restoredFiles.length === 0) return s;
+      return {
+        sessionActivity: patchActivity(s.sessionActivity, key, (activity) => {
+          const changes = { ...activity.changes };
+          for (const file of restoredFiles) {
+            if (file.content === null) {
+              delete changes[file.path];
+              continue;
+            }
+            const prior = changes[file.path];
+            const before =
+              file.diffBefore !== undefined ? file.diffBefore : (prior?.before ?? null);
+            changes[file.path] = {
+              path: file.path,
+              before,
+              after: file.content,
+              at: Date.now(),
+            };
+            // If content matches baseline, drop the diff row.
+            if (before === file.content) {
+              delete changes[file.path];
+            }
+          }
+          return {
+            ...activity,
+            changes,
+            filesVersion: activity.filesVersion + 1,
+          };
+        }),
+      };
+    }),
 
   refreshProjects: async () => {
     try {

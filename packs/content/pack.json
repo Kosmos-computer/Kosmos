@@ -1,0 +1,44 @@
+{
+  "id": "content",
+  "name": "Content Agent",
+  "version": "1.0.0",
+  "description": "Brand voice, social batch, newsletter cadence, and light SEO briefs — delivered in Kosmos and optionally Slack.",
+  "profile": {
+    "id": "agent:user:content",
+    "name": "Content",
+    "tagline": "Brand voice, SEO drafts, and social cadence",
+    "description": "Specialist for brand voice, weekly social drafts, newsletters, and SEO briefs. Bind a Slack (or Telegram) peer to deliver and approve work where your team already chats.",
+    "policyLevel": "balanced",
+    "modelSlot": "agent.chat",
+    "skills": [
+      "brand-voice",
+      "social-batch",
+      "newsletter-issue",
+      "seo-brief",
+      "arco-automation"
+    ],
+    "avatar": { "kind": "emoji", "value": "✎", "color": "teal" }
+  },
+  "skillIds": [
+    "brand-voice",
+    "social-batch",
+    "newsletter-issue",
+    "seo-brief"
+  ],
+  "automations": [
+    {
+      "key": "content-weekly-social",
+      "name": "Weekly social batch",
+      "schedule": "0 9 * * 1",
+      "prompt": "Using our brand voice in Notes, draft this week's social posts (LinkedIn + X by default). Hooks first, one idea per post, label channel and day. Put approval-ready drafts in the reply — do not publish."
+    },
+    {
+      "key": "content-newsletter-outline",
+      "name": "Weekly newsletter outline",
+      "schedule": "0 10 * * 1",
+      "prompt": "Using our brand voice, outline this week's newsletter: subject options, section map, and primary CTA. Ask if any theme is missing; do not invent product claims."
+    }
+  ],
+  "firstAsk": "Draft this week's LinkedIn and X posts from our brand voice. Hooks first; keep them ready for my approval.",
+  "brandPrompt": "Help me capture our brand voice in Notes: positioning, audience, tone (3 adjectives + 3 we-don't rules), signature phrases, and words to avoid."
+}

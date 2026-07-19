@@ -20,6 +20,7 @@ import {
   Mail,
   CalendarDays,
   CheckSquare,
+  Columns3,
   Contact,
   Table,
   Code2,
@@ -59,6 +60,7 @@ import { NotesApp } from "../apps/notes/NotesApp";
 import { EmailApp } from "../apps/email/EmailApp";
 import { CalendarApp } from "../apps/calendar/CalendarApp";
 import { TasksApp } from "../apps/tasks/TasksApp";
+import { BoardApp } from "../apps/board/BoardApp";
 import { ContactsApp } from "../apps/contacts/ContactsApp";
 import { GroupsApp } from "../apps/groups/GroupsApp";
 import { SocialApp } from "../apps/social/SocialApp";
@@ -117,6 +119,7 @@ export const SYSTEM_APPS: SystemAppDef[] = [
   { id: "email", titleKey: I18nKey.OS$APP_EMAIL, icon: Mail, component: EmailApp },
   { id: "calendar", titleKey: I18nKey.OS$APP_CALENDAR, icon: CalendarDays, component: CalendarApp },
   { id: "tasks", titleKey: I18nKey.OS$APP_TASKS, icon: CheckSquare, component: TasksApp },
+  { id: "board", titleKey: I18nKey.OS$APP_BOARD, icon: Columns3, component: BoardApp },
   { id: "contacts", titleKey: I18nKey.OS$APP_CONTACTS, icon: Contact, component: ContactsApp },
   { id: "groups", titleKey: I18nKey.OS$APP_GROUPS, icon: UsersRound, component: GroupsApp },
   { id: "messenger", titleKey: I18nKey.OS$APP_MESSENGER, icon: MessagesSquare, component: MessengerApp },

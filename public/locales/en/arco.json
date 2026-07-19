@@ -82,6 +82,7 @@
   "OS$APP_EMAIL": "Email",
   "OS$APP_CALENDAR": "Calendar",
   "OS$APP_TASKS": "Tasks",
+  "OS$APP_BOARD": "Board",
   "OS$APP_CONTACTS": "Contacts",
   "OS$APP_GROUPS": "Groups",
   "OS$APP_MESSENGER": "Messenger",

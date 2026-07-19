@@ -8,6 +8,7 @@ import { EmptyState } from "../components/ui";
 import { AuthGate } from "./auth/AuthGate";
 import { parseWindowKey } from "./windowStore";
 import { WindowContent } from "./windowContent";
+import { WindowIdProvider } from "./windowIdContext";
 import { connectShellEvents } from "./shellEvents";
 import { useOsStore } from "./osStore";
 
@@ -27,7 +28,9 @@ export function StandaloneAppWindow({ windowKey }: { windowKey: string }) {
         <EmptyState><T k={I18nKey.OS_STANDALONEAPPWINDOW_UNKNOWN_APP_WINDOW} /></EmptyState>
       ) : (
         <div className="arco-standalone-window">
-          <WindowContent kind={kind} />
+          <WindowIdProvider value={windowKey}>
+            <WindowContent kind={kind} />
+          </WindowIdProvider>
         </div>
       )}
     </AuthGate>

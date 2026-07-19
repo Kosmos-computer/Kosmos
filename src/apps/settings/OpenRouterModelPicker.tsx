@@ -1,15 +1,15 @@
 import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
-import { T } from "../../i18n/T";
 /**
  * Searchable OpenRouter model dropdown for Settings → Model provider.
  * Caps rendered options so a 300+ model catalog cannot freeze the UI.
  */
+import { RefreshCw } from "lucide-react";
 import { startTransition, useCallback, useEffect, useMemo, useState } from "react";
 import type { OpenRouterModelInfo } from "@shared/types";
 import { api } from "../../lib/api";
 import { matchesListSearch } from "../../lib/listSearch";
-import { ListSearch, SettingsAlert } from "../../components/patterns";
+import { ListSearch, ModuleFilterSelect, SettingsAlert } from "../../components/patterns";
 import { Button } from "../../components/ui";
 
 const MAX_VISIBLE_OPTIONS = 80;
@@ -18,6 +18,11 @@ interface OpenRouterModelPickerProps {
   model: string;
   apiKey: string;
   onModelChange: (modelId: string) => void;
+}
+
+function modelLabel(entry: OpenRouterModelInfo): string {
+  const ctx = entry.contextLength ? ` · ${Math.round(entry.contextLength / 1000)}k ctx` : "";
+  return `${entry.displayName}${ctx}`;
 }
 
 export function OpenRouterModelPicker({ model, apiKey, onModelChange }: OpenRouterModelPickerProps) {
@@ -63,6 +68,7 @@ export function OpenRouterModelPicker({ model, apiKey, onModelChange }: OpenRout
   }, [filtered, model, models]);
 
   const truncated = filtered.length > visible.length;
+  const selected = model ? models.find((entry) => entry.id === model) : undefined;
 
   return (
     <div className="arco-settings-openrouter-models">
@@ -71,34 +77,47 @@ export function OpenRouterModelPicker({ model, apiKey, onModelChange }: OpenRout
         onChange={setSearchQuery}
         placeholder={i18n.t(I18nKey.APPS$SETTINGS_SEARCH_MODELS)}
         ariaLabel="Search OpenRouter models"
+        compact
       />
-      <select
-        id="set-openrouter-model"
-        className="arco-input arco-settings-openrouter-models__select"
-        value={model}
-        disabled={loading || visible.length === 0}
-        onChange={(e) => onModelChange(e.target.value)}
-        aria-label={i18n.t(I18nKey.APPS$SETTINGS_OPENROUTER_MODEL)}
-      >
-        {model && !visible.some((entry) => entry.id === model) ? (
-          <option value={model}>{model}</option>
-        ) : null}
-        {visible.map((entry) => (
-          <option key={entry.id} value={entry.id}>
-            {entry.displayName}
-            {entry.contextLength ? ` · ${Math.round(entry.contextLength / 1000)}k ctx` : ""}
-          </option>
-        ))}
-      </select>
-      <Button variant="ghost" disabled={loading} onClick={() => void loadModels()}>
-        {loading ? "Loading…" : "Refresh"}
-      </Button>
+
+      <div className="arco-settings-openrouter-models__picker">
+        <ModuleFilterSelect
+          label={i18n.t(I18nKey.APPS$SETTINGS_OPENROUTER_MODEL)}
+          value={model}
+          disabled={loading || (visible.length === 0 && !model)}
+          searchable={false}
+          portal
+          className="arco-settings-openrouter-models__select"
+          options={[
+            ...(model && !visible.some((entry) => entry.id === model)
+              ? [{ value: model, label: selected ? modelLabel(selected) : model }]
+              : []),
+            ...visible.map((entry) => ({
+              value: entry.id,
+              label: modelLabel(entry),
+            })),
+          ]}
+          onChange={onModelChange}
+        />
+        <Button
+          variant="ghost"
+          size="icon"
+          disabled={loading}
+          onClick={() => void loadModels()}
+          aria-label={loading ? "Loading models" : "Refresh models"}
+        >
+          <RefreshCw size={14} className={loading ? "arco-spin" : undefined} />
+        </Button>
+      </div>
+
       {error ? <SettingsAlert tone="error">{error}</SettingsAlert> : null}
+
       {!loading && !error && models.length > 0 ? (
-        <SettingsAlert tone="muted">
-          {models.length}<T k={I18nKey.APPS$SETTINGS_MODELS_IN_CATALOG} />{truncated ? ` — showing ${visible.length} of ${filtered.length} matches` : null}
-          {truncated ? ". Refine search to narrow the list." : null}
-        </SettingsAlert>
+        <p className="arco-settings-openrouter-models__meta">
+          {truncated
+            ? `${visible.length} of ${filtered.length} matches · ${models.length} in catalog`
+            : `${models.length} models in catalog`}
+        </p>
       ) : null}
     </div>
   );

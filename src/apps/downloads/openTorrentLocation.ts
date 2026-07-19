@@ -23,12 +23,13 @@ export async function openTorrentInDrive(torrent: TorrentItem): Promise<void> {
     return;
   }
 
+  // Focus/open Drive first so the frontmost window owns the pending navigate.
+  useWindowStore.getState().open({ type: "system", app: "files" }, "Files");
   useDriveNavigateStore.getState().requestNavigate({
     folderId,
     selectId,
     folderName: torrent.name,
   });
-  useWindowStore.getState().open({ type: "system", app: "files" }, "Files");
 }
 
 export async function revealTorrentOnDisk(torrent: TorrentItem): Promise<void> {
@@ -76,12 +77,12 @@ export async function openTorrentFileInDrive(
     // Fall back to first imported file.
   }
 
+  useWindowStore.getState().open({ type: "system", app: "files" }, "Files");
   useDriveNavigateStore.getState().requestNavigate({
     folderId,
     selectId,
     folderName: torrent.name,
   });
-  useWindowStore.getState().open({ type: "system", app: "files" }, "Files");
 }
 
 function importedCount(result: unknown): number {

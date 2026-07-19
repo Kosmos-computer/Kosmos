@@ -14,8 +14,9 @@ const GameWorldWallpaper = lazy(() => import("./GameWorldWallpaper"));
 export function AuthWallpaperBackdrop() {
   const authWallpaper = useOsStore((s) => s.authWallpaper);
   const desktopWallpaper = useOsStore((s) => s.wallpaper);
+  const customWallpaperImage = useOsStore((s) => s.customWallpaperImage);
   const theme = useOsStore((s) => s.theme);
-  const resolved = resolveAuthWallpaper(authWallpaper, desktopWallpaper);
+  const resolved = resolveAuthWallpaper(authWallpaper, desktopWallpaper, customWallpaperImage);
 
   if (resolved.kind === "photo") {
     return (

@@ -9,27 +9,27 @@ import { T } from "../i18n/T";
  *
  * Which apps show here (and in what order) is independent from the Dock —
  * each app can be pinned/removed per surface. Drag to reorder, or drag an
- * item off the rail (macOS Dock-style) to unpin it; left-click (or right-click)
- * opens the same app hovercard as the dock. "More apps" lists every app with
- * a checkmark for what's currently pinned, so anything can be added back.
+ * item off the rail (macOS Dock-style) to unpin it; left-click opens/focuses
+ * the app and shows the same hovercard as the dock (right-click also opens
+ * the card). "More apps" lists every app with a checkmark for what's
+ * currently pinned, so anything can be added back.
  */
 import { useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react";
 import { Menu } from "../components/Menu";
 import { useOsStore } from "./osStore";
 import { useWindowStore } from "./windowStore";
-import { activateShellWindow } from "./shellNavigation";
+import { activateShellWindow, openNewShellWindow } from "./shellNavigation";
 import { useShellApps, type ShellAppEntry } from "./shellApps";
 import { addPinned, normalizePinned, removePinned, reorderPinned, splitByPinned } from "./pinnedApps";
 import { useAppPinDrag } from "./useAppPinDrag";
 import { NavBrandMark } from "./NavBrandMark";
 import { AppHoverCard } from "./AppHoverCard";
-import { appHoverCardHandlers } from "./appHoverCardHandlers";
+import { appHoverCardHandlers, getAppHoverWindowState } from "./appHoverCardHandlers";
+import { allowsMultipleWindows, windowMatchesApp } from "./windowStore";
 
 function NavItem({
   entry,
-  active,
-  open,
   expanded,
   isDragging,
   isUndocking,
@@ -38,10 +38,9 @@ function NavItem({
   onSelect,
   onRemove,
   windows,
+  focusedId,
 }: {
   entry: ShellAppEntry;
-  active: boolean;
-  open: boolean;
   expanded: boolean;
   isDragging: boolean;
   isUndocking: boolean;
@@ -50,13 +49,17 @@ function NavItem({
   onSelect: () => void;
   onRemove: () => void;
   windows: ReturnType<typeof useWindowStore.getState>["windows"];
+  focusedId?: string;
 }) {
   const Icon = entry.icon;
   const label = entry.title;
   const focus = useWindowStore((s) => s.focus);
   const toggleMinimize = useWindowStore((s) => s.toggleMinimize);
+  const toggleMaximize = useWindowStore((s) => s.toggleMaximize);
   const close = useWindowStore((s) => s.close);
-  const openWindowCount = windows.filter((w) => w.id === entry.id && !w.minimized).length;
+  const windowState = getAppHoverWindowState(entry.id, windows, focusedId);
+  const open = windowState.isOpen;
+  const active = windowState.isActive;
 
   return (
     <div
@@ -74,9 +77,7 @@ function NavItem({
         appId={entry.id}
         label={label}
         icon={Icon}
-        running={open}
-        active={active}
-        openWindowCount={openWindowCount}
+        windowState={windowState}
         placement="right"
         openOn="click"
         removeLabel="Remove from Nav"
@@ -85,7 +86,11 @@ function NavItem({
           onLaunch: onSelect,
           onFocus: focus,
           onMinimize: toggleMinimize,
+          onMaximize: toggleMaximize,
           onClose: close,
+          onNewWindow: allowsMultipleWindows(entry.kind)
+            ? () => openNewShellWindow(entry.kind, entry.title)
+            : undefined,
           onRemove,
         })}
       >
@@ -97,6 +102,7 @@ function NavItem({
           ]
             .filter(Boolean)
             .join(" ")}
+          onClick={onSelect}
           aria-label={label}
           title={label}
           aria-current={active ? "true" : undefined}
@@ -150,7 +156,7 @@ export function NavRail() {
   });
 
   const focusedId = [...windows.filter((w) => !w.minimized)].sort((a, b) => b.z - a.z)[0]?.id;
-  const isOpen = (key: string) => windows.some((w) => w.id === key);
+  const isOpen = (key: string) => windows.some((w) => windowMatchesApp(w.id, key));
 
   return (
     <nav
@@ -183,8 +189,6 @@ export function NavRail() {
           <NavItem
             key={entry.id}
             entry={entry}
-            active={focusedId === entry.id}
-            open={isOpen(entry.id)}
             expanded={expanded}
             isDragging={draggingId === entry.id}
             isUndocking={isUndocking}
@@ -193,6 +197,7 @@ export function NavRail() {
             onSelect={() => activateShellWindow(entry.kind, entry.title, isOpen(entry.id))}
             onRemove={() => setNavPinnedIds((prev) => removePinned(prev, entry.id))}
             windows={windows}
+            focusedId={focusedId}
           />
         ))}
       </div>

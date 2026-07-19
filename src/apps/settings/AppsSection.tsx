@@ -20,16 +20,13 @@ import {
   SettingsEmpty,
   SettingsFieldRow,
   SettingsPage,
-  SettingsPanel,
-  SettingsPanelBody,
-  SettingsPanelHeader,
   SettingsRow,
   SettingsRowActions,
   SettingsSection,
   SettingsStack,
   SettingsSubhead,
 } from "../../components/patterns";
-import { Button, Chip, Input } from "../../components/ui";
+import { Button, Chip, Input, Switch } from "../../components/ui";
 import { matchesListSearch } from "../../lib/listSearch";
 
 function GrantRow({
@@ -46,8 +43,9 @@ function GrantRow({
   onChanged: () => void;
 }) {
   const granted = state === "granted";
-  const toggle = async () => {
-    await api.setAppGrant(app.manifest.id, grantKey, granted ? "denied" : "granted");
+  const label = describePermissionKey(grantKey);
+  const toggle = async (next: boolean) => {
+    await api.setAppGrant(app.manifest.id, grantKey, next ? "granted" : "denied");
     onChanged();
   };
   return (
@@ -57,14 +55,17 @@ function GrantRow({
       ) : (
         <ShieldOff size={14} className="arco-icon arco-icon--tertiary" />
       )}
-      <span className="arco-settings-tool-row__desc">{describePermissionKey(grantKey)}</span>
-      {canManage && (
+      <span className="arco-settings-tool-row__desc">{label}</span>
+      {canManage ? (
         <SettingsRowActions>
-          <Chip active={granted} onClick={() => void toggle()} aria-pressed={granted}>
-            {granted ? "granted" : "denied"}
-          </Chip>
+          <Switch
+            checked={granted}
+            disabled={!app.enabled}
+            onChange={(event) => void toggle(event.target.checked)}
+            aria-label={label}
+          />
         </SettingsRowActions>
-      )}
+      ) : null}
     </SettingsRow>
   );
 }
@@ -124,14 +125,20 @@ export function AppsSection() {
               ariaLabel="Search installed apps"
             />
             {filteredApps.length === 0 ? <SettingsEmpty><T k={I18nKey.APPS$SETTINGS_NO_APPS_MATCH_YOUR_SEARCH} /></SettingsEmpty> : null}
-            <SettingsStack>
             {filteredApps.map((app) => (
-              <SettingsPanel key={app.manifest.id} disabled={!app.enabled}>
-                <SettingsPanelHeader>
-                  <span className="arco-settings-panel__title">{app.manifest.name}</span>
-                  <span className="arco-settings-panel__meta"><T k={I18nKey.APPS$SETTINGS_V} />{app.manifest.version} · {app.manifest.tier} · {app.source}
-                  </span>
-                  {canManage && (
+              <SettingsStack
+                key={app.manifest.id}
+                className={!app.enabled ? "arco-settings-stack--disabled" : ""}
+              >
+                <SettingsRow className="arco-settings-app-card__header">
+                  <div className="arco-settings-panel__identity">
+                    <span className="arco-settings-panel__title">{app.manifest.name}</span>
+                    <span className="arco-settings-panel__meta">
+                      <T k={I18nKey.APPS$SETTINGS_V} />
+                      {app.manifest.version} · {app.manifest.tier} · {app.source}
+                    </span>
+                  </div>
+                  {canManage ? (
                     <SettingsRowActions>
                       <Chip
                         active={app.enabled}
@@ -148,50 +155,55 @@ export function AppsSection() {
                         <Trash2 size={13} />
                       </Button>
                     </SettingsRowActions>
-                  )}
-                </SettingsPanelHeader>
+                  ) : null}
+                </SettingsRow>
                 {app.manifest.description ? (
-                  <p className="arco-settings-panel__desc">{app.manifest.description}</p>
+                  <SettingsRow className="arco-settings-app-card__desc">
+                    <p className="arco-settings-panel__desc">{app.manifest.description}</p>
+                  </SettingsRow>
                 ) : null}
-                {Object.keys(app.grants).length > 0 && (
-                  <SettingsPanelBody>
-                    {Object.entries(app.grants).map(([key, state]) => (
-                      <GrantRow
-                        key={key}
-                        app={app}
-                        grantKey={key}
-                        state={state}
-                        canManage={canManage}
-                        onChanged={() => void refreshApps()}
-                      />
-                    ))}
-                  </SettingsPanelBody>
-                )}
-                {(app.manifest.tools?.length ?? 0) > 0 && (
-                  <p className="arco-settings-panel__meta"><T k={I18nKey.APPS$SETTINGS_CONTRIBUTES_AGENT_TOOLS} />{app.manifest.tools!.map((t) => t.name).join(", ")}<T k={I18nKey.APPS$SETTINGS_CALLS_RUN_UNDER_THIS_APP_APOS_S_PERMISSIONS_ABOVE} /></p>
-                )}
-              </SettingsPanel>
+                {Object.entries(app.grants).map(([key, state]) => (
+                  <GrantRow
+                    key={key}
+                    app={app}
+                    grantKey={key}
+                    state={state}
+                    canManage={canManage}
+                    onChanged={() => void refreshApps()}
+                  />
+                ))}
+                {(app.manifest.tools?.length ?? 0) > 0 ? (
+                  <SettingsRow className="arco-settings-app-card__tools">
+                    <p className="arco-settings-panel__meta">
+                      <T k={I18nKey.APPS$SETTINGS_CONTRIBUTES_AGENT_TOOLS} />
+                      {app.manifest.tools!.map((t) => t.name).join(", ")}
+                      <T k={I18nKey.APPS$SETTINGS_CALLS_RUN_UNDER_THIS_APP_APOS_S_PERMISSIONS_ABOVE} />
+                    </p>
+                  </SettingsRow>
+                ) : null}
+              </SettingsStack>
             ))}
-          </SettingsStack>
           </>
         )}
 
         {canManage && (
           <>
             <SettingsSubhead><T k={I18nKey.APPS$SETTINGS_INSTALL_FROM_URL} /></SettingsSubhead>
-            <SettingsFieldRow label={i18n.t(I18nKey.APPS$SETTINGS_MANIFEST)} htmlFor="app-install-url">
-              <Input
-                id="app-install-url"
-                width="auto"
-                placeholder="https://example.com/my-app/manifest.json"
-                value={installUrl}
-                onChange={(e) => setInstallUrl(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && void install()}
-              />
-              <Button variant="primary" disabled={installing || !installUrl.trim()} onClick={() => void install()}>
-                {installing ? "Installing…" : "Install"}
-              </Button>
-            </SettingsFieldRow>
+            <SettingsStack>
+              <SettingsFieldRow label={i18n.t(I18nKey.APPS$SETTINGS_MANIFEST)} htmlFor="app-install-url">
+                <Input
+                  id="app-install-url"
+                  width="auto"
+                  placeholder="https://example.com/my-app/manifest.json"
+                  value={installUrl}
+                  onChange={(e) => setInstallUrl(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && void install()}
+                />
+                <Button variant="primary" disabled={installing || !installUrl.trim()} onClick={() => void install()}>
+                  {installing ? "Installing…" : "Install"}
+                </Button>
+              </SettingsFieldRow>
+            </SettingsStack>
           </>
         )}
       </SettingsSection>

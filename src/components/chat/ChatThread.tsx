@@ -8,9 +8,10 @@ import type { ChatItem, TurnMeta } from "../../apps/chat/useChat";
 import { AssistantBlock } from "../../apps/chat/AssistantBlock";
 import { ToolCard } from "../../apps/chat/ToolCard";
 import { ConfirmCard } from "../../apps/chat/ConfirmCard";
-import { ChatBubbleFooter } from "./ChatBubbleFooter";
 import { ChatErrorBlock } from "./ChatErrorBlock";
 import { CreditsInsufficientBlock } from "./CreditsInsufficientBlock";
+import { UserMessageBlock } from "./UserMessageBlock";
+import type { ChatRestoreMode } from "./ChatRewindConfirmModal";
 import {
   AgentActionBlock,
   AgentStatusLine,
@@ -21,13 +22,41 @@ import {
 
 export interface ChatThreadProps {
   items: ChatItem[];
+  sessionId?: string;
   streaming?: boolean;
   /** Live token/time readout for the in-flight turn, shown beside "Working…". */
   turnMeta?: TurnMeta | null;
   onFollowUp?: (text: string) => void;
+  /** Branch into a new chat with history through this assistant message. */
+  onFork?: (item: Extract<ChatItem, { kind: "assistant" }>) => void | Promise<void>;
+  /** Drop this reply and resubmit the preceding user prompt. */
+  onRegenerate?: (item: Extract<ChatItem, { kind: "assistant" }>) => void | Promise<void>;
+  /** Edit a prior user message and resend (after confirmation). */
+  onEditAndResend?: (
+    item: Extract<ChatItem, { kind: "user" }>,
+    text: string,
+  ) => void | Promise<void>;
+  /** Rewind conversation and/or code through this user message (after confirmation). */
+  onRestoreCheckpoint?: (
+    item: Extract<ChatItem, { kind: "user" }>,
+    mode: ChatRestoreMode,
+  ) => void | Promise<string | null>;
+  /** Load restored/edited prompt into the composer. */
+  onPrimeComposer?: (text: string) => void;
 }
 
-export function ChatThread({ items, streaming, turnMeta, onFollowUp }: ChatThreadProps) {
+export function ChatThread({
+  items,
+  sessionId,
+  streaming,
+  turnMeta,
+  onFollowUp,
+  onFork,
+  onRegenerate,
+  onEditAndResend,
+  onRestoreCheckpoint,
+  onPrimeComposer,
+}: ChatThreadProps) {
   const meta = streaming && turnMeta ? (
     <TurnMeter startedAt={turnMeta.startedAt} totalTokens={turnMeta.totalTokens} />
   ) : undefined;
@@ -38,13 +67,27 @@ export function ChatThread({ items, streaming, turnMeta, onFollowUp }: ChatThrea
         switch (item.kind) {
           case "user":
             return (
-              <div key={item.id} className="arco-chat__user-row">
-                <div className="arco-chat__user">{item.text}</div>
-                <ChatBubbleFooter text={item.text} timestamp={item.timestamp} align="end" variant="user" />
-              </div>
+              <UserMessageBlock
+                key={item.id}
+                item={item}
+                items={items}
+                sessionId={sessionId}
+                disabled={streaming}
+                onEditAndResend={onEditAndResend}
+                onRestoreCheckpoint={onRestoreCheckpoint}
+                onPrimeComposer={onPrimeComposer}
+              />
             );
           case "assistant":
-            return <AssistantBlock key={item.id} item={item} onFollowUp={onFollowUp} />;
+            return (
+              <AssistantBlock
+                key={item.id}
+                item={item}
+                onFollowUp={onFollowUp}
+                onFork={onFork}
+                onRegenerate={streaming ? undefined : onRegenerate}
+              />
+            );
           case "tool":
             if (item.name === "exec" && item.result) {
               return (

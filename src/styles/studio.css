@@ -583,8 +583,6 @@
   gap: var(--arco-space-2xs);
   min-width: 0;
   width: 100%;
-  max-width: 740px;
-  margin-inline: auto;
 }
 
 .arco-studio__convtitle {

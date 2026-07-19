@@ -78,14 +78,15 @@ export type ResolvedAuthWallpaper =
 export function resolveAuthWallpaper(
   authWallpaper: AuthWallpaperId,
   desktopWallpaper: WallpaperId,
+  customDesktopImage?: string | null,
 ): ResolvedAuthWallpaper {
   if (authWallpaper === "desktop") {
-    const desktopUrl = getWallpaperImageUrl(desktopWallpaper);
+    const desktopUrl = getWallpaperImageUrl(desktopWallpaper, customDesktopImage);
     if (desktopUrl) return { kind: "photo", url: desktopUrl };
-    return { kind: "wallpaper", id: desktopWallpaper };
+    return { kind: "wallpaper", id: desktopWallpaper === "custom" ? "space" : desktopWallpaper };
   }
 
-  const photoUrl = getWallpaperImageUrl(authWallpaper);
+  const photoUrl = getWallpaperImageUrl(authWallpaper, customDesktopImage);
   if (photoUrl) return { kind: "photo", url: photoUrl };
 
   return { kind: "wallpaper", id: normalizeWallpaper(authWallpaper) };

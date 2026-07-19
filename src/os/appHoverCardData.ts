@@ -1,46 +1,26 @@
 /**
- * Stub menu data for the shell app hovercard (port of Longformer tray-menu-data).
- * Profiles are UI-only for now — wire to real workspaces/accounts later.
+ * Action handlers for the shell app hovercard — window controls for one app.
  */
 
-export interface AppHoverProfile {
-  id: string;
-  label: string;
-}
-
 export interface AppHoverCardActionHandlers {
+  onOpen?: () => void;
+  onShow?: () => void;
+  onMinimize?: () => void;
+  onMaximize?: () => void;
+  onClose?: () => void;
+  /** Spawn another window (Drive and other multi-instance apps). */
   onNewWindow?: () => void;
-  onNewPrivateWindow?: () => void;
-  onShowAllWindows?: () => void;
-  onHide?: () => void;
-  onQuit?: () => void;
-  onSelectProfile?: (profileId: string) => void;
   onRemove?: () => void;
 }
 
-/** STUB: replace with real account/workspace profiles when available. */
-export function defaultProfilesForApp(appId: string): AppHoverProfile[] {
-  const bare = appId.includes(":") ? appId.slice(appId.indexOf(":") + 1) : appId;
-
-  if (bare === "chat" || bare === "longformer") {
-    return [
-      { id: "all-hands", label: "all-hands.dev" },
-      { id: "doctransit", label: "DocTransit" },
-      { id: "moon", label: "Moon" },
-      { id: "alex", label: "Alex" },
-      { id: "alex-dev", label: "alex-dev" },
-    ];
-  }
-
-  return [
-    { id: "default", label: "Default" },
-    { id: "work", label: "Work" },
-    { id: "personal", label: "Personal" },
-  ];
+/** Per-app window snapshot used to build the hovercard menu. */
+export interface AppHoverWindowState {
+  /** App has a window in the store (open or minimized). */
+  isOpen: boolean;
+  /** Window is visible and not minimized. */
+  isVisible: boolean;
+  /** Window is currently focused (topmost visible). */
+  isActive: boolean;
+  /** Window is maximized. */
+  isMaximized: boolean;
 }
-
-export const APP_HOVER_OPTIONS_ITEMS = [
-  { id: "preferences", label: "Preferences…" },
-  { id: "updates", label: "Check for Updates" },
-  { id: "open-login", label: "Open at Login" },
-] as const;

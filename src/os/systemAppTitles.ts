@@ -29,6 +29,7 @@ export const SYSTEM_APP_TITLE_KEYS: Record<SystemAppId, I18nKey> = {
   email: I18nKey.OS$APP_EMAIL,
   calendar: I18nKey.OS$APP_CALENDAR,
   tasks: I18nKey.OS$APP_TASKS,
+  board: I18nKey.OS$APP_BOARD,
   contacts: I18nKey.OS$APP_CONTACTS,
   groups: I18nKey.OS$APP_GROUPS,
   messenger: I18nKey.OS$APP_MESSENGER,

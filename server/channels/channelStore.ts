@@ -57,9 +57,38 @@ function slugify(name: string): string {
   );
 }
 
+function maskSecret(value: string | undefined): string {
+  if (!value) return "";
+  return `••••${value.slice(-4)}`;
+}
+
+const SECRET_OPTION_KEYS = new Set([
+  "password",
+  "secret",
+  "authToken",
+  "signingSecret",
+  "privateKey",
+  "nsec",
+]);
+
 /** Token masked to its tail — enough for recognition, useless for auth. */
 export function maskConfig(cfg: ChannelConfig): ChannelConfig {
-  return { ...cfg, token: cfg.token ? `••••${cfg.token.slice(-4)}` : "" };
+  const options = cfg.options
+    ? Object.fromEntries(
+        Object.entries(cfg.options).map(([k, v]) => [
+          k,
+          SECRET_OPTION_KEYS.has(k) || /secret|password|token|key/i.test(k)
+            ? maskSecret(v)
+            : v,
+        ]),
+      )
+    : undefined;
+  return {
+    ...cfg,
+    token: maskSecret(cfg.token),
+    ...(cfg.appToken ? { appToken: maskSecret(cfg.appToken) } : {}),
+    ...(options ? { options } : {}),
+  };
 }
 
 function chatKey(channelId: string, chatId: string): string {
@@ -75,7 +104,13 @@ export const channelStore = {
     return load().channels.find((c) => c.id === id);
   },
 
-  add(input: { kind: ChannelKind; name: string; token: string }): ChannelConfig {
+  add(input: {
+    kind: ChannelKind;
+    name: string;
+    token: string;
+    appToken?: string;
+    options?: Record<string, string>;
+  }): ChannelConfig {
     const file = load();
     let id = slugify(input.name);
     let n = 2;
@@ -85,6 +120,10 @@ export const channelStore = {
       kind: input.kind,
       name: input.name,
       token: input.token,
+      ...(input.appToken?.trim() ? { appToken: input.appToken.trim() } : {}),
+      ...(input.options && Object.keys(input.options).length
+        ? { options: { ...input.options } }
+        : {}),
       enabled: true,
       addedAt: new Date().toISOString(),
       requireMention: true,
@@ -96,7 +135,12 @@ export const channelStore = {
 
   update(
     id: string,
-    patch: Partial<Pick<ChannelConfig, "name" | "token" | "enabled" | "requireMention">>,
+    patch: Partial<
+      Pick<
+        ChannelConfig,
+        "name" | "token" | "appToken" | "options" | "enabled" | "requireMention"
+      >
+    >,
   ): ChannelConfig | undefined {
     const file = load();
     const cfg = file.channels.find((c) => c.id === id);
@@ -104,6 +148,19 @@ export const channelStore = {
     if (patch.name !== undefined) cfg.name = patch.name;
     // A mask echoed back from the Settings form must not clobber the secret.
     if (patch.token !== undefined && !patch.token.startsWith("••••")) cfg.token = patch.token;
+    if (patch.appToken !== undefined) {
+      if (!patch.appToken) delete cfg.appToken;
+      else if (!patch.appToken.startsWith("••••")) cfg.appToken = patch.appToken;
+    }
+    if (patch.options !== undefined) {
+      const merged = { ...(cfg.options ?? {}) };
+      for (const [k, v] of Object.entries(patch.options)) {
+        if (v.startsWith("••••")) continue;
+        if (!v) delete merged[k];
+        else merged[k] = v;
+      }
+      cfg.options = Object.keys(merged).length ? merged : undefined;
+    }
     if (patch.enabled !== undefined) cfg.enabled = patch.enabled;
     if (patch.requireMention !== undefined) cfg.requireMention = patch.requireMention;
     save(file);

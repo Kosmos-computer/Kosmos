@@ -34,6 +34,7 @@ export const SYSTEM_APP_CATALOG: SystemAppCatalogEntry[] = [
   { id: "email", title: "Email" },
   { id: "calendar", title: "Calendar" },
   { id: "tasks", title: "Tasks" },
+  { id: "board", title: "Board" },
   { id: "contacts", title: "Contacts" },
   { id: "groups", title: "Groups" },
   { id: "messenger", title: "Messenger" },

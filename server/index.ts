@@ -4,6 +4,9 @@
  * Routes:
  *   POST /api/chat                 — run an agent turn, stream AgentEvents over SSE
  *   GET  /api/sessions[/:id]      — session list / transcript
+ *   POST /api/sessions/:id/fork   — branch conversation into a new session
+ *   POST /api/sessions/:id/truncate — drop trailing messages (regenerate / edit)
+ *   POST /api/sessions/:id/restore-checkpoint — rewind chat and/or tracked files
  *   CRUD /api/apps                — generated apps + versions/restore
  *   POST /api/tools/invoke        — app runtime Query/Mutation bridge (no LLM)
  *   CRUD /api/automations         — schedules + run-now + history
@@ -89,6 +92,7 @@ import {
   workspaceStore,
 } from "./stores/workspaceStore.js";
 import { sessionStore } from "./stores/sessionStore.js";
+import { checkpointStore } from "./stores/checkpointStore.js";
 import { generatorCatalogStore } from "./stores/generatorCatalogStore.js";
 import { generateUiFromPrompt } from "./services/generatorService.js";
 import { imageGenStore } from "./stores/imageGenStore.js";
@@ -112,6 +116,10 @@ import "./channels/tools.js"; // registers channel_send with the agent registry
 import "./mail/tools.js"; // registers mail_list / mail_read / mail_send
 import { channelStore } from "./channels/channelStore.js";
 import { channelGateway } from "./channels/gateway.js";
+import { channelWebhookRoutes } from "./channels/webhookRoutes.js";
+import { pushWebhookInbound } from "./channels/adapters/webhookQueue.js";
+import { webchatDrainReplies } from "./channels/adapters/webchat.js";
+import { isChannelKind, CHANNEL_CATALOG } from "../shared/channelCatalog.js";
 import { handleOutwardMcp } from "./mcp/outward.js";
 import { externalClients } from "./platform/externalClients.js";
 import { skillStore } from "./skills/skillStore.js";
@@ -120,9 +128,11 @@ import { shellClientConnected, shellClientCount } from "./shellChannel.js";
 import { filesService } from "./services/filesService.js";
 import { calendarService } from "./services/calendarService.js";
 import { tasksService } from "./services/tasksService.js";
+import { boardService } from "./services/boardService.js";
 import { torrentService } from "./services/torrentService.js";
 import type { CalendarEventInput } from "../shared/capabilities/calendar.js";
 import type { TaskInput, TaskStatus } from "../shared/capabilities/tasks.js";
+import type { BoardColumnId, WorkItemInput } from "../shared/capabilities/board.js";
 import type { TorrentAddInput } from "../shared/capabilities/downloads.js";
 import { searchPlaces, geocodePlace, getDrivingRoute } from "./services/mapsService.js";
 import { webSearch } from "./services/searchService.js";
@@ -189,6 +199,7 @@ import { billingRoutes } from "./routes/billing.js";
 import { storageRoutes } from "./routes/storage.js";
 import { memoryRoutes } from "./routes/memory.js";
 import { agentRoutes } from "./routes/agents.js";
+import { packRoutes } from "./routes/packs.js";
 import { acpRoutes } from "./routes/acp.js";
 import { startTranscriptionSupervisor } from "./transcription/supervisor.js";
 import { listRemoteVideos, listRemotePodcastEpisodes } from "./services/mediaRemoteService.js";
@@ -331,6 +342,9 @@ app.route("/v1", openaiCompatRoutes);
 app.route("/api/transcription", transcriptionRoutes);
 app.route("/api/memory", memoryRoutes);
 app.route("/api/agents", agentRoutes);
+app.route("/api/packs", packRoutes);
+// Webhooks are unauthenticated by design (platform callbacks); verify per-adapter secrets later.
+app.route("/api/channels/webhook", channelWebhookRoutes);
 app.route("/api/acp", acpRoutes);
 
 // ── Model registry (docs/model-hub-plan.md) ──────────────────────────────────
@@ -498,14 +512,183 @@ app.delete("/api/sessions/:id", requireCap("chat"), async (c) => {
 });
 
 app.patch("/api/sessions/:id", requireCap("chat"), async (c) => {
-  const body = (await c.req.json()) as { title?: string };
-  const title = (body.title ?? "").trim();
-  if (!title) return c.json({ error: "title is required" }, 400);
+  const body = (await c.req.json()) as { title?: string; workItemId?: string | null };
+  const id = c.req.param("id");
   try {
-    const session = await sessionStore.updateTitle(c.req.param("id"), title);
+    if (body.workItemId !== undefined) {
+      const session = await sessionStore.setWorkItemId(id, body.workItemId);
+      if (!session) return c.json({ error: "Not found" }, 404);
+      if (body.workItemId) {
+        try {
+          boardService.linkSession(body.workItemId, id, { promoteInProgress: true });
+        } catch {
+          // Work item may have been deleted — session binding still saved.
+        }
+      }
+      if (typeof body.title === "string" && body.title.trim()) {
+        return c.json(await sessionStore.updateTitle(id, body.title.trim()));
+      }
+      return c.json(session);
+    }
+    const title = (body.title ?? "").trim();
+    if (!title) return c.json({ error: "title or workItemId is required" }, 400);
+    const session = await sessionStore.updateTitle(id, title);
     return c.json(session);
   } catch {
     return c.json({ error: "Not found" }, 404);
+  }
+});
+
+/** Count tracked file edits at/after a user message (for restore confirm copy). */
+app.get("/api/sessions/:id/checkpoint-edits", requireCap("chat"), async (c) => {
+  const from = Number(c.req.query("fromUserMessageIndex"));
+  if (!Number.isInteger(from) || from < 0) {
+    return c.json({ error: "fromUserMessageIndex is required" }, 400);
+  }
+  const session = await sessionStore.get(c.req.param("id"));
+  if (!session) return c.json({ error: "Not found" }, 404);
+  const editCount = await checkpointStore.editCountFrom(c.req.param("id"), from);
+  return c.json({ editCount });
+});
+
+/**
+ * Restore a checkpoint — Claude Code / Cursor style.
+ * mode=both → revert tracked file edits + truncate conversation
+ * mode=conversation → truncate only
+ * mode=code → revert tracked file edits only
+ * Saves a pending undo so the client can “Redo checkpoint” before the next turn.
+ */
+app.post("/api/sessions/:id/restore-checkpoint", requireCap("chat"), async (c) => {
+  const body = (await c.req.json()) as {
+    upToUserMessageIndex?: number;
+    mode?: "both" | "conversation" | "code";
+  };
+  const upTo = body.upToUserMessageIndex;
+  const mode = body.mode ?? "both";
+  if (typeof upTo !== "number" || !Number.isInteger(upTo) || upTo < 0) {
+    return c.json({ error: "upToUserMessageIndex is required" }, 400);
+  }
+  if (mode !== "both" && mode !== "conversation" && mode !== "code") {
+    return c.json({ error: "mode must be both, conversation, or code" }, 400);
+  }
+  const id = c.req.param("id");
+  const session = await sessionStore.get(id);
+  if (!session) return c.json({ error: "Not found" }, 404);
+  if (upTo >= session.messages.length || session.messages[upTo]?.role !== "user") {
+    return c.json({ error: "upToUserMessageIndex must point at a user message" }, 400);
+  }
+
+  const discardedMessages =
+    mode === "both" || mode === "conversation" ? session.messages.slice(upTo + 1) : [];
+  let restoredFiles: { path: string; content: string | null }[] = [];
+  let removedTurns = await checkpointStore.peekTurnsFrom(id, upTo);
+  let redoFiles: { path: string; content: string | null; diffBefore: string | null }[] = [];
+
+  try {
+    if (mode === "both" || mode === "code") {
+      const fileResult = await checkpointStore.restoreFilesFrom(id, upTo);
+      restoredFiles = fileResult.restoredFiles;
+      removedTurns = fileResult.removedTurns;
+      redoFiles = fileResult.redoFiles;
+    } else {
+      // Conversation-only: keep turn edit history for a later code restore, but
+      // still capture turns in the undo bundle if we drop them via truncate.
+      removedTurns = [];
+      redoFiles = [];
+    }
+    if (mode === "both" || mode === "conversation") {
+      await sessionStore.truncate(id, upTo + 1);
+    }
+    await checkpointStore.savePendingUndo({
+      sessionId: id,
+      mode,
+      discardedMessages,
+      removedTurns: mode === "conversation" ? [] : removedTurns,
+      redoFiles,
+      createdAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Restore failed";
+    return c.json({ error: message }, 400);
+  }
+
+  const next = await sessionStore.get(id);
+  return c.json({
+    session: next,
+    restoredFiles,
+    editCount: restoredFiles.length,
+    canUndo: true,
+  });
+});
+
+/** Undo the last restore (“Redo checkpoint” in Cursor) before the next turn. */
+app.post("/api/sessions/:id/redo-checkpoint", requireCap("chat"), async (c) => {
+  const id = c.req.param("id");
+  const undo = await checkpointStore.getPendingUndo(id);
+  if (!undo) return c.json({ error: "Nothing to redo" }, 404);
+
+  try {
+    let reappliedFiles: { path: string; content: string | null }[] = [];
+    if (undo.mode === "both" || undo.mode === "code") {
+      reappliedFiles = await checkpointStore.applyRedoFiles(undo.redoFiles);
+      await checkpointStore.restoreTurns(id, undo.removedTurns);
+    }
+    if ((undo.mode === "both" || undo.mode === "conversation") && undo.discardedMessages.length > 0) {
+      await sessionStore.appendMessagesRaw(id, undo.discardedMessages);
+    }
+    await checkpointStore.clearPendingUndo(id);
+    const session = await sessionStore.get(id);
+    return c.json({
+      session,
+      reappliedFiles,
+      redoFiles: undo.redoFiles,
+      mode: undo.mode,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Redo failed";
+    return c.json({ error: message }, 400);
+  }
+});
+
+/** Dismiss the pending restore undo without reapplying. */
+app.delete("/api/sessions/:id/restore-undo", requireCap("chat"), async (c) => {
+  await checkpointStore.clearPendingUndo(c.req.param("id"));
+  return c.json({ ok: true });
+});
+
+/** Drop trailing messages so a turn can be regenerated or edited. */
+app.post("/api/sessions/:id/truncate", requireCap("chat"), async (c) => {
+  const body = (await c.req.json()) as { keepCount?: number };
+  if (typeof body.keepCount !== "number" || !Number.isInteger(body.keepCount) || body.keepCount < 0) {
+    return c.json({ error: "keepCount is required" }, 400);
+  }
+  try {
+    const session = await sessionStore.truncate(c.req.param("id"), body.keepCount);
+    return c.json(session);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Truncate failed";
+    if (message.startsWith("Session not found")) return c.json({ error: message }, 404);
+    return c.json({ error: message }, 400);
+  }
+});
+
+/** Branch a conversation into a new session with history up to a message. */
+app.post("/api/sessions/:id/fork", requireCap("chat"), async (c) => {
+  const body = (await c.req.json()) as { upToMessageIndex?: number };
+  if (
+    typeof body.upToMessageIndex !== "number" ||
+    !Number.isInteger(body.upToMessageIndex) ||
+    body.upToMessageIndex < 0
+  ) {
+    return c.json({ error: "upToMessageIndex is required" }, 400);
+  }
+  try {
+    const session = await sessionStore.fork(c.req.param("id"), body.upToMessageIndex);
+    return c.json(session);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Fork failed";
+    if (message.startsWith("Session not found")) return c.json({ error: message }, 404);
+    return c.json({ error: message }, 400);
   }
 });
 
@@ -1887,6 +2070,70 @@ app.delete("/api/tasks/:id", (c) => {
   }
 });
 
+// ── Board (os.board@1 — SDLC work items) ─────────────────────────────────────
+
+app.get("/api/board/items", (c) => {
+  const columnId = c.req.query("columnId");
+  const projectId = c.req.query("projectId");
+  const archived = c.req.query("archived");
+  try {
+    return c.json(
+      boardService.list({
+        ...(columnId ? { columnId: columnId as BoardColumnId } : {}),
+        ...(projectId === "null"
+          ? { projectId: null }
+          : projectId
+            ? { projectId }
+            : {}),
+        ...(archived === "true" ? { archived: true } : { archived: false }),
+      }),
+    );
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 400);
+  }
+});
+
+app.get("/api/board/items/:id", (c) => {
+  const item = boardService.get(c.req.param("id"));
+  if (!item) return c.json({ error: "Work item not found" }, 404);
+  return c.json(item);
+});
+
+app.post("/api/board/items", async (c) => {
+  try {
+    const body = (await c.req.json()) as WorkItemInput;
+    return c.json(boardService.create(body), 201);
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 400);
+  }
+});
+
+app.patch("/api/board/items/:id", async (c) => {
+  try {
+    const body = (await c.req.json()) as Partial<WorkItemInput>;
+    return c.json(boardService.update(c.req.param("id"), body));
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 400);
+  }
+});
+
+app.post("/api/board/items/:id/move", async (c) => {
+  try {
+    const body = (await c.req.json()) as { columnId: BoardColumnId; position?: number };
+    return c.json(boardService.move(c.req.param("id"), body.columnId, body.position));
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 400);
+  }
+});
+
+app.delete("/api/board/items/:id", (c) => {
+  try {
+    return c.json({ deleted: boardService.delete(c.req.param("id")) });
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 400);
+  }
+});
+
 // ── Projects (open folders) ──────────────────────────────────────────────────
 
 app.get("/api/projects", (c) => c.json(projectStore.list()));
@@ -3173,18 +3420,37 @@ function parseTransport(raw: unknown): import("../shared/types.js").McpTransport
 
 app.get("/api/channels", (c) => c.json(channelGateway.list()));
 
+app.get("/api/channels/catalog", (c) => c.json(CHANNEL_CATALOG));
+
 app.post("/api/channels", requireCap("settings:write"), async (c) => {
-  const body = (await c.req.json()) as { kind?: string; name?: string; token?: string };
-  if (body.kind !== "telegram" && body.kind !== "discord") {
-    return c.json({ error: 'kind must be "telegram" or "discord"' }, 400);
+  const body = (await c.req.json()) as {
+    kind?: string;
+    name?: string;
+    token?: string;
+    appToken?: string;
+    options?: Record<string, string>;
+  };
+  if (!body.kind || !isChannelKind(body.kind)) {
+    return c.json({ error: "unknown channel kind" }, 400);
   }
-  if (!body.name?.trim() || !body.token?.trim()) {
-    return c.json({ error: "name and token are required" }, 400);
+  if (!body.name?.trim()) {
+    return c.json({ error: "name is required" }, 400);
+  }
+  const meta = CHANNEL_CATALOG.find((m) => m.kind === body.kind);
+  const tokenRequired = meta?.fields.some((f) => f.key === "token" && f.required !== false) ?? true;
+  // webchat: token optional room secret
+  if (tokenRequired && body.kind !== "webchat" && !body.token?.trim()) {
+    return c.json({ error: "token is required" }, 400);
+  }
+  if (body.kind === "slack" && !body.appToken?.trim()) {
+    return c.json({ error: "Slack requires appToken (xapp-… Socket Mode token)" }, 400);
   }
   const cfg = channelStore.add({
     kind: body.kind,
     name: body.name.trim(),
-    token: body.token.trim(),
+    token: body.token?.trim() || (body.kind === "webchat" ? "webchat" : ""),
+    ...(body.appToken?.trim() ? { appToken: body.appToken.trim() } : {}),
+    ...(body.options ? { options: body.options } : {}),
   });
   await channelGateway.sync(cfg.id);
   return c.json(channelGateway.list().find((ch) => ch.config.id === cfg.id));
@@ -3195,19 +3461,60 @@ app.patch("/api/channels/:id", requireCap("settings:write"), async (c) => {
   const body = (await c.req.json()) as {
     name?: string;
     token?: string;
+    appToken?: string;
+    options?: Record<string, string>;
     enabled?: boolean;
     requireMention?: boolean;
   };
   const patch: Parameters<typeof channelStore.update>[1] = {};
   if (typeof body.name === "string") patch.name = body.name.trim();
   if (typeof body.token === "string" && body.token.trim()) patch.token = body.token.trim();
+  if (typeof body.appToken === "string") patch.appToken = body.appToken.trim();
+  if (body.options && typeof body.options === "object") patch.options = body.options;
   if (typeof body.enabled === "boolean") patch.enabled = body.enabled;
   if (typeof body.requireMention === "boolean") patch.requireMention = body.requireMention;
   const cfg = channelStore.update(id, patch);
   if (!cfg) return c.json({ error: "Not found" }, 404);
-  // Token and enabled changes affect the live connection; a rename doesn't.
-  if (patch.token !== undefined || patch.enabled !== undefined) await channelGateway.sync(id);
+  if (
+    patch.token !== undefined ||
+    patch.appToken !== undefined ||
+    patch.options !== undefined ||
+    patch.enabled !== undefined
+  ) {
+    await channelGateway.sync(id);
+  }
   return c.json(channelGateway.list().find((ch) => ch.config.id === id));
+});
+
+/** WebChat client: post a message (triggers pairing / agent). */
+app.post("/api/channels/:id/webchat/messages", async (c) => {
+  const id = c.req.param("id");
+  const cfg = channelStore.get(id);
+  if (!cfg || cfg.kind !== "webchat" || !cfg.enabled) {
+    return c.json({ error: "WebChat channel not found" }, 404);
+  }
+  const body = (await c.req.json()) as { chatId?: string; text?: string; label?: string };
+  if (!body.chatId?.trim() || !body.text?.trim()) {
+    return c.json({ error: "chatId and text required" }, 400);
+  }
+  pushWebhookInbound(id, {
+    chatId: body.chatId.trim(),
+    label: body.label?.trim() || "WebChat guest",
+    text: body.text.trim(),
+    isGroup: false,
+    mentioned: true,
+  });
+  return c.json({ ok: true });
+});
+
+/** WebChat client: poll agent replies. */
+app.get("/api/channels/:id/webchat/messages", async (c) => {
+  const id = c.req.param("id");
+  const chatId = c.req.query("chatId");
+  if (!chatId) return c.json({ error: "chatId required" }, 400);
+  const cfg = channelStore.get(id);
+  if (!cfg || cfg.kind !== "webchat") return c.json({ error: "not found" }, 404);
+  return c.json({ messages: webchatDrainReplies(id, chatId) });
 });
 
 app.delete("/api/channels/:id", requireCap("settings:write"), (c) => {
@@ -3599,8 +3906,13 @@ void mcpSupervisor.start();
 // failures per channel.
 void channelGateway.start();
 startTranscriptionSupervisor();
-serve({ fetch: app.fetch, port, hostname: listenHost }, () => {
+const httpServer = serve({ fetch: app.fetch, port, hostname: listenHost }, () => {
   const host = listenHost ?? "localhost";
   console.log(`[arco] server listening on http://${host}:${port}`);
   console.log(`[arco] data dir: ${dataDirs.root}`);
 });
+void import("./channels/adapters/voiceStream.js").then(({ attachVoiceStreamUpgrade }) =>
+  attachVoiceStreamUpgrade(httpServer as import("node:http").Server).catch((err) =>
+    console.warn("[voicecall] stream upgrade:", err instanceof Error ? err.message : err),
+  ),
+);

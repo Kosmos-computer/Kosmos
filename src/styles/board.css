@@ -1,0 +1,423 @@
+/* Board — SDLC kanban */
+
+.arco-board {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--arco-bg-surface-solid);
+}
+
+/* Reset .arco-panel padding/gap — board owns its own edge insets. */
+.arco-panel.arco-board {
+  padding: 0;
+  gap: 0;
+}
+
+.arco-board__shell {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-m);
+  /* Top only — left inset lives on chrome/columns so overflow can't clip cards. */
+  padding: var(--arco-space-m) 0 0;
+  overflow: hidden;
+}
+
+.arco-board__chrome {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-m);
+  padding-inline: var(--arco-space-m);
+}
+
+.arco-board__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--arco-space-s);
+  align-items: center;
+}
+
+.arco-board__composer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-m);
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-m);
+  background: var(--arco-bg-elevated);
+}
+
+.arco-board__composer-desc {
+  resize: vertical;
+}
+
+.arco-board__composer-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--arco-space-s);
+  align-items: center;
+}
+
+.arco-board__composer input,
+.arco-board__composer textarea,
+.arco-board__quick-add input {
+  min-width: 0;
+  width: 100%;
+}
+
+.arco-board__canvas {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-s);
+  overflow: hidden;
+}
+
+.arco-board__toolbar {
+  display: flex;
+  gap: var(--arco-space-s);
+  flex-shrink: 0;
+}
+
+.arco-board__error {
+  color: var(--arco-danger, #c44);
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.arco-board__empty {
+  color: var(--arco-text-secondary);
+  font-size: 13px;
+  padding: var(--arco-space-m);
+  flex-shrink: 0;
+}
+
+.arco-board__columns {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: stretch;
+  gap: var(--arco-space-m);
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.arco-board__column {
+  flex: 0 0 260px;
+  align-self: stretch;
+  min-width: 220px;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-m);
+  background: var(--arco-bg-muted, var(--arco-bg-elevated));
+}
+
+/* Inset via margin on the columns (not parent padding) so borders aren't clipped. */
+.arco-board__column:first-child {
+  margin-left: var(--arco-space-m);
+}
+
+.arco-board__column:last-child {
+  margin-right: var(--arco-space-m);
+}
+
+.arco-board__column--over {
+  border-color: var(--arco-accent, var(--arco-border-strong));
+  box-shadow: inset 0 0 0 1px var(--arco-accent, transparent);
+}
+
+.arco-board__column-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-s) var(--arco-space-m);
+  border-bottom: 1px solid var(--arco-border);
+}
+
+.arco-board__column-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.arco-board__column-count {
+  font-size: 11px;
+  color: var(--arco-text-secondary);
+  min-width: 1.5em;
+  text-align: center;
+}
+
+.arco-board__column-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-s);
+  padding: var(--arco-space-s);
+}
+
+.arco-board__column-empty {
+  font-size: 12px;
+  color: var(--arco-text-tertiary, var(--arco-text-secondary));
+  padding: var(--arco-space-m);
+  text-align: center;
+  border: 1px dashed var(--arco-border);
+  border-radius: var(--arco-radius-s);
+}
+
+.arco-board__card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--arco-space-s) var(--arco-space-m);
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-s);
+  background: var(--arco-bg-surface-solid);
+  cursor: grab;
+  text-align: left;
+}
+
+.arco-board__card:active {
+  cursor: grabbing;
+}
+
+.arco-board__card--selected {
+  border-color: var(--arco-accent, var(--arco-border-strong));
+}
+
+.arco-board__card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--arco-space-s);
+}
+
+.arco-board__card-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.arco-board__card-menu {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.arco-board__card-more {
+  opacity: 0.35;
+}
+
+.arco-board__card-desc {
+  margin: 0;
+  font-size: 12px;
+  color: var(--arco-text-secondary);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.arco-board__card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.arco-board__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 2px 6px;
+  border-radius: var(--arco-radius-s);
+  background: var(--arco-bg-muted, var(--arco-bg-elevated));
+  color: var(--arco-text-secondary);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arco-board__pill--high {
+  color: var(--arco-danger, #c44);
+}
+
+.arco-board__sessions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.arco-board__session {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: var(--arco-radius-s);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.arco-board__session:hover {
+  background: var(--arco-bg-muted, var(--arco-bg-elevated));
+}
+
+.arco-board__session--empty {
+  color: var(--arco-text-secondary);
+}
+
+.arco-board__session-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arco-board__run {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--arco-text-tertiary, var(--arco-text-secondary));
+}
+
+.arco-board__run--streaming {
+  color: var(--arco-accent, #2a7);
+}
+
+.arco-board__run--blocked {
+  color: var(--arco-warning, #c80);
+}
+
+.arco-board__run--error {
+  color: var(--arco-danger, #c44);
+}
+
+/* Studio main content (center pane, right of left nav) */
+.arco-board--studio-main {
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+}
+
+.arco-board--studio-main .arco-board__shell {
+  height: 100%;
+}
+
+.arco-board__studio-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--arco-space-m);
+  padding: 0 var(--arco-space-m);
+}
+
+.arco-board__studio-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.arco-board__studio-sub {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--arco-text-secondary);
+}
+
+/* Studio drawer variant */
+.arco-board--drawer {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: var(--arco-space-s);
+  gap: var(--arco-space-s);
+  overflow: hidden;
+}
+
+.arco-board--drawer .arco-board__drawer-head,
+.arco-board--drawer .arco-board__quick-add {
+  flex-shrink: 0;
+}
+
+.arco-board--drawer .arco-board__canvas {
+  flex: 1;
+  min-height: 0;
+}
+
+.arco-board__drawer-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--arco-space-s);
+}
+
+.arco-board__drawer-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.arco-board__drawer-sub {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: var(--arco-text-secondary);
+}
+
+.arco-board__quick-add {
+  display: flex;
+  gap: var(--arco-space-s);
+}
+
+.arco-board__quick-add input {
+  flex: 1;
+  min-width: 0;
+}
+
+.arco-board__canvas--compact .arco-board__column {
+  flex: 0 0 200px;
+  min-width: 180px;
+}
+
+.arco-board__card--compact .arco-board__card-desc {
+  display: none;
+}
+
+/* New work item modal — room for the composer + bottom rail */
+.arco-board-modal {
+  width: min(100%, 640px);
+  max-height: min(92vh, 780px);
+}
+
+.arco-board-modal__composer {
+  gap: var(--arco-space-s);
+}
+
+.arco-board-modal__composer .arco-composer {
+  margin: 0;
+}

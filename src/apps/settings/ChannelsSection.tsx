@@ -2,16 +2,18 @@ import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
 import { T } from "../../i18n/T";
 /**
- * Settings → Channels — external messaging gateways (Telegram first).
+ * Settings → Channels — catalog-driven messaging gateways (OpenClaw-aligned).
  */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Check, ExternalLink, MessageCircle, Plus, RotateCw, Trash2, X } from "lucide-react";
-import type { ChannelInfo, ChannelStatus } from "@shared/types";
+import type { ChannelInfo, ChannelKind, ChannelStatus } from "@shared/types";
+import { CHANNEL_CATALOG, channelMeta } from "@shared/channelCatalog";
 import type { AgentProfile } from "@shared/agents";
 import { BUILTIN_AGENT_ID } from "@shared/agents";
 import { api } from "../../lib/api";
 import { useCan } from "../../os/auth/authStore";
 import {
+  ModuleFilterSelect,
   SettingsAlert,
   SettingsEmpty,
   SettingsFieldRow,
@@ -27,6 +29,15 @@ import {
   SettingsSubhead,
 } from "../../components/patterns";
 import { Button, Chip, Input } from "../../components/ui";
+
+const CHANNEL_KIND_OPTIONS = CHANNEL_CATALOG.map((m) => ({
+  value: m.kind,
+  label: `${m.label}${m.maturity === "bridge" ? " (bridge)" : m.maturity === "experimental" ? " (exp)" : ""}`,
+}));
+
+function defaultNameForKind(kind: ChannelKind): string {
+  return channelMeta(kind)?.label ?? kind;
+}
 
 function telegramUrl(botName: string | undefined): string | null {
   if (!botName?.startsWith("@")) return null;
@@ -46,6 +57,10 @@ function statusColor(status: ChannelStatus): string {
   }
 }
 
+function supportsMentionToggle(kind: ChannelKind): boolean {
+  return kind === "telegram" || kind === "discord" || kind === "slack" || kind === "irc" || kind === "mattermost";
+}
+
 export function ChannelsSection() {
   const canManage = useCan("settings:write");
   const [channels, setChannels] = useState<ChannelInfo[]>([]);
@@ -53,9 +68,19 @@ export function ChannelsSection() {
   const [error, setError] = useState<string | null>(null);
 
   const [adding, setAdding] = useState(false);
-  const [kind, setKind] = useState<"telegram" | "discord">("telegram");
+  const [kind, setKind] = useState<ChannelKind>("telegram");
   const [name, setName] = useState("");
   const [token, setToken] = useState("");
+  const [appToken, setAppToken] = useState("");
+  const [optionValues, setOptionValues] = useState<Record<string, string>>({});
+
+  const meta = useMemo(() => channelMeta(kind), [kind]);
+  const optionFields = useMemo(
+    () => (meta?.fields ?? []).filter((f) => f.key !== "token" && f.key !== "appToken"),
+    [meta],
+  );
+  const tokenField = meta?.fields.find((f) => f.key === "token");
+  const appTokenField = meta?.fields.find((f) => f.key === "appToken");
 
   const refresh = useCallback(async () => {
     try {
@@ -79,12 +104,35 @@ export function ChannelsSection() {
     setChannels((list) => list.map((ch) => (ch.config.id === updated.config.id ? updated : ch)));
   };
 
+  const requiredOptionsOk = optionFields
+    .filter((f) => f.required)
+    .every((f) => Boolean(optionValues[f.key]?.trim()));
+  const tokenOk = tokenField?.required === false || kind === "webchat" || Boolean(token.trim());
+  const canConnect =
+    Boolean(name.trim()) &&
+    tokenOk &&
+    (!appTokenField?.required || Boolean(appToken.trim())) &&
+    requiredOptionsOk;
+
   const add = async () => {
-    if (!name.trim() || !token.trim()) return;
+    if (!canConnect) return;
     try {
-      await api.addChannel({ kind, name: name.trim(), token: token.trim() });
+      const options: Record<string, string> = {};
+      for (const f of optionFields) {
+        const v = optionValues[f.key]?.trim();
+        if (v) options[f.key] = v;
+      }
+      await api.addChannel({
+        kind,
+        name: name.trim(),
+        token: token.trim(),
+        ...(appToken.trim() ? { appToken: appToken.trim() } : {}),
+        ...(Object.keys(options).length ? { options } : {}),
+      });
       setName("");
       setToken("");
+      setAppToken("");
+      setOptionValues({});
       setKind("telegram");
       setAdding(false);
       await refresh();
@@ -99,24 +147,59 @@ export function ChannelsSection() {
     await refresh();
   };
 
+  const contentBound = agents.some((a) => a.id === "agent:user:content");
+  const hasSlack = channels.some((c) => c.config.kind === "slack");
+
   return (
     <SettingsPage>
-      <SettingsSection intro={i18n.t(I18nKey.APPS$SETTINGS_TALK_TO_THE_AGENT_FROM_TELEGRAM_ON_YOUR_PHONE_UNKNOWN_SE)}>
+      <SettingsSection intro="Talk to the agent from Telegram, Slack, Discord, and other catalog channels. Unknown senders get a pairing code you approve here. Tool confirms can be answered in-chat with /approve CODE (Slack also gets buttons). Bridge/experimental kinds need external setup.">
+        {contentBound && !hasSlack ? (
+          <SettingsAlert tone="muted">
+            Content Agent is installed. Connect Slack below so it can deliver drafts and ask for
+            approval where your team already works. Hosted instances that scale to zero may delay
+            weekly automations until the machine wakes.
+          </SettingsAlert>
+        ) : null}
+
         {!adding && channels.length === 0 ? (
-          <SettingsPanel>
-            <SettingsPanelBody>
-              <span className="arco-settings-group-label"><T k={I18nKey.APPS$SETTINGS_QUICK_START_2_MIN} /></span>
-              <ol className="arco-settings-intro" style={{ margin: 0, paddingLeft: "1.25rem" }}>
-                <li><T k={I18nKey.APPS$SETTINGS_IN_TELEGRAM_MESSAGE} /><strong><T k={I18nKey.APPS$SETTINGS_BOTFATHER} /></strong><T k={I18nKey.APPS$SETTINGS_AND_SEND} /><code className="arco-code arco-code--xs"><T k={I18nKey.APPS$SETTINGS_NEWBOT} /></code>
+          <SettingsStack>
+            <SettingsRow>
+              <span className="arco-settings-panel__title">
+                <T k={I18nKey.APPS$SETTINGS_QUICK_START_2_MIN} />
+              </span>
+            </SettingsRow>
+            <div className="arco-settings-account-card__body arco-settings-quickstart">
+              <ol className="arco-settings-quickstart__steps">
+                <li>
+                  <strong>Telegram:</strong> message{" "}
+                  <strong>
+                    <T k={I18nKey.APPS$SETTINGS_BOTFATHER} />
+                  </strong>{" "}
+                  →{" "}
+                  <code className="arco-code arco-code--xs">
+                    <T k={I18nKey.APPS$SETTINGS_NEWBOT} />
+                  </code>
+                  , paste the bot token below.
                 </li>
-                <li><T k={I18nKey.APPS$SETTINGS_COPY_THE_BOT_TOKEN_BOTFATHER_REPLIES_WITH} /></li>
-                <li><T k={I18nKey.APPS$SETTINGS_CLICK} /><strong><T k={I18nKey.APPS$SETTINGS_ADD_TELEGRAM} /></strong><T k={I18nKey.APPS$SETTINGS_BELOW_AND_PASTE_THE_TOKEN} /></li>
-                <li><T k={I18nKey.APPS$SETTINGS_OPEN_YOUR_NEW_BOT_IN_TELEGRAM_SEND_ANY_MESSAGE_THEN_APPR} /></li>
+                <li>
+                  <strong>Slack:</strong> create a Slack app, enable <em>Socket Mode</em>, add an
+                  app-level token (`connections:write`), install the bot (`xoxb-…`), subscribe to{" "}
+                  <code className="arco-code arco-code--xs">message.im</code> and{" "}
+                  <code className="arco-code arco-code--xs">app_mention</code>, then paste both
+                  tokens below.
+                </li>
+                <li>Open the bot, send any message, then approve the pairing request here.</li>
+                <li>Bind the chat to an agent profile (e.g. Content) under Approved chats.</li>
               </ol>
-              <p className="arco-settings-intro"><T k={I18nKey.APPS$SETTINGS_TIP_SET} /><code className="arco-code arco-code--xs">TELEGRAM_BOT_TOKEN</code><T k={I18nKey.APPS$SETTINGS_IN} />{" "}
-                <code className="arco-code arco-code--xs"><T k={I18nKey.APPS$SETTINGS_ENV} /></code><T k={I18nKey.APPS$SETTINGS_TO_AUTO_CONNECT_ON_SERVER_START} /></p>
-            </SettingsPanelBody>
-          </SettingsPanel>
+              <p className="arco-settings-quickstart__tip">
+                Tip: set{" "}
+                <code className="arco-code arco-code--xs">TELEGRAM_BOT_TOKEN</code> or{" "}
+                <code className="arco-code arco-code--xs">SLACK_BOT_TOKEN</code> +{" "}
+                <code className="arco-code arco-code--xs">SLACK_APP_TOKEN</code> in{" "}
+                <code className="arco-code arco-code--xs">.env</code> to auto-connect on server start.
+              </p>
+            </div>
+          </SettingsStack>
         ) : null}
         <SettingsRow>
           <MessageCircle size={14} className="arco-icon arco-icon--secondary" />
@@ -134,71 +217,86 @@ export function ChannelsSection() {
         {adding && (
           <>
             <SettingsSubhead>Connect a messaging channel</SettingsSubhead>
-            <p className="arco-settings-intro">
-              {kind === "telegram" ? (
-                <>
-                  <T k={I18nKey.APPS$SETTINGS_NEED_A_TOKEN_MESSAGE} />
-                  <strong>
-                    <T k={I18nKey.APPS$SETTINGS_BOTFATHER} />
-                  </strong>{" "}
-                  →{" "}
-                  <code className="arco-code arco-code--xs">
-                    <T k={I18nKey.APPS$SETTINGS_NEWBOT} />
-                  </code>
-                  <T k={I18nKey.APPS$SETTINGS_FOLLOW_THE_PROMPTS_PASTE_THE_TOKEN_BELOW} />
-                </>
-              ) : (
-                <>
-                  Create a Discord application at the Discord Developer Portal, enable the Bot,
-                  copy the bot token, and turn on Message Content Intent under Privileged Gateway
-                  Intents.
-                </>
-              )}
-            </p>
+            <p className="arco-settings-intro">{meta?.setup ?? "Configure credentials below."}</p>
+            {meta?.maturity === "bridge" || meta?.maturity === "experimental" ? (
+              <SettingsAlert tone="muted">
+                Maturity: {meta.maturity}. {meta.description}
+              </SettingsAlert>
+            ) : null}
             <SettingsStack>
-              <SettingsFieldRow label="Platform" htmlFor="ch-kind">
-                <select
-                  id="ch-kind"
-                  className="arco-input"
+              <SettingsFieldRow label="Platform">
+                <ModuleFilterSelect
+                  label="Platform"
                   value={kind}
-                  onChange={(e) => {
-                    const next = e.target.value === "discord" ? "discord" : "telegram";
-                    setKind(next);
-                    if (!name.trim() || name === "Telegram" || name === "Discord") {
-                      setName(next === "discord" ? "Discord" : "Telegram");
-                    }
+                  options={[...CHANNEL_KIND_OPTIONS]}
+                  onChange={(next) => {
+                    const k = next as ChannelKind;
+                    setKind(k);
+                    setOptionValues({});
+                    setAppToken("");
+                    setToken("");
+                    setName(defaultNameForKind(k));
                   }}
-                >
-                  <option value="telegram">Telegram</option>
-                  <option value="discord">Discord</option>
-                </select>
+                />
               </SettingsFieldRow>
               <SettingsFieldRow label={i18n.t(I18nKey.APPS$SKILLS_NAME)} htmlFor="ch-name">
                 <Input
                   id="ch-name"
                   width="auto"
                   value={name}
-                  placeholder={kind === "discord" ? "Discord" : i18n.t(I18nKey.APPS$SETTINGS_TELEGRAM)}
+                  placeholder={defaultNameForKind(kind)}
                   onChange={(e) => setName(e.target.value)}
                 />
               </SettingsFieldRow>
               <SettingsFieldRow
-                label={i18n.t(I18nKey.APPS$SETTINGS_BOT_TOKEN)}
+                label={tokenField?.label ?? i18n.t(I18nKey.APPS$SETTINGS_BOT_TOKEN)}
                 htmlFor="ch-token"
-                hint={kind === "discord" ? "From Discord Developer Portal → Bot" : "From @BotFather"}
+                hint={tokenField?.hint}
               >
                 <Input
                   id="ch-token"
                   width="auto"
-                  type="password"
+                  type={tokenField?.secret === false ? "text" : "password"}
                   value={token}
-                  placeholder={i18n.t(I18nKey.APPS$SETTINGS_123456789_AA)}
+                  placeholder={tokenField?.placeholder ?? i18n.t(I18nKey.APPS$SETTINGS_123456789_AA)}
                   onChange={(e) => setToken(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && void add()}
                 />
               </SettingsFieldRow>
+              {appTokenField ? (
+                <SettingsFieldRow
+                  label={appTokenField.label}
+                  htmlFor="ch-app-token"
+                  hint={appTokenField.hint}
+                >
+                  <Input
+                    id="ch-app-token"
+                    width="auto"
+                    type={appTokenField.secret === false ? "text" : "password"}
+                    value={appToken}
+                    placeholder={appTokenField.placeholder}
+                    onChange={(e) => setAppToken(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && void add()}
+                  />
+                </SettingsFieldRow>
+              ) : null}
+              {optionFields.map((f) => (
+                <SettingsFieldRow key={f.key} label={f.label} htmlFor={`ch-opt-${f.key}`} hint={f.hint}>
+                  <Input
+                    id={`ch-opt-${f.key}`}
+                    width="auto"
+                    type={f.secret ? "password" : "text"}
+                    value={optionValues[f.key] ?? ""}
+                    placeholder={f.placeholder}
+                    onChange={(e) =>
+                      setOptionValues((prev) => ({ ...prev, [f.key]: e.target.value }))
+                    }
+                    onKeyDown={(ev) => ev.key === "Enter" && void add()}
+                  />
+                </SettingsFieldRow>
+              ))}
               <SettingsFieldRow label=" ">
-                <Button variant="primary" disabled={!name.trim() || !token.trim()} onClick={() => void add()}>
+                <Button variant="primary" disabled={!canConnect} onClick={() => void add()}>
                   <T k={I18nKey.COMMON$CONNECT} />
                 </Button>
                 <Button onClick={() => setAdding(false)}>
@@ -250,20 +348,36 @@ export function ChannelsSection() {
 
                 {ch.error ? <SettingsAlert tone="error">{ch.error}</SettingsAlert> : null}
 
-                {ch.status === "running" && ch.config.kind === "telegram" && telegramUrl(ch.botName) ? (
+                {ch.status === "running" && supportsMentionToggle(ch.config.kind) ? (
                   <SettingsPanelBody>
-                    <SettingsRow>
-                      <span className="arco-settings-tool-row__desc"><T k={I18nKey.APPS$SETTINGS_MESSAGE} />{ch.botName}<T k={I18nKey.APPS$SETTINGS_IN_TELEGRAM_TO_TALK_TO_THE_AGENT} /></span>
-                      <SettingsRowActions>
-                        <a
-                          className="arco-btn"
-                          href={telegramUrl(ch.botName)!}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          <ExternalLink size={13} /><T k={I18nKey.APPS$SETTINGS_OPEN_IN_TELEGRAM} /></a>
-                      </SettingsRowActions>
-                    </SettingsRow>
+                    {ch.config.kind === "telegram" && telegramUrl(ch.botName) ? (
+                      <SettingsRow>
+                        <span className="arco-settings-tool-row__desc">
+                          <T k={I18nKey.APPS$SETTINGS_MESSAGE} />
+                          {ch.botName}
+                          <T k={I18nKey.APPS$SETTINGS_IN_TELEGRAM_TO_TALK_TO_THE_AGENT} />
+                        </span>
+                        <SettingsRowActions>
+                          <a
+                            className="arco-btn"
+                            href={telegramUrl(ch.botName)!}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            <ExternalLink size={13} />
+                            <T k={I18nKey.APPS$SETTINGS_OPEN_IN_TELEGRAM} />
+                          </a>
+                        </SettingsRowActions>
+                      </SettingsRow>
+                    ) : null}
+                    {ch.config.kind === "slack" ? (
+                      <SettingsRow>
+                        <span className="arco-settings-tool-row__desc">
+                          DM the bot or @mention it in a channel. Approvals appear as Slack buttons
+                          (or reply /approve CODE).
+                        </span>
+                      </SettingsRow>
+                    ) : null}
                     {canManage && (
                       <SettingsRow>
                         <span className="arco-settings-tool-row__desc">
@@ -328,12 +442,24 @@ export function ChannelsSection() {
                         <code className="arco-code arco-code--xs">{peer.chatId}</code>
                         {canManage && (
                           <SettingsRowActions>
-                            <select
-                              className="arco-input"
-                              aria-label={`Agent for ${peer.label}`}
+                            <ModuleFilterSelect
+                              label={`Agent for ${peer.label}`}
                               value={peer.profileId ?? ""}
-                              onChange={(event) => {
-                                const value = event.target.value;
+                              options={[
+                                {
+                                  value: "",
+                                  label: `Default (${agents.find((a) => a.id === BUILTIN_AGENT_ID)?.name ?? "Arco"})`,
+                                },
+                                ...agents
+                                  .filter((a) => a.id !== BUILTIN_AGENT_ID)
+                                  .map((a) => ({ value: a.id, label: a.name })),
+                                ...(peer.profileId &&
+                                !agents.some((a) => a.id === peer.profileId) &&
+                                peer.profileId !== BUILTIN_AGENT_ID
+                                  ? [{ value: peer.profileId, label: `${peer.profileId} (unavailable)` }]
+                                  : []),
+                              ]}
+                              onChange={(value) => {
                                 void api
                                   .updateChannelPeer(ch.config.id, peer.chatId, {
                                     profileId: value || null,
@@ -345,25 +471,7 @@ export function ChannelsSection() {
                                     ),
                                   );
                               }}
-                              style={{ minWidth: "9rem", maxWidth: "14rem" }}
-                            >
-                              <option value="">
-                                Default ({agents.find((a) => a.id === BUILTIN_AGENT_ID)?.name ?? "Arco"})
-                              </option>
-                              {agents
-                                .filter((a) => a.id !== BUILTIN_AGENT_ID)
-                                .map((a) => (
-                                  <option key={a.id} value={a.id}>
-                                    {a.name}
-                                  </option>
-                                ))}
-                              {/* Keep a selected disabled/deleted id visible until rebound */}
-                              {peer.profileId &&
-                              !agents.some((a) => a.id === peer.profileId) &&
-                              peer.profileId !== BUILTIN_AGENT_ID ? (
-                                <option value={peer.profileId}>{peer.profileId} (unavailable)</option>
-                              ) : null}
-                            </select>
+                            />
                             <Button
                               size="icon"
                               onClick={() => void api.removeChannelPeer(ch.config.id, peer.chatId).then(patchRow)}

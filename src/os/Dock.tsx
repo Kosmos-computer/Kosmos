@@ -13,7 +13,7 @@ import { Menu } from "../components/Menu";
 import { I18nKey } from "../i18n/declaration";
 import { useOsStore } from "./osStore";
 import { useWindowStore } from "./windowStore";
-import { activateShellWindow } from "./shellNavigation";
+import { activateShellWindow, openNewShellWindow } from "./shellNavigation";
 import { useShellApps, type ShellAppEntry } from "./shellApps";
 import {
   addPinned,
@@ -25,12 +25,11 @@ import {
 } from "./pinnedApps";
 import { useAppPinDrag } from "./useAppPinDrag";
 import { AppHoverCard } from "./AppHoverCard";
-import { appHoverCardHandlers } from "./appHoverCardHandlers";
+import { appHoverCardHandlers, getAppHoverWindowState } from "./appHoverCardHandlers";
+import { allowsMultipleWindows, windowMatchesApp } from "./windowStore";
 
 function DockItem({
   entry,
-  open,
-  active,
   isDragging,
   isUndocking,
   dropBefore,
@@ -38,10 +37,9 @@ function DockItem({
   onSelect,
   onRemove,
   windows,
+  focusedId,
 }: {
   entry: ShellAppEntry;
-  open: boolean;
-  active: boolean;
   isDragging: boolean;
   isUndocking: boolean;
   dropBefore: boolean;
@@ -49,13 +47,16 @@ function DockItem({
   onSelect: () => void;
   onRemove: () => void;
   windows: ReturnType<typeof useWindowStore.getState>["windows"];
+  focusedId?: string;
 }) {
   const Icon = entry.icon;
   const label = entry.title;
   const focus = useWindowStore((s) => s.focus);
   const toggleMinimize = useWindowStore((s) => s.toggleMinimize);
+  const toggleMaximize = useWindowStore((s) => s.toggleMaximize);
   const close = useWindowStore((s) => s.close);
-  const openWindowCount = windows.filter((w) => w.id === entry.id && !w.minimized).length;
+  const windowState = getAppHoverWindowState(entry.id, windows, focusedId);
+  const open = windowState.isOpen;
 
   return (
     <div
@@ -73,9 +74,7 @@ function DockItem({
         appId={entry.id}
         label={label}
         icon={Icon}
-        running={open}
-        active={active}
-        openWindowCount={openWindowCount}
+        windowState={windowState}
         placement="top"
         openOn="hover"
         removeLabel={i18n.t(I18nKey.OS$DOCK_REMOVE)}
@@ -84,7 +83,11 @@ function DockItem({
           onLaunch: onSelect,
           onFocus: focus,
           onMinimize: toggleMinimize,
+          onMaximize: toggleMaximize,
           onClose: close,
+          onNewWindow: allowsMultipleWindows(entry.kind)
+            ? () => openNewShellWindow(entry.kind, entry.title)
+            : undefined,
           onRemove,
         })}
       >
@@ -134,7 +137,7 @@ export function Dock() {
     },
   });
 
-  const isOpen = (key: string) => windows.some((w) => w.id === key);
+  const isOpen = (key: string) => windows.some((w) => windowMatchesApp(w.id, key));
   const focusedId = [...windows.filter((w) => !w.minimized)].sort((a, b) => b.z - a.z)[0]?.id;
   const visiblePinned = pinned.slice(0, DOCK_VISIBLE_APP_LIMIT);
   const overflowPinned = pinned.slice(DOCK_VISIBLE_APP_LIMIT);
@@ -150,8 +153,6 @@ export function Dock() {
             <DockItem
               key={entry.id}
               entry={entry}
-              open={isOpen(entry.id)}
-              active={focusedId === entry.id}
               isDragging={draggingId === entry.id}
               isUndocking={isUndocking}
               dropBefore={draggingId !== null && draggingId !== entry.id && overIndex === index}
@@ -159,6 +160,7 @@ export function Dock() {
               onSelect={() => openApp(entry)}
               onRemove={() => setDockPinnedIds((prev) => removePinned(prev, entry.id))}
               windows={windows}
+              focusedId={focusedId}
             />
           ))}
         </div>

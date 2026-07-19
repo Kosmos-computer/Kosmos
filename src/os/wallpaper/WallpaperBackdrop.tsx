@@ -14,8 +14,9 @@ const GameWorldWallpaper = lazy(() => import("./GameWorldWallpaper"));
 
 export function WallpaperBackdrop() {
   const wallpaper = useOsStore((s) => s.wallpaper);
+  const customWallpaperImage = useOsStore((s) => s.customWallpaperImage);
   const theme = useOsStore((s) => s.theme);
-  const imageUrl = getWallpaperImageUrl(wallpaper);
+  const imageUrl = getWallpaperImageUrl(wallpaper, customWallpaperImage);
 
   if (imageUrl) {
     return (

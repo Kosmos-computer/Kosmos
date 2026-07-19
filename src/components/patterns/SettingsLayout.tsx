@@ -35,9 +35,13 @@ export function SettingsGroupLabel({ children }: { children: ReactNode }) {
   return <div className="arco-settings-group-label">{children}</div>;
 }
 
-/** Rows separated by hairline dividers (Longformer field/toggle rows). */
+/** Rows separated by hairline dividers in a rounded stroke group. */
 export function SettingsStack({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <div className={["arco-settings-stack", className].filter(Boolean).join(" ")}>{children}</div>;
+  return (
+    <div className={["arco-settings-stack", "arco-settings-stack--card", className].filter(Boolean).join(" ")}>
+      {children}
+    </div>
+  );
 }
 
 export interface SettingsRowProps {
@@ -59,12 +63,28 @@ export interface SettingsFieldRowProps {
   children: ReactNode;
   htmlFor?: string;
   alignTop?: boolean;
+  /** Label above a full-width control (grids, media pickers). */
+  layout?: "inline" | "stack";
 }
 
 /** Label column + control column (Discord/Longformer settings field layout). */
-export function SettingsFieldRow({ label, hint, children, htmlFor, alignTop }: SettingsFieldRowProps) {
+export function SettingsFieldRow({
+  label,
+  hint,
+  children,
+  htmlFor,
+  alignTop,
+  layout = "inline",
+}: SettingsFieldRowProps) {
   return (
-    <SettingsRow className={alignTop ? "arco-settings-row--align-top" : ""}>
+    <SettingsRow
+      className={[
+        alignTop ? "arco-settings-row--align-top" : "",
+        layout === "stack" ? "arco-settings-row--stack" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
       <div className="arco-settings-row__label">
         {htmlFor ? <label htmlFor={htmlFor}>{label}</label> : label}
         {hint ? <span className="arco-settings-row__hint">{hint}</span> : null}

@@ -63,6 +63,8 @@ import { sessionStore } from "../stores/sessionStore.js";
  * flight, so pointing it at the current turn's SSE sink is always correct.
  */
 interface AcpRun {
+  /** Arco chat session id (checkpoint / transcript key). */
+  arcoSessionId: string;
   command: string;
   child: ChildProcessWithoutNullStreams;
   conn: ClientSideConnection;
@@ -298,9 +300,16 @@ function makeClient(run: AcpRun): Client {
       const before = await fsp.readFile(abs, "utf-8").catch(() => null);
       await fsp.mkdir(path.dirname(abs), { recursive: true });
       await fsp.writeFile(abs, params.content, "utf-8");
+      const rel = path.relative(realish(getActiveRoot()), abs);
       run.emit({
         type: "file_changed",
-        path: path.relative(realish(getActiveRoot()), abs),
+        path: rel,
+        before,
+        after: params.content,
+      });
+      const { checkpointStore } = await import("../stores/checkpointStore.js");
+      void checkpointStore.recordEdit(run.arcoSessionId, {
+        path: rel,
         before,
         after: params.content,
       });
@@ -335,6 +344,7 @@ async function spawnRun(
   });
 
   const run: AcpRun = {
+    arcoSessionId,
     command,
     child,
     conn: undefined as unknown as ClientSideConnection,

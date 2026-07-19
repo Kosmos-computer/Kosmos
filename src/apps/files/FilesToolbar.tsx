@@ -2,6 +2,7 @@ import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
 import { useMemo } from "react";
 import {
+  AppWindow,
   ClipboardPaste,
   Download,
   FolderPlus,
@@ -79,6 +80,7 @@ export interface FilesToolbarProps {
   onDeleteForeverSelected?: () => void;
   onPaste?: () => void;
   canPaste?: boolean;
+  onNewWindow?: () => void;
 }
 
 export function FilesToolbar({
@@ -107,6 +109,7 @@ export function FilesToolbar({
   onDeleteForeverSelected,
   onPaste,
   canPaste = false,
+  onNewWindow,
 }: FilesToolbarProps) {
   const sortFilterItems = useMemo<MenuItem[]>(
     () => [
@@ -146,6 +149,15 @@ export function FilesToolbar({
         label: i18n.t(I18nKey.COMMON$REFRESH),
         icon: RefreshCw,
         onSelect: onRefresh,
+      });
+    }
+
+    if (onNewWindow) {
+      items.push({
+        id: "new-window",
+        label: "New Window",
+        icon: AppWindow,
+        onSelect: onNewWindow,
       });
     }
 
@@ -283,6 +295,7 @@ export function FilesToolbar({
     onRefresh,
     onRenameSelected,
     onPaste,
+    onNewWindow,
     onRestoreSelected,
     onShareSelected,
     onToggleStarSelected,

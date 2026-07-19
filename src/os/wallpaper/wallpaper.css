@@ -114,13 +114,71 @@
   box-shadow: 0 0 0 1px var(--arco-accent-soft);
 }
 
+.arco-wallpaper-swatch--add {
+  border-style: dashed;
+  min-width: 96px;
+}
+
+.arco-wallpaper-swatch--add:hover {
+  border-color: var(--arco-border-strong);
+}
+
 .arco-wallpaper-swatch__preview {
   display: block;
   height: 52px;
   border-radius: var(--arco-radius-s);
   border: 1px solid var(--arco-border);
   overflow: hidden;
-  background: var(--arco-bg-desktop);
+  /* background-color only — don't reset gradient wallpaper class backgrounds */
+  background-color: var(--arco-bg-desktop);
+}
+
+.arco-wallpaper-swatch__preview.arco-wallpaper-swatch__preview--add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--arco-text-tertiary);
+  border-style: dashed;
+  background: var(--arco-bg-elevated);
+}
+
+.arco-wallpaper-swatch__preview.arco-wallpaper-swatch__preview--add svg {
+  display: block;
+  flex-shrink: 0;
+}
+
+.arco-wallpaper-swatch--add:hover .arco-wallpaper-swatch__preview--add {
+  color: var(--arco-text-primary);
+  border-color: var(--arco-border-strong);
+}
+
+/* Compact previews for gradient presets (same recipes as tokens.css) */
+.arco-wallpaper-swatch__preview.arco-wallpaper-aurora {
+  background:
+    radial-gradient(120% 90% at 15% 10%, rgba(94, 130, 255, 0.35), transparent 55%),
+    radial-gradient(100% 80% at 85% 20%, rgba(140, 90, 220, 0.3), transparent 55%),
+    radial-gradient(120% 100% at 50% 100%, rgba(40, 170, 140, 0.22), transparent 60%),
+    var(--arco-bg-desktop);
+}
+
+.arco-wallpaper-swatch__preview.arco-wallpaper-dusk {
+  background:
+    radial-gradient(110% 90% at 80% 0%, rgba(230, 120, 90, 0.32), transparent 55%),
+    radial-gradient(120% 90% at 10% 90%, rgba(120, 60, 160, 0.32), transparent 60%),
+    var(--arco-bg-desktop);
+}
+
+.arco-wallpaper-swatch__preview.arco-wallpaper-graphite {
+  background:
+    radial-gradient(120% 100% at 50% 0%, rgba(120, 130, 150, 0.18), transparent 60%),
+    var(--arco-bg-desktop);
+}
+
+.arco-wallpaper-swatch__preview.arco-wallpaper-forest {
+  background:
+    radial-gradient(110% 90% at 20% 15%, rgba(60, 180, 120, 0.28), transparent 55%),
+    radial-gradient(110% 90% at 85% 85%, rgba(30, 120, 160, 0.26), transparent 60%),
+    var(--arco-bg-desktop);
 }
 
 .arco-wallpaper-swatch__preview.arco-wallpaper-starfield {

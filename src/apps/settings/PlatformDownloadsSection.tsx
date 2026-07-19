@@ -8,9 +8,6 @@ import {
   SettingsAlert,
   SettingsEmpty,
   SettingsPage,
-  SettingsPanel,
-  SettingsPanelBody,
-  SettingsPanelHeader,
   SettingsRow,
   SettingsRowActions,
   SettingsSection,
@@ -137,25 +134,21 @@ export function PlatformDownloadsSection() {
           File downloads are served from this Kosmos instance. Build artifacts with the npm scripts noted when a
           file is not available yet.
         </SettingsAlert>
-        <SettingsStack>
-          {groups.map((group) => (
-            <SettingsPanel key={group.id}>
-              <SettingsPanelHeader>
-                <SettingsSubhead>{group.title}</SettingsSubhead>
-              </SettingsPanelHeader>
-              <p className="arco-settings-panel__desc">{group.description}</p>
-              <SettingsPanelBody>
-                {group.links.map((link) => (
-                  <DownloadLinkRow
-                    key={link.id}
-                    link={link}
-                    availability={availability[link.id] ?? (link.kind === "file" ? "unknown" : "ready")}
-                  />
-                ))}
-              </SettingsPanelBody>
-            </SettingsPanel>
-          ))}
-        </SettingsStack>
+        {groups.map((group) => (
+          <div key={group.id} className="arco-settings-download-group">
+            <SettingsSubhead>{group.title}</SettingsSubhead>
+            <p className="arco-settings-panel__desc">{group.description}</p>
+            <SettingsStack>
+              {group.links.map((link) => (
+                <DownloadLinkRow
+                  key={link.id}
+                  link={link}
+                  availability={availability[link.id] ?? (link.kind === "file" ? "unknown" : "ready")}
+                />
+              ))}
+            </SettingsStack>
+          </div>
+        ))}
       </SettingsSection>
     </SettingsPage>
   );

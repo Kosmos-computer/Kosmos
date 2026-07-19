@@ -9,7 +9,14 @@ import { useCallback, useState } from "react";
 import type { CursorConnectionStatus, CursorModelInfo, CursorRuntime, Settings } from "@shared/types";
 import { CURSOR_DEFAULT_MODEL } from "@shared/types";
 import { api } from "../../lib/api";
-import { SettingsAlert, SettingsFieldRow, SettingsStack } from "../../components/patterns";
+import {
+  ModuleFilterSelect,
+  SettingsAlert,
+  SettingsFieldRow,
+  SettingsRow,
+  SettingsRowActions,
+  SettingsStack,
+} from "../../components/patterns";
 import { Button, Chip, Input } from "../../components/ui";
 
 interface CursorConnectionFieldsProps {
@@ -60,14 +67,20 @@ export function CursorConnectionFields({ settings, update }: CursorConnectionFie
   const pickRuntime = (runtime: CursorRuntime) => update({ cursorRuntime: runtime });
 
   return (
-    <SettingsStack>
+    <SettingsStack className="arco-settings-backend-pane">
       <SettingsFieldRow
         label={i18n.t(I18nKey.APPS$STARTUP_API_KEY)}
         htmlFor="set-cursor-key"
         hint={
-          <><T k={I18nKey.APPS$SETTINGS_CREATE_A_KEY_AT} />{" "}
-            <a href="https://cursor.com/dashboard/integrations" target="_blank" rel="noreferrer"><T k={I18nKey.APPS$SETTINGS_CURSOR_COM_DASHBOARD_INTEGRATIONS} /></a><T k={I18nKey.APPS$SETTINGS_STORED_SERVER_SIDE_AND_MASKED_ON_READ} /></>
+          <>
+            <T k={I18nKey.APPS$SETTINGS_CREATE_A_KEY_AT} />{" "}
+            <a href="https://cursor.com/dashboard/integrations" target="_blank" rel="noreferrer">
+              <T k={I18nKey.APPS$SETTINGS_CURSOR_COM_DASHBOARD_INTEGRATIONS} />
+            </a>
+            <T k={I18nKey.APPS$SETTINGS_STORED_SERVER_SIDE_AND_MASKED_ON_READ} />
+          </>
         }
+        layout="stack"
       >
         <Input
           id="set-cursor-key"
@@ -77,22 +90,41 @@ export function CursorConnectionFields({ settings, update }: CursorConnectionFie
           placeholder={i18n.t(I18nKey.APPS$SETTINGS_CURSOR)}
           onChange={(e) => update({ cursorApiKey: e.target.value })}
         />
-        <Button variant="default" disabled={testing} onClick={() => void testConnection()}>
-          {testing ? "Testing…" : "Test connection"}
-        </Button>
       </SettingsFieldRow>
 
+      <SettingsRow className="arco-settings-backend-pane__actions">
+        <SettingsRowActions>
+          <Button variant="default" disabled={testing} onClick={() => void testConnection()}>
+            {testing ? "Testing…" : "Test connection"}
+          </Button>
+        </SettingsRowActions>
+      </SettingsRow>
+
       {status?.connected ? (
-        <SettingsAlert tone="success"><T k={I18nKey.APPS$SETTINGS_CONNECTED_AS} />{status.user?.apiKeyName}
-          {status.user?.userEmail ? ` (${status.user.userEmail})` : ""}
-        </SettingsAlert>
+        <SettingsRow className="arco-settings-backend-pane__note">
+          <SettingsAlert tone="success">
+            <T k={I18nKey.APPS$SETTINGS_CONNECTED_AS} />
+            {status.user?.apiKeyName}
+            {status.user?.userEmail ? ` (${status.user.userEmail})` : ""}
+          </SettingsAlert>
+        </SettingsRow>
       ) : null}
       {status && !status.connected && status.error ? (
-        <SettingsAlert tone="error">{status.error}</SettingsAlert>
+        <SettingsRow className="arco-settings-backend-pane__note">
+          <SettingsAlert tone="error">{status.error}</SettingsAlert>
+        </SettingsRow>
       ) : null}
-      {error ? <SettingsAlert tone="error">{error}</SettingsAlert> : null}
+      {error ? (
+        <SettingsRow className="arco-settings-backend-pane__note">
+          <SettingsAlert tone="error">{error}</SettingsAlert>
+        </SettingsRow>
+      ) : null}
 
-      <SettingsFieldRow label={i18n.t(I18nKey.APPS$SETTINGS_RUNTIME)} hint="Local runs on this machine; Cloud runs on a Cursor-hosted VM.">
+      <SettingsFieldRow
+        label={i18n.t(I18nKey.APPS$SETTINGS_RUNTIME)}
+        hint="Local runs on this machine; Cloud runs on a Cursor-hosted VM."
+        layout="stack"
+      >
         <div className="arco-settings-chip-row">
           {(["local", "cloud"] as const).map((runtime) => (
             <Chip
@@ -111,6 +143,7 @@ export function CursorConnectionFields({ settings, update }: CursorConnectionFie
           label={i18n.t(I18nKey.APPS$SETTINGS_REPOSITORY)}
           htmlFor="set-cursor-repo"
           hint="GitHub repo URL the cloud agent clones — required for cloud runtime."
+          layout="stack"
         >
           <Input
             id="set-cursor-repo"
@@ -126,21 +159,16 @@ export function CursorConnectionFields({ settings, update }: CursorConnectionFie
         label={i18n.t(I18nKey.APPS$SETTINGS_MODEL)}
         htmlFor="set-cursor-model"
         hint="Required for local agents. Test connection to load available models."
+        layout="stack"
       >
         {models.length > 0 ? (
-          <select
-            id="set-cursor-model"
-            className="arco-input arco-input--compact"
+          <ModuleFilterSelect
+            label={i18n.t(I18nKey.APPS$SETTINGS_CURSOR_MODEL)}
             value={settings.cursorModel || CURSOR_DEFAULT_MODEL}
-            onChange={(e) => update({ cursorModel: e.target.value })}
-            aria-label={i18n.t(I18nKey.APPS$SETTINGS_CURSOR_MODEL)}
-          >
-            {models.map((model) => (
-              <option key={model.id} value={model.id}>
-                {model.displayName}
-              </option>
-            ))}
-          </select>
+            options={models.map((model) => ({ value: model.id, label: model.displayName }))}
+            onChange={(next) => update({ cursorModel: next })}
+            searchable="auto"
+          />
         ) : (
           <Input
             id="set-cursor-model"
@@ -150,10 +178,19 @@ export function CursorConnectionFields({ settings, update }: CursorConnectionFie
             onChange={(e) => update({ cursorModel: e.target.value })}
           />
         )}
-        <Button variant="ghost" disabled={loadingModels || !hasKey} onClick={() => void loadModels()}>
-          {loadingModels ? "Loading…" : "Refresh models"}
-        </Button>
       </SettingsFieldRow>
+
+      <SettingsRow className="arco-settings-backend-pane__actions">
+        <SettingsRowActions>
+          <Button
+            variant="ghost"
+            disabled={loadingModels || !hasKey}
+            onClick={() => void loadModels()}
+          >
+            {loadingModels ? "Loading…" : "Refresh models"}
+          </Button>
+        </SettingsRowActions>
+      </SettingsRow>
     </SettingsStack>
   );
 }

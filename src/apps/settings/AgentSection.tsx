@@ -17,6 +17,7 @@ import { RefreshCw, ShieldCheck, ShieldOff, ShieldQuestion, Trash2 } from "lucid
 import type { AgentPolicyDecision, AuditEntry } from "@shared/types";
 import { api } from "../../lib/api";
 import {
+  ModuleFilterSelect,
   SettingsAlert,
   SettingsDivider,
   SettingsEmpty,
@@ -31,6 +32,7 @@ import {
 import { Button, Chip, Input } from "../../components/ui";
 
 const DECISIONS: AgentPolicyDecision[] = ["auto", "confirm", "deny"];
+const DECISION_OPTIONS = DECISIONS.map((d) => ({ value: d, label: d }));
 
 const DECISION_ICON = {
   auto: ShieldCheck,
@@ -144,18 +146,12 @@ export function AgentSection() {
             onChange={(e) => setNewKey(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && void addRule()}
           />
-          <select
-            className="arco-input arco-input--compact"
+          <ModuleFilterSelect
+            label={i18n.t(I18nKey.APPS$SETTINGS_RULE_DECISION)}
             value={newDecision}
-            onChange={(e) => setNewDecision(e.target.value as AgentPolicyDecision)}
-            aria-label={i18n.t(I18nKey.APPS$SETTINGS_RULE_DECISION)}
-          >
-            {DECISIONS.map((d) => (
-              <option key={d} value={d}>
-                {d}
-              </option>
-            ))}
-          </select>
+            options={DECISION_OPTIONS}
+            onChange={setNewDecision}
+          />
           <Button variant="primary" disabled={!newKey.trim()} onClick={() => void addRule()}><T k={I18nKey.COMMON$ADD} /></Button>
         </SettingsFieldRow>
 

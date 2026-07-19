@@ -6,9 +6,22 @@
  * be registered per kind, one is active at a time.
  */
 import { useCallback, useState } from "react";
-import type { AgentBackend, AgentBackendConnectionStatus, AgentBackendKind, OpenhandsBackendVariant, Settings } from "@shared/types";
+import { Trash2 } from "lucide-react";
+import type {
+  AgentBackend,
+  AgentBackendConnectionStatus,
+  AgentBackendKind,
+  OpenhandsBackendVariant,
+  Settings,
+} from "@shared/types";
 import { api } from "../../lib/api";
-import { SettingsAlert, SettingsFieldRow, SettingsRow, SettingsRowActions, SettingsStack } from "../../components/patterns";
+import {
+  SettingsAlert,
+  SettingsFieldRow,
+  SettingsRow,
+  SettingsRowActions,
+  SettingsStack,
+} from "../../components/patterns";
 import { Button, Chip, Input } from "../../components/ui";
 
 interface AgentBackendsFieldsProps {
@@ -17,14 +30,19 @@ interface AgentBackendsFieldsProps {
   update: (patch: Partial<Settings>) => void;
 }
 
-const KIND_COPY: Record<AgentBackendKind, { hint: string; keyPlaceholder: string; connectedLabel: string }> = {
+const KIND_COPY: Record<
+  AgentBackendKind,
+  { hint: string; keyLabel: string; keyPlaceholder: string; connectedLabel: string }
+> = {
   openhands: {
     hint: "A local Agent Server host, or an OpenHands Cloud host.",
+    keyLabel: "API key",
     keyPlaceholder: "Session API key",
     connectedLabel: "Connected — OpenHands Agent Server",
   },
   kosmos: {
     hint: "Another kosmos server's host, and a bearer token minted there under Settings → External Access.",
+    keyLabel: "Bearer token",
     keyPlaceholder: "Bearer token",
     connectedLabel: "Connected to remote kosmos",
   },
@@ -94,34 +112,46 @@ export function AgentBackendsFields({ kind, settings, update }: AgentBackendsFie
   );
 
   return (
-    <SettingsStack>
+    <SettingsStack className="arco-settings-backend-pane">
       {backends.length === 0 ? (
-        <SettingsAlert tone="muted">No backends registered yet — add one below.</SettingsAlert>
+        <SettingsRow className="arco-settings-backend-pane__note">
+          <p className="arco-settings-panel__desc">No backends registered yet — add one below.</p>
+        </SettingsRow>
       ) : (
-        <SettingsStack>
-          {backends.map((backend: AgentBackend) => (
-            <SettingsRow key={backend.id}>
-              <Chip
-                active={settings.activeAgentBackendId === backend.id}
-                onClick={() => void activate(backend.id)}
-              >
-                {backend.name}
-              </Chip>
-              <span className="arco-settings-panel__meta">
-                {backend.host}
-                {backend.variant ? ` · ${backend.variant}` : ""}
-              </span>
+        backends.map((backend: AgentBackend) => {
+          const active = settings.activeAgentBackendId === backend.id;
+          return (
+            <SettingsRow key={backend.id} className="arco-settings-backend-pane__item">
+              <div className="arco-settings-panel__identity">
+                <span className="arco-settings-panel__title">{backend.name || "Untitled"}</span>
+                <span className="arco-settings-panel__meta">
+                  {backend.host}
+                  {backend.variant ? ` · ${backend.variant}` : ""}
+                </span>
+              </div>
               <SettingsRowActions>
-                <Button size="icon" onClick={() => void remove(backend.id)} aria-label={`Remove ${backend.name}`}>
-                  ×
+                <Chip active={active} onClick={() => void activate(backend.id)}>
+                  {active ? "Active" : "Use"}
+                </Chip>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => void remove(backend.id)}
+                  aria-label={`Remove ${backend.name}`}
+                >
+                  <Trash2 size={14} />
                 </Button>
               </SettingsRowActions>
             </SettingsRow>
-          ))}
-        </SettingsStack>
+          );
+        })
       )}
 
-      <SettingsFieldRow label="Add backend" htmlFor={`set-${kind}-host`} hint={copy.hint}>
+      <SettingsRow className="arco-settings-backend-pane__section">
+        <span className="arco-settings-group-label">Add backend</span>
+      </SettingsRow>
+
+      <SettingsFieldRow label="Name" htmlFor={`set-${kind}-name`} layout="stack">
         <Input
           id={`set-${kind}-name`}
           width="auto"
@@ -129,6 +159,14 @@ export function AgentBackendsFields({ kind, settings, update }: AgentBackendsFie
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
+      </SettingsFieldRow>
+
+      <SettingsFieldRow
+        label="Host"
+        htmlFor={`set-${kind}-host`}
+        hint={copy.hint}
+        layout="stack"
+      >
         <Input
           id={`set-${kind}-host`}
           width="auto"
@@ -136,6 +174,13 @@ export function AgentBackendsFields({ kind, settings, update }: AgentBackendsFie
           value={host}
           onChange={(e) => setHost(e.target.value)}
         />
+      </SettingsFieldRow>
+
+      <SettingsFieldRow
+        label={copy.keyLabel}
+        htmlFor={`set-${kind}-key`}
+        layout="stack"
+      >
         <Input
           id={`set-${kind}-key`}
           width="auto"
@@ -144,7 +189,10 @@ export function AgentBackendsFields({ kind, settings, update }: AgentBackendsFie
           value={apiKey}
           onChange={(e) => setApiKey(e.target.value)}
         />
-        {kind === "openhands" ? (
+      </SettingsFieldRow>
+
+      {kind === "openhands" ? (
+        <SettingsFieldRow label="Variant" layout="stack">
           <div className="arco-settings-chip-row">
             {(["local", "cloud"] as const).map((v) => (
               <Chip key={v} active={variant === v} onClick={() => setVariant(v)}>
@@ -152,23 +200,42 @@ export function AgentBackendsFields({ kind, settings, update }: AgentBackendsFie
               </Chip>
             ))}
           </div>
-        ) : null}
-        <Button variant="default" disabled={testing || !host.trim()} onClick={() => void testNewConnection()}>
-          {testing ? "Testing…" : "Test connection"}
-        </Button>
-        <Button variant="primary" disabled={!host.trim()} onClick={() => void addBackend()}>
-          Add backend
-        </Button>
-      </SettingsFieldRow>
+        </SettingsFieldRow>
+      ) : null}
+
+      <SettingsRow className="arco-settings-backend-pane__actions">
+        <SettingsRowActions>
+          <Button
+            variant="default"
+            disabled={testing || !host.trim()}
+            onClick={() => void testNewConnection()}
+          >
+            {testing ? "Testing…" : "Test connection"}
+          </Button>
+          <Button variant="primary" disabled={!host.trim()} onClick={() => void addBackend()}>
+            Add backend
+          </Button>
+        </SettingsRowActions>
+      </SettingsRow>
 
       {status?.connected ? (
-        <SettingsAlert tone="success">
-          {copy.connectedLabel}
-          {status.version ? ` ${status.version}` : ""}
-        </SettingsAlert>
+        <SettingsRow className="arco-settings-backend-pane__note">
+          <SettingsAlert tone="success">
+            {copy.connectedLabel}
+            {status.version ? ` ${status.version}` : ""}
+          </SettingsAlert>
+        </SettingsRow>
       ) : null}
-      {status && !status.connected && status.error ? <SettingsAlert tone="error">{status.error}</SettingsAlert> : null}
-      {error ? <SettingsAlert tone="error">{error}</SettingsAlert> : null}
+      {status && !status.connected && status.error ? (
+        <SettingsRow className="arco-settings-backend-pane__note">
+          <SettingsAlert tone="error">{status.error}</SettingsAlert>
+        </SettingsRow>
+      ) : null}
+      {error ? (
+        <SettingsRow className="arco-settings-backend-pane__note">
+          <SettingsAlert tone="error">{error}</SettingsAlert>
+        </SettingsRow>
+      ) : null}
     </SettingsStack>
   );
 }

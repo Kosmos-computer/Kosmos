@@ -5,7 +5,7 @@
 import { useCallback, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import type { SocialAccountInfo } from "@shared/social";
-import { SettingsAlert, SettingsFieldRow, SettingsRow, SettingsRowActions, SettingsStack } from "../../components/patterns";
+import { SettingsAlert, SettingsFieldRow, SettingsRow, SettingsRowActions } from "../../components/patterns";
 import { Button, Input } from "../../components/ui";
 import { api } from "../../lib/api";
 
@@ -56,7 +56,7 @@ export function NostrRelaysEditor({ account, canManage, onUpdated }: NostrRelays
   );
 
   return (
-    <SettingsStack>
+    <>
       {relays.length === 0 ? (
         <SettingsAlert tone="muted">No relays configured — add one below (or leave empty to use defaults).</SettingsAlert>
       ) : (
@@ -110,6 +110,6 @@ export function NostrRelaysEditor({ account, canManage, onUpdated }: NostrRelays
       ) : null}
 
       {error ? <SettingsAlert tone="error">{error}</SettingsAlert> : null}
-    </SettingsStack>
+    </>
   );
 }

@@ -19,6 +19,7 @@ import { BentoDrawer } from "./bento/BentoDrawer";
 import { connectShellEvents } from "./shellEvents";
 import { consumeGitHubOAuthReturn } from "../connections/useGitHubConnection";
 import { WindowContentById } from "./windowContent";
+import { WindowIdProvider } from "./windowIdContext";
 import { AgentCursor } from "./cursor/AgentCursor";
 import { FloatingKeyboard } from "./FloatingKeyboard";
 import { MusicShell } from "../apps/music/MusicShell";
@@ -82,7 +83,11 @@ function ShellConfirms() {
 }
 
 function WindowContent({ winId }: { winId: string }) {
-  return <WindowContentById winId={winId} />;
+  return (
+    <WindowIdProvider value={winId}>
+      <WindowContentById winId={winId} />
+    </WindowIdProvider>
+  );
 }
 
 export function Desktop() {
@@ -128,6 +133,16 @@ export function Desktop() {
   useEffect(() => {
     migrateAppWindowHost(appWindowHost, shellView);
   }, [appWindowHost, shellView]);
+
+  useEffect(() => {
+    // Escape hatch: http://localhost:4610/?shell=desktop
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("shell") !== "desktop") return;
+    useOsStore.getState().setShellView("desktop");
+    params.delete("shell");
+    const next = `${window.location.pathname}${params.toString() ? `?${params}` : ""}${window.location.hash}`;
+    window.history.replaceState(null, "", next);
+  }, []);
 
   const appView = shellView === "app";
   // Appearance can keep the status bar visible in App view; otherwise chrome auto-hides.

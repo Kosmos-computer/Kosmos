@@ -3,6 +3,8 @@
  * Workspace project files remain in Studio → Files tab (/api/files).
  */
 import { useCallback } from "react";
+import { openNewShellWindow } from "../../os/shellNavigation";
+import { systemAppTitle } from "../../os/systemAppTitles";
 import { DriveMoveModal } from "./DriveMoveModal";
 import { FileEditorView } from "./FileEditorView";
 import { FilesWorkspace } from "./FilesWorkspace";
@@ -27,6 +29,10 @@ export function FilesApp() {
     },
     [drive],
   );
+
+  const handleNewWindow = useCallback(() => {
+    openNewShellWindow({ type: "system", app: "files" }, systemAppTitle("files"));
+  }, []);
 
   if (drive.pdfFile) {
     return <PdfReaderView file={drive.pdfFile} onBack={() => drive.setPdfFile(null)} />;
@@ -96,6 +102,7 @@ export function FilesApp() {
         flashIds={drive.flashIds}
         onUpload={drive.triggerUpload}
         onRefresh={() => void drive.refresh()}
+        onNewWindow={handleNewWindow}
       />
       {drive.shareFile ? (
         <ShareLinkModal

@@ -15,10 +15,12 @@ import { sessionStore } from "../stores/sessionStore.js";
 import { resolveProfileForTurn } from "../agents/resolveProfile.js";
 import { formatRecallForPrompt, recallForTurn } from "../memory/recall.js";
 import { streamTurn, type LlmMessage } from "./llm.js";
+import { sanitizeMessagesForLlm } from "./sanitizeMessages.js";
 import { buildSystemPrompt } from "./systemPrompt.js";
 import { applyPolicy, assembleTools, toLlmDefs } from "./toolRegistry.js";
 import type { ToolContext } from "./tools.js";
 import { scheduleBackgroundReview } from "./backgroundReview.js";
+import { boardService } from "../services/boardService.js";
 
 const MAX_ITERATIONS = 12;
 /** Tool results beyond this are truncated for the LLM (full result goes to the UI). */
@@ -33,7 +35,7 @@ function toLlmMessages(
     ? `${buildSystemPrompt({ profile })}\n\n${extraSystem}`
     : buildSystemPrompt({ profile });
   const messages: LlmMessage[] = [{ role: "system", content: system }];
-  for (const m of session.messages) {
+  for (const m of sanitizeMessagesForLlm(session.messages)) {
     if (m.role === "user") {
       messages.push({ role: "user", content: m.content });
     } else if (m.role === "assistant") {
@@ -192,9 +194,36 @@ export async function runAgentTurn(opts: RunTurnOptions): Promise<string> {
     );
   }
 
+  // Bind session ↔ board card; promote Ready/Backlog → In progress when work starts.
+  let linkedWorkItemId = session.workItemId ?? null;
+  if (!linkedWorkItemId) {
+    const bySession = boardService.findBySessionId(session.id);
+    if (bySession) {
+      linkedWorkItemId = bySession.id;
+      session.workItemId = bySession.id;
+      await sessionStore.save(session);
+    }
+  }
+  if (linkedWorkItemId) {
+    try {
+      boardService.linkSession(linkedWorkItemId, session.id, { promoteInProgress: true });
+    } catch {
+      // Card may have been deleted mid-flight.
+    }
+  }
+
+  const boardContext = linkedWorkItemId
+    ? `## Active Board work item
+This conversation is bound to Board work item \`${linkedWorkItemId}\`.
+Use board_get / board_move to manage its lifecycle column (backlog → ready → in_progress → review → done).
+When you start substantive work, ensure it is in_progress. When the job is ready for human/PR review, board_move to review. Only board_move to done when acceptance/merge is clear — never because a turn merely finished.
+Read the board-lifecycle skill if you need the full policy.`
+    : "";
+
   const extraSystem = [
     opts.extraSystem,
     recallText,
+    boardContext,
     opts.readOnly ? ASK_MODE_SYSTEM : "",
   ]
     .filter(Boolean)

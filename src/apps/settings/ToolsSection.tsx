@@ -22,7 +22,7 @@ import {
   SettingsSection,
   SettingsStack,
 } from "../../components/patterns";
-import { Chip } from "../../components/ui";
+import { Chip, Switch } from "../../components/ui";
 import { matchesListSearch } from "../../lib/listSearch";
 
 /** Group tools by what they let the agent do, so the list scans well. */
@@ -97,26 +97,23 @@ function ToolRow({
   onChanged: () => void;
 }) {
   return (
-    <SettingsRow disabled={!tool.enabled}>
+    <SettingsRow className={tool.enabled ? "" : "arco-settings-tool-row--off"}>
       <div className="arco-settings-tool-row">
         <code className="arco-code arco-code--nowrap">{tool.name}</code>
         <span className="arco-settings-tool-row__desc" title={tool.description}>
           {tool.access === "read" ? "read · " : ""}
           {tool.description}
         </span>
-        {canManage && (
+        {canManage ? (
           <SettingsRowActions>
             <PolicyChip tool={tool} rules={rules} onChanged={onChanged} />
-            <Chip
-              active={tool.enabled}
-              onClick={() => onToggle(tool)}
-              aria-pressed={tool.enabled}
+            <Switch
+              checked={tool.enabled}
+              onChange={() => onToggle(tool)}
               aria-label={`${tool.enabled ? "Disable" : "Enable"} ${tool.name}`}
-            >
-              {tool.enabled ? "on" : "off"}
-            </Chip>
+            />
           </SettingsRowActions>
-        )}
+        ) : null}
       </div>
     </SettingsRow>
   );

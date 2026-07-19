@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { api, type CapabilityProviderInfo } from "../../lib/api";
 import { useCan } from "../../os/auth/authStore";
 import {
+  ModuleFilterSelect,
   SettingsAlert,
   SettingsEmpty,
   SettingsPage,
@@ -57,19 +58,13 @@ export function ProvidersSection() {
             <SettingsRow key={p.contractId}>
               <code className="arco-code arco-settings-row__label">{p.contractId}</code>
               <SettingsRowActions>
-                <select
-                  className="arco-input arco-input--narrow"
+                <ModuleFilterSelect
+                  label={`Provider for ${p.contractId}`}
                   value={p.provider}
                   disabled={!canManage}
-                  onChange={(e) => void pick(p.contractId, e.target.value)}
-                  aria-label={`Provider for ${p.contractId}`}
-                >
-                  {p.options.map((opt) => (
-                    <option key={opt.id} value={opt.id}>
-                      {opt.name}
-                    </option>
-                  ))}
-                </select>
+                  options={p.options.map((opt) => ({ value: opt.id, label: opt.name }))}
+                  onChange={(next) => void pick(p.contractId, next)}
+                />
               </SettingsRowActions>
             </SettingsRow>
           ))}

@@ -1261,14 +1261,13 @@
   opacity: 1;
 }
 
-/* Hide label tooltips while the rich app hovercard is open. */
+/* Hide label tooltips while the app hovercard (Menu panel) is open. */
 .arco-app-hovercard__wrap--open .arco-dock__tooltip,
 .arco-app-hovercard__wrap--open .arco-navrail__tooltip {
   opacity: 0 !important;
 }
 
-/* ── App hovercard (UI Experiments TrayAppHoverCard) ──────────────────────── */
-
+/* Trigger wrap only — panel/items reuse `.arco-menu__*` from base.css. */
 .arco-app-hovercard__wrap {
   position: relative;
   display: inline-flex;
@@ -1277,188 +1276,6 @@
 
 .arco-dock__itemslot .arco-app-hovercard__wrap {
   width: auto;
-}
-
-.arco-app-hovercard {
-  position: fixed;
-  z-index: var(--arco-z-overlay);
-  min-width: 220px;
-  max-width: 280px;
-  padding: var(--arco-space-2xs) 0;
-  border-radius: var(--arco-radius-m);
-  border: 1px solid var(--arco-border);
-  background: var(--arco-bg-elevated);
-  color: var(--arco-text-primary);
-  font-family: var(--arco-font-ui);
-  font-size: var(--arco-text-sm);
-  line-height: 1.35;
-  box-shadow: var(--arco-shadow-chrome);
-  pointer-events: auto;
-  opacity: 0;
-  backdrop-filter: var(--arco-backdrop-blur);
-  -webkit-backdrop-filter: var(--arco-backdrop-blur);
-  transition:
-    opacity var(--arco-dur-fast) var(--arco-ease),
-    transform var(--arco-dur-fast) var(--arco-ease);
-}
-
-.arco-app-hovercard--top {
-  transform: translate(-50%, calc(-100% - 4px)) scale(0.98);
-}
-
-.arco-app-hovercard--right {
-  transform: translate(0, -50%) scale(0.98);
-}
-
-.arco-app-hovercard--visible.arco-app-hovercard--top {
-  opacity: 1;
-  transform: translate(-50%, calc(-100% - 10px)) scale(1);
-}
-
-.arco-app-hovercard--visible.arco-app-hovercard--right {
-  opacity: 1;
-  transform: translate(4px, -50%) scale(1);
-}
-
-.arco-app-hovercard--top::after {
-  content: "";
-  position: absolute;
-  bottom: -5px;
-  left: 50%;
-  width: 10px;
-  height: 10px;
-  margin-left: -5px;
-  background: var(--arco-bg-elevated);
-  border: 1px solid var(--arco-border);
-  border-top: none;
-  border-left: none;
-  transform: rotate(45deg);
-}
-
-.arco-app-hovercard--right::after {
-  content: "";
-  position: absolute;
-  left: -5px;
-  top: 50%;
-  width: 10px;
-  height: 10px;
-  margin-top: -5px;
-  background: var(--arco-bg-elevated);
-  border: 1px solid var(--arco-border);
-  border-right: none;
-  border-top: none;
-  transform: rotate(45deg);
-}
-
-.arco-app-hovercard__menu {
-  display: flex;
-  flex-direction: column;
-}
-
-.arco-app-hovercard__separator {
-  height: 1px;
-  margin: var(--arco-space-xs) 0;
-  background: var(--arco-border);
-}
-
-.arco-app-hovercard__section {
-  padding: var(--arco-space-xs) 14px var(--arco-space-2xs);
-  font-size: var(--arco-text-xs);
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  color: var(--arco-text-tertiary);
-}
-
-.arco-app-hovercard__profiles {
-  max-height: 220px;
-  overflow-y: auto;
-}
-
-.arco-app-hovercard__row {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  width: 100%;
-  min-height: 22px;
-  padding: 2px 10px 2px 6px;
-  border: none;
-  background: transparent;
-  color: var(--arco-text-primary);
-  font-family: inherit;
-  font-size: inherit;
-  line-height: inherit;
-  text-align: left;
-  cursor: default;
-}
-
-.arco-app-hovercard__row:hover:not(:disabled) {
-  background: var(--arco-bg-hover);
-}
-
-.arco-app-hovercard__row--danger {
-  color: var(--arco-danger);
-}
-
-.arco-app-hovercard__check {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 18px;
-  height: 18px;
-  color: var(--arco-text-secondary);
-}
-
-.arco-app-hovercard__row-label {
-  flex: 1;
-  min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.arco-app-hovercard__chevron {
-  flex-shrink: 0;
-  margin-left: auto;
-  padding-left: var(--arco-space-m);
-  color: var(--arco-text-tertiary);
-}
-
-.arco-app-hovercard__header {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--arco-space-xs);
-  font-weight: 600;
-}
-
-.arco-app-hovercard__header-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 18px;
-  height: 18px;
-  border-radius: 4px;
-  color: var(--arco-text-primary);
-}
-
-.arco-app-hovercard__submenu-wrap {
-  position: relative;
-}
-
-.arco-app-hovercard__submenu {
-  position: absolute;
-  top: -4px;
-  left: calc(100% + 2px);
-  min-width: 180px;
-  padding: var(--arco-space-2xs) 0;
-  border-radius: var(--arco-radius-m);
-  border: 1px solid var(--arco-border);
-  background: var(--arco-bg-elevated);
-  box-shadow: var(--arco-shadow-chrome);
-  backdrop-filter: var(--arco-backdrop-blur);
-  -webkit-backdrop-filter: var(--arco-backdrop-blur);
-  z-index: 1;
 }
 
 /* ── Hover dock (bottom-edge reveal — UI Experiments HoverAppTray) ────────── */

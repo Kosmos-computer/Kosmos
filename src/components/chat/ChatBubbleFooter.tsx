@@ -2,13 +2,10 @@ import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
 /**
  * Timestamp + action rail shown under a chat bubble (user or assistant) —
- * ported from the longformer UI Experiments MessageBubble pattern. Copy and
- * (for assistant messages) Read aloud are wired up; the rest of the rail
- * (edit/restore for user, regenerate/feedback/share/fork for assistant) is
- * ghosted — visible for layout parity with the reference but disabled until
- * those flows exist. Both the timestamp and the action icons fade in on
- * hover/focus via the parent row's CSS (see .arco-chat__user-row /
- * .arco-chat__assistant).
+ * ported from the longformer UI Experiments MessageBubble pattern. Copy,
+ * edit, restore (with redo-until-send), read aloud, regenerate, and fork
+ * are wired; feedback/share stay ghosted until those flows exist.
+ * Timestamp + icons fade in on hover/focus via the parent row's CSS.
  */
 import { useEffect, useRef, useState } from "react";
 import {
@@ -95,13 +92,27 @@ export function ChatBubbleFooter({
   timestamp,
   align,
   variant,
+  onFork,
+  onRegenerate,
+  onEdit,
+  onRestore,
 }: {
   text: string;
   timestamp?: string;
   align: "start" | "end";
   variant: "user" | "assistant";
+  /** Branch into a new chat with history through this message. */
+  onFork?: () => void | Promise<void>;
+  /** Drop this reply and resubmit the preceding user prompt. */
+  onRegenerate?: () => void | Promise<void>;
+  /** Enter inline edit mode for this user message. */
+  onEdit?: () => void;
+  /** Open restore-checkpoint confirmation for this user message. */
+  onRestore?: () => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const [forking, setForking] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
 
   const copy = async () => {
     try {
@@ -112,6 +123,11 @@ export function ChatBubbleFooter({
       // Clipboard unavailable — no-op.
     }
   };
+
+  const forkLabel = i18n.t(I18nKey.COMPONENTS$CHAT_FORK_CONVERSATION);
+  const regenerateLabel = i18n.t(I18nKey.COMPONENTS$CHAT_REGENERATE_RESPONSE);
+  const editLabel = i18n.t(I18nKey.COMPONENTS$CHAT_EDIT_MESSAGE);
+  const restoreLabel = i18n.t(I18nKey.COMPONENTS$CHAT_RESTORE_CHECKPOINT);
 
   return (
     <div className={`arco-chat__footer arco-chat__footer--${align}`}>
@@ -130,17 +146,73 @@ export function ChatBubbleFooter({
       </button>
       {variant === "user" ? (
         <>
-          <GhostAction label={i18n.t(I18nKey.COMPONENTS$CHAT_EDIT_MESSAGE)} icon={Pencil} />
-          <GhostAction label={i18n.t(I18nKey.COMPONENTS$CHAT_RESTORE_CHECKPOINT)} icon={Undo2} />
+          {onEdit ? (
+            <button
+              type="button"
+              className="arco-chat__bubble-action"
+              aria-label={editLabel}
+              title={editLabel}
+              onClick={onEdit}
+            >
+              <Pencil size={13} />
+            </button>
+          ) : (
+            <GhostAction label={editLabel} icon={Pencil} />
+          )}
+          {onRestore ? (
+            <button
+              type="button"
+              className="arco-chat__bubble-action"
+              aria-label={restoreLabel}
+              title={restoreLabel}
+              onClick={onRestore}
+            >
+              <Undo2 size={13} />
+            </button>
+          ) : (
+            <GhostAction label={restoreLabel} icon={Undo2} />
+          )}
         </>
       ) : (
         <>
           <ReadAloudAction text={text} />
-          <GhostAction label={i18n.t(I18nKey.COMPONENTS$CHAT_REGENERATE_RESPONSE)} icon={RefreshCw} />
+          {onRegenerate ? (
+            <button
+              type="button"
+              className="arco-chat__bubble-action"
+              aria-label={regenerateLabel}
+              title={regenerateLabel}
+              disabled={regenerating}
+              onClick={() => {
+                setRegenerating(true);
+                void Promise.resolve(onRegenerate()).finally(() => setRegenerating(false));
+              }}
+            >
+              {regenerating ? <Loader2 size={13} className="arco-spin" /> : <RefreshCw size={13} />}
+            </button>
+          ) : (
+            <GhostAction label={regenerateLabel} icon={RefreshCw} />
+          )}
           <GhostAction label={i18n.t(I18nKey.COMPONENTS$CHAT_GOOD_RESPONSE)} icon={ThumbsUp} />
           <GhostAction label={i18n.t(I18nKey.COMPONENTS$CHAT_BAD_RESPONSE)} icon={ThumbsDown} />
           <GhostAction label={i18n.t(I18nKey.COMPONENTS$CHAT_SHARE_RESPONSE)} icon={Share2} />
-          <GhostAction label={i18n.t(I18nKey.COMPONENTS$CHAT_FORK_CONVERSATION)} icon={GitFork} />
+          {onFork ? (
+            <button
+              type="button"
+              className="arco-chat__bubble-action"
+              aria-label={forkLabel}
+              title={forkLabel}
+              disabled={forking}
+              onClick={() => {
+                setForking(true);
+                void Promise.resolve(onFork()).finally(() => setForking(false));
+              }}
+            >
+              {forking ? <Loader2 size={13} className="arco-spin" /> : <GitFork size={13} />}
+            </button>
+          ) : (
+            <GhostAction label={forkLabel} icon={GitFork} />
+          )}
         </>
       )}
     </div>

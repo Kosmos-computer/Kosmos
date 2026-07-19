@@ -21,6 +21,7 @@ import { api } from "../../lib/api";
 import { useCan } from "../../os/auth/authStore";
 import { useSettingsStore } from "./settingsStore";
 import {
+  ModuleFilterSelect,
   SettingsAlert,
   SettingsEmpty,
   SettingsFieldRow,
@@ -37,6 +38,12 @@ import {
   SettingsSubhead,
 } from "../../components/patterns";
 import { Button, Chip, Input } from "../../components/ui";
+
+const MCP_TRANSPORT_OPTIONS = [
+  { value: "stdio", label: "stdio" },
+  { value: "http", label: "http" },
+  { value: "sse", label: "sse" },
+] as const;
 
 const STATUS_COLOR: Record<McpServerInfo["status"], string> = {
   running: "var(--arco-success)",
@@ -365,16 +372,12 @@ export function McpServersSection() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
-                <select
-                  className="arco-input arco-input--compact"
+                <ModuleFilterSelect
+                  label={i18n.t(I18nKey.APPS$SETTINGS_TRANSPORT_KIND)}
                   value={kind}
-                  onChange={(e) => setKind(e.target.value as typeof kind)}
-                  aria-label={i18n.t(I18nKey.APPS$SETTINGS_TRANSPORT_KIND)}
-                >
-                  <option value="stdio"><T k={I18nKey.APPS$SETTINGS_STDIO} /></option>
-                  <option value="http"><T k={I18nKey.APPS$SETTINGS_HTTP} /></option>
-                  <option value="sse"><T k={I18nKey.APPS$SETTINGS_SSE} /></option>
-                </select>
+                  options={MCP_TRANSPORT_OPTIONS}
+                  onChange={setKind}
+                />
               </SettingsFieldRow>
               <SettingsFieldRow label={kind === "stdio" ? "Command" : "URL"}>
                 {kind === "stdio" ? (

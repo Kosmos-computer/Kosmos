@@ -105,6 +105,8 @@ interface OsStore {
   windowControlStyle: WindowControlStyle;
   windowControlAlign: WindowControlAlign;
   wallpaper: WallpaperId;
+  /** Data URL for the user-added custom wallpaper photo. */
+  customWallpaperImage: string | null;
   authWallpaper: AuthWallpaperId;
   notifications: OsNotification[];
   apps: AppSummary[];
@@ -169,6 +171,7 @@ interface OsStore {
   setWindowControlStyle: (style: WindowControlStyle) => void;
   setWindowControlAlign: (align: WindowControlAlign) => void;
   setWallpaper: (wallpaper: WallpaperId) => void;
+  setCustomWallpaperImage: (image: string | null) => void;
   setAuthWallpaper: (authWallpaper: AuthWallpaperId) => void;
   setNavBrandImage: (image: string | null) => void;
   notify: (message: string) => void;
@@ -215,7 +218,7 @@ applyTextScalePreset(initialTextScalePreset);
 applySpacingPreset(initialSpacingPreset);
 applyBlurEffects(initialBlurEffects);
 
-export const useOsStore = create<OsStore>((set) => ({
+export const useOsStore = create<OsStore>((set, get) => ({
   theme: (localStorage.getItem("arco:theme") as Theme) || "dark",
   accentPreset: initialAccentPreset,
   radiusPreset: initialRadiusPreset,
@@ -225,7 +228,13 @@ export const useOsStore = create<OsStore>((set) => ({
   blurEffects: initialBlurEffects,
   windowControlStyle: normalizeWindowControlStyle(localStorage.getItem(WINDOW_CONTROL_STYLE_STORAGE_KEY)),
   windowControlAlign: normalizeWindowControlAlign(localStorage.getItem(WINDOW_CONTROL_ALIGN_STORAGE_KEY)),
-  wallpaper: normalizeWallpaper(localStorage.getItem("arco:wallpaper")),
+  wallpaper: (() => {
+    const id = normalizeWallpaper(localStorage.getItem("arco:wallpaper"));
+    const custom = localStorage.getItem("arco:custom-wallpaper-image");
+    if (id === "custom" && !custom) return "space";
+    return id;
+  })(),
+  customWallpaperImage: localStorage.getItem("arco:custom-wallpaper-image"),
   authWallpaper: normalizeAuthWallpaper(localStorage.getItem("arco:auth-wallpaper")),
   notifications: [],
   apps: [],
@@ -240,7 +249,19 @@ export const useOsStore = create<OsStore>((set) => ({
   navPinnedIds: loadPinnedIds("arco:nav-pinned"),
   dockPinnedIds: loadPinnedIds("arco:dock-pinned"),
   shellConfirms: [],
-  shellView: localStorage.getItem("arco:shell-view") === "app" ? "app" : "desktop",
+  // One-shot: leave App view — it makes every window fill the screen (looks maximized).
+  // Bump the key when a sticky App-view session needs another forced restore.
+  shellView: (() => {
+    const fixKey = "arco:layout-post-3d-v3";
+    if (localStorage.getItem(fixKey) !== "1") {
+      localStorage.setItem(fixKey, "1");
+      if (localStorage.getItem("arco:shell-view") === "app") {
+        localStorage.setItem("arco:shell-view", "desktop");
+      }
+      return "desktop" as const;
+    }
+    return localStorage.getItem("arco:shell-view") === "app" ? ("app" as const) : ("desktop" as const);
+  })(),
   appWindowHost: localStorage.getItem("arco:app-window-host") === "native" ? "native" : "embedded",
   navBrandImage: localStorage.getItem("arco:nav-brand-image"),
   developerApps: localStorage.getItem("arco:developer-apps") === "true",
@@ -304,6 +325,24 @@ export const useOsStore = create<OsStore>((set) => ({
   setWallpaper: (wallpaper) => {
     localStorage.setItem("arco:wallpaper", wallpaper);
     set({ wallpaper });
+  },
+
+  setCustomWallpaperImage: (image) => {
+    if (image) {
+      try {
+        localStorage.setItem("arco:custom-wallpaper-image", image);
+      } catch {
+        get().notify("Could not save wallpaper — image is too large for local storage.");
+        return;
+      }
+      localStorage.setItem("arco:wallpaper", "custom");
+      set({ customWallpaperImage: image, wallpaper: "custom" });
+      return;
+    }
+    localStorage.removeItem("arco:custom-wallpaper-image");
+    const next = get().wallpaper === "custom" ? "space" : get().wallpaper;
+    localStorage.setItem("arco:wallpaper", next);
+    set({ customWallpaperImage: null, wallpaper: next });
   },
 
   setAuthWallpaper: (authWallpaper) => {

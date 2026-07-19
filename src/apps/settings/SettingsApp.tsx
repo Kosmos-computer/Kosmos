@@ -49,6 +49,7 @@ import { WallpaperSettings } from "./WallpaperSettings";
 import { FACE_BG_OPTIONS, FACE_RIG_OPTIONS, isCustomFaceBg, useFacePreferencesStore } from "../../face-rig";
 import { FacePreviewWidget } from "./FacePreviewWidget";
 import {
+  ModuleFilterSelect,
   SettingsChipRow,
   SettingsFieldRow,
   SettingsPage,
@@ -250,10 +251,10 @@ export function SettingsApp() {
       </SidebarPane>
 
       <div className="arco-settings-shell__main">
-        <header className="arco-settings-shell__header">
-          <h1 className="arco-settings-shell__title">{sectionTitle}</h1>
-        </header>
         <div className="arco-settings-shell__content arco-scroll">
+          <header className="arco-settings-shell__header">
+            <h1 className="arco-settings-shell__title">{sectionTitle}</h1>
+          </header>
           {isStubSettingsSection(activeSection) ? (
             <SettingsStubPane
               sectionIds={
@@ -272,48 +273,69 @@ export function SettingsApp() {
               <SettingsSection
                 intro={i18n.t(I18nKey.APPS$SETTINGS_CHOOSE_WHICH_AGENT_RUNTIME_HANDLES_CHAT_CURSOR_USES_THE_)}
               >
-                <SettingsStack>
-                  <SettingsFieldRow label={i18n.t(I18nKey.APPS$SETTINGS_RUNTIME)}>
-                    <SettingsChipRow>
-                      {[
-                        { id: "builtin", label: "Built-in" },
-                        { id: "cursor", label: "Cursor" },
-                        { id: "openhands", label: "OpenHands" },
-                        { id: "kosmos", label: "Kosmos" },
-                        ...ACP_PRESETS,
-                        { id: "custom", label: "Custom (ACP)" },
-                      ].map((a) => (
-                        <Chip key={a.id} active={activeAgentChip === a.id} onClick={() => pickAgent(a.id)}>
+                <div className="arco-settings-provider-layout">
+                  <nav
+                    className="arco-settings-provider-layout__nav"
+                    aria-label={i18n.t(I18nKey.APPS$SETTINGS_RUNTIME)}
+                  >
+                    {[
+                      { id: "builtin", label: "Built-in" },
+                      { id: "cursor", label: "Cursor" },
+                      { id: "openhands", label: "OpenHands" },
+                      { id: "kosmos", label: "Kosmos" },
+                      ...ACP_PRESETS,
+                      { id: "custom", label: "Custom (ACP)" },
+                    ].map((a) => {
+                      const active = activeAgentChip === a.id;
+                      return (
+                        <button
+                          key={a.id}
+                          type="button"
+                          className={[
+                            "arco-settings-provider-layout__item",
+                            active ? "arco-settings-provider-layout__item--active" : "",
+                          ]
+                            .filter(Boolean)
+                            .join(" ")}
+                          aria-current={active ? "true" : undefined}
+                          onClick={() => pickAgent(a.id)}
+                        >
                           {a.label}
-                        </Chip>
-                      ))}
-                    </SettingsChipRow>
-                  </SettingsFieldRow>
-                  {settings.agent === "cursor" ? (
-                    <CursorConnectionFields settings={settings} update={update} />
-                  ) : null}
-                  {settings.agent === "openhands" ? (
-                    <AgentBackendsFields kind="openhands" settings={settings} update={update} />
-                  ) : null}
-                  {settings.agent === "kosmos" ? (
-                    <AgentBackendsFields kind="kosmos" settings={settings} update={update} />
-                  ) : null}
-                  {settings.agent === "acp" && (
-                    <SettingsFieldRow
-                      label={i18n.t(I18nKey.APPS$SETTINGS_SPAWN_COMMAND)}
-                      htmlFor="set-acp-command"
-                      hint="stdio ACP server — sign in with the provider CLI or set a matching API key below"
-                    >
-                      <Input
-                        id="set-acp-command"
-                        width="auto"
-                        value={settings.acpCommand}
-                        placeholder={i18n.t(I18nKey.APPS$SETTINGS_NPX_Y_ZED_INDUSTRIES_CLAUDE_CODE_ACP)}
-                        onChange={(e) => update({ acpCommand: e.target.value })}
-                      />
-                    </SettingsFieldRow>
-                  )}
-                </SettingsStack>
+                        </button>
+                      );
+                    })}
+                  </nav>
+                  <div className="arco-settings-provider-layout__main">
+                    {activeAgentChip === "builtin" ? (
+                      <p className="arco-settings-provider-layout__empty">
+                        Built-in agent — uses the model provider configured under Model.
+                      </p>
+                    ) : settings.agent === "cursor" ? (
+                      <CursorConnectionFields settings={settings} update={update} />
+                    ) : settings.agent === "openhands" ? (
+                      <AgentBackendsFields kind="openhands" settings={settings} update={update} />
+                    ) : settings.agent === "kosmos" ? (
+                      <AgentBackendsFields kind="kosmos" settings={settings} update={update} />
+                    ) : settings.agent === "acp" ? (
+                      <SettingsStack className="arco-settings-backend-pane">
+                        <SettingsFieldRow
+                          label={i18n.t(I18nKey.APPS$SETTINGS_SPAWN_COMMAND)}
+                          htmlFor="set-acp-command"
+                          hint="stdio ACP server — sign in with the provider CLI or set a matching API key below"
+                          layout="stack"
+                        >
+                          <Input
+                            id="set-acp-command"
+                            width="auto"
+                            value={settings.acpCommand}
+                            placeholder={i18n.t(I18nKey.APPS$SETTINGS_NPX_Y_ZED_INDUSTRIES_CLAUDE_CODE_ACP)}
+                            onChange={(e) => update({ acpCommand: e.target.value })}
+                          />
+                        </SettingsFieldRow>
+                      </SettingsStack>
+                    ) : null}
+                  </div>
+                </div>
                 <SettingsSaveBar saved={saved}>
                   <Button variant="primary" onClick={() => void save()}><T k={I18nKey.COMMON$SAVE} /></Button>
                 </SettingsSaveBar>
@@ -335,66 +357,96 @@ export function SettingsApp() {
                       ><T k={I18nKey.APPS$SETTINGS_OPEN_MODELS} /></Button>
                     </SettingsRowActions>
                   </SettingsRow>
-                  <SettingsFieldRow label={i18n.t(I18nKey.COMPONENTS$PATTERNS_PROVIDER)}>
-                    <SettingsChipRow>
-                      {PROVIDERS.map((p) => (
-                        <Chip
+                </SettingsStack>
+
+                <div className="arco-settings-provider-layout">
+                  <nav
+                    className="arco-settings-provider-layout__nav"
+                    aria-label={i18n.t(I18nKey.COMPONENTS$PATTERNS_PROVIDER)}
+                  >
+                    {PROVIDERS.map((p) => {
+                      const active = settings.provider === p.id;
+                      return (
+                        <button
                           key={p.id}
-                          active={settings.provider === p.id}
+                          type="button"
+                          className={[
+                            "arco-settings-provider-layout__item",
+                            active ? "arco-settings-provider-layout__item--active" : "",
+                          ]
+                            .filter(Boolean)
+                            .join(" ")}
+                          aria-current={active ? "true" : undefined}
                           onClick={() => pickProvider(p.id)}
                         >
                           {llmProviderLabel(p.id, settings.baseUrl, deployment)}
-                        </Chip>
-                      ))}
-                    </SettingsChipRow>
-                  </SettingsFieldRow>
-                  {settings.provider !== "mock" && (
-                    <>
-                      <SettingsFieldRow label={i18n.t(I18nKey.APPS$MODELS_BASE_URL)} htmlFor="set-baseurl">
-                        <Input
-                          id="set-baseurl"
-                          width="auto"
-                          value={settings.baseUrl}
-                          onChange={(e) => update({ baseUrl: e.target.value })}
-                        />
-                      </SettingsFieldRow>
-                      <SettingsFieldRow
-                        label={i18n.t(I18nKey.APPS$SETTINGS_MODEL)}
-                        htmlFor={settings.provider === "openrouter" ? "set-openrouter-model" : "set-model"}
-                        hint={
-                          settings.provider === "openrouter"
-                            ? "Loaded from OpenRouter's catalog — search by name or id."
-                            : undefined
-                        }
-                      >
-                        {settings.provider === "openrouter" ? (
-                          <OpenRouterModelPicker
-                            model={settings.model}
-                            apiKey={settings.apiKey}
-                            onModelChange={(model) => update({ model })}
-                          />
-                        ) : (
+                        </button>
+                      );
+                    })}
+                  </nav>
+                  <div className="arco-settings-provider-layout__main">
+                    {settings.provider === "mock" ? (
+                      <p className="arco-settings-provider-layout__empty">
+                        Scripted demo — no API key or endpoint required.
+                      </p>
+                    ) : (
+                      <SettingsStack className="arco-settings-backend-pane">
+                        <SettingsFieldRow
+                          label={i18n.t(I18nKey.APPS$STARTUP_API_KEY)}
+                          htmlFor="set-key"
+                          layout="stack"
+                        >
                           <Input
-                            id="set-model"
+                            id="set-key"
                             width="auto"
-                            value={settings.model}
-                            onChange={(e) => update({ model: e.target.value })}
+                            type="password"
+                            value={settings.apiKey}
+                            placeholder={i18n.t(I18nKey.INSTALL$API_KEY_PLACEHOLDER)}
+                            onChange={(e) => update({ apiKey: e.target.value })}
                           />
-                        )}
-                      </SettingsFieldRow>
-                      <SettingsFieldRow label={i18n.t(I18nKey.APPS$STARTUP_API_KEY)} htmlFor="set-key">
-                        <Input
-                          id="set-key"
-                          width="auto"
-                          type="password"
-                          value={settings.apiKey}
-                          placeholder={i18n.t(I18nKey.INSTALL$API_KEY_PLACEHOLDER)}
-                          onChange={(e) => update({ apiKey: e.target.value })}
-                        />
-                      </SettingsFieldRow>
-                    </>
-                  )}
-                </SettingsStack>
+                        </SettingsFieldRow>
+                        <SettingsFieldRow
+                          label={i18n.t(I18nKey.APPS$MODELS_BASE_URL)}
+                          htmlFor="set-baseurl"
+                          layout="stack"
+                        >
+                          <Input
+                            id="set-baseurl"
+                            width="auto"
+                            value={settings.baseUrl}
+                            onChange={(e) => update({ baseUrl: e.target.value })}
+                          />
+                        </SettingsFieldRow>
+                        <SettingsFieldRow
+                          label={i18n.t(I18nKey.APPS$SETTINGS_MODEL)}
+                          htmlFor={settings.provider === "openrouter" ? "set-openrouter-model" : "set-model"}
+                          hint={
+                            settings.provider === "openrouter"
+                              ? "Search the catalog, then pick a model."
+                              : undefined
+                          }
+                          layout="stack"
+                        >
+                          {settings.provider === "openrouter" ? (
+                            <OpenRouterModelPicker
+                              model={settings.model}
+                              apiKey={settings.apiKey}
+                              onModelChange={(model) => update({ model })}
+                            />
+                          ) : (
+                            <Input
+                              id="set-model"
+                              width="auto"
+                              value={settings.model}
+                              onChange={(e) => update({ model: e.target.value })}
+                            />
+                          )}
+                        </SettingsFieldRow>
+                      </SettingsStack>
+                    )}
+                  </div>
+                </div>
+
                 <SettingsSaveBar saved={saved}>
                   <Button variant="primary" onClick={() => void save()}><T k={I18nKey.COMMON$SAVE} /></Button>
                 </SettingsSaveBar>
@@ -406,21 +458,19 @@ export function SettingsApp() {
             <SettingsPage>
               <SettingsSection intro={i18n.t(I18nKey.APPS$SETTINGS_THEME_TYPOGRAPHY_SPACING_ASSISTANT_FACE_AND_BACKGROUND_F)}>
                 <SettingsStack>
-                  <SettingsFieldRow label={i18n.t(I18nKey.SETTINGS$LANGUAGE)} hint={i18n.t(I18nKey.SETTINGS$LANGUAGE_HINT)}>
-                    <SettingsChipRow>
-                      {AvailableLanguages.map((lang) => (
-                        <Chip
-                          key={lang.value}
-                          active={(settings.locale ?? DEFAULT_LOCALE) === lang.value}
-                          onClick={() => {
-                            update({ locale: lang.value });
-                            void applyArcoLocale(lang.value);
-                          }}
-                        >
-                          {lang.label}
-                        </Chip>
-                      ))}
-                    </SettingsChipRow>
+                  <SettingsFieldRow
+                    label={i18n.t(I18nKey.SETTINGS$LANGUAGE)}
+                    hint={i18n.t(I18nKey.SETTINGS$LANGUAGE_HINT)}
+                  >
+                    <ModuleFilterSelect
+                      label={i18n.t(I18nKey.SETTINGS$LANGUAGE)}
+                      value={settings.locale ?? DEFAULT_LOCALE}
+                      options={AvailableLanguages}
+                      onChange={(locale) => {
+                        update({ locale });
+                        void applyArcoLocale(locale);
+                      }}
+                    />
                   </SettingsFieldRow>
                   <SettingsFieldRow label={i18n.t(I18nKey.OS_BENTO_THEME)}>
                     <SettingsChipRow>

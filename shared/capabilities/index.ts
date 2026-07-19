@@ -16,6 +16,7 @@ import { VOICE_CONTRACT_ID, VOICE_INTENTS, VOICE_INTENT_SCHEMAS } from "./voice.
 import { MEMORY_CONTRACT_ID, MEMORY_INTENTS, MEMORY_INTENT_SCHEMAS } from "./memory.js";
 import { SHARES_CONTRACT_ID, SHARES_INTENTS, SHARES_INTENT_SCHEMAS } from "./shares.js";
 import { TASKS_CONTRACT_ID, TASKS_INTENTS, TASKS_INTENT_SCHEMAS } from "./tasks.js";
+import { BOARD_CONTRACT_ID, BOARD_INTENTS, BOARD_INTENT_SCHEMAS } from "./board.js";
 
 export type IntentAccess = "read" | "write";
 
@@ -32,6 +33,7 @@ export const CONTRACTS: Record<string, Record<string, IntentAccess>> = {
   [VOICE_CONTRACT_ID]: VOICE_INTENTS,
   [MEMORY_CONTRACT_ID]: MEMORY_INTENTS,
   [TASKS_CONTRACT_ID]: TASKS_INTENTS,
+  [BOARD_CONTRACT_ID]: BOARD_INTENTS,
   [SHARES_CONTRACT_ID]: SHARES_INTENTS,
 };
 
@@ -48,6 +50,7 @@ export const INTENT_SCHEMAS: Record<string, Record<string, unknown>> = {
   ...VOICE_INTENT_SCHEMAS,
   ...MEMORY_INTENT_SCHEMAS,
   ...TASKS_INTENT_SCHEMAS,
+  ...BOARD_INTENT_SCHEMAS,
   ...SHARES_INTENT_SCHEMAS,
 };
 

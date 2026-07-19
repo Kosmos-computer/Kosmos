@@ -7,13 +7,14 @@ import { T } from "../../i18n/T";
  * from fenced openui-lang via the chat component library.
  */
 import { useCallback, useEffect, useState } from "react";
-import { History, Plus, Trash2 } from "lucide-react";
+import { History, Plus, Trash2, Undo2 } from "lucide-react";
 import type { ApprovalMode } from "@shared/types";
 import { useChat } from "./useChat";
 import { onPrimeComposer } from "./composerBus";
 import { VoiceBar } from "./VoiceBar";
 import { useVoice, voiceClient } from "../../voice";
 import { Composer } from "../../components/composer/Composer";
+import { ComposerNotice } from "../../components/composer/ComposerNotice";
 import { DEFAULT_APPROVAL_MODE } from "../../components/composer/approvalModes";
 import { DEFAULT_TOOLSET_IDS } from "../../components/composer/toolsets";
 import { useComposerAttach } from "../../components/composer/useComposerAttach";
@@ -139,9 +140,15 @@ export function ChatApp() {
               )}
               <ChatThread
                 items={chat.items}
+                sessionId={chat.sessionId}
                 streaming={chat.streaming}
                 turnMeta={chat.turnMeta}
                 onFollowUp={submit}
+                onFork={(item) => chat.forkConversation(item)}
+                onRegenerate={(item) => chat.regenerateResponse(item)}
+                onEditAndResend={(item, text) => chat.editAndResend(item, text)}
+                onRestoreCheckpoint={(item, mode) => chat.restoreCheckpoint(item, mode)}
+                onPrimeComposer={(text) => setDraft(text)}
               />
             </div>
           </>
@@ -184,6 +191,19 @@ export function ChatApp() {
           voiceAvailable={voice.available}
           onVoiceToggle={() => void voice.toggle().catch(() => {})}
           inputAriaLabel="Chat message"
+          notice={
+            chat.pendingRestoreUndo ? (
+              <ComposerNotice
+                tone="info"
+                icon={Undo2}
+                actionLabel="Redo checkpoint"
+                onAction={() => void chat.redoCheckpoint()}
+                onDismiss={() => void chat.dismissRestoreUndo()}
+              >
+                Restore undone until you send again — redo to put the previous state back
+              </ComposerNotice>
+            ) : undefined
+          }
         />
       </div>
     </div>

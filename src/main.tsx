@@ -20,6 +20,7 @@ import "@arco/editor-kit/styles.css";
 import "./styles/email.css";
 import "./styles/files.css";
 import "./styles/tasks.css";
+import "./styles/board.css";
 import "./styles/calendar.css";
 import "./styles/contacts.css";
 import "./styles/maps.css";

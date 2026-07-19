@@ -22,6 +22,7 @@ export type SystemAppId =
   | "email"
   | "calendar"
   | "tasks"
+  | "board"
   | "contacts"
   | "maps"
   | "search"
@@ -47,14 +48,18 @@ export type SystemAppId =
   | "keyboard"
   | "models";
 
+/** Window identity. System apps are usually singleton; Drive may set `instanceId`. */
 export type WindowKind =
-  | { type: "system"; app: SystemAppId }
+  | { type: "system"; app: SystemAppId; instanceId?: string }
   /** An AI-generated OpenUI app from the library. */
   | { type: "generated"; appId: string }
   /** A registered user project embedded by URL (dock "web apps" section). */
   | { type: "web"; webAppId: string }
   /** An installed platform app (manifest + bridge — see AppHost). */
   | { type: "installed"; appId: string };
+
+/** System apps that may have more than one window open at once. */
+const MULTI_INSTANCE_SYSTEM_APPS = new Set<SystemAppId>(["files"]);
 
 export interface WindowRect {
   x: number;
@@ -72,8 +77,22 @@ export interface OsWindow extends WindowRect {
   z: number;
 }
 
-/** Stable identity: one window per system app / per generated app. */
+/** Stable identity for a specific window (includes instance id when present). */
 export function windowKey(kind: WindowKind): string {
+  switch (kind.type) {
+    case "system":
+      return kind.instanceId ? `system:${kind.app}:${kind.instanceId}` : `system:${kind.app}`;
+    case "generated":
+      return `generated:${kind.appId}`;
+    case "web":
+      return `web:${kind.webAppId}`;
+    case "installed":
+      return `installed:${kind.appId}`;
+  }
+}
+
+/** App-level identity used by Dock/Nav pins (never includes an instance id). */
+export function appIdentityKey(kind: WindowKind): string {
   switch (kind.type) {
     case "system":
       return `system:${kind.app}`;
@@ -86,11 +105,36 @@ export function windowKey(kind: WindowKind): string {
   }
 }
 
+export function allowsMultipleWindows(kind: WindowKind): boolean {
+  return kind.type === "system" && MULTI_INSTANCE_SYSTEM_APPS.has(kind.app);
+}
+
+/** True when `winId` is the primary or an instance window for `appKey`. */
+export function windowMatchesApp(winId: string, appKey: string): boolean {
+  return winId === appKey || winId.startsWith(`${appKey}:`);
+}
+
+export function findAppWindows(windows: OsWindow[], appKey: string): OsWindow[] {
+  return windows.filter((w) => windowMatchesApp(w.id, appKey));
+}
+
+export function findFrontmostAppWindow(windows: OsWindow[], appKey: string): OsWindow | undefined {
+  return [...findAppWindows(windows, appKey)].sort((a, b) => b.z - a.z)[0];
+}
+
 /** Inverse of windowKey — used by standalone Electron app windows. */
 export function parseWindowKey(key: string): WindowKind | null {
   if (key.startsWith("system:")) {
-    const app = key.slice("system:".length) as SystemAppId;
-    return { type: "system", app };
+    const rest = key.slice("system:".length);
+    const colon = rest.indexOf(":");
+    if (colon === -1) {
+      return { type: "system", app: rest as SystemAppId };
+    }
+    return {
+      type: "system",
+      app: rest.slice(0, colon) as SystemAppId,
+      instanceId: rest.slice(colon + 1),
+    };
   }
   if (key.startsWith("generated:")) {
     return { type: "generated", appId: key.slice("generated:".length) };
@@ -104,6 +148,13 @@ export function parseWindowKey(key: string): WindowKind | null {
   return null;
 }
 
+function newInstanceId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID().replace(/-/g, "").slice(0, 10);
+  }
+  return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+}
+
 interface PersistedLayout {
   windows: OsWindow[];
   closedGeometry: Record<string, WindowRect>;
@@ -111,6 +162,8 @@ interface PersistedLayout {
 }
 
 const STORAGE_KEY = "arco:layout:v1";
+/** Clears sticky App view / maximize / fractional geometry left by the 3D prototype. */
+const POST_3D_LAYOUT_FIX_KEY = "arco:layout-post-3d-v3";
 
 /**
  * Layouts persisted before the app-ontology rename used kind types
@@ -141,10 +194,61 @@ function migrateLayout(layout: PersistedLayout): PersistedLayout {
   };
 }
 
+function sanitizeRect(rect: WindowRect): WindowRect {
+  return {
+    x: Math.round(rect.x),
+    y: Math.round(rect.y),
+    w: Math.round(rect.w),
+    h: Math.round(rect.h),
+  };
+}
+
+/**
+ * One-shot cleanup after the experimental 3D window layer: sessions often left
+ * App view on (every window fills the screen), windows maximized, or fractional
+ * pose from world sync.
+ */
+function applyPost3dLayoutFix(layout: PersistedLayout): PersistedLayout {
+  if (typeof localStorage === "undefined") return layout;
+  if (localStorage.getItem(POST_3D_LAYOUT_FIX_KEY) === "1") return layout;
+  localStorage.setItem(POST_3D_LAYOUT_FIX_KEY, "1");
+  // App view makes every window look "maximized"; restore floating desktop.
+  if (localStorage.getItem("arco:shell-view") === "app") {
+    localStorage.setItem("arco:shell-view", "desktop");
+  }
+  return {
+    ...layout,
+    windows: (layout.windows ?? []).map((w) => ({
+      ...w,
+      ...sanitizeRect(w),
+      maximized: false,
+    })),
+    closedGeometry: Object.fromEntries(
+      Object.entries(layout.closedGeometry ?? {}).map(([k, v]) => [k, sanitizeRect(v)]),
+    ),
+  };
+}
+
 function loadLayout(): PersistedLayout {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return migrateLayout(JSON.parse(raw) as PersistedLayout);
+    if (raw) {
+      const migrated = applyPost3dLayoutFix(migrateLayout(JSON.parse(raw) as PersistedLayout));
+      // Persist immediately so Chrome keeps the restored sizes after reload.
+      try {
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({
+            windows: migrated.windows,
+            closedGeometry: migrated.closedGeometry,
+            nextZ: migrated.nextZ,
+          } satisfies PersistedLayout),
+        );
+      } catch {
+        // Quota errors are non-fatal.
+      }
+      return migrated;
+    }
   } catch {
     // Corrupt layout — start fresh.
   }
@@ -174,6 +278,7 @@ const DEFAULT_SIZES: Record<string, { w: number; h: number }> = {
   "system:studio": { w: 1180, h: 760 },
   "system:apps": { w: 760, h: 560 },
   "system:skills": { w: 760, h: 620 },
+  "system:board": { w: 1180, h: 720 },
   "system:automations": { w: 760, h: 620 },
   "system:files": { w: 1080, h: 680 },
   "system:downloads": { w: 980, h: 640 },
@@ -185,6 +290,14 @@ const DEFAULT_SIZES: Record<string, { w: number; h: number }> = {
   // Calculator is a device-sized widget — titlebar sits directly on the pad.
   "installed:core.calculator": { w: 400, h: 680 },
 };
+
+/** Default size lookup — instance windows inherit the app's preferred size. */
+function defaultSizeKey(key: string): string {
+  if (DEFAULT_SIZES[key]) return key;
+  const systemBase = key.match(/^(system:[^:]+)/)?.[1];
+  if (systemBase && DEFAULT_SIZES[systemBase]) return systemBase;
+  return key;
+}
 
 const MENUBAR_HEIGHT = 34;
 const WINDOW_MARGIN = 12;
@@ -242,7 +355,7 @@ function defaultRect(key: string, index: number): WindowRect {
     : key.startsWith("installed:")
       ? { w: 960, h: 660 }
       : { w: 720, h: 560 };
-  const size = DEFAULT_SIZES[key] ?? fallback;
+  const size = DEFAULT_SIZES[defaultSizeKey(key)] ?? fallback;
   const vw = typeof window !== "undefined" ? window.innerWidth : 1440;
   const vh = typeof window !== "undefined" ? window.innerHeight : 900;
   const leftBound = typeof window !== "undefined" ? navWidth() + WINDOW_MARGIN : WINDOW_MARGIN;
@@ -270,6 +383,8 @@ interface WindowStore {
   nextZ: number;
 
   open: (kind: WindowKind, title: string) => void;
+  /** Always spawn a new window for multi-instance apps (e.g. Drive). */
+  openNew: (kind: WindowKind, title: string) => void;
   close: (id: string, options?: { fromNative?: boolean }) => void;
   focus: (id: string) => void;
   toggleMinimize: (id: string) => void;
@@ -280,44 +395,90 @@ interface WindowStore {
   focusedId: () => string | null;
 }
 
+function createWindow(
+  state: WindowStore,
+  kind: WindowKind,
+  title: string,
+  id: string,
+): { next: WindowStore; id: string } {
+  const remembered = state.closedGeometry[id] ?? defaultRect(id, state.windows.length);
+  const rect = ensureVisibleRect(id, remembered, state.windows.length);
+  const win: OsWindow = {
+    id,
+    kind,
+    title,
+    ...rect,
+    minimized: false,
+    maximized: false,
+    z: state.nextZ,
+  };
+  const next = {
+    ...state,
+    windows: [...state.windows, win],
+    nextZ: state.nextZ + 1,
+  } as WindowStore;
+  persist(next);
+  return { next, id };
+}
+
+function focusExistingWindow(
+  state: WindowStore,
+  existing: OsWindow,
+  title: string,
+): WindowStore {
+  const rect = ensureVisibleRect(existing.id, existing, state.windows.indexOf(existing));
+  const next = {
+    ...state,
+    windows: state.windows.map((w) =>
+      w.id === existing.id ? { ...w, ...rect, minimized: false, title, z: state.nextZ } : w,
+    ),
+    nextZ: state.nextZ + 1,
+  } as WindowStore;
+  persist(next);
+  return next;
+}
+
 export const useWindowStore = create<WindowStore>((set, get) => ({
   ...loadLayout(),
 
   open: (kind, title) => {
-    const id = windowKey(kind);
+    let openedId = windowKey(kind);
     set((state) => {
-      const existing = state.windows.find((w) => w.id === id);
-      let next: WindowStore;
-      if (existing) {
-        const rect = ensureVisibleRect(id, existing, state.windows.indexOf(existing));
-        next = {
-          ...state,
-          windows: state.windows.map((w) =>
-            w.id === id ? { ...w, ...rect, minimized: false, title, z: state.nextZ } : w,
-          ),
-          nextZ: state.nextZ + 1,
-        } as WindowStore;
+      // Explicit instance → that window only. Multi-instance app without
+      // instanceId → focus the frontmost open window of that app.
+      let existing: OsWindow | undefined;
+      if (kind.type === "system" && kind.instanceId) {
+        existing = state.windows.find((w) => w.id === openedId);
+      } else if (allowsMultipleWindows(kind)) {
+        existing = findFrontmostAppWindow(state.windows, appIdentityKey(kind));
+        if (existing) openedId = existing.id;
+        else openedId = appIdentityKey(kind);
       } else {
-        const remembered = state.closedGeometry[id] ?? defaultRect(id, state.windows.length);
-        const rect = ensureVisibleRect(id, remembered, state.windows.length);
-        const win: OsWindow = {
-          id,
-          kind,
-          title,
-          ...rect,
-          minimized: false,
-          maximized: false,
-          z: state.nextZ,
-        };
-        next = {
-          ...state,
-          windows: [...state.windows, win],
-          nextZ: state.nextZ + 1,
-        } as WindowStore;
+        existing = state.windows.find((w) => w.id === openedId);
       }
-      persist(next);
-      return next;
+
+      if (existing) {
+        return focusExistingWindow(state, existing, title);
+      }
+      const created = createWindow(state, kind.type === "system" ? { type: "system", app: kind.app } : kind, title, openedId);
+      openedId = created.id;
+      return created.next;
     });
+    syncNativeOpen(openedId, title);
+  },
+
+  openNew: (kind, title) => {
+    if (!allowsMultipleWindows(kind) || kind.type !== "system") {
+      get().open(kind, title);
+      return;
+    }
+    const instanceKind: WindowKind = {
+      type: "system",
+      app: kind.app,
+      instanceId: newInstanceId(),
+    };
+    const id = windowKey(instanceKind);
+    set((state) => createWindow(state, instanceKind, title, id).next);
     syncNativeOpen(id, title);
   },
 

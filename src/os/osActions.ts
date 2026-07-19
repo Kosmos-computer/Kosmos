@@ -91,8 +91,13 @@ function findWindowKeysForAppId(appId: string): string[] {
 function findOpenWindow(appId: string) {
   const wm = useWindowStore.getState();
   for (const key of findWindowKeysForAppId(appId)) {
-    const win = wm.windows.find((w) => w.id === key);
-    if (win) return win;
+    const exact = wm.windows.find((w) => w.id === key);
+    if (exact) return exact;
+    // Multi-instance apps (Drive) use `system:files:<instanceId>`.
+    const instance = [...wm.windows]
+      .filter((w) => w.id.startsWith(`${key}:`))
+      .sort((a, b) => b.z - a.z)[0];
+    if (instance) return instance;
   }
   return undefined;
 }

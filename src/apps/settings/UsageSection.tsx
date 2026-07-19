@@ -11,9 +11,8 @@ import {
   SettingsAlert,
   SettingsFieldRow,
   SettingsPage,
-  SettingsPanel,
-  SettingsPanelBody,
-  SettingsPanelHeader,
+  SettingsRow,
+  SettingsRowActions,
   SettingsSection,
   SettingsStack,
 } from "../../components/patterns";
@@ -26,20 +25,21 @@ function BudgetBar({ spend, maxBudget }: { spend: number; maxBudget: number }) {
   const pct = maxBudget > 0 ? Math.min(100, (spend / maxBudget) * 100) : 100;
   return (
     <div
+      className="arco-settings-budget-bar"
       role="progressbar"
       aria-valuenow={Math.round(pct)}
       aria-valuemin={0}
       aria-valuemax={100}
       aria-label="Credits used"
-      style={{ height: 6, borderRadius: 999, background: "var(--arco-border)", overflow: "hidden" }}
     >
       <div
-        style={{
-          height: "100%",
-          width: `${pct}%`,
-          borderRadius: 999,
-          background: pct >= 90 ? "var(--arco-danger)" : "var(--arco-accent)",
-        }}
+        className={[
+          "arco-settings-budget-bar__fill",
+          pct >= 90 ? "arco-settings-budget-bar__fill--danger" : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+        style={{ width: `${pct}%` }}
       />
     </div>
   );
@@ -95,97 +95,132 @@ export function UsageSection() {
     credits.maxBudget > 0 &&
     credits.remaining / credits.maxBudget <= 0.1;
 
+  const refreshButton = (
+    <Button onClick={() => void load(true)} disabled={loading}>
+      {loading ? "Refreshing…" : "Refresh"}
+    </Button>
+  );
+
   return (
     <SettingsPage>
       <SettingsSection intro="Token spend for this instance. Buy more credits when your budget runs low.">
-        <SettingsStack>
-          {error && <SettingsAlert>{error}</SettingsAlert>}
+        {error ? <SettingsAlert>{error}</SettingsAlert> : null}
 
-          {credits && (
-            <SettingsPanel>
-              <SettingsPanelHeader>
+        {credits ? (
+          <SettingsStack>
+            <SettingsRow className="arco-settings-usage-card__header">
+              <div className="arco-settings-panel__identity">
                 <span className="arco-settings-panel__title">Credits</span>
-                {credits.keyAlias && <span className="arco-settings-panel__meta">{credits.keyAlias}</span>}
-              </SettingsPanelHeader>
-              <SettingsPanelBody>
-                {credits.maxBudget !== null && (
-                  <BudgetBar spend={credits.spend} maxBudget={credits.maxBudget} />
-                )}
-                <SettingsFieldRow label="Spent">
-                  <span>{usd(credits.spend)}</span>
-                </SettingsFieldRow>
-                {credits.maxBudget !== null && (
-                  <SettingsFieldRow label="Remaining">
-                    <span>
-                      {usd(credits.remaining ?? 0)} of {usd(credits.maxBudget)}
-                    </span>
-                  </SettingsFieldRow>
-                )}
-                {lowCredits && (
-                  <SettingsAlert tone="muted">
-                    Credits are running low. Buy more to keep using the agent without interruption.
-                  </SettingsAlert>
-                )}
-                {hasCreditPacks ? (
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
-                    {addons?.creditPacks.map((pack) => (
-                      <Button
-                        key={pack.priceId}
-                        variant="primary"
-                        onClick={() => void startCheckout(pack.priceId)}
-                        disabled={checkoutBusy === pack.priceId}
-                      >
-                        {checkoutBusy === pack.priceId ? "Opening…" : `Buy ${pack.label}`}
-                      </Button>
-                    ))}
-                  </div>
-                ) : deployment.billingConfigured ? (
-                  <SettingsAlert tone="muted">
-                    Credit top-ups are not configured yet. Open Billing to manage your subscription.
-                  </SettingsAlert>
+                {credits.keyAlias ? (
+                  <span className="arco-settings-panel__meta">{credits.keyAlias}</span>
                 ) : null}
-              </SettingsPanelBody>
-            </SettingsPanel>
-          )}
+              </div>
+              <SettingsRowActions>{refreshButton}</SettingsRowActions>
+            </SettingsRow>
+            {credits.maxBudget !== null ? (
+              <SettingsRow className="arco-settings-usage-card__bar">
+                <BudgetBar spend={credits.spend} maxBudget={credits.maxBudget} />
+              </SettingsRow>
+            ) : null}
+            <SettingsFieldRow label="Spent">
+              <span className="arco-settings-usage-value">{usd(credits.spend)}</span>
+            </SettingsFieldRow>
+            {credits.maxBudget !== null ? (
+              <SettingsFieldRow label="Remaining">
+                <span className="arco-settings-usage-value">
+                  {usd(credits.remaining ?? 0)} of {usd(credits.maxBudget)}
+                </span>
+              </SettingsFieldRow>
+            ) : null}
+            {lowCredits ? (
+              <SettingsRow className="arco-settings-usage-card__note">
+                <p className="arco-settings-panel__desc">
+                  Credits are running low. Buy more to keep using the agent without interruption.
+                </p>
+              </SettingsRow>
+            ) : null}
+            {hasCreditPacks ? (
+              <SettingsRow className="arco-settings-usage-card__actions">
+                <SettingsRowActions>
+                  {addons?.creditPacks.map((pack) => (
+                    <Button
+                      key={pack.priceId}
+                      variant="primary"
+                      onClick={() => void startCheckout(pack.priceId)}
+                      disabled={checkoutBusy === pack.priceId}
+                    >
+                      {checkoutBusy === pack.priceId ? "Opening…" : `Buy ${pack.label}`}
+                    </Button>
+                  ))}
+                </SettingsRowActions>
+              </SettingsRow>
+            ) : deployment.billingConfigured ? (
+              <SettingsRow className="arco-settings-usage-card__note">
+                <p className="arco-settings-panel__desc">
+                  Credit top-ups are not configured yet. Open Billing to manage your subscription.
+                </p>
+              </SettingsRow>
+            ) : null}
+          </SettingsStack>
+        ) : null}
 
-          {!credits && !loading && !error && (
-            <SettingsAlert tone="muted">
-              No credits gateway detected — the current provider doesn't report a budget. Token totals
-              below are counted locally.
-            </SettingsAlert>
-          )}
-
-          {local && (
-            <SettingsPanel>
-              <SettingsPanelHeader>
+        {local ? (
+          <SettingsStack>
+            <SettingsRow className="arco-settings-usage-card__header">
+              <div className="arco-settings-panel__identity">
                 <span className="arco-settings-panel__title">Tokens used</span>
                 <span className="arco-settings-panel__meta">
                   since {new Date(local.since).toLocaleDateString()}
+                  {!credits ? " · counted locally" : ""}
                 </span>
-              </SettingsPanelHeader>
-              <SettingsPanelBody>
-                <SettingsFieldRow label="Total">
-                  <span>{num.format(local.totalTokens)}</span>
-                </SettingsFieldRow>
-                <SettingsFieldRow label="Prompt">
-                  <span>{num.format(local.promptTokens)}</span>
-                </SettingsFieldRow>
-                <SettingsFieldRow label="Completion">
-                  <span>{num.format(local.completionTokens)}</span>
-                </SettingsFieldRow>
-                <SettingsFieldRow label="Completions">
-                  <span>{num.format(local.turns)}</span>
-                </SettingsFieldRow>
-              </SettingsPanelBody>
-            </SettingsPanel>
-          )}
+              </div>
+              {!credits ? <SettingsRowActions>{refreshButton}</SettingsRowActions> : null}
+            </SettingsRow>
 
-          <div>
-            <Button onClick={() => void load(true)} disabled={loading}>
-              {loading ? "Refreshing…" : "Refresh"}
-            </Button>
-          </div>
-        </SettingsStack>
+            {!credits ? (
+              <SettingsRow className="arco-settings-usage-card__note">
+                <p className="arco-settings-panel__desc">
+                  No credits gateway detected — the current provider doesn&apos;t report a budget.
+                  Totals below are counted on this instance.
+                </p>
+              </SettingsRow>
+            ) : null}
+
+            <SettingsRow className="arco-settings-usage-hero">
+              <span className="arco-settings-usage-hero__value">{num.format(local.totalTokens)}</span>
+              <span className="arco-settings-usage-hero__label">Total tokens</span>
+            </SettingsRow>
+
+            <SettingsRow className="arco-settings-usage-stats">
+              <div className="arco-settings-usage-stat">
+                <span className="arco-settings-usage-stat__value">{num.format(local.promptTokens)}</span>
+                <span className="arco-settings-usage-stat__label">Prompt</span>
+              </div>
+              <div className="arco-settings-usage-stat">
+                <span className="arco-settings-usage-stat__value">
+                  {num.format(local.completionTokens)}
+                </span>
+                <span className="arco-settings-usage-stat__label">Completion</span>
+              </div>
+              <div className="arco-settings-usage-stat">
+                <span className="arco-settings-usage-stat__value">{num.format(local.turns)}</span>
+                <span className="arco-settings-usage-stat__label">Completions</span>
+              </div>
+            </SettingsRow>
+          </SettingsStack>
+        ) : null}
+
+        {!local && !credits && !loading && !error ? (
+          <SettingsStack>
+            <SettingsRow className="arco-settings-usage-card__header">
+              <div className="arco-settings-panel__identity">
+                <span className="arco-settings-panel__title">Usage</span>
+                <span className="arco-settings-panel__meta">No usage recorded yet</span>
+              </div>
+              <SettingsRowActions>{refreshButton}</SettingsRowActions>
+            </SettingsRow>
+          </SettingsStack>
+        ) : null}
       </SettingsSection>
     </SettingsPage>
   );

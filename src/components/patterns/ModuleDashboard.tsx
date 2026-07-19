@@ -95,17 +95,29 @@ export function ModuleFilterSelect<T extends string>({
   value,
   options,
   onChange,
+  disabled = false,
+  searchable = false,
+  searchPlaceholder,
+  portal = false,
+  className = "",
 }: {
   label: string;
   value: T;
   options: readonly ModuleFilterOption<T>[];
   onChange: (value: T) => void;
+  disabled?: boolean;
+  /** Pass true/"auto" for long option lists (e.g. model pickers). */
+  searchable?: boolean | "auto";
+  searchPlaceholder?: string;
+  /** Portal the menu when a parent clips overflow (settings detail panes). */
+  portal?: boolean;
+  className?: string;
 }) {
   const selectedLabel = options.find((option) => option.value === value)?.label ?? label;
   const items = useMemo<MenuItem[]>(
     () =>
       options.map((option) => ({
-        id: option.value,
+        id: option.value || "__empty__",
         label: option.label,
         checked: option.value === value,
         onSelect: () => onChange(option.value),
@@ -115,12 +127,14 @@ export function ModuleFilterSelect<T extends string>({
 
   return (
     <Menu
-      className="arco-module__filter"
+      className={["arco-module__filter", className].filter(Boolean).join(" ")}
       aria-label={label}
-      searchable={false}
+      searchable={searchable}
+      searchPlaceholder={searchPlaceholder}
+      portal={portal}
       items={items}
       trigger={
-        <button type="button" className="arco-module__filter-trigger">
+        <button type="button" className="arco-module__filter-trigger" disabled={disabled}>
           <span className="arco-module__filter-label">{selectedLabel}</span>
           <ChevronDown size={14} aria-hidden="true" />
         </button>

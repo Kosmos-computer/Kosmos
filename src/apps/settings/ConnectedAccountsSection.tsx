@@ -12,14 +12,10 @@ import {
   ListSearch,
   SettingsEmpty,
   SettingsPage,
-  SettingsPanel,
-  SettingsPanelBody,
-  SettingsPanelHeader,
   SettingsRow,
   SettingsRowActions,
   SettingsSection,
   SettingsStack,
-  SettingsSubhead,
 } from "../../components/patterns";
 import { useGitHubConnection } from "../../connections/useGitHubConnection";
 import { useConnectionStore } from "../../connections/useConnectionStore";
@@ -33,6 +29,25 @@ import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
 import { T } from "../../i18n/T";
 import { NostrRelaysEditor } from "./NostrRelaysEditor";
+
+function socialProviderLabel(provider: SocialAccountInfo["provider"]): string {
+  switch (provider) {
+    case "nostr":
+      return "Nostr";
+    case "mastodon":
+      return "Mastodon";
+    case "twitter":
+      return "X";
+    case "facebook":
+      return "Facebook";
+    case "reddit":
+      return "Reddit";
+    case "bitsocial":
+      return "Bitsocial";
+    default:
+      return "Bluesky";
+  }
+}
 
 export function ConnectedAccountsSection() {
   const canManage = useCan("settings:write");
@@ -101,19 +116,7 @@ export function ConnectedAccountsSection() {
     matchesListSearch(
       searchQuery,
       account.handle,
-      account.provider === "nostr"
-        ? "Nostr"
-        : account.provider === "mastodon"
-          ? "Mastodon"
-          : account.provider === "twitter"
-            ? "X"
-            : account.provider === "facebook"
-              ? "Facebook"
-              : account.provider === "reddit"
-                ? "Reddit"
-                : account.provider === "bitsocial"
-                  ? "Bitsocial"
-                  : "Bluesky",
+      socialProviderLabel(account.provider),
       account.did,
       account.instanceUrl,
       account.pageId,
@@ -196,29 +199,34 @@ export function ConnectedAccountsSection() {
   );
 
   const hasOtherAccounts = connections.length > 0 || serverAccounts.length > 0;
+  const hasFilteredAccounts = filteredConnections.length > 0 || filteredServerAccounts.length > 0;
 
   return (
     <SettingsPage>
       <SettingsSection intro={i18n.t(I18nKey.APPS$SETTINGS_ACCOUNTS_LINKED_TO_GROUPS_AND_SOCIAL_WORKSPACES_OAUTH_AN)}>
         <SettingsStack>
-          <SettingsSubhead>GitHub</SettingsSubhead>
-          <GitHubConnectCard connection={github} variant="inline" />
+          <GitHubConnectCard
+            connection={github}
+            variant="inline"
+            className="arco-github-connect--embedded"
+          />
+        </SettingsStack>
 
-          <SettingsSubhead><T k={I18nKey.APPS$EMAIL_GMAIL} /></SettingsSubhead>
-          <SettingsPanel>
-            <SettingsPanelBody>
-              <GmailOAuthSetup
-                oauth={mailOauth}
-                onUpdated={setMailOauth}
-                onConnected={() => {
-                  void api.mailStatus().then((status) => setMailOauth(status.oauth));
-                }}
-                variant="settings"
-              />
-            </SettingsPanelBody>
-          </SettingsPanel>
+        <SettingsStack>
+          <div className="arco-settings-account-card__body">
+            <GmailOAuthSetup
+              oauth={mailOauth}
+              onUpdated={setMailOauth}
+              onConnected={() => {
+                void api.mailStatus().then((status) => setMailOauth(status.oauth));
+              }}
+              variant="settings"
+            />
+          </div>
+        </SettingsStack>
 
-          <SettingsSubhead>Other connected accounts</SettingsSubhead>
+        <div className="arco-settings-accounts-group">
+          <h2 className="arco-settings-subhead">Other connected accounts</h2>
           {hasOtherAccounts ? (
             <ListSearch
               value={searchQuery}
@@ -229,13 +237,13 @@ export function ConnectedAccountsSection() {
           ) : null}
           {!hasOtherAccounts ? (
             <SettingsEmpty><T k={I18nKey.APPS$SETTINGS_NO_CONNECTED_ACCOUNTS_YET} /></SettingsEmpty>
-          ) : filteredConnections.length === 0 && filteredServerAccounts.length === 0 ? (
+          ) : !hasFilteredAccounts ? (
             <SettingsEmpty><T k={I18nKey.APPS$SETTINGS_NO_ACCOUNTS_MATCH_YOUR_SEARCH} /></SettingsEmpty>
           ) : (
             <>
               {filteredServerAccounts.map((account) => (
-                <SettingsPanel key={account.id}>
-                  <SettingsPanelHeader>
+                <SettingsStack key={account.id}>
+                  <SettingsRow className="arco-settings-account-card__header">
                     <span className="arco-settings-panel__title arco-settings-panel__title--with-avatar">
                       <Avatar
                         name={account.displayName ?? account.handle}
@@ -246,86 +254,73 @@ export function ConnectedAccountsSection() {
                         ? account.handle
                         : `@${account.handle}`}
                     </span>
-                  </SettingsPanelHeader>
-                  <SettingsPanelBody>
-                    <SettingsRow>
-                      <Link2 size={14} className="arco-icon arco-icon--secondary" />
-                      <span>
-                        {account.provider === "nostr"
-                          ? "Nostr"
-                          : account.provider === "mastodon"
-                            ? "Mastodon"
-                            : account.provider === "twitter"
-                              ? "X"
-                              : account.provider === "facebook"
-                                ? "Facebook"
-                                : account.provider === "reddit"
-                                  ? "Reddit"
-                                  : account.provider === "bitsocial"
-                                    ? "Bitsocial"
-                                    : "Bluesky"}
-                      </span>
-                      {canManage ? (
-                        <SettingsRowActions>
-                          <Button
-                            variant="ghost"
-                            onClick={() => {
-                              void api.disconnectSocialAccount(account.id).then(() => refreshSocial());
-                            }}
-                          >
-                            <Trash2 size={14} /><T k={I18nKey.COMMON$REMOVE} />
-                          </Button>
-                        </SettingsRowActions>
-                      ) : null}
-                    </SettingsRow>
-                    {account.provider === "nostr" ? (
-                      <NostrRelaysEditor
-                        account={account}
-                        canManage={canManage}
-                        onUpdated={(updated) => {
-                          setServerAccounts((prev) =>
-                            prev.map((entry) => (entry.id === updated.id ? updated : entry)),
-                          );
-                        }}
-                      />
+                    {canManage ? (
+                      <SettingsRowActions>
+                        <Button
+                          variant="ghost"
+                          onClick={() => {
+                            void api.disconnectSocialAccount(account.id).then(() => refreshSocial());
+                          }}
+                        >
+                          <Trash2 size={14} /><T k={I18nKey.COMMON$REMOVE} />
+                        </Button>
+                      </SettingsRowActions>
                     ) : null}
-                  </SettingsPanelBody>
-                </SettingsPanel>
+                  </SettingsRow>
+                  <SettingsRow>
+                    <Link2 size={14} className="arco-icon arco-icon--secondary" />
+                    <span className="arco-settings-tool-row__desc">
+                      {socialProviderLabel(account.provider)}
+                    </span>
+                  </SettingsRow>
+                  {account.provider === "nostr" ? (
+                    <NostrRelaysEditor
+                      account={account}
+                      canManage={canManage}
+                      onUpdated={(updated) => {
+                        setServerAccounts((prev) =>
+                          prev.map((entry) => (entry.id === updated.id ? updated : entry)),
+                        );
+                      }}
+                    />
+                  ) : null}
+                </SettingsStack>
               ))}
               {filteredConnections.map((connection) => (
-                <SettingsPanel key={connection.id}>
-                  <SettingsPanelHeader>
+                <SettingsStack key={connection.id}>
+                  <SettingsRow className="arco-settings-account-card__header">
                     <span className="arco-settings-panel__title">{connection.label}</span>
-                  </SettingsPanelHeader>
-                  <SettingsPanelBody>
-                    <SettingsRow>
-                      <Link2 size={14} className="arco-icon arco-icon--secondary" />
-                      <span>
-                        {presetById(connection.provider).label}
-                        {connection.instanceUrl ? ` · ${connection.instanceUrl}` : ""}
-                      </span>
-                      {canManage ? (
-                        <SettingsRowActions>
-                          <Button variant="ghost" onClick={() => removeConnection(connection.id)}>
-                            <Trash2 size={14} /><T k={I18nKey.COMMON$REMOVE} /></Button>
-                        </SettingsRowActions>
-                      ) : null}
-                    </SettingsRow>
-                  </SettingsPanelBody>
-                </SettingsPanel>
+                    {canManage ? (
+                      <SettingsRowActions>
+                        <Button variant="ghost" onClick={() => removeConnection(connection.id)}>
+                          <Trash2 size={14} /><T k={I18nKey.COMMON$REMOVE} />
+                        </Button>
+                      </SettingsRowActions>
+                    ) : null}
+                  </SettingsRow>
+                  <SettingsRow>
+                    <Link2 size={14} className="arco-icon arco-icon--secondary" />
+                    <span className="arco-settings-tool-row__desc">
+                      {presetById(connection.provider).label}
+                      {connection.instanceUrl ? ` · ${connection.instanceUrl}` : ""}
+                    </span>
+                  </SettingsRow>
+                </SettingsStack>
               ))}
             </>
           )}
 
           {canManage ? (
-            <SettingsRow>
-              <SettingsRowActions>
-                <Button onClick={() => openConnect("teams")}><T k={I18nKey.APPS$SETTINGS_CONNECT_TEAM_CHAT} /></Button>
-                <Button onClick={() => openConnect("social")}><T k={I18nKey.APPS$SETTINGS_CONNECT_SOCIAL} /></Button>
-              </SettingsRowActions>
-            </SettingsRow>
+            <SettingsStack>
+              <SettingsRow>
+                <SettingsRowActions>
+                  <Button onClick={() => openConnect("teams")}><T k={I18nKey.APPS$SETTINGS_CONNECT_TEAM_CHAT} /></Button>
+                  <Button onClick={() => openConnect("social")}><T k={I18nKey.APPS$SETTINGS_CONNECT_SOCIAL} /></Button>
+                </SettingsRowActions>
+              </SettingsRow>
+            </SettingsStack>
           ) : null}
-        </SettingsStack>
+        </div>
       </SettingsSection>
 
       <ConnectServiceModal

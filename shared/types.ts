@@ -123,6 +123,11 @@ export interface Session {
    * Omitted/legacy sessions resolve to agent:builtin at turn time.
    */
   profileId?: string | null;
+  /**
+   * Board work item this conversation is working (os.board@1).
+   * When set, the agent may call board.move on this card as the job advances.
+   */
+  workItemId?: string | null;
   messages: ChatMessage[];
   createdAt: string;
   updatedAt: string;
@@ -578,15 +583,59 @@ export interface AutomationHealthResponse {
 // reply back. Unknown senders are NOT processed: they receive a pairing code
 // the user approves in Settings — OpenClaw's DM-pairing posture.
 
-export type ChannelKind = "telegram" | "discord";
+/**
+ * Messaging surfaces aligned with OpenClaw's channel inventory.
+ * Catalog metadata (labels, fields, maturity) lives in `shared/channelCatalog.ts`.
+ */
+export type ChannelKind =
+  | "telegram"
+  | "discord"
+  | "slack"
+  | "mattermost"
+  | "irc"
+  | "matrix"
+  | "whatsapp"
+  | "signal"
+  | "imessage"
+  | "msteams"
+  | "feishu"
+  | "googlechat"
+  | "line"
+  | "nextcloudtalk"
+  | "nostr"
+  | "qqbot"
+  | "sms"
+  | "synologychat"
+  | "twitch"
+  | "tlon"
+  | "zalo"
+  | "zalouser"
+  | "wechat"
+  | "wecom"
+  | "yuanbao"
+  | "clickclack"
+  | "webchat"
+  | "reef"
+  | "raft"
+  | "voicecall";
 
 export interface ChannelConfig {
   /** Slug, unique — also keys the chat→session map. */
   id: string;
   kind: ChannelKind;
   name: string;
-  /** Bot API token — never returned in full by the API (masked like keys). */
+  /** Primary secret (bot token, nick, session id, …) — masked on API reads. */
   token: string;
+  /**
+   * Secondary secret (Slack app token, LINE channel secret, …). Masked on reads.
+   */
+  appToken?: string;
+  /**
+   * Kind-specific non-secret (and extra secret) knobs: baseUrl, host, port,
+   * channels, appId, accountSid, etc. Secret-looking values are masked in
+   * maskConfig when the key looks sensitive.
+   */
+  options?: Record<string, string>;
   enabled: boolean;
   addedAt: string;
   /**

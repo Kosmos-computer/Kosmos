@@ -129,11 +129,11 @@ export function BillingSection() {
                 <span className="arco-settings-panel__title">Local instance</span>
               </SettingsPanelHeader>
               <SettingsPanelBody>
-                <SettingsAlert tone="muted">
+                <p className="arco-settings-panel__desc">
                   This instance runs locally. Subscribe to Kosmos Hosted for a managed cloud workspace,
                   then connect from Settings → Kosmos Cloud on desktop.
-                </SettingsAlert>
-                <div>
+                </p>
+                <div className="arco-settings-panel__actions">
                   <Button onClick={openSignup}>Create cloud account</Button>
                 </div>
               </SettingsPanelBody>

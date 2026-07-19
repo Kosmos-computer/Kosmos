@@ -11,7 +11,13 @@ import {
 import type { SettingsSectionId } from "../apps/settings/settingsSections";
 import { useOsStore } from "./osStore";
 import { systemAppTitle } from "./systemAppTitles";
-import { useWindowStore, windowKey, type SystemAppId, type WindowKind } from "./windowStore";
+import {
+  appIdentityKey,
+  findFrontmostAppWindow,
+  useWindowStore,
+  type SystemAppId,
+  type WindowKind,
+} from "./windowStore";
 
 let navigateFn: NavigateFunction | null = null;
 
@@ -120,6 +126,13 @@ export function openShellWindow(
   syncUrlToWindowKind(kind, section, options?.replace ?? false);
 }
 
+/** Spawn an additional window for apps that support it (Drive). */
+export function openNewShellWindow(kind: WindowKind, title: string): void {
+  const resolvedTitle = resolveTitleForKind(kind, title);
+  useWindowStore.getState().openNew(kind, resolvedTitle);
+  syncUrlToWindowKind(kind, undefined, false);
+}
+
 export function focusShellWindow(windowId: string): void {
   const state = useWindowStore.getState();
   state.focus(windowId);
@@ -138,10 +151,15 @@ export function navigateSettingsSection(section: SettingsSectionId): void {
 
 /** Open or focus a window keyed the same way as NavRail/Dock entries. */
 export function activateShellWindow(kind: WindowKind, title: string, isOpen: boolean): void {
-  const id = windowKey(kind);
   if (isOpen) {
-    focusShellWindow(id);
-  } else {
-    openShellWindow(kind, title);
+    const frontmost = findFrontmostAppWindow(
+      useWindowStore.getState().windows,
+      appIdentityKey(kind),
+    );
+    if (frontmost) {
+      focusShellWindow(frontmost.id);
+      return;
+    }
   }
+  openShellWindow(kind, title);
 }

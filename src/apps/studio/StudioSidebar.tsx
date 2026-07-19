@@ -7,7 +7,7 @@ import { T } from "../../i18n/T";
  * on each group to start a chat in that folder/repo.
  */
 import { useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent } from "react";
-import { Calendar, ChevronRight, Download, LayoutGrid, Layers, MoreVertical, PanelLeft, Pin, Plus, Search, Trash2 } from "lucide-react";
+import { Calendar, ChevronRight, Columns3, Download, LayoutGrid, Layers, MoreVertical, PanelLeft, Pin, Plus, Search, Trash2 } from "lucide-react";
 import type { Project, SessionSummary } from "@shared/types";
 import { useAuthStore } from "../../os/auth/authStore";
 import { useWindowStore } from "../../os/windowStore";
@@ -51,12 +51,15 @@ export interface StudioSidebarProps {
   sessions: SessionSummary[];
   projects: Project[];
   activeSessionId?: string;
+  /** Center pane: chat vs Board. Board press shows selected in the rail. */
+  mainSurface?: "chat" | "board";
   /** OpenHands-style icon rail when true — quick actions stay, list hides. */
   collapsed?: boolean;
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
   onNewChat: () => void;
   onNewChatInProject: (projectId: string | null) => void;
+  onSelectBoard?: () => void;
   onToggleCollapsed?: () => void;
 }
 
@@ -64,11 +67,13 @@ export function StudioSidebar({
   sessions,
   projects,
   activeSessionId,
+  mainSurface = "chat",
   collapsed = false,
   onSelect,
   onDelete,
   onNewChat,
   onNewChatInProject,
+  onSelectBoard,
   onToggleCollapsed,
 }: StudioSidebarProps) {
   const [searchOpen, setSearchOpen] = useState(false);
@@ -194,6 +199,17 @@ export function StudioSidebar({
           >
             <Search size={14} />
             {!collapsed ? <T k={I18nKey.COMMON$SEARCH} /> : null}
+          </button>
+          <button
+            type="button"
+            className="arco-sidenav__quicklink"
+            aria-pressed={mainSurface === "board"}
+            aria-label={i18n.t(I18nKey.OS$APP_BOARD)}
+            title={i18n.t(I18nKey.OS$APP_BOARD)}
+            onClick={() => onSelectBoard?.()}
+          >
+            <Columns3 size={14} />
+            {!collapsed ? <T k={I18nKey.OS$APP_BOARD} /> : null}
           </button>
           <button
             type="button"

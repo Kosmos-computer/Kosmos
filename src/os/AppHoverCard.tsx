@@ -1,8 +1,8 @@
 /**
- * macOS-style app menu popover for Dock / NavRail items — port of Longformer
- * TrayAppHoverCard. Dock opens on hover (or right-click); NavRail opens on
- * left-click (or right-click). Portal-positioned so HoverDock / overflow
- * clipping don't clip the panel.
+ * App menu popover for Dock / NavRail items — same chrome as Menu dropdowns
+ * (`.arco-menu__panel` / `.arco-menu__item`), with window controls for the
+ * specific app. Dock opens on hover (or right-click); NavRail opens on
+ * left-click (or right-click).
  */
 import {
   cloneElement,
@@ -19,230 +19,150 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import { Check, ChevronRight, type LucideIcon } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useDismiss } from "../components/useDismiss";
-import {
-  APP_HOVER_OPTIONS_ITEMS,
-  defaultProfilesForApp,
-  type AppHoverCardActionHandlers,
-  type AppHoverProfile,
-} from "./appHoverCardData";
+import type { AppHoverCardActionHandlers, AppHoverWindowState } from "./appHoverCardData";
 
 export type AppHoverCardPlacement = "top" | "right";
 export type AppHoverCardOpenOn = "hover" | "click";
 
 export interface AppHoverCardProps extends AppHoverCardActionHandlers {
-  /** Stable app id (windowKey) — used for stub profile lists. */
   appId: string;
   label: string;
+  /** Kept for callers; icon is shown on the tray/nav trigger, not in the menu. */
   icon: LucideIcon;
   children: ReactElement<Record<string, unknown>>;
-  running?: boolean;
-  active?: boolean;
-  openWindowCount?: number;
-  profiles?: AppHoverProfile[];
-  defaultProfileId?: string;
+  windowState: AppHoverWindowState;
   /** Where the panel sits relative to the trigger. */
   placement?: AppHoverCardPlacement;
   /** Primary open gesture — dock uses hover; nav uses click. */
   openOn?: AppHoverCardOpenOn;
-  /** Label for the remove action in Options (e.g. "Remove from Dock"). */
+  /** Label for unpin (e.g. "Remove from Dock"). */
   removeLabel?: string;
   /** When true, suppress scheduled hover open (e.g. while dragging). */
   disabled?: boolean;
 }
 
-function getMenuStyle(
-  trigger: HTMLElement | null,
-  placement: AppHoverCardPlacement,
-): CSSProperties | undefined {
-  const rect = trigger?.getBoundingClientRect();
-  if (!rect) return undefined;
-
-  if (placement === "right") {
-    return {
-      top: rect.top + rect.height / 2,
-      left: rect.right + 8,
-    };
-  }
-
-  return {
-    top: rect.top - 8,
-    left: rect.left + rect.width / 2,
-  };
+function clampFixed(x: number, y: number, width: number, height: number): CSSProperties {
+  const pad = 8;
+  const left = Math.min(Math.max(pad, x), Math.max(pad, window.innerWidth - width - pad));
+  const top = Math.min(Math.max(pad, y), Math.max(pad, window.innerHeight - height - pad));
+  return { position: "fixed", left, top, right: "auto", bottom: "auto" };
 }
 
-function MenuSeparator() {
-  return <div className="arco-app-hovercard__separator" role="separator" />;
+function triggerAnchoredStyle(
+  trigger: DOMRect,
+  panel: DOMRect,
+  placement: AppHoverCardPlacement,
+): CSSProperties {
+  if (placement === "right") {
+    const x = trigger.right + 8;
+    const y = trigger.top + trigger.height / 2 - panel.height / 2;
+    return clampFixed(x, y, panel.width, panel.height);
+  }
+
+  const gap = 4;
+  const x = trigger.left + trigger.width / 2 - panel.width / 2;
+  const y = trigger.top - panel.height - gap;
+  return clampFixed(x, y, panel.width, panel.height);
 }
 
 function MenuRow({
   label,
-  checked,
-  chevron,
   danger,
+  disabled,
   onClick,
-  onMouseEnter,
 }: {
   label: ReactNode;
-  checked?: boolean;
-  chevron?: boolean;
   danger?: boolean;
+  disabled?: boolean;
   onClick?: () => void;
-  onMouseEnter?: () => void;
 }) {
   return (
     <button
       type="button"
       role="menuitem"
-      className={["arco-app-hovercard__row", danger && "arco-app-hovercard__row--danger"]
-        .filter(Boolean)
-        .join(" ")}
+      disabled={disabled}
+      className={["arco-menu__item", danger && "arco-menu__item--danger"].filter(Boolean).join(" ")}
       onClick={onClick}
-      onMouseEnter={onMouseEnter}
     >
-      <span className="arco-app-hovercard__check" aria-hidden="true">
-        {checked ? <Check size={12} strokeWidth={2.4} /> : null}
-      </span>
-      <span className="arco-app-hovercard__row-label">{label}</span>
-      {chevron ? (
-        <ChevronRight size={12} className="arco-app-hovercard__chevron" aria-hidden="true" />
-      ) : null}
+      <span className="arco-menu__itemlabel">{label}</span>
     </button>
   );
 }
 
 function AppHoverMenuPanel({
   label,
-  Icon,
-  active,
-  running,
-  profiles,
-  activeProfileId,
-  openWindowCount,
-  optionsOpen,
+  windowState,
   removeLabel,
-  onOptionsEnter,
-  onOptionsLeave,
-  onSelectProfile,
   handlers,
 }: {
   label: string;
-  Icon: LucideIcon;
-  active: boolean;
-  running: boolean;
-  profiles: AppHoverProfile[];
-  activeProfileId: string;
-  openWindowCount: number;
-  optionsOpen: boolean;
+  windowState: AppHoverWindowState;
   removeLabel?: string;
-  onOptionsEnter: () => void;
-  onOptionsLeave: () => void;
-  onSelectProfile: (profileId: string) => void;
   handlers: AppHoverCardActionHandlers;
 }) {
-  const showProfiles = profiles.length > 0;
-  const showAllLabel =
-    openWindowCount > 1 ? `Show All Windows (${openWindowCount})` : "Show All Windows";
-
+  const { isOpen, isVisible, isActive, isMaximized } = windowState;
   const run = (action?: () => void) => () => action?.();
 
   return (
-    <div className="arco-app-hovercard__menu" role="menu" aria-label={`${label} menu`}>
-      <MenuRow
-        label={
-          <span className="arco-app-hovercard__header">
-            <span className="arco-app-hovercard__header-icon" aria-hidden="true">
-              <Icon size={14} strokeWidth={1.8} />
-            </span>
-            {label}
-          </span>
-        }
-        checked={active || running}
-        onClick={run(handlers.onShowAllWindows)}
-      />
+    <>
+      {!isOpen && <MenuRow label={`Open ${label}`} onClick={run(handlers.onOpen)} />}
 
-      {showProfiles && (
-        <>
-          <MenuSeparator />
-          <div className="arco-app-hovercard__section">Profiles</div>
-          <div className="arco-app-hovercard__profiles">
-            {profiles.map((profile) => (
-              <MenuRow
-                key={profile.id}
-                label={profile.label}
-                checked={profile.id === activeProfileId}
-                onClick={() => {
-                  onSelectProfile(profile.id);
-                  handlers.onSelectProfile?.(profile.id);
-                }}
-              />
-            ))}
-          </div>
-        </>
+      {isOpen && !isVisible && (
+        <MenuRow label={`Show ${label}`} onClick={run(handlers.onShow)} />
       )}
 
-      <MenuSeparator />
+      {isVisible && !isActive && (
+        <MenuRow label={`Show ${label}`} onClick={run(handlers.onShow)} />
+      )}
 
-      <MenuRow label="New Window" onClick={run(handlers.onNewWindow)} />
-      <MenuRow
-        label="New Incognito Window"
-        onClick={run(handlers.onNewPrivateWindow ?? handlers.onNewWindow)}
-      />
+      {isVisible && <MenuRow label="Minimize" onClick={run(handlers.onMinimize)} />}
 
-      <div className="arco-app-hovercard__submenu-wrap" onMouseLeave={onOptionsLeave}>
-        <MenuRow label="Options" chevron onMouseEnter={onOptionsEnter} />
-        {optionsOpen && (
-          <div className="arco-app-hovercard__submenu" role="menu" aria-label="Options">
-            {APP_HOVER_OPTIONS_ITEMS.map((item) => (
-              <MenuRow key={item.id} label={item.label} />
-            ))}
-            {removeLabel && handlers.onRemove ? (
-              <MenuRow label={removeLabel} danger onClick={run(handlers.onRemove)} />
-            ) : null}
-          </div>
-        )}
-      </div>
+      {isVisible && (
+        <MenuRow
+          label={isMaximized ? "Restore" : "Maximize"}
+          onClick={run(handlers.onMaximize)}
+        />
+      )}
 
-      <MenuSeparator />
+      {isOpen && handlers.onNewWindow && (
+        <MenuRow label="New Window" onClick={run(handlers.onNewWindow)} />
+      )}
 
-      <MenuRow label={showAllLabel} onClick={run(handlers.onShowAllWindows)} />
-      <MenuRow label="Hide" onClick={run(handlers.onHide)} />
-      <MenuRow label="Quit" danger onClick={run(handlers.onQuit)} />
-    </div>
+      {isOpen && (
+        <MenuRow label={`Close ${label}`} danger onClick={run(handlers.onClose)} />
+      )}
+
+      {removeLabel && handlers.onRemove ? (
+        <>
+          <div className="arco-menu__separator" role="separator" />
+          <MenuRow label={removeLabel} danger onClick={run(handlers.onRemove)} />
+        </>
+      ) : null}
+    </>
   );
 }
 
-/** Shell app hovercard — profiles, window actions, and nested options. */
+/** Shell app hovercard — window controls for one app, Menu dropdown styling. */
 export function AppHoverCard({
-  appId,
   label,
-  icon: Icon,
   children,
-  running = false,
-  active = false,
-  openWindowCount = 0,
-  profiles: profilesProp,
-  defaultProfileId,
+  windowState,
   placement = "top",
   openOn = "hover",
   removeLabel,
   disabled = false,
+  onOpen,
+  onShow,
+  onMinimize,
+  onMaximize,
+  onClose,
   onNewWindow,
-  onNewPrivateWindow,
-  onShowAllWindows,
-  onHide,
-  onQuit,
-  onSelectProfile,
   onRemove,
 }: AppHoverCardProps) {
-  const profiles = profilesProp ?? defaultProfilesForApp(appId);
   const [open, setOpen] = useState(false);
-  const [optionsOpen, setOptionsOpen] = useState(false);
-  const [activeProfileId, setActiveProfileId] = useState(
-    defaultProfileId ?? profiles[0]?.id ?? "default",
-  );
-  const [style, setStyle] = useState<CSSProperties>();
+  const [style, setStyle] = useState<CSSProperties | null>(null);
   const wrapperRef = useRef<HTMLSpanElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const openTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -250,18 +170,17 @@ export function AppHoverCard({
   const menuId = useId();
 
   const handlers: AppHoverCardActionHandlers = {
+    onOpen,
+    onShow,
+    onMinimize,
+    onMaximize,
+    onClose,
     onNewWindow,
-    onNewPrivateWindow,
-    onShowAllWindows,
-    onHide,
-    onQuit,
-    onSelectProfile,
     onRemove,
   };
 
   const dismiss = useCallback(() => {
     setOpen(false);
-    setOptionsOpen(false);
   }, []);
 
   useDismiss(open, dismiss, wrapperRef, popoverRef);
@@ -284,7 +203,6 @@ export function AppHoverCard({
     if (disabled) return;
     clearOpenTimer();
     clearHideTimer();
-    setStyle(getMenuStyle(wrapperRef.current, placement));
     setOpen(true);
   }
 
@@ -317,10 +235,19 @@ export function AppHoverCard({
   }, [disabled, open, dismiss]);
 
   useLayoutEffect(() => {
-    if (!open) return;
+    if (!open || !popoverRef.current) {
+      setStyle(null);
+      return;
+    }
 
     function updatePosition() {
-      setStyle(getMenuStyle(wrapperRef.current, placement));
+      const triggerRect = wrapperRef.current?.getBoundingClientRect();
+      const panelRect = popoverRef.current?.getBoundingClientRect();
+      if (!triggerRect || !panelRect) {
+        setStyle(null);
+        return;
+      }
+      setStyle(triggerAnchoredStyle(triggerRect, panelRect, placement));
     }
 
     updatePosition();
@@ -330,7 +257,7 @@ export function AppHoverCard({
       window.removeEventListener("scroll", updatePosition, true);
       window.removeEventListener("resize", updatePosition);
     };
-  }, [open, placement]);
+  }, [open, placement, windowState, removeLabel]);
 
   const child = isValidElement(children)
     ? cloneElement(children, {
@@ -348,14 +275,9 @@ export function AppHoverCard({
           scheduleHideMenu();
         },
         onClick: (event: MouseEvent) => {
-          if (openOn === "click") {
-            event.preventDefault();
-            event.stopPropagation();
-            if (open) dismiss();
-            else showMenu();
-            return;
-          }
+          // Always activate/open the app first; click-mode also reveals the menu.
           (children.props as { onClick?: (e: MouseEvent) => void }).onClick?.(event);
+          if (openOn === "click") showMenu();
         },
         onContextMenu: (event: MouseEvent) => {
           (children.props as { onContextMenu?: (e: MouseEvent) => void }).onContextMenu?.(event);
@@ -365,64 +287,46 @@ export function AppHoverCard({
       })
     : children;
 
-  const panel =
-    open && style ? (
-      <div
-        ref={popoverRef}
-        id={menuId}
-        className={[
-          "arco-app-hovercard",
-          `arco-app-hovercard--${placement}`,
-          "arco-app-hovercard--visible",
-        ].join(" ")}
-        style={style}
-        role="presentation"
-        onMouseEnter={cancelHideMenu}
-        onMouseLeave={scheduleHideMenu}
-      >
-        <AppHoverMenuPanel
-          label={label}
-          Icon={Icon}
-          active={active}
-          running={running}
-          profiles={profiles}
-          activeProfileId={activeProfileId}
-          openWindowCount={openWindowCount}
-          optionsOpen={optionsOpen}
-          removeLabel={removeLabel}
-          onOptionsEnter={() => setOptionsOpen(true)}
-          onOptionsLeave={() => setOptionsOpen(false)}
-          onSelectProfile={setActiveProfileId}
-          handlers={{
-            ...handlers,
-            onNewWindow: () => {
-              handlers.onNewWindow?.();
-              dismiss();
-            },
-            onNewPrivateWindow: () => {
-              (handlers.onNewPrivateWindow ?? handlers.onNewWindow)?.();
-              dismiss();
-            },
-            onShowAllWindows: () => {
-              handlers.onShowAllWindows?.();
-              dismiss();
-            },
-            onHide: () => {
-              handlers.onHide?.();
-              dismiss();
-            },
-            onQuit: () => {
-              handlers.onQuit?.();
-              dismiss();
-            },
-            onRemove: () => {
-              handlers.onRemove?.();
-              dismiss();
-            },
-          }}
-        />
-      </div>
-    ) : null;
+  const wrapAction = (action?: () => void) => () => {
+    action?.();
+    dismiss();
+  };
+
+  const panel = open ? (
+    <div
+      ref={popoverRef}
+      id={menuId}
+      role="menu"
+      aria-label={`${label} menu`}
+      className="arco-menu__panel arco-menu__panel--fixed"
+      style={
+        style ?? {
+          position: "fixed",
+          left: 0,
+          top: 0,
+          right: "auto",
+          bottom: "auto",
+          visibility: "hidden",
+        }
+      }
+      onMouseEnter={cancelHideMenu}
+      onMouseLeave={scheduleHideMenu}
+    >
+      <AppHoverMenuPanel
+        label={label}
+        windowState={windowState}
+        removeLabel={removeLabel}
+        handlers={{
+          onOpen: wrapAction(handlers.onOpen),
+          onShow: wrapAction(handlers.onShow),
+          onMinimize: wrapAction(handlers.onMinimize),
+          onMaximize: wrapAction(handlers.onMaximize),
+          onClose: wrapAction(handlers.onClose),
+          onRemove: wrapAction(handlers.onRemove),
+        }}
+      />
+    </div>
+  ) : null;
 
   return (
     <span
@@ -437,4 +341,4 @@ export function AppHoverCard({
   );
 }
 
-export type { AppHoverProfile, AppHoverCardActionHandlers } from "./appHoverCardData";
+export type { AppHoverCardActionHandlers, AppHoverWindowState } from "./appHoverCardData";

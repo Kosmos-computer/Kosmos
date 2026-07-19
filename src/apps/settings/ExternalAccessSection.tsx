@@ -10,6 +10,7 @@ import type { ExternalAccessInfo, ExternalClientScope } from "@shared/types";
 import { api } from "../../lib/api";
 import { useCan } from "../../os/auth/authStore";
 import {
+  ModuleFilterSelect,
   SettingsAlert,
   SettingsEmpty,
   SettingsFieldRow,
@@ -21,6 +22,11 @@ import {
   SettingsSubhead,
 } from "../../components/patterns";
 import { Button, Chip, Input } from "../../components/ui";
+
+const SCOPE_OPTIONS = [
+  { value: "read", label: "read" },
+  { value: "readwrite", label: "readwrite" },
+] as const;
 
 export function ExternalAccessSection() {
   const canManage = useCan("settings:write");
@@ -155,15 +161,12 @@ export function ExternalAccessSection() {
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && void mint()}
           />
-          <select
-            className="arco-input arco-input--compact"
+          <ModuleFilterSelect
+            label={i18n.t(I18nKey.APPS$SETTINGS_TOKEN_SCOPE)}
             value={scope}
-            onChange={(e) => setScope(e.target.value as ExternalClientScope)}
-            aria-label={i18n.t(I18nKey.APPS$SETTINGS_TOKEN_SCOPE)}
-          >
-            <option value="read"><T k={I18nKey.APPS$SETTINGS_READ} /></option>
-            <option value="readwrite"><T k={I18nKey.APPS$SETTINGS_READWRITE} /></option>
-          </select>
+            options={SCOPE_OPTIONS}
+            onChange={setScope}
+          />
           <Button variant="primary" disabled={!name.trim()} onClick={() => void mint()}><T k={I18nKey.APPS$SETTINGS_MINT_TOKEN} /></Button>
         </SettingsFieldRow>
       </SettingsSection>

@@ -103,6 +103,7 @@
     "@pipecat-ai/small-webrtc-transport": "^1.10.5",
     "@react-three/fiber": "^9.6.1",
     "@types/three": "^0.185.1",
+    "@urbit/aura": "^3.0.0",
     "@zed-industries/agent-client-protocol": "^0.4.5",
     "better-sqlite3": "12.11.1",
     "docx": "^9.7.1",
@@ -135,6 +136,8 @@
     "remark-gfm": "^4.0.1",
     "three": "^0.185.1",
     "webtorrent": "^2.8.5",
+    "ws": "^8.21.0",
+    "zca-js": "^2.1.2",
     "zod": "^4.0.0",
     "zustand": "^4.5.5"
   },

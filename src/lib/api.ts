@@ -1369,6 +1369,30 @@ export const api = {
         body: JSON.stringify(patch),
       },
     ).then((r) => json<ChannelInfo>(r)),
+  listReefFriends: (id: string) =>
+    fetch(`/api/channels/${encodeURIComponent(id)}/reef/friends`).then((r) =>
+      json<{
+        friends: Array<{
+          peer: string;
+          status: string;
+          fingerprint: string;
+          autonomy?: string;
+        }>;
+      }>(r),
+    ),
+  mintReefFriendCode: (id: string) =>
+    post<{ code: string; expires: number }>(
+      `/api/channels/${encodeURIComponent(id)}/reef/friends/mint`,
+    ),
+  requestReefFriend: (id: string, peer: string, code?: string) =>
+    post<{ status: string }>(`/api/channels/${encodeURIComponent(id)}/reef/friends/request`, {
+      peer,
+      code,
+    }),
+  respondReefFriend: (id: string, peer: string, accept: boolean) =>
+    post<{
+      friends: Array<{ peer: string; status: string; fingerprint: string }>;
+    }>(`/api/channels/${encodeURIComponent(id)}/reef/friends/respond`, { peer, accept }),
 
   // External access (Arco as an outward MCP server)
   getExternalAccess: () =>

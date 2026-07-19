@@ -21,8 +21,9 @@ Settings → Channels is **catalog-driven** (all kinds + field specs).
 | Tier | Kinds |
 |------|--------|
 | **stable** | telegram, discord, slack, mattermost, irc, sms, synologychat, webchat |
-| **beta** | matrix (unencrypted), whatsapp, signal, imessage, feishu, line, nextcloudtalk, twitch, msteams, googlechat, nostr, raft, voicecall, wecom |
-| **bridge / stub** | reef (HTTP shim), tlon, zalo, qqbot, yuanbao, clickclack, zalouser, wechat |
+| **beta** | matrix (+ optional E2EE), whatsapp, signal, imessage (imsg RPC), feishu, line, nextcloudtalk, twitch, msteams, googlechat, nostr, raft, voicecall, wecom, zalo, qqbot, clickclack, reef |
+| **experimental** | tlon (urbit), zalouser (zca-js QR) |
+| **bridge / stub** | yuanbao, wechat (no in-tree OpenClaw source) |
 
 ## Protocol notes (OpenClaw-aligned)
 
@@ -35,8 +36,14 @@ Settings → Channels is **catalog-driven** (all kinds + field specs).
 - **Nostr**: NIP-04 via `nostr-tools`.
 - **Raft**: loopback `/wake` + spawn `raft agent bridge`.
 - **Voice**: `mode=gather` (SpeechResult) or `mode=stream` (`<Connect><Stream>` + Whisper; needs `OPENAI_API_KEY` + public `wss` base).
-- **Matrix**: `matrix-js-sdk` + optional `initRustCrypto` (`encryption=true`; WASM on Node 22).
-- **Reef**: OpenClaw protocol ported under `server/channels/reef/` (seal/open, signed relay, optional LLM guard).
+- **Matrix**: `matrix-js-sdk` + optional `initRustCrypto` + cross-signing bootstrap; Decrypted events ingested.
+- **Reef**: OpenClaw protocol under `server/channels/reef/`; Settings API for friend mint/request/respond.
+- **Zalo Bot**: OpenClaw `getUpdates` / `sendMessage` port.
+- **Zalouser**: zca-js QR → `data/zalouser/<id>/`.
+- **QQ Bot**: OpenAPI access token + gateway WS.
+- **ClickClack**: ported http-client event poll + channel/DM send.
+- **iMessage**: `imsg rpc --json` + `watch.subscribe` (macOS).
+- **Tlon**: Urbit ship login + chat SSE/poke (best-effort).
 
 ## Content Agent pack (Path A)
 

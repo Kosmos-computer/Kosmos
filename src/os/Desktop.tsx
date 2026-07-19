@@ -99,6 +99,7 @@ export function Desktop() {
   const shellView = useOsStore((s) => s.shellView);
   const appWindowHost = useOsStore((s) => s.appWindowHost);
   const refreshApps = useOsStore((s) => s.refreshApps);
+  const developerApps = useOsStore((s) => s.developerApps);
   const notify = useOsStore((s) => s.notify);
   const windows = useWindowStore((s) => s.windows);
   const constrainWindowsToViewport = useWindowStore((s) => s.constrainToViewport);
@@ -211,7 +212,7 @@ export function Desktop() {
       <UpdateModal />
       <BentoDrawer />
       <MusicShell />
-      <MessengerShell />
+      {developerApps ? <MessengerShell /> : null}
       <VideoShell />
       <PodcastShell />
       <AgentCursor />

@@ -121,7 +121,7 @@ export const CHANNEL_CATALOG: ChannelKindMeta[] = [
       { key: "deviceId", label: "Device ID (optional)" },
     ],
     setup:
-      "Paste access token + homeserver URL. Set encryption=true for Rust crypto (same stack as OpenClaw). Device verification/cross-signing still manual on first devices.",
+      "Paste access token + homeserver URL. encryption=true → initRustCrypto + cross-signing bootstrap. Decrypted timeline events are ingested; interactive SAS/QR verify UI still via Element.",
   },
   {
     kind: "whatsapp",
@@ -152,13 +152,15 @@ export const CHANNEL_CATALOG: ChannelKindMeta[] = [
   {
     kind: "imessage",
     label: "iMessage",
-    description: "macOS imsg bridge",
-    maturity: "bridge",
+    description: "macOS imsg JSON-RPC (OpenClaw client)",
+    maturity: "beta",
     transport: "host-bridge",
+    noPublicUrl: true,
     fields: [
       { key: "token", label: "imsg command / path", required: true, placeholder: "imsg", secret: false },
     ],
-    setup: "Requires a signed-in Mac with imsg. Hosted Fly tenants cannot use this.",
+    setup:
+      "Requires macOS with imsg + Full Disk Access. Spawns `imsg rpc --json` and watch.subscribe.",
   },
   {
     kind: "msteams",
@@ -258,15 +260,15 @@ export const CHANNEL_CATALOG: ChannelKindMeta[] = [
   {
     kind: "qqbot",
     label: "QQ Bot",
-    description: "External HTTP bridge (/v1/poll) — stub",
-    maturity: "bridge",
-    transport: "host-bridge",
+    description: "QQ OpenAPI gateway WS + REST send",
+    maturity: "beta",
+    transport: "bot-token",
+    noPublicUrl: true,
     fields: [
-      { key: "token", label: "Bridge token", secret: true, required: true },
-      { key: "appId", label: "App ID" },
-      { key: "baseUrl", label: "Bridge URL", required: true },
+      { key: "token", label: "App Secret", secret: true, required: true },
+      { key: "appId", label: "App ID", required: true },
     ],
-    setup: "Requires an external QQ bridge exposing /v1/poll and /v1/send.",
+    setup: "QQ Bot platform App ID + Secret. Connects to api.sgroup.qq.com gateway; intents for C2C/group/at messages.",
   },
   {
     kind: "sms",
@@ -317,45 +319,47 @@ export const CHANNEL_CATALOG: ChannelKindMeta[] = [
   {
     kind: "tlon",
     label: "Tlon (Urbit)",
-    description: "External HTTP bridge — stub",
-    maturity: "bridge",
+    description: "Urbit ship login + chat SSE/poke",
+    maturity: "experimental",
     transport: "host-bridge",
+    noPublicUrl: true,
     fields: [
-      { key: "token", label: "Bridge token", secret: true, required: true },
-      { key: "baseUrl", label: "Bridge URL", required: true },
+      { key: "token", label: "Login code", secret: true, required: true },
+      { key: "baseUrl", label: "Ship URL", required: true, placeholder: "https://zod.arvo.network" },
+      { key: "ship", label: "Ship name", placeholder: "~zod" },
     ],
-    setup: "Requires an external Tlon/Urbit bridge with /poll and /send.",
+    setup: "Point baseUrl at your ship; token is the web login code. Best-effort chat subscribe/poke.",
   },
   {
     kind: "zalo",
     label: "Zalo Bot",
-    description: "External HTTP bridge (/v1/poll) — stub",
-    maturity: "bridge",
-    transport: "host-bridge",
+    description: "Zalo Bot API long-poll (OpenClaw protocol)",
+    maturity: "beta",
+    transport: "bot-token",
     noPublicUrl: true,
-    fields: [
-      { key: "token", label: "Bridge token", secret: true, required: true },
-      { key: "baseUrl", label: "Bridge URL", required: true },
-    ],
-    setup: "Requires an external Zalo bridge exposing /v1/poll and /v1/send.",
+    fields: [{ key: "token", label: "Bot token", secret: true, required: true }],
+    setup: "Official Zalo Bot API token. getUpdates long-poll + sendMessage (ported from OpenClaw).",
   },
   {
     kind: "zalouser",
     label: "Zalo Personal",
-    description: "JSONL session drop folder — stub",
-    maturity: "bridge",
+    description: "zca-js QR login (personal account)",
+    maturity: "experimental",
     transport: "qr-session",
+    noPublicUrl: true,
     fields: [{ key: "token", label: "Session id", required: true, secret: false }],
-    setup: "Drop inbound lines into data/zalouser/<id>/inbox.jsonl. No built-in QR client.",
+    setup:
+      "First start writes QR to data/zalouser/<id>/qr.png; credentials saved after scan. Uses zca-js.",
   },
   {
     kind: "wechat",
     label: "WeChat",
-    description: "JSONL session drop folder — stub",
+    description: "JSONL session drop folder — no in-tree client",
     maturity: "bridge",
     transport: "qr-session",
     fields: [{ key: "token", label: "Session id", required: true, secret: false }],
-    setup: "Drop inbound lines into data/wechat/<id>/inbox.jsonl. No built-in iLink QR.",
+    setup:
+      "OpenClaw has no wechat extension source. Drop inbound JSONL into data/wechat/<id>/inbox.jsonl or use an external plugin.",
   },
   {
     kind: "wecom",
@@ -373,26 +377,29 @@ export const CHANNEL_CATALOG: ChannelKindMeta[] = [
   {
     kind: "yuanbao",
     label: "Yuanbao",
-    description: "External HTTP bridge — stub",
+    description: "External HTTP bridge — no in-tree client",
     maturity: "bridge",
     transport: "host-bridge",
     fields: [
       { key: "token", label: "Bridge token", secret: true, required: true },
       { key: "baseUrl", label: "Bridge URL", required: true },
     ],
-    setup: "Requires an external Yuanbao bridge with /v1/poll and /v1/send.",
+    setup:
+      "No OpenClaw yuanbao extension in-tree. Bridge must expose /v1/poll and /v1/send.",
   },
   {
     kind: "clickclack",
     label: "ClickClack",
-    description: "External HTTP bridge — stub",
-    maturity: "bridge",
-    transport: "host-bridge",
+    description: "ClickClack bot API (event poll + channel send)",
+    maturity: "beta",
+    transport: "bot-token",
+    noPublicUrl: true,
     fields: [
-      { key: "token", label: "Bridge token", secret: true, required: true },
-      { key: "baseUrl", label: "ClickClack / bridge URL", required: true },
+      { key: "token", label: "Bot token", secret: true, required: true },
+      { key: "baseUrl", label: "ClickClack URL", required: true },
+      { key: "workspaceId", label: "Workspace ID (optional)" },
     ],
-    setup: "Requires a bridge exposing /v1/poll and /v1/send on baseUrl.",
+    setup: "OpenClaw ClickClack http-client. Polls /api/events; sends channel or DM messages.",
   },
   {
     kind: "webchat",
@@ -434,7 +441,7 @@ export const CHANNEL_CATALOG: ChannelKindMeta[] = [
       { key: "guardApiKeyEnv", label: "Guard API key env", placeholder: "OPENAI_API_KEY" },
     ],
     setup:
-      "OpenClaw Reef protocol ported under server/channels/reef/. Keys stored in data/reef/<handle>/. Approve friends via friendsJson; optional LLM DLP guard.",
+      "OpenClaw Reef protocol under server/channels/reef/. Keys in data/reef/<handle>/. Use Settings friend mint/request/respond, or friendsJson; optional LLM DLP guard.",
   },
   {
     kind: "raft",

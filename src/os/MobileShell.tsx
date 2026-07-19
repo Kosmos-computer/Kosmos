@@ -40,6 +40,7 @@ export function MobileShell() {
   const menuBarVisibleInAppView = useOsStore((s) => s.menuBarVisibleInAppView);
   const shellApps = useShellApps();
   const [homeSearch, setHomeSearch] = useState("");
+  const developerApps = useOsStore((s) => s.developerApps);
   const notifications = useOsStore((s) => s.notifications);
   const dismiss = useOsStore((s) => s.dismissNotification);
   const windows = useWindowStore((s) => s.windows);
@@ -183,7 +184,7 @@ export function MobileShell() {
         </div>
       )}
       <MusicShell />
-      <MessengerShell />
+      {developerApps ? <MessengerShell /> : null}
       <VideoShell />
       <PodcastShell />
     </div>

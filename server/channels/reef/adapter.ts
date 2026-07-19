@@ -24,6 +24,8 @@ import {
   ReviewApprovalStore,
   writePrivateJson,
 } from "./state.js";
+import { ReefFriendManager } from "./friends.js";
+import { registerReefFriends, unregisterReefFriends } from "./runtime.js";
 import { ReefInboxConnection, ReefTransportClient } from "./transport.js";
 
 function parseFriends(raw: string): ReefChannelConfig["friends"] {
@@ -37,6 +39,7 @@ function parseFriends(raw: string): ReefChannelConfig["friends"] {
 }
 
 export function createReefAdapter(
+  channelId: string,
   cfg: ChannelConfig,
   onMessage: (msg: InboundMessage) => void,
 ): ChannelAdapter {
@@ -150,6 +153,14 @@ export function createReefAdapter(
         (state) => console.log(`[reef] inbox ${state}`),
       );
       void inbox.start(abort.signal);
+      const friendsMgr = new ReefFriendManager(config, transport, stateDir);
+      registerReefFriends(channelId, friendsMgr);
+      // Surface pending inbound friend requests as owner notices (console + optional chat later).
+      void friendsMgr.surfacePending(async ({ peer, fingerprint: fp }) => {
+        console.log(`[reef] pending friend @${peer} fingerprint=${fp}`);
+      }).catch((err) =>
+        console.warn("[reef] friend surface:", err instanceof Error ? err.message : err),
+      );
       console.log(
         `[reef] handle=@${handle} relay=${relayUrl} friends=${Object.keys(friends).length}`,
       );
@@ -158,6 +169,7 @@ export function createReefAdapter(
     stop() {
       stopped = true;
       abort.abort();
+      unregisterReefFriends(channelId);
       inbox?.stop();
       inbox = null;
       flow = null;

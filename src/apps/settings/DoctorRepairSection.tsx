@@ -53,7 +53,7 @@ export function DoctorRepairSection() {
             <div className="arco-settings-row__label">
               Developer Apps
               <span className="arco-settings-row__hint">
-                Onboarding, Setup, Generator, Pay, Image Gen
+                Onboarding, Setup, Generator, Pay, Image Gen, Meet, Messenger
               </span>
             </div>
             <div className="arco-settings-row__control">

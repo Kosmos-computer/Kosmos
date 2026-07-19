@@ -145,7 +145,7 @@ interface OsStore {
   navBrandImage: string | null;
   /**
    * When true, developer/setup system apps appear in launchers
-   * (Onboarding, Setup, Generator, Pay, Image Gen). Off by default.
+   * (Onboarding, Setup, Generator, Pay, Image Gen, Meet, Messenger). Off by default.
    */
   developerApps: boolean;
   /**

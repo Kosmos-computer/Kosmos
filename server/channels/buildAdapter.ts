@@ -6,19 +6,24 @@ import type { ChannelAdapter, InboundMessage } from "./gateway.js";
 import {
   createFeishuAdapter,
   createHttpBotAdapter,
-  createImessageAdapter,
   createSessionStubAdapter,
   createSignalAdapter,
   createWhatsappAdapter,
 } from "./adapters/bridges.js";
+import { createClickclackAdapter } from "./adapters/clickclack.js";
+import { createImessageRpcAdapter } from "./adapters/imessageRpc.js";
 import { createIrcAdapter } from "./adapters/irc.js";
 import { createMatrixSdkAdapter } from "./adapters/matrixSdk.js";
 import { createMattermostAdapter } from "./adapters/mattermost.js";
 import { createNostrAdapter } from "./adapters/nostr.js";
+import { createQqbotAdapter } from "./adapters/qqbot.js";
 import { createRaftAdapter } from "./adapters/raft.js";
+import { createTlonAdapter } from "./adapters/tlon.js";
 import { createTwitchAdapter } from "./adapters/twitch.js";
 import { createWebchatAdapter } from "./adapters/webchat.js";
 import { createWebhookChannelAdapter } from "./adapters/webhookChannel.js";
+import { createZaloBotAdapter } from "./adapters/zaloBot.js";
+import { createZalouserAdapter } from "./adapters/zalouser.js";
 import { createDiscordAdapter } from "./discord.js";
 import { createReefAdapter } from "./reef/adapter.js";
 import { createSlackAdapter } from "./slack.js";
@@ -61,7 +66,7 @@ export function buildChannelAdapter(
     case "signal":
       return createSignalAdapter(cfg, onMessage);
     case "imessage":
-      return createImessageAdapter(cfg, onMessage);
+      return createImessageRpcAdapter(cfg, onMessage);
     case "feishu":
       return createFeishuAdapter(channelId, cfg, onMessage);
     case "webchat":
@@ -80,24 +85,26 @@ export function buildChannelAdapter(
     case "raft":
       return createRaftAdapter(cfg, onMessage);
     case "zalo":
+      return createZaloBotAdapter(cfg, onMessage);
+    case "zalouser":
+      return createZalouserAdapter(cfg, onMessage);
     case "qqbot":
-    case "yuanbao":
+      return createQqbotAdapter(cfg, onMessage);
     case "clickclack":
+      return createClickclackAdapter(cfg, onMessage);
+    case "tlon":
+      return createTlonAdapter(cfg, onMessage);
+    case "reef":
+      return createReefAdapter(channelId, cfg, onMessage);
+    case "yuanbao":
+      // No in-tree OpenClaw source — external HTTP bridge only.
       return createHttpBotAdapter(cfg, onMessage, {
         label: cfg.kind,
         pollPath: "/v1/poll",
         sendPath: () => "/v1/send",
       });
-    case "reef":
-      return createReefAdapter(cfg, onMessage);
-    case "tlon":
-      return createHttpBotAdapter(cfg, onMessage, {
-        label: cfg.kind,
-        pollPath: "/poll",
-        sendPath: () => "/send",
-      });
-    case "zalouser":
     case "wechat":
+      // No in-tree OpenClaw iLink client — JSONL session drop folder.
       return createSessionStubAdapter(cfg.kind, cfg, onMessage);
     default: {
       const _exhaustive: never = cfg.kind;

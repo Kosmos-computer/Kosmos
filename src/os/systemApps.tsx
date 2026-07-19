@@ -142,6 +142,7 @@ export const DEVELOPER_SYSTEM_APP_IDS = [
   "pay",
   "imagegen",
   "meet",
+  "messenger",
 ] as const satisfies readonly SystemAppId[];
 
 const DEVELOPER_SYSTEM_APP_ID_SET = new Set<string>(DEVELOPER_SYSTEM_APP_IDS);

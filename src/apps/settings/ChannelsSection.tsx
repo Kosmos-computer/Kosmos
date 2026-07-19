@@ -61,6 +61,132 @@ function supportsMentionToggle(kind: ChannelKind): boolean {
   return kind === "telegram" || kind === "discord" || kind === "slack" || kind === "irc" || kind === "mattermost";
 }
 
+function ReefFriendsPanel({
+  channelId,
+  onError,
+}: {
+  channelId: string;
+  onError: (msg: string | null) => void;
+}) {
+  const [friends, setFriends] = useState<
+    Array<{ peer: string; status: string; fingerprint: string }>
+  >([]);
+  const [peer, setPeer] = useState("");
+  const [code, setCode] = useState("");
+  const [minted, setMinted] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const refresh = useCallback(async () => {
+    try {
+      const data = await api.listReefFriends(channelId);
+      setFriends(data.friends);
+      onError(null);
+    } catch (err) {
+      onError(err instanceof Error ? err.message : "Failed to list Reef friends");
+    }
+  }, [channelId, onError]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  return (
+    <SettingsPanelBody>
+      <span className="arco-settings-group-label">Reef friends</span>
+      <p className="arco-settings-intro" style={{ marginTop: 0 }}>
+        Mint a friend code, request a peer, or accept pending requests.
+      </p>
+      <SettingsRow>
+        <Input
+          value={peer}
+          onChange={(e) => setPeer(e.target.value)}
+          placeholder="peer handle"
+          aria-label="Reef peer handle"
+        />
+        <Input
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          placeholder="friend code (optional)"
+          aria-label="Reef friend code"
+        />
+        <SettingsRowActions>
+          <Button
+            disabled={busy || !peer.trim()}
+            onClick={() => {
+              setBusy(true);
+              void api
+                .requestReefFriend(channelId, peer.trim(), code.trim() || undefined)
+                .then(() => refresh())
+                .catch((err) =>
+                  onError(err instanceof Error ? err.message : "Friend request failed"),
+                )
+                .finally(() => setBusy(false));
+            }}
+          >
+            Request
+          </Button>
+          <Button
+            disabled={busy}
+            onClick={() => {
+              setBusy(true);
+              void api
+                .mintReefFriendCode(channelId)
+                .then((r) => setMinted(r.code))
+                .catch((err) =>
+                  onError(err instanceof Error ? err.message : "Mint failed"),
+                )
+                .finally(() => setBusy(false));
+            }}
+          >
+            Mint code
+          </Button>
+        </SettingsRowActions>
+      </SettingsRow>
+      {minted ? (
+        <p className="arco-settings-intro">
+          Friend code: <code className="arco-code arco-code--xs">{minted}</code>
+        </p>
+      ) : null}
+      {friends.map((f) => (
+        <SettingsRow key={f.peer}>
+          <span className="arco-settings-tool-row__desc">
+            @{f.peer} · {f.status}
+          </span>
+          <code className="arco-code arco-code--xs">{f.fingerprint.slice(0, 12)}…</code>
+          {(f.status === "pending" || f.status === "reapprove_required") && (
+            <SettingsRowActions>
+              <Button
+                onClick={() =>
+                  void api
+                    .respondReefFriend(channelId, f.peer, true)
+                    .then((r) => setFriends(r.friends))
+                    .catch((err) =>
+                      onError(err instanceof Error ? err.message : "Accept failed"),
+                    )
+                }
+              >
+                <Check size={13} /> Accept
+              </Button>
+              <Button
+                onClick={() =>
+                  void api
+                    .respondReefFriend(channelId, f.peer, false)
+                    .then((r) => setFriends(r.friends))
+                    .catch((err) =>
+                      onError(err instanceof Error ? err.message : "Deny failed"),
+                    )
+                }
+              >
+                <X size={13} /> Deny
+              </Button>
+            </SettingsRowActions>
+          )}
+        </SettingsRow>
+      ))}
+    </SettingsPanelBody>
+  );
+}
+
 export function ChannelsSection() {
   const canManage = useCan("settings:write");
   const [channels, setChannels] = useState<ChannelInfo[]>([]);
@@ -402,6 +528,10 @@ export function ChannelsSection() {
                     )}
                   </SettingsPanelBody>
                 ) : null}
+
+                {ch.config.kind === "reef" && ch.status === "running" && canManage && (
+                  <ReefFriendsPanel channelId={ch.config.id} onError={setError} />
+                )}
 
                 {ch.pairings.length > 0 && (
                   <SettingsPanelBody>

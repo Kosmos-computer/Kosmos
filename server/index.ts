@@ -3570,6 +3570,75 @@ app.patch("/api/channels/:id/peers/:chatId", requireCap("settings:write"), async
   return c.json(channelGateway.list().find((ch) => ch.config.id === id));
 });
 
+/** Reef friends — mint / list / request / respond (channel must be running). */
+app.get("/api/channels/:id/reef/friends", requireCap("settings:write"), async (c) => {
+  const id = c.req.param("id");
+  const cfg = channelStore.get(id);
+  if (!cfg || cfg.kind !== "reef") return c.json({ error: "not a reef channel" }, 404);
+  const { getReefFriends } = await import("./channels/reef/runtime.js");
+  const mgr = getReefFriends(id);
+  if (!mgr) return c.json({ error: "Reef channel not running" }, 409);
+  try {
+    return c.json({ friends: await mgr.list() });
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : String(err) }, 502);
+  }
+});
+
+app.post("/api/channels/:id/reef/friends/mint", requireCap("settings:write"), async (c) => {
+  const id = c.req.param("id");
+  const cfg = channelStore.get(id);
+  if (!cfg || cfg.kind !== "reef") return c.json({ error: "not a reef channel" }, 404);
+  const { getReefFriends } = await import("./channels/reef/runtime.js");
+  const mgr = getReefFriends(id);
+  if (!mgr) return c.json({ error: "Reef channel not running" }, 409);
+  try {
+    return c.json(await mgr.mintCode());
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : String(err) }, 502);
+  }
+});
+
+app.post("/api/channels/:id/reef/friends/request", requireCap("settings:write"), async (c) => {
+  const id = c.req.param("id");
+  const cfg = channelStore.get(id);
+  if (!cfg || cfg.kind !== "reef") return c.json({ error: "not a reef channel" }, 404);
+  const body = (await c.req.json()) as { peer?: string; code?: string };
+  if (!body.peer?.trim()) return c.json({ error: "peer required" }, 400);
+  const { getReefFriends } = await import("./channels/reef/runtime.js");
+  const mgr = getReefFriends(id);
+  if (!mgr) return c.json({ error: "Reef channel not running" }, 409);
+  try {
+    const result = await mgr.request(body.peer.trim(), body.code?.trim() || undefined);
+    return c.json(result);
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : String(err) }, 502);
+  }
+});
+
+app.post("/api/channels/:id/reef/friends/respond", requireCap("settings:write"), async (c) => {
+  const id = c.req.param("id");
+  const cfg = channelStore.get(id);
+  if (!cfg || cfg.kind !== "reef") return c.json({ error: "not a reef channel" }, 404);
+  const body = (await c.req.json()) as { peer?: string; accept?: boolean };
+  if (!body.peer?.trim() || typeof body.accept !== "boolean") {
+    return c.json({ error: "peer and accept required" }, 400);
+  }
+  const { getReefFriends } = await import("./channels/reef/runtime.js");
+  const mgr = getReefFriends(id);
+  if (!mgr) return c.json({ error: "Reef channel not running" }, 409);
+  try {
+    if (body.accept) {
+      await mgr.reconcileApproved([body.peer.trim()]);
+    } else {
+      await mgr.remove(body.peer.trim());
+    }
+    return c.json({ friends: await mgr.list() });
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : String(err) }, 502);
+  }
+});
+
 // ── Outward MCP (external agents drive Arco's intents) ──────────────────────
 //
 // /mcp sits OUTSIDE /api on purpose: it authenticates with scoped bearer

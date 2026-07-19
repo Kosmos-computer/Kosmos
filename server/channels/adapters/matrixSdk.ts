@@ -9,6 +9,7 @@ import type { ChannelConfig } from "../../../shared/types.js";
 import { dataDirs } from "../../env.js";
 import type { ChannelAdapter, InboundMessage } from "../gateway.js";
 import { chunkText, opt } from "./httpUtil.js";
+import { bootstrapMatrixCrossSigning } from "./matrixCrypto.js";
 
 export function createMatrixSdkAdapter(
   cfg: ChannelConfig,
@@ -57,6 +58,10 @@ export function createMatrixSdkAdapter(
         try {
           await client.initRustCrypto({ useIndexedDB: true });
           console.log("[matrix] Rust crypto initialized (E2EE on)");
+          const boot = await bootstrapMatrixCrossSigning(client);
+          console.log(
+            `[matrix] cross-signing ready=${boot.crossSigningReady} ownVerified=${boot.ownDeviceVerified}`,
+          );
         } catch (err) {
           console.warn(
             "[matrix] initRustCrypto failed — falling back to plaintext-only:",
@@ -67,6 +72,41 @@ export function createMatrixSdkAdapter(
 
       const RoomEvent = sdk.RoomEvent;
       const ClientEvent = sdk.ClientEvent;
+      const MatrixEventEvent = sdk.MatrixEventEvent;
+
+      const ingest = (
+        event: {
+          getType: () => string;
+          getSender: () => string | undefined;
+          getContent: () => { body?: string; msgtype?: string };
+          getRoomId?: () => string | undefined;
+          isDecryptionFailure?: () => boolean;
+        },
+        roomId: string | undefined,
+      ) => {
+        if (stopped || !live || !roomId) return;
+        if (event.getSender() === userId) return;
+        const type = event.getType();
+        if (type === "m.room.encrypted") {
+          if (event.isDecryptionFailure?.()) {
+            console.warn(`[matrix] decrypt failed in ${roomId}`);
+          }
+          return;
+        }
+        if (type !== "m.room.message") return;
+        const content = event.getContent();
+        if (content.msgtype !== "m.text") return;
+        const text = (content.body ?? "").trim();
+        if (!text) return;
+        onMessage({
+          chatId: roomId,
+          label: event.getSender() ?? roomId,
+          text,
+          isGroup: true,
+          mentioned: true,
+        });
+      };
+
       client.on(
         RoomEvent.Timeline,
         (
@@ -79,29 +119,26 @@ export function createMatrixSdkAdapter(
           room: { roomId: string } | undefined,
           toStartOfTimeline?: boolean,
         ) => {
-          if (stopped || toStartOfTimeline || !live || !room) return;
-          if (event.getSender() === userId) return;
-          const type = event.getType();
-          if (type === "m.room.encrypted") {
-            if (event.isDecryptionFailure?.()) {
-              console.warn(`[matrix] decrypt failed in ${room.roomId}`);
-            }
-            return;
-          }
-          if (type !== "m.room.message") return;
-          const content = event.getContent();
-          if (content.msgtype !== "m.text") return;
-          const text = (content.body ?? "").trim();
-          if (!text) return;
-          onMessage({
-            chatId: room.roomId,
-            label: event.getSender() ?? room.roomId,
-            text,
-            isGroup: true,
-            mentioned: true,
-          });
+          if (toStartOfTimeline) return;
+          ingest(event, room?.roomId);
         },
       );
+
+      // E2EE: timeline may fire encrypted first; Decrypted delivers plaintext later.
+      if (encryption && MatrixEventEvent?.Decrypted) {
+        client.on(
+          MatrixEventEvent.Decrypted,
+          (event: {
+            getType: () => string;
+            getSender: () => string | undefined;
+            getContent: () => { body?: string; msgtype?: string };
+            getRoomId?: () => string | undefined;
+            isDecryptionFailure?: () => boolean;
+          }) => {
+            ingest(event, event.getRoomId?.());
+          },
+        );
+      }
 
       await client.startClient({ initialSyncLimit: 10 });
       client.once(ClientEvent.Sync, (state: string) => {

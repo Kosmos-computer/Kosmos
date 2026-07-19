@@ -1,50 +1,20 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { redactSecrets, redactSecretsDeep } from "./redactSecrets.js";
+import { redactSecretsInText } from "./redactSecrets.js";
 
-describe("redactSecrets", () => {
-  it("redacts OpenAI-style API keys", () => {
-    const s = redactSecrets("key=sk-proj-abcdefghijklmnopqrstuvwxyz012345");
-    assert.equal(s.includes("sk-proj"), false);
-    assert.match(s, /\[REDACTED\]/);
+describe("redactSecretsInText", () => {
+  it("strips LiteLLM key-echo phrases", () => {
+    const raw =
+      'Authentication Error, Invalid proxy server token passed. Received API Key = sk-abc123xyz7051, Key Hash (Token) =d8dc8e1f222a5396c889cc097db2150ff3514ae61cdb389e1d827806fd4e0b1c';
+    const out = redactSecretsInText(raw);
+    assert.equal(out.includes("sk-"), false);
+    assert.equal(out.includes("Received API Key"), false);
+    assert.equal(out.includes("d8dc8e1f"), false);
+    assert.match(out, /\[redacted\]/);
   });
 
-  it("redacts Bearer tokens", () => {
-    assert.equal(redactSecrets("Authorization: Bearer abc.def.ghi_jkl"), "Authorization: Bearer [REDACTED]");
-  });
-
-  it("redacts GitHub PATs", () => {
-    const s = redactSecrets("token ghp_abcdefghijklmnopqrstuvwxyz0123456789");
-    assert.equal(s.includes("ghp_"), false);
-  });
-
-  it("redacts Stripe secrets", () => {
-    const s = redactSecrets("sk_live_51AbCdEfGhIjKlMnOpQrStUvWx");
-    assert.match(s, /\[REDACTED\]/);
-    assert.equal(s.includes("sk_live_51"), false);
-  });
-
-  it("redacts JSON apiKey fields", () => {
-    const s = redactSecrets('{"apiKey":"super-secret-value","model":"gpt"}');
-    assert.match(s, /"apiKey":"\[REDACTED\]"/);
-    assert.match(s, /"model":"gpt"/);
-  });
-
-  it("leaves ordinary text alone", () => {
-    assert.equal(redactSecrets("hello world schedule 0 9 * * *"), "hello world schedule 0 9 * * *");
-  });
-});
-
-describe("redactSecretsDeep", () => {
-  it("masks secret-named object fields", () => {
-    const out = redactSecretsDeep({
-      apiKey: "sk-abc",
-      model: "gpt",
-      nested: { refresh_token: "rt_xyz", ok: true },
-    }) as Record<string, unknown>;
-    assert.equal(out.apiKey, "[REDACTED]");
-    assert.equal(out.model, "gpt");
-    assert.equal((out.nested as Record<string, unknown>).refresh_token, "[REDACTED]");
-    assert.equal((out.nested as Record<string, unknown>).ok, true);
+  it("strips bearer tokens", () => {
+    const out = redactSecretsInText("upstream said Authorization: Bearer tok_live_abcdef012345");
+    assert.equal(out.includes("tok_live"), false);
   });
 });

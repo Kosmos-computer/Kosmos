@@ -7,6 +7,7 @@ describe("normalizeWallpaper", () => {
     assert.equal(normalizeWallpaper("space"), "space");
     assert.equal(normalizeWallpaper("forest"), "forest");
     assert.equal(normalizeWallpaper("starfield"), "starfield");
+    assert.equal(normalizeWallpaper("overworld"), "overworld");
   });
 
   it("maps the legacy galaxy id to space", () => {

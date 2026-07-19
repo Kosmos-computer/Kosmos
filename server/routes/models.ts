@@ -22,16 +22,19 @@ import { ZodError } from "zod";
 import { llamaEngine } from "../services/llamaEngine.js";
 import { modelStore } from "../stores/modelStore.js";
 import { loadSettings, saveSettings } from "../env.js";
-import { listRemoteLlmModels } from "../llm/remoteModels.js";
+import { listRemoteLlmModels, resolveRemoteListApiKey } from "../llm/remoteModels.js";
 import { requireCap } from "../auth/middleware.js";
+import { redactSecretsInText } from "../security/redactSecrets.js";
 
 export const modelRoutes = new Hono();
 
 function errorMessage(err: unknown): string {
   if (err instanceof ZodError) {
-    return err.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
+    return redactSecretsInText(
+      err.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; "),
+    );
   }
-  return err instanceof Error ? err.message : String(err);
+  return redactSecretsInText(err instanceof Error ? err.message : String(err));
 }
 
 modelRoutes.get("/", (c) =>
@@ -52,15 +55,19 @@ modelRoutes.post("/remote", requireCap("chat"), async (c) => {
   if (!baseUrl) {
     return c.json({ error: "No endpoint configured" }, 400);
   }
-  const apiKey =
-    body?.apiKey?.trim() ||
-    settings.apiKey?.trim() ||
-    settings.apiKeys?.custom?.trim() ||
-    "";
+  const resolved = resolveRemoteListApiKey(baseUrl, settings, body?.apiKey);
+  if ("code" in resolved) {
+    // 422 — not 401 — so the web client does not treat this as a session logout.
+    return c.json({ error: resolved.message, code: resolved.code }, 422);
+  }
   try {
-    const models = await listRemoteLlmModels(baseUrl, apiKey);
+    const models = await listRemoteLlmModels(baseUrl, resolved.apiKey);
     return c.json({ models, baseUrl });
   } catch (err) {
+    const code = (err as { code?: string })?.code;
+    if (code === "auth_required") {
+      return c.json({ error: errorMessage(err), code: "auth_required" }, 422);
+    }
     return c.json({ error: errorMessage(err) }, 502);
   }
 });

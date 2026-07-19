@@ -15,7 +15,8 @@ export type WallpaperId =
   | "graphite"
   | "forest"
   | "starfield"
-  | "nebula";
+  | "nebula"
+  | "overworld";
 
 export interface WallpaperOption {
   id: WallpaperId;
@@ -57,6 +58,7 @@ export const WALLPAPER_GROUPS: WallpaperGroup[] = [
     options: [
       { id: "starfield", label: "Starfield", animated: true },
       { id: "nebula", label: "Nebula", animated: true },
+      { id: "overworld", label: "Overworld (prototype)", animated: true },
     ],
   },
 ];

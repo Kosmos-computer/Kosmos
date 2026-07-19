@@ -2,14 +2,55 @@
  * List models from an OpenAI-compatible endpoint (Kosmos Cloud gateway,
  * custom baseUrl, Ollama, …) via GET {baseUrl}/models.
  */
+import { isKosmosCloudLlmEndpoint } from "../../shared/llmProviderLabels.js";
+import type { Settings } from "../../shared/types.js";
+import { redactSecretsInText } from "../security/redactSecrets.js";
+
 export interface RemoteLlmModel {
   id: string;
   name: string;
 }
 
+export type RemoteModelsAuthError = {
+  code: "auth_required";
+  message: string;
+};
+
 function modelsUrl(baseUrl: string): string {
   const trimmed = baseUrl.trim().replace(/\/+$/, "");
   return trimmed.endsWith("/v1") ? `${trimmed}/models` : `${trimmed}/v1/models`;
+}
+
+/**
+ * Pick the API key for a remote /models list.
+ * Kosmos gateway must only receive a LiteLLM virtual / credits key — never an
+ * OpenAI/Anthropic key that happens to live in settings.apiKey for another provider.
+ */
+export function resolveRemoteListApiKey(
+  baseUrl: string,
+  settings: Settings,
+  bodyKey?: string,
+): { apiKey: string } | RemoteModelsAuthError {
+  const trimmedBody = bodyKey?.trim() || "";
+  if (trimmedBody) return { apiKey: trimmedBody };
+
+  if (isKosmosCloudLlmEndpoint(baseUrl)) {
+    const kosmosDedicated = settings.apiKeys?.kosmos?.trim() || "";
+    if (kosmosDedicated) return { apiKey: kosmosDedicated };
+    // Only reuse settings.apiKey when the saved connection is already Kosmos.
+    if (isKosmosCloudLlmEndpoint(settings.baseUrl) && settings.apiKey?.trim()) {
+      return { apiKey: settings.apiKey.trim() };
+    }
+    return {
+      code: "auth_required",
+      message:
+        "Kosmos Cloud needs a credits key from your subscription — not an OpenAI or Anthropic API key.",
+    };
+  }
+
+  return {
+    apiKey: settings.apiKey?.trim() || settings.apiKeys?.custom?.trim() || "",
+  };
 }
 
 export async function listRemoteLlmModels(
@@ -28,12 +69,19 @@ export async function listRemoteLlmModels(
     signal: AbortSignal.timeout(12_000),
   });
   if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(
-      body.trim()
-        ? `Could not list models (${res.status}): ${body.slice(0, 200)}`
-        : `Could not list models (HTTP ${res.status})`,
-    );
+    // Never forward upstream bodies — LiteLLM echoes "Received API Key = sk-…" in 401s.
+    if (res.status === 401 || res.status === 403) {
+      const kosmos = isKosmosCloudLlmEndpoint(baseUrl);
+      const err = new Error(
+        kosmos
+          ? "Kosmos Cloud rejected this key. Paste a credits key from your Kosmos subscription."
+          : "This endpoint rejected the API key. Check the key in Settings → Model.",
+      ) as Error & { code?: string };
+      err.code = "auth_required";
+      throw err;
+    }
+    void (await res.text().catch(() => ""));
+    throw new Error(`Could not list models (HTTP ${res.status})`);
   }
   const payload = (await res.json()) as {
     data?: { id?: string; name?: string }[];

@@ -250,17 +250,19 @@
 .arco-model-picker__body {
   display: grid;
   grid-template-columns: 148px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   flex: 1;
-  min-height: 0;
+  min-height: 240px;
   max-height: 300px;
   overflow: hidden;
+  align-items: stretch;
 }
 
 .arco-model-picker__navcol {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  max-height: 100%;
+  height: 100%;
   overflow: hidden;
   border-right: 1px solid var(--arco-border);
 }
@@ -269,11 +271,12 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-height: 0;
   padding: 6px;
   overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
   scrollbar-width: thin;
 }
 
@@ -338,6 +341,13 @@
   white-space: nowrap;
 }
 
+.arco-model-picker__navdivider {
+  height: 1px;
+  margin: 6px 4px;
+  background: var(--arco-border);
+  flex: 0 0 auto;
+}
+
 .arco-model-picker__models {
   display: flex;
   flex-direction: column;
@@ -346,6 +356,44 @@
   padding: 4px;
   overflow-y: auto;
   scrollbar-width: thin;
+}
+
+/* Configure screen when a provider needs auth before listing models. */
+.arco-model-picker__setup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  max-height: 100%;
+  padding: 14px 12px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.arco-model-picker__setuptitle {
+  font-size: var(--arco-text-sm);
+  font-weight: 600;
+  color: var(--arco-text-primary);
+}
+
+.arco-model-picker__setupdesc {
+  margin: 0;
+  font-size: var(--arco-text-xs);
+  line-height: 1.45;
+  color: var(--arco-text-secondary);
+}
+
+.arco-model-picker__setupform {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.arco-model-picker__setupactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
 }
 
 @media (max-width: 420px) {
@@ -379,6 +427,10 @@
   }
 
   .arco-model-picker__models {
+    max-height: 220px;
+  }
+
+  .arco-model-picker__setup {
     max-height: 220px;
   }
 }

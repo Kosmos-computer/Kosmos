@@ -184,7 +184,7 @@ async function authenticateAcpAgent(
 
   if (!methodId) {
     throw new Error(
-      "ACP agent requires authentication. Add an OpenAI API key in Settings → Providers, " +
+      "ACP agent requires authentication. Add an OpenAI API key in Settings → Model, " +
         "or sign in with the provider CLI (e.g. `codex login`).",
     );
   }

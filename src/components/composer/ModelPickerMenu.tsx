@@ -1,6 +1,9 @@
 /**
  * ModelPickerMenu — split panel for the composer model chip:
  * left nav of providers (Arco / Cursor / ACP…), right searchable model list.
+ *
+ * Unconfigured providers pass `setup` and get a configure screen in the right
+ * pane (API key paste + Settings link) instead of an empty model list.
  */
 import {
   cloneElement,
@@ -19,6 +22,7 @@ import { Check } from "lucide-react";
 import { filterMenuItems } from "../../lib/listSearch";
 import { useDismiss } from "../useDismiss";
 import { ListSearch } from "../patterns/ListSearch";
+import { Button, Input, PasswordInput } from "../ui";
 import type { ModelPickerNavAction, ModelPickerProvider } from "./modelPickerTypes";
 
 const PROVIDER_TAB_KEY = "arco.modelPicker.providerId";
@@ -73,6 +77,9 @@ export function ModelPickerMenu({
 }: ModelPickerMenuProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [urlDraft, setUrlDraft] = useState("");
+  const [keyDraft, setKeyDraft] = useState("");
+  const [savingKey, setSavingKey] = useState(false);
   const [fixedStyle, setFixedStyle] = useState<CSSProperties | null>(null);
   const [browseProviderId, setBrowseProviderId] = useState(() => {
     const stored = readStoredProviderId();
@@ -95,16 +102,34 @@ export function ModelPickerMenu({
 
   const browseProvider =
     providers.find((p) => p.id === browseProviderId) ?? providers[0] ?? null;
+  const setup = browseProvider?.setup ?? null;
 
   const visibleModels = useMemo(() => {
+    if (setup) return [];
     const models = browseProvider?.models ?? [];
     return filterMenuItems(models, searchQuery);
-  }, [browseProvider, searchQuery]);
+  }, [browseProvider, searchQuery, setup]);
+
+  // Clear half-typed credentials when switching provider so drafts don't leak.
+  useEffect(() => {
+    setUrlDraft("");
+    setKeyDraft("");
+    setSavingKey(false);
+  }, [browseProviderId]);
 
   const close = useCallback(() => {
     setOpen(false);
     setSearchQuery("");
+    setUrlDraft("");
+    setKeyDraft("");
+    setSavingKey(false);
   }, []);
+
+  const canSubmitSetup = Boolean(
+    setup &&
+      (setup.onSaveConnection || setup.onSaveKey) &&
+      (setup.urlLabel ? urlDraft.trim() : keyDraft.trim()),
+  );
 
   useDismiss(open, close, rootRef, panelRef);
 
@@ -202,16 +227,18 @@ export function ModelPickerMenu({
         }
         onKeyDown={onPanelKeyDown}
       >
-        <div className="arco-model-picker__search">
-          <ListSearch
-            value={searchQuery}
-            onChange={setSearchQuery}
-            placeholder="Search models…"
-            ariaLabel={`Search ${ariaLabel}`}
-            compact
-            autoFocus
-          />
-        </div>
+        {!setup ? (
+          <div className="arco-model-picker__search">
+            <ListSearch
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Search models…"
+              ariaLabel={`Search ${ariaLabel}`}
+              compact
+              autoFocus
+            />
+          </div>
+        ) : null}
         <div className="arco-model-picker__body">
           <div className="arco-model-picker__navcol">
             <div
@@ -219,19 +246,26 @@ export function ModelPickerMenu({
               role="tablist"
               aria-label="Model providers"
             >
-              {providers.map((provider) => {
+              {providers.map((provider, index) => {
                 const selected = provider.id === browseProvider?.id;
+                const prevGroup = index > 0 ? providers[index - 1]?.group : undefined;
+                const showDivider =
+                  provider.group === "who" && prevGroup != null && prevGroup !== "who";
                 return (
-                  <button
-                    key={provider.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={selected}
-                    className={`arco-model-picker__navitem${selected ? " arco-model-picker__navitem--active" : ""}${provider.id === activeProviderId ? " arco-model-picker__navitem--current" : ""}`}
-                    onClick={() => selectProvider(provider.id)}
-                  >
-                    <span className="arco-model-picker__navlabel">{provider.label}</span>
-                  </button>
+                  <div key={provider.id}>
+                    {showDivider ? (
+                      <div className="arco-model-picker__navdivider" role="separator" />
+                    ) : null}
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={selected}
+                      className={`arco-model-picker__navitem${selected ? " arco-model-picker__navitem--active" : ""}${provider.id === activeProviderId ? " arco-model-picker__navitem--current" : ""}`}
+                      onClick={() => selectProvider(provider.id)}
+                    >
+                      <span className="arco-model-picker__navlabel">{provider.label}</span>
+                    </button>
+                  </div>
                 );
               })}
             </div>
@@ -253,41 +287,122 @@ export function ModelPickerMenu({
               </div>
             ) : null}
           </div>
-          <div className="arco-model-picker__models arco-scroll" role="menu">
-            {visibleModels.length === 0 ? (
-              <div className="arco-menu__empty">
-                {searchQuery.trim()
-                  ? "No matches"
-                  : (browseProvider?.emptyMessage ?? "No models")}
-              </div>
-            ) : (
-              visibleModels.map((model) => (
-                <button
-                  key={model.id}
-                  type="button"
-                  role="menuitem"
-                  disabled={model.disabled || browseProvider?.inactive}
-                  className={`arco-menu__item${model.description ? " arco-menu__item--described" : ""}`}
+          {setup ? (
+            <div className="arco-model-picker__setup arco-scroll" role="region" aria-label={setup.title}>
+              <strong className="arco-model-picker__setuptitle">{setup.title}</strong>
+              <p className="arco-model-picker__setupdesc">{setup.description}</p>
+              {setup.onSaveConnection || setup.onSaveKey ? (
+                <form
+                  className="arco-model-picker__setupform"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!canSubmitSetup || savingKey) return;
+                    const apiKey = keyDraft.trim();
+                    const baseUrl = urlDraft.trim() || undefined;
+                    setSavingKey(true);
+                    const save = setup.onSaveConnection
+                      ? setup.onSaveConnection({ apiKey, baseUrl })
+                      : setup.onSaveKey?.(apiKey);
+                    void Promise.resolve(save)
+                      .then(() => {
+                        setUrlDraft("");
+                        setKeyDraft("");
+                      })
+                      .finally(() => setSavingKey(false));
+                  }}
+                >
+                  {setup.urlLabel ? (
+                    <>
+                      <label className="arco-label" htmlFor={`model-picker-url-${browseProvider?.id}`}>
+                        {setup.urlLabel}
+                      </label>
+                      <Input
+                        id={`model-picker-url-${browseProvider?.id}`}
+                        width="full"
+                        autoComplete="off"
+                        placeholder={setup.urlPlaceholder ?? "https://…"}
+                        value={urlDraft}
+                        onChange={(e) => setUrlDraft(e.target.value)}
+                        autoFocus
+                      />
+                    </>
+                  ) : null}
+                  <label className="arco-label" htmlFor={`model-picker-key-${browseProvider?.id}`}>
+                    {setup.keyLabel ?? "API key"}
+                  </label>
+                  <PasswordInput
+                    id={`model-picker-key-${browseProvider?.id}`}
+                    width="full"
+                    autoComplete="off"
+                    placeholder={setup.keyPlaceholder ?? "Paste API key"}
+                    value={keyDraft}
+                    onChange={(e) => setKeyDraft(e.target.value)}
+                    autoFocus={!setup.urlLabel}
+                  />
+                  <Button type="submit" variant="primary" disabled={!canSubmitSetup || savingKey}>
+                    {savingKey ? "Saving…" : "Save & connect"}
+                  </Button>
+                </form>
+              ) : null}
+              <div className="arco-model-picker__setupactions">
+                <Button
+                  variant={setup.onSaveConnection || setup.onSaveKey ? "default" : "primary"}
                   onClick={() => {
-                    model.onSelect();
+                    setup.onPrimary();
                     close();
                   }}
                 >
-                  <span className="arco-menu__itemlabel">
-                    <span className="arco-menu__itemtitle">{model.label}</span>
-                    {model.description ? (
-                      <span className="arco-menu__itemdesc">{model.description}</span>
-                    ) : null}
-                  </span>
-                  {model.checked && (
-                    <span className="arco-menu__check" aria-hidden="true">
-                      <Check size={13} />
+                  {setup.primaryLabel}
+                </Button>
+                {setup.secondaryLabel && setup.onSecondary ? (
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setup.onSecondary?.();
+                    }}
+                  >
+                    {setup.secondaryLabel}
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+          ) : (
+            <div className="arco-model-picker__models arco-scroll" role="menu">
+              {visibleModels.length === 0 ? (
+                <div className="arco-menu__empty">
+                  {searchQuery.trim()
+                    ? "No matches"
+                    : (browseProvider?.emptyMessage ?? "No models")}
+                </div>
+              ) : (
+                visibleModels.map((model) => (
+                  <button
+                    key={model.id}
+                    type="button"
+                    role="menuitem"
+                    disabled={model.disabled || browseProvider?.inactive}
+                    className={`arco-menu__item${model.description ? " arco-menu__item--described" : ""}`}
+                    onClick={() => {
+                      model.onSelect();
+                      close();
+                    }}
+                  >
+                    <span className="arco-menu__itemlabel">
+                      <span className="arco-menu__itemtitle">{model.label}</span>
+                      {model.description ? (
+                        <span className="arco-menu__itemdesc">{model.description}</span>
+                      ) : null}
                     </span>
-                  )}
-                </button>
-              ))
-            )}
-          </div>
+                    {model.checked && (
+                      <span className="arco-menu__check" aria-hidden="true">
+                        <Check size={13} />
+                      </span>
+                    )}
+                  </button>
+                ))
+              )}
+            </div>
+          )}
         </div>
       </div>
     ) : null;

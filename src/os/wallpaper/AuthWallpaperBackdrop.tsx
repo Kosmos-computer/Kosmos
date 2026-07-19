@@ -2,11 +2,14 @@
  * Sign-in layer backdrop — reads authWallpaper from osStore, which defaults to
  * the space photo and can be changed independently of the desktop wallpaper.
  */
+import { lazy, Suspense } from "react";
 import { useOsStore } from "../osStore";
 import { isAnimatedWallpaper } from "./wallpapers";
 import { resolveAuthWallpaper } from "./authWallpapers";
 import { StarfieldWallpaper } from "./StarfieldWallpaper";
 import { NebulaWallpaper } from "./NebulaWallpaper";
+
+const GameWorldWallpaper = lazy(() => import("./GameWorldWallpaper"));
 
 export function AuthWallpaperBackdrop() {
   const authWallpaper = useOsStore((s) => s.authWallpaper);
@@ -27,6 +30,11 @@ export function AuthWallpaperBackdrop() {
     <div className={`arco-wallpaper arco-wallpaper-${wallpaper}`} aria-hidden>
       {wallpaper === "starfield" && <StarfieldWallpaper theme={theme} />}
       {wallpaper === "nebula" && <NebulaWallpaper theme={theme} />}
+      {wallpaper === "overworld" && (
+        <Suspense fallback={null}>
+          <GameWorldWallpaper theme={theme} />
+        </Suspense>
+      )}
       {isAnimatedWallpaper(wallpaper) && <div className="arco-wallpaper__veil" />}
     </div>
   );

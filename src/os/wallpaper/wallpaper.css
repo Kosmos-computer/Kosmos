@@ -39,6 +39,11 @@
     var(--arco-bg-desktop);
 }
 
+.arco-wallpaper-overworld {
+  background:
+    linear-gradient(180deg, #1a2744 0%, #243a4f 42%, #2f4a3a 100%);
+}
+
 .arco-wallpaper-nebula .arco-wallpaper-nebula {
   position: absolute;
   inset: 0;
@@ -129,6 +134,12 @@
     radial-gradient(circle at 30% 40%, rgba(110, 168, 254, 0.55), transparent 50%),
     radial-gradient(circle at 70% 60%, rgba(139, 92, 246, 0.45), transparent 45%),
     var(--arco-bg-desktop);
+}
+
+.arco-wallpaper-swatch__preview.arco-wallpaper-overworld {
+  background:
+    radial-gradient(ellipse 80% 40% at 50% 100%, #3d6b48 0%, transparent 55%),
+    linear-gradient(180deg, #1a2744 0%, #2a4058 45%, #3a5c44 100%);
 }
 
 .arco-wallpaper-swatch__label {

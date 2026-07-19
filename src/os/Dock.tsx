@@ -3,11 +3,11 @@ import i18n from "../i18n/index";
  * The dock — bottom app tray. Which apps show here (and in what order) is
  * independent from the NavRail — each app can be pinned/removed per
  * surface. Drag to reorder, or drag an item off the dock (macOS-style) to
- * unpin it; right-click also offers "Remove from Dock". Pinned icons beyond
+ * unpin it; hover / right-click opens the app hovercard. Pinned icons beyond
  * {@link DOCK_VISIBLE_APP_LIMIT} move to "View all apps"; "More apps" lists
  * every app with a checkmark for what's currently pinned.
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { LayoutGrid, Plus, Trash2 } from "lucide-react";
 import { Menu } from "../components/Menu";
 import { I18nKey } from "../i18n/declaration";
@@ -24,29 +24,38 @@ import {
   splitByPinned,
 } from "./pinnedApps";
 import { useAppPinDrag } from "./useAppPinDrag";
+import { AppHoverCard } from "./AppHoverCard";
+import { appHoverCardHandlers } from "./appHoverCardHandlers";
 
 function DockItem({
   entry,
   open,
+  active,
   isDragging,
   isUndocking,
   dropBefore,
   dragHandlers,
   onSelect,
   onRemove,
+  windows,
 }: {
   entry: ShellAppEntry;
   open: boolean;
+  active: boolean;
   isDragging: boolean;
   isUndocking: boolean;
   dropBefore: boolean;
   dragHandlers: ReturnType<ReturnType<typeof useAppPinDrag>["dragHandlers"]>;
   onSelect: () => void;
   onRemove: () => void;
+  windows: ReturnType<typeof useWindowStore.getState>["windows"];
 }) {
   const Icon = entry.icon;
   const label = entry.title;
-  const [ctxOpen, setCtxOpen] = useState(false);
+  const focus = useWindowStore((s) => s.focus);
+  const toggleMinimize = useWindowStore((s) => s.toggleMinimize);
+  const close = useWindowStore((s) => s.close);
+  const openWindowCount = windows.filter((w) => w.id === entry.id && !w.minimized).length;
 
   return (
     <div
@@ -59,39 +68,46 @@ function DockItem({
         .filter(Boolean)
         .join(" ")}
       {...dragHandlers}
-      onContextMenu={(e) => {
-        e.preventDefault();
-        setCtxOpen(true);
-      }}
     >
-      <button
-        className={["arco-dock__item", entry.generated && "arco-dock__item--generated"].filter(Boolean).join(" ")}
-        onClick={onSelect}
-        aria-label={label}
-        title={label}
+      <AppHoverCard
+        appId={entry.id}
+        label={label}
+        icon={Icon}
+        running={open}
+        active={active}
+        openWindowCount={openWindowCount}
+        placement="top"
+        openOn="hover"
+        removeLabel={i18n.t(I18nKey.OS$DOCK_REMOVE)}
+        disabled={isDragging}
+        {...appHoverCardHandlers(entry.id, windows, {
+          onLaunch: onSelect,
+          onFocus: focus,
+          onMinimize: toggleMinimize,
+          onClose: close,
+          onRemove,
+        })}
       >
-        <span aria-hidden="true">
-          <Icon size={22} strokeWidth={1.8} />
-        </span>
-        {open && <span className="arco-dock__indicator" />}
-        <span className="arco-dock__tooltip">{label}</span>
-        {isDragging && isUndocking && (
-          <span className="arco-dock__undock-badge" aria-hidden="true">
-            <Trash2 size={12} />
+        <button
+          className={["arco-dock__item", entry.generated && "arco-dock__item--generated"]
+            .filter(Boolean)
+            .join(" ")}
+          onClick={onSelect}
+          aria-label={label}
+          title={label}
+        >
+          <span aria-hidden="true">
+            <Icon size={22} strokeWidth={1.8} />
           </span>
-        )}
-      </button>
-      <Menu
-        open={ctxOpen}
-        onOpenChange={setCtxOpen}
-        trigger={<span aria-hidden="true" />}
-        className="arco-itemctx"
-        aria-label={i18n.t(I18nKey.OS$DOCK_OPTIONS, { title: label })}
-        side="top"
-        items={[
-          { id: "remove", label: i18n.t(I18nKey.OS$DOCK_REMOVE), icon: Trash2, danger: true, onSelect: onRemove },
-        ]}
-      />
+          {open && <span className="arco-dock__indicator" />}
+          <span className="arco-dock__tooltip">{label}</span>
+          {isDragging && isUndocking && (
+            <span className="arco-dock__undock-badge" aria-hidden="true">
+              <Trash2 size={12} />
+            </span>
+          )}
+        </button>
+      </AppHoverCard>
     </div>
   );
 }
@@ -119,6 +135,7 @@ export function Dock() {
   });
 
   const isOpen = (key: string) => windows.some((w) => w.id === key);
+  const focusedId = [...windows.filter((w) => !w.minimized)].sort((a, b) => b.z - a.z)[0]?.id;
   const visiblePinned = pinned.slice(0, DOCK_VISIBLE_APP_LIMIT);
   const overflowPinned = pinned.slice(DOCK_VISIBLE_APP_LIMIT);
 
@@ -134,12 +151,14 @@ export function Dock() {
               key={entry.id}
               entry={entry}
               open={isOpen(entry.id)}
+              active={focusedId === entry.id}
               isDragging={draggingId === entry.id}
               isUndocking={isUndocking}
               dropBefore={draggingId !== null && draggingId !== entry.id && overIndex === index}
               dragHandlers={dragHandlers(entry.id, index)}
               onSelect={() => openApp(entry)}
               onRemove={() => setDockPinnedIds((prev) => removePinned(prev, entry.id))}
+              windows={windows}
             />
           ))}
         </div>

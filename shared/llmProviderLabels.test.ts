@@ -3,11 +3,13 @@ import test from "node:test";
 import {
   customProviderLabel,
   isKosmosCloudLlmEndpoint,
+  KOSMOS_CLOUD_GATEWAY_URL,
   usesKosmosCloudService,
 } from "./llmProviderLabels.js";
 
 test("isKosmosCloudLlmEndpoint recognizes the hosted gateway", () => {
   assert.equal(isKosmosCloudLlmEndpoint("https://kosmos-gateway.fly.dev/v1"), true);
+  assert.equal(isKosmosCloudLlmEndpoint(KOSMOS_CLOUD_GATEWAY_URL), true);
   assert.equal(isKosmosCloudLlmEndpoint("http://localhost:11434/v1"), false);
 });
 

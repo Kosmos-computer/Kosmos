@@ -5,6 +5,9 @@ export type KosmosLabelContext = Pick<KosmosDeployment, "billingManaged" | "depl
 
 const KOSMOS_GATEWAY_HOST = "kosmos-gateway.fly.dev";
 
+/** Default OpenAI-compatible Kosmos Cloud gateway (supplier tab / credits). */
+export const KOSMOS_CLOUD_GATEWAY_URL = `https://${KOSMOS_GATEWAY_HOST}/v1`;
+
 /** True when baseUrl points at the Kosmos credits / LiteLLM gateway. */
 export function isKosmosCloudLlmEndpoint(baseUrl: string): boolean {
   const trimmed = baseUrl.trim();

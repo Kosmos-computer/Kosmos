@@ -9,11 +9,11 @@ import { T } from "../i18n/T";
  *
  * Which apps show here (and in what order) is independent from the Dock —
  * each app can be pinned/removed per surface. Drag to reorder, or drag an
- * item off the rail (macOS Dock-style) to unpin it; right-click also offers
- * "Remove from Nav". "More apps" lists every app with a checkmark for what's
- * currently pinned, so anything can be added back.
+ * item off the rail (macOS Dock-style) to unpin it; left-click (or right-click)
+ * opens the same app hovercard as the dock. "More apps" lists every app with
+ * a checkmark for what's currently pinned, so anything can be added back.
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react";
 import { Menu } from "../components/Menu";
 import { useOsStore } from "./osStore";
@@ -23,6 +23,8 @@ import { useShellApps, type ShellAppEntry } from "./shellApps";
 import { addPinned, normalizePinned, removePinned, reorderPinned, splitByPinned } from "./pinnedApps";
 import { useAppPinDrag } from "./useAppPinDrag";
 import { NavBrandMark } from "./NavBrandMark";
+import { AppHoverCard } from "./AppHoverCard";
+import { appHoverCardHandlers } from "./appHoverCardHandlers";
 
 function NavItem({
   entry,
@@ -35,6 +37,7 @@ function NavItem({
   dragHandlers,
   onSelect,
   onRemove,
+  windows,
 }: {
   entry: ShellAppEntry;
   active: boolean;
@@ -46,10 +49,14 @@ function NavItem({
   dragHandlers: ReturnType<ReturnType<typeof useAppPinDrag>["dragHandlers"]>;
   onSelect: () => void;
   onRemove: () => void;
+  windows: ReturnType<typeof useWindowStore.getState>["windows"];
 }) {
   const Icon = entry.icon;
   const label = entry.title;
-  const [ctxOpen, setCtxOpen] = useState(false);
+  const focus = useWindowStore((s) => s.focus);
+  const toggleMinimize = useWindowStore((s) => s.toggleMinimize);
+  const close = useWindowStore((s) => s.close);
+  const openWindowCount = windows.filter((w) => w.id === entry.id && !w.minimized).length;
 
   return (
     <div
@@ -62,52 +69,57 @@ function NavItem({
         .filter(Boolean)
         .join(" ")}
       {...dragHandlers}
-      onContextMenu={(e) => {
-        e.preventDefault();
-        setCtxOpen(true);
-      }}
     >
-      <button
-        className={[
-          "arco-navrail__item",
-          active && "arco-navrail__item--active",
-          entry.generated && "arco-navrail__item--generated",
-        ]
-          .filter(Boolean)
-          .join(" ")}
-        onClick={onSelect}
-        aria-label={label}
-        title={label}
-        aria-current={active ? "true" : undefined}
+      <AppHoverCard
+        appId={entry.id}
+        label={label}
+        icon={Icon}
+        running={open}
+        active={active}
+        openWindowCount={openWindowCount}
+        placement="right"
+        openOn="click"
+        removeLabel="Remove from Nav"
+        disabled={isDragging}
+        {...appHoverCardHandlers(entry.id, windows, {
+          onLaunch: onSelect,
+          onFocus: focus,
+          onMinimize: toggleMinimize,
+          onClose: close,
+          onRemove,
+        })}
       >
-        <span className="arco-navrail__item-icon" aria-hidden="true">
-          <Icon size={18} strokeWidth={1.8} />
-          {open && !expanded && <span className="arco-navrail__indicator" />}
-        </span>
-        {expanded ? (
-          <>
-            <span className="arco-navrail__item-label">{label}</span>
-            {open && <span className="arco-navrail__indicator arco-navrail__indicator--inline" />}
-          </>
-        ) : (
-          <span className="arco-navrail__tooltip">{label}</span>
-        )}
-        {isDragging && isUndocking && (
-          <span className="arco-navrail__undock-badge" aria-hidden="true">
-            <Trash2 size={12} />
+        <button
+          className={[
+            "arco-navrail__item",
+            active && "arco-navrail__item--active",
+            entry.generated && "arco-navrail__item--generated",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+          aria-label={label}
+          title={label}
+          aria-current={active ? "true" : undefined}
+        >
+          <span className="arco-navrail__item-icon" aria-hidden="true">
+            <Icon size={18} strokeWidth={1.8} />
+            {open && !expanded && <span className="arco-navrail__indicator" />}
           </span>
-        )}
-      </button>
-      <Menu
-        open={ctxOpen}
-        onOpenChange={setCtxOpen}
-        trigger={<span aria-hidden="true" />}
-        className="arco-itemctx"
-        aria-label={`${label} options`}
-        items={[
-          { id: "remove", label: "Remove from Nav", icon: Trash2, danger: true, onSelect: onRemove },
-        ]}
-      />
+          {expanded ? (
+            <>
+              <span className="arco-navrail__item-label">{label}</span>
+              {open && <span className="arco-navrail__indicator arco-navrail__indicator--inline" />}
+            </>
+          ) : (
+            <span className="arco-navrail__tooltip">{label}</span>
+          )}
+          {isDragging && isUndocking && (
+            <span className="arco-navrail__undock-badge" aria-hidden="true">
+              <Trash2 size={12} />
+            </span>
+          )}
+        </button>
+      </AppHoverCard>
     </div>
   );
 }
@@ -180,6 +192,7 @@ export function NavRail() {
             dragHandlers={dragHandlers(entry.id, index)}
             onSelect={() => activateShellWindow(entry.kind, entry.title, isOpen(entry.id))}
             onRemove={() => setNavPinnedIds((prev) => removePinned(prev, entry.id))}
+            windows={windows}
           />
         ))}
       </div>

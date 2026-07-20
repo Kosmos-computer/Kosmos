@@ -15,6 +15,13 @@ const FILE = path.join(dataDirs.root, "installed-apps.json");
 /** Repo-local bundles: ./apps/<name>/{manifest.json, index.html, …} */
 export const APPS_DIR = path.resolve(process.cwd(), "apps");
 
+/**
+ * Former seed apps removed from ./apps/. Uninstall on boot when still present
+ * as source "seed" so stale Apps-library entries (e.g. core.drive) disappear.
+ * User-installed copies of the same id are left alone.
+ */
+const RETIRED_SEED_IDS = ["core.drive"] as const;
+
 function load(): InstalledApp[] {
   try {
     return JSON.parse(fs.readFileSync(FILE, "utf-8")) as InstalledApp[];
@@ -77,6 +84,14 @@ export const installedAppStore = {
    * updates land without a data reset. User uninstalls still stick.
    */
   ensureSeeds(): void {
+    for (const id of RETIRED_SEED_IDS) {
+      const existing = this.get(id);
+      if (existing?.source === "seed") {
+        this.uninstall(id);
+        console.log(`[platform] removed retired seed app ${id}`);
+      }
+    }
+
     let dirs: string[];
     try {
       dirs = fs

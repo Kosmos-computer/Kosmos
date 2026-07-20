@@ -21,13 +21,12 @@
 | `os.files@1` + `filesService` | Shipped — SQLite metadata, on-disk blobs |
 | `/api/drive/*` REST | Shipped — CRUD, content, blob |
 | Agent `docs_*` tools | Shipped — contract-level file ops |
-| Shell Drive (`src/apps/files/`) | Partial — list/create/star/trash; **no** rename/move/upload/download/share/live refresh |
-| Tier-3 `core.drive` (`apps/drive/`) | Partial — rename/move via intents; simpler UI |
-| Sharing | **Not started** |
+| Shell Drive (`src/apps/files/`) | Canonical — browse/create/rename/move/upload/download/share/search/star/trash/live refresh |
+| Tier-3 `core.drive` (`apps/drive/`) | **Removed** — Dock Drive is the sole Drive UI; retired seed uninstalled on boot |
+| Sharing | Shipped — link shares via `ShareLinkModal` + public `/s/:token` |
 
 **Canonical app:** `system:files` (`FilesApp`) is what users open from the
-Dock. `core.drive` remains the contract-pure reference; converge features
-into the shell app first.
+Dock.
 
 ## Architecture
 
@@ -141,7 +140,7 @@ Public URL shape: `https://host/s/{token}`
 - View-only office render (HTML export, no raw JSON)
 - Storage quota in sidebar
 - Drag-and-drop move in grid view
-- `core.drive` feature parity or deprecation note
+- ~~`core.drive` feature parity or deprecation note~~ — removed; shell Drive is sole UI
 - Nextcloud backend provider delegating `shares.*` to OCS
 
 ## Implementation order (this sprint)

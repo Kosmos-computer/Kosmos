@@ -11,7 +11,7 @@ export const COPY_PATHS = [
   ".npmrc",
 ];
 
-export const APP_DIRS = ["calculator", "calendar", "docs", "drive", "menubar-tasks", "timer"];
+export const APP_DIRS = ["calculator", "calendar", "docs", "menubar-tasks", "timer"];
 
 /** Paths that must exist after staging — relative to the arco runtime root. */
 export const RUNTIME_REQUIRED = [

@@ -2,7 +2,13 @@ import fs from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
 
-export type OrderStatus = "pending" | "provisioning" | "ready" | "failed" | "suspended";
+export type OrderStatus =
+  | "pending"
+  | "provisioning"
+  | "ready"
+  | "failed"
+  | "suspended"
+  | "deleted";
 
 export interface OrderRow {
   id: string;
@@ -25,7 +31,15 @@ export class Store {
 
   constructor(dataDir: string) {
     fs.mkdirSync(dataDir, { recursive: true });
-    this.db = new Database(path.join(dataDir, "control-plane.db"));
+    // Prefer legacy control.db when present (existing Fly volume data).
+    const modern = path.join(dataDir, "control-plane.db");
+    const legacy = path.join(dataDir, "control.db");
+    const dbPath =
+      fs.existsSync(legacy) &&
+      (!fs.existsSync(modern) || fs.statSync(modern).size === 0)
+        ? legacy
+        : modern;
+    this.db = new Database(dbPath);
     this.db.pragma("journal_mode = WAL");
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS orders (
@@ -62,6 +76,18 @@ export class Store {
     return this.db.prepare("SELECT * FROM orders WHERE tenant_name = ?").get(name) as
       | OrderRow
       | undefined;
+  }
+
+  getByAppName(appName: string): OrderRow | undefined {
+    return this.db.prepare("SELECT * FROM orders WHERE app_name = ?").get(appName) as
+      | OrderRow
+      | undefined;
+  }
+
+  getBySubscriptionId(subscriptionId: string): OrderRow | undefined {
+    return this.db
+      .prepare("SELECT * FROM orders WHERE stripe_subscription_id = ?")
+      .get(subscriptionId) as OrderRow | undefined;
   }
 
   getByEmail(email: string): OrderRow | undefined {
@@ -130,5 +156,17 @@ export class Store {
     this.db
       .prepare(`UPDATE orders SET status = 'suspended', updated_at = ? WHERE stripe_session_id = ?`)
       .run(now, sessionId);
+  }
+
+  markDeleted(sessionId: string): void {
+    const now = new Date().toISOString();
+    this.db
+      .prepare(`UPDATE orders SET status = 'deleted', updated_at = ? WHERE stripe_session_id = ?`)
+      .run(now, sessionId);
+  }
+
+  /** Remove order so the tenant/app name can be reused after destroy. */
+  removeOrder(sessionId: string): void {
+    this.db.prepare(`DELETE FROM orders WHERE stripe_session_id = ?`).run(sessionId);
   }
 }

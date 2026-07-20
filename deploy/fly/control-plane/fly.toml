@@ -22,7 +22,7 @@ primary_region = "iad"
   FLY_BIN = "/root/.fly/bin/flyctl"
 
 [mounts]
-  source = "control_plane_data"
+  source = "control_data"
   destination = "/data"
 
 [http_service]

@@ -47,7 +47,7 @@ function usageExit(message?: string): never {
   if (message) console.error(`error: ${message}\n`);
   console.error(
     `usage: npx tsx scripts/provision-tenant.ts <name> [options]
-  --destroy            tear the tenant down (app, volume, key, record)
+  --destroy            tear down Stripe + LiteLLM + Fly (prefer this over fly apps destroy)
   --budget <usd>       LiteLLM key budget in USD          (default 5)
   --model <name>       gateway model for LLM_MODEL        (default qwen3-30b)
   --region <code>      Fly region                         (default iad)
@@ -159,6 +159,19 @@ interface TenantRecord {
   image: string;
   gateway: string;
   createdAt: string;
+  stripeSubscriptionId?: string;
+}
+
+async function revokeGatewayKey(
+  gateway: string,
+  app: string,
+  virtualKey?: string,
+): Promise<boolean> {
+  // Alias is always the Fly app name — works even without a local tenant record.
+  const body: { key_aliases: string[]; keys?: string[] } = { key_aliases: [app] };
+  if (virtualKey) body.keys = [virtualKey];
+  const res = await gatewayPost(gateway, "/key/delete", body).catch(() => null);
+  return Boolean(res?.ok);
 }
 
 async function provision(opts: Options): Promise<void> {
@@ -188,44 +201,52 @@ async function provision(opts: Options): Promise<void> {
     process.exit(1);
   }
 
-  console.log(`\n[2/5] Creating Fly app ${app} (org ${opts.org})`);
-  fly(["apps", "create", app, "--org", opts.org]);
+  try {
+    console.log(`\n[2/5] Creating Fly app ${app} (org ${opts.org})`);
+    fly(["apps", "create", app, "--org", opts.org]);
 
-  console.log(`\n[3/5] Creating ${opts.volumeGb}GB volume in ${opts.region}`);
-  fly([
-    "volumes", "create", "arco_data",
-    "--app", app, "--region", opts.region,
-    "--size", String(opts.volumeGb), "--yes",
-  ]);
+    console.log(`\n[3/5] Creating ${opts.volumeGb}GB volume in ${opts.region}`);
+    fly([
+      "volumes", "create", "arco_data",
+      "--app", app, "--region", opts.region,
+      "--size", String(opts.volumeGb), "--yes",
+    ]);
 
-  console.log("\n[4/5] Staging secrets");
-  const secrets = [
-    "LLM_PROVIDER=custom",
-    `LLM_BASE_URL=${opts.gateway}/v1`,
-    `LLM_API_KEY=${virtualKey}`,
-    `LLM_MODEL=${opts.model}`,
-    "ARCO_SECURE_COOKIES=1",
-    `ARCO_ENTRY_MAGIC_KEY=${entryKey}`,
-    `ARCO_WORKSPACE_QUOTA_MB=${opts.quotaMb}`,
-  ];
-  if (opts.billingManaged) {
-    secrets.push("KOSMOS_BILLING_MANAGED=1", `KOSMOS_TENANT_APP=${app}`);
-    secrets.push(`KOSMOS_CONTROL_PLANE_URL=${opts.controlPlaneUrl}`);
-    if (opts.billingToken) secrets.push(`KOSMOS_TENANT_BILLING_TOKEN=${opts.billingToken}`);
-    if (opts.paymentLinkUrl) secrets.push(`KOSMOS_PAYMENT_LINK_URL=${opts.paymentLinkUrl}`);
-    if (opts.portalLoginUrl) secrets.push(`KOSMOS_PORTAL_LOGIN_URL=${opts.portalLoginUrl}`);
+    console.log("\n[4/5] Staging secrets");
+    const secrets = [
+      "LLM_PROVIDER=custom",
+      `LLM_BASE_URL=${opts.gateway}/v1`,
+      `LLM_API_KEY=${virtualKey}`,
+      `LLM_MODEL=${opts.model}`,
+      "ARCO_SECURE_COOKIES=1",
+      `ARCO_ENTRY_MAGIC_KEY=${entryKey}`,
+      `ARCO_WORKSPACE_QUOTA_MB=${opts.quotaMb}`,
+    ];
+    if (opts.billingManaged) {
+      secrets.push("KOSMOS_BILLING_MANAGED=1", `KOSMOS_TENANT_APP=${app}`);
+      secrets.push(`KOSMOS_CONTROL_PLANE_URL=${opts.controlPlaneUrl}`);
+      if (opts.billingToken) secrets.push(`KOSMOS_TENANT_BILLING_TOKEN=${opts.billingToken}`);
+      if (opts.paymentLinkUrl) secrets.push(`KOSMOS_PAYMENT_LINK_URL=${opts.paymentLinkUrl}`);
+      if (opts.portalLoginUrl) secrets.push(`KOSMOS_PORTAL_LOGIN_URL=${opts.portalLoginUrl}`);
+    }
+    fly(["secrets", "set", "--app", app, "--stage", ...secrets]);
+
+    console.log(`\n[5/5] Deploying ${opts.image}`);
+    fs.mkdirSync(TENANTS_DIR, { recursive: true });
+    const toml = fs
+      .readFileSync(TEMPLATE, "utf-8")
+      .replaceAll("__APP__", app)
+      .replaceAll("__REGION__", opts.region);
+    fs.writeFileSync(tomlPath, toml, "utf-8");
+    // --ha=false: one machine per tenant — the single volume is the instance.
+    fly(["deploy", "--config", tomlPath, "--image", opts.image, "--ha=false"]);
+  } catch (err) {
+    console.error("\nprovision failed — revoking gateway key and destroying app");
+    await revokeGatewayKey(opts.gateway, app, virtualKey);
+    fly(["apps", "destroy", app, "--yes"], { allowFail: true });
+    fs.rmSync(tomlPath, { force: true });
+    throw err;
   }
-  fly(["secrets", "set", "--app", app, "--stage", ...secrets]);
-
-  console.log(`\n[5/5] Deploying ${opts.image}`);
-  fs.mkdirSync(TENANTS_DIR, { recursive: true });
-  const toml = fs
-    .readFileSync(TEMPLATE, "utf-8")
-    .replaceAll("__APP__", app)
-    .replaceAll("__REGION__", opts.region);
-  fs.writeFileSync(tomlPath, toml, "utf-8");
-  // --ha=false: one machine per tenant — the single volume is the instance.
-  fly(["deploy", "--config", tomlPath, "--image", opts.image, "--ha=false"]);
 
   const record: TenantRecord = {
     app,
@@ -247,6 +268,76 @@ async function provision(opts: Options): Promise<void> {
   console.log(`  Record (contains the virtual key): ${path.relative(REPO_ROOT, recordPath)}`);
 }
 
+async function cancelStripeSubscription(
+  app: string,
+  subscriptionId?: string,
+): Promise<"canceled" | "skipped" | "absent" | "failed"> {
+  const key = process.env.STRIPE_SECRET_KEY?.trim();
+  if (!key) {
+    console.log("  note: STRIPE_SECRET_KEY unset — skipping Stripe cancel");
+    return "absent";
+  }
+
+  const auth = Buffer.from(`${key}:`).toString("base64");
+  const headers = {
+    Authorization: `Basic ${auth}`,
+    "Content-Type": "application/x-www-form-urlencoded",
+  };
+
+  let subId = subscriptionId?.trim() || "";
+  if (!subId) {
+    const q = encodeURIComponent(`metadata["app_name"]:"${app}" AND status:"active"`);
+    const searchRes = await fetch(`https://api.stripe.com/v1/subscriptions/search?query=${q}&limit=1`, {
+      headers: { Authorization: `Basic ${auth}` },
+      signal: AbortSignal.timeout(20_000),
+    }).catch(() => null);
+    if (!searchRes?.ok) {
+      console.log("  warning: Stripe subscription search failed");
+      return "failed";
+    }
+    const found = (await searchRes.json()) as { data?: Array<{ id: string }> };
+    subId = found.data?.[0]?.id ?? "";
+  }
+  if (!subId) {
+    console.log("  note: no active Stripe subscription for this app");
+    return "absent";
+  }
+
+  const res = await fetch(`https://api.stripe.com/v1/subscriptions/${subId}`, {
+    method: "DELETE",
+    headers,
+    signal: AbortSignal.timeout(20_000),
+  }).catch(() => null);
+  if (!res?.ok) {
+    console.log(`  warning: Stripe cancel failed for ${subId} (HTTP ${res?.status ?? "network"})`);
+    return "failed";
+  }
+  console.log(`  canceled ${subId}`);
+  return "canceled";
+}
+
+async function destroyViaControlPlane(opts: Options): Promise<boolean> {
+  const token = process.env.ADMIN_TOKEN?.trim();
+  if (!token) return false;
+  const url = `${opts.controlPlaneUrl}/admin/tenants/${opts.name}/deactivate`;
+  console.log(`\n[control-plane] POST ${url}`);
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ mode: "destroy" }),
+    signal: AbortSignal.timeout(120_000),
+  }).catch(() => null);
+  if (!res?.ok) {
+    console.log(`  warning: control-plane deactivate failed (HTTP ${res?.status ?? "network"}) — falling back to local teardown`);
+    return false;
+  }
+  console.log("  ", await res.text());
+  return true;
+}
+
 async function destroy(opts: Options): Promise<void> {
   const app = `${opts.prefix}-${opts.name}`;
   const recordPath = path.join(TENANTS_DIR, `${app}.json`);
@@ -256,18 +347,29 @@ async function destroy(opts: Options): Promise<void> {
   try {
     record = JSON.parse(fs.readFileSync(recordPath, "utf-8")) as TenantRecord;
   } catch {
-    console.log(`note: no record at ${recordPath} — destroying the Fly app only.`);
+    console.log(`note: no record at ${recordPath} — tearing down by app name ${app}.`);
   }
 
-  if (record?.virtualKey) {
-    console.log(`\n[1/2] Revoking gateway key for ${app}`);
-    const res = await gatewayPost(record.gateway ?? opts.gateway, "/key/delete", {
-      keys: [record.virtualKey],
-    }).catch(() => null);
-    if (!res?.ok) console.log("  warning: key revoke failed — delete it in the LiteLLM UI.");
+  // Prefer the control-plane orchestrator when ADMIN_TOKEN is set (Stripe+LiteLLM+Fly).
+  if (await destroyViaControlPlane(opts)) {
+    fs.rmSync(recordPath, { force: true });
+    fs.rmSync(tomlPath, { force: true });
+    console.log(`\n✔ Tenant ${app} destroyed via control plane.`);
+    return;
   }
 
-  console.log(`\n[2/2] Destroying Fly app ${app} (volume goes with it)`);
+  console.log(`\n[1/3] Canceling Stripe subscription for ${app}`);
+  await cancelStripeSubscription(app, record?.stripeSubscriptionId);
+
+  console.log(`\n[2/3] Revoking gateway key for ${app}`);
+  const revoked = await revokeGatewayKey(
+    record?.gateway ?? opts.gateway,
+    app,
+    record?.virtualKey,
+  );
+  if (!revoked) console.log("  warning: key revoke failed — delete it in the LiteLLM UI.");
+
+  console.log(`\n[3/3] Destroying Fly app ${app} (volume goes with it)`);
   fly(["apps", "destroy", app, "--yes"], { allowFail: true });
 
   fs.rmSync(recordPath, { force: true });

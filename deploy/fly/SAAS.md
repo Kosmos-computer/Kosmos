@@ -18,6 +18,7 @@ notes, see the private `docs/saas-plan.md` (gitignored).
 │    POST /checkout → Stripe Checkout ($25/mo test subscription)          │
 │    POST /webhooks/stripe → provision tenant on payment                  │
 │    GET  /success?session_id=… → poll provisioning status                │
+│    GET  /connect?return_to&mode → desktop/www pairing (no IdP yet)      │
 └───────────────────────────────┬─────────────────────────────────────────┘
                                 │ flyctl (FLY_API_TOKEN)
                                 ▼
@@ -212,12 +213,30 @@ the release (or destroy/reprovision).
 - **Orders DB:** `control_plane_data` volume → `control-plane.db`
 - **Provision:** `flyctl` inside container (`FLY_API_TOKEN`) — same steps as
   `scripts/provision-tenant.ts`
-- **Suspend:** on `invoice.payment_failed` / `customer.subscription.deleted`,
-  revokes LiteLLM key and runs `fly apps suspend`
+- **Deactivate (single orchestrator):** Stripe cancel → LiteLLM
+  `/key/delete` by `key_alias` (= Fly app name) → Fly suspend or destroy.
+  - `invoice.payment_failed` → **suspend** (keep volume; billing may recover)
+  - `customer.subscription.deleted` → **destroy** (full teardown)
+  - Operator API: `POST /admin/tenants/:name/deactivate` with
+    `Authorization: Bearer $ADMIN_TOKEN` and optional
+    `{"mode":"destroy"|"suspend"}`
+  - CLI: `npx tsx scripts/provision-tenant.ts <name> --destroy`
+    (uses control-plane admin API when `ADMIN_TOKEN` is set; otherwise
+    cancels Stripe via `STRIPE_SECRET_KEY`, then LiteLLM + Fly locally)
+  - Never use raw `fly apps destroy` alone — it leaves Stripe + LiteLLM behind.
 
 **Health:** `GET /health` → `{"ok":true}`
 
 **Order status API:** `GET /api/order/:stripe_session_id`
+
+**Admin deactivate:**
+
+```bash
+curl -X POST https://kosmos-control-plane.fly.dev/admin/tenants/acme/deactivate \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"mode":"destroy"}'
+```
 
 ---
 
@@ -292,7 +311,7 @@ control plane, gateway, and tenant instances.
 | Control plane 502 | App crash (check `fly logs -a kosmos-control-plane`) | Redeploy; ensure `tsx` is a production dependency |
 | Paid but no redirect | Stripe redirect while app was down | Open `/success?session_id=cs_test_…` manually |
 | Order stuck on `pending` | Webhook not delivered | Check Stripe webhook logs; success page triggers backup provision |
-| `Key with alias already exists` | Stale LiteLLM key after failed provision | `POST /key/delete` with master key, or delete in LiteLLM |
+| `Key with alias already exists` | Stale LiteLLM key after failed provision | Teardown revokes by `key_alias` (= app name); or `POST /key/delete` with `{"key_aliases":["kosmos-…"]}` |
 | Tenant build OOM on Fly | Vite in Docker | Use `Dockerfile.runtime` + host-built `dist/` |
 | Image wrong arch | arm64 image on amd64 Fly | `docker build --platform linux/amd64` |
 | Usage not showing in Settings | Gateway unreachable or wrong `LLM_API_KEY` | Check tenant secrets and `/key/info` |

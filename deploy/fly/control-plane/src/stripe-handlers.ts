@@ -1,8 +1,9 @@
 import { randomUUID } from "node:crypto";
 import type Stripe from "stripe";
 import type { Config } from "./config.js";
+import { deactivateOrder, deactivateTenant, resolveOrderForDeactivate } from "./deactivate.js";
 import type { Store } from "./db.js";
-import { provisionTenant, suspendTenant } from "./provision.js";
+import { provisionTenant } from "./provision.js";
 
 const TENANT_RE = /^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/;
 const RESERVED = new Set([
@@ -32,7 +33,7 @@ export async function createCheckoutSession(
   stripe: Stripe,
   config: Config,
   store: Store,
-  input: { tenantName: string; email: string },
+  input: { tenantName: string; email: string; returnTo?: string | null },
 ): Promise<Stripe.Checkout.Session> {
   const tenantName = input.tenantName.trim().toLowerCase();
   const validationError = validateTenantName(tenantName);
@@ -41,17 +42,25 @@ export async function createCheckoutSession(
 
   const appName = `${config.tenantPrefix}-${tenantName}`;
   const orderId = randomUUID();
+  const returnTo = input.returnTo?.trim() || "";
+  const cancelUrl = returnTo
+    ? `${config.publicUrl}/connect?mode=signup&return_to=${encodeURIComponent(returnTo)}&canceled=1`
+    : `${config.publicUrl}/?canceled=1`;
+  const successUrl = returnTo
+    ? `${config.publicUrl}/success?session_id={CHECKOUT_SESSION_ID}&return_to=${encodeURIComponent(returnTo)}`
+    : `${config.publicUrl}/success?session_id={CHECKOUT_SESSION_ID}`;
 
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
     customer_email: input.email.trim(),
     line_items: [{ price: config.stripePriceId, quantity: 1 }],
-    success_url: `${config.publicUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${config.publicUrl}/?canceled=1`,
+    success_url: successUrl,
+    cancel_url: cancelUrl,
     metadata: {
       order_id: orderId,
       tenant_name: tenantName,
       app_name: appName,
+      ...(returnTo ? { return_to: returnTo.slice(0, 500) } : {}),
     },
     subscription_data: {
       metadata: {
@@ -127,12 +136,36 @@ export async function handleStripeEvent(
           : ((obj as Stripe.Invoice).subscription as string | null);
       if (!subscriptionId) break;
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-      const tenantName = subscription.metadata?.tenant_name;
-      if (!tenantName) break;
-      const order = store.getByTenantName(tenantName);
-      if (!order) break;
-      await suspendTenant(config, order.app_name);
-      store.markSuspended(order.stripe_session_id);
+      const order = resolveOrderForDeactivate(store, {
+        subscriptionId,
+        tenantName: subscription.metadata?.tenant_name,
+        appName: subscription.metadata?.app_name,
+      });
+      if (!order) {
+        // No CP row (CLI tenant) — still tear down Fly + LiteLLM by app metadata.
+        const appName = subscription.metadata?.app_name;
+        if (appName) {
+          const deleted = event.type === "customer.subscription.deleted";
+          await deactivateTenant(
+            config,
+            {
+              appName,
+              mode: deleted ? "destroy" : "suspend",
+              stripeSubscriptionId: subscriptionId,
+              // deleted: already canceled; payment_failed: keep sub so retry can succeed
+              skipStripeCancel: true,
+            },
+            stripe,
+          );
+        }
+        break;
+      }
+      const deleted = event.type === "customer.subscription.deleted";
+      await deactivateOrder(config, store, order, {
+        mode: deleted ? "destroy" : "suspend",
+        skipStripeCancel: true,
+        stripe,
+      });
       break;
     }
     default:

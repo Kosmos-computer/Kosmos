@@ -16,6 +16,8 @@ export interface Config {
   tenantQuotaMb: number;
   tenantVolumeGb: number;
   flyBin: string;
+  /** Bearer token for POST /admin/tenants/:name/deactivate. Empty disables the route. */
+  adminToken: string;
 }
 
 function required(name: string): string {
@@ -43,5 +45,6 @@ export function loadConfig(): Config {
     tenantQuotaMb: Number(process.env.TENANT_QUOTA_MB ?? 512),
     tenantVolumeGb: Number(process.env.TENANT_VOLUME_GB ?? 1),
     flyBin: process.env.FLY_BIN?.trim() || "/usr/local/bin/flyctl",
+    adminToken: process.env.ADMIN_TOKEN?.trim() || "",
   };
 }

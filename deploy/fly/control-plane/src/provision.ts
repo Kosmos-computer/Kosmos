@@ -62,6 +62,29 @@ async function gatewayPost(config: Config, route: string, body: unknown): Promis
   });
 }
 
+/** Revoke the tenant's LiteLLM key. Alias is always the Fly app name. */
+export async function revokeGatewayKey(
+  config: Config,
+  appName: string,
+  virtualKey?: string,
+): Promise<void> {
+  const body: { key_aliases: string[]; keys?: string[] } = { key_aliases: [appName] };
+  if (virtualKey) body.keys = [virtualKey];
+  const res = await gatewayPost(config, "/key/delete", body).catch(() => null);
+  if (!res?.ok) {
+    console.warn(`gateway key revoke failed for ${appName}: ${res?.status ?? "network"}`);
+    throw new Error(`gateway key revoke failed: ${res?.status ?? "network"}`);
+  }
+}
+
+export function suspendFlyApp(config: Config, appName: string): void {
+  fly(config, ["apps", "suspend", appName], true);
+}
+
+export function destroyFlyApp(config: Config, appName: string): void {
+  fly(config, ["apps", "destroy", appName, "--yes"], true);
+}
+
 export async function provisionTenant(config: Config, tenantName: string): Promise<ProvisionResult> {
   const app = `${config.tenantPrefix}-${tenantName}`;
   const url = `https://${app}.fly.dev`;
@@ -80,44 +103,52 @@ export async function provisionTenant(config: Config, tenantName: string): Promi
   const virtualKey = ((await keyRes.json()) as { key?: string }).key;
   if (!virtualKey) throw new Error("gateway response had no key field");
 
-  fly(config, ["apps", "create", app, "--org", config.tenantOrg]);
-  fly(config, [
-    "volumes",
-    "create",
-    "arco_data",
-    "--app",
-    app,
-    "--region",
-    config.tenantRegion,
-    "--size",
-    String(config.tenantVolumeGb),
-    "--yes",
-  ]);
-  fly(config, [
-    "secrets",
-    "set",
-    "--app",
-    app,
-    "--stage",
-    "LLM_PROVIDER=custom",
-    `LLM_BASE_URL=${config.gatewayUrl}/v1`,
-    `LLM_API_KEY=${virtualKey}`,
-    `LLM_MODEL=${config.tenantModel}`,
-    "ARCO_SECURE_COOKIES=1",
-    `ARCO_ENTRY_MAGIC_KEY=${entryKey}`,
-    `ARCO_WORKSPACE_QUOTA_MB=${config.tenantQuotaMb}`,
-  ]);
+  try {
+    fly(config, ["apps", "create", app, "--org", config.tenantOrg]);
+    fly(config, [
+      "volumes",
+      "create",
+      "arco_data",
+      "--app",
+      app,
+      "--region",
+      config.tenantRegion,
+      "--size",
+      String(config.tenantVolumeGb),
+      "--yes",
+    ]);
+    fly(config, [
+      "secrets",
+      "set",
+      "--app",
+      app,
+      "--stage",
+      "LLM_PROVIDER=custom",
+      `LLM_BASE_URL=${config.gatewayUrl}/v1`,
+      `LLM_API_KEY=${virtualKey}`,
+      `LLM_MODEL=${config.tenantModel}`,
+      "ARCO_SECURE_COOKIES=1",
+      `ARCO_ENTRY_MAGIC_KEY=${entryKey}`,
+      `ARCO_WORKSPACE_QUOTA_MB=${config.tenantQuotaMb}`,
+    ]);
 
-  const toml = TENANT_TEMPLATE.replaceAll("__APP__", app).replaceAll("__REGION__", config.tenantRegion);
-  fs.writeFileSync(tomlPath, toml, "utf-8");
-  fly(config, ["deploy", "--config", tomlPath, "--image", config.tenantImage, "--ha=false"]);
+    const toml = TENANT_TEMPLATE.replaceAll("__APP__", app).replaceAll("__REGION__", config.tenantRegion);
+    fs.writeFileSync(tomlPath, toml, "utf-8");
+    fly(config, ["deploy", "--config", tomlPath, "--image", config.tenantImage, "--ha=false"]);
+  } catch (err) {
+    await revokeGatewayKey(config, app, virtualKey).catch(() => undefined);
+    destroyFlyApp(config, app);
+    throw err;
+  }
 
   return { app, url, entryUrl: `${url}/entry/${entryKey}`, virtualKey };
 }
 
+/**
+ * @deprecated Prefer deactivateTenant from ./deactivate.js
+ * Suspend a tenant Fly app and revoke its LiteLLM virtual key.
+ */
 export async function suspendTenant(config: Config, appName: string, virtualKey?: string): Promise<void> {
-  if (virtualKey) {
-    await gatewayPost(config, "/key/delete", { keys: [virtualKey] }).catch(() => undefined);
-  }
-  fly(config, ["apps", "suspend", appName], true);
+  await revokeGatewayKey(config, appName, virtualKey).catch(() => undefined);
+  suspendFlyApp(config, appName);
 }

@@ -1,29 +1,23 @@
 # Patch an existing tenant runtime image with a freshly built dist/ and
-# server source updates when a full rebuild is blocked (e.g. lockfile / npm ci).
+# compatible server overlays when a full rebuild is blocked (lockfile drift).
+#
+# Do NOT copy HEAD server/index.ts onto old demo images — it pulls in modules
+# (entryGate, workspaceStore, …) absent from the base runtime and crash-loops.
+#
+# Downloads/WebTorrent needs a full Dockerfile.runtime rebuild (native
+# node-datachannel). Dist-only keeps the tenant healthy with the latest shell.
 #
 #   npm run build
 #   fly deploy . --config deploy/fly/template-dist-patch.fly.toml \
 #     --build-only --push --image-label demo --remote-only
 #   fly deploy -a kosmos-<name> --image registry.fly.io/kosmos-template:demo
 
-FROM registry.fly.io/kosmos-template:demo
+# Pin to the last known-good demo runtime. Refresh after a successful full rebuild.
+FROM registry.fly.io/kosmos-template@sha256:23d28d55418d9906bf7125c11af4157778b44389896f404bce5b7437108062a9
 
 COPY dist/ /app/dist/
 COPY shared/kosmosCloudModels.ts /app/shared/kosmosCloudModels.ts
-COPY shared/types.ts /app/shared/types.ts
-COPY shared/capabilities/downloads.ts /app/shared/capabilities/downloads.ts
-COPY server/agent/systemPrompt.ts /app/server/agent/systemPrompt.ts
-COPY server/agent/tools.ts /app/server/agent/tools.ts
-COPY server/index.ts /app/server/index.ts
-COPY server/stores/appStore.ts /app/server/stores/appStore.ts
-COPY server/system/installStatus.ts /app/server/system/installStatus.ts
-COPY server/generated/app-prompt.md /app/server/generated/app-prompt.md
-COPY server/services/torrentService.ts /app/server/services/torrentService.ts
 # Models-remote patches stay compatible with older runtime images.
 COPY deploy/fly/patches/models-remote/remoteModels.ts /app/server/llm/remoteModels.ts
 COPY deploy/fly/patches/models-remote/models.ts /app/server/routes/models.ts
 COPY deploy/fly/patches/models-remote/env.ts /app/server/env.ts
-
-# Base demo images may predate WebTorrent; ensure the downloads backend can load.
-WORKDIR /app
-RUN npm install webtorrent@^2.8.5 --no-save --ignore-scripts || true

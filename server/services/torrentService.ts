@@ -6,9 +6,10 @@
  * completed files under the Drive import size cap are copied into Drive.
  */
 import fs from "node:fs";
+import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
-import WebTorrent from "webtorrent";
+import type WebTorrent from "webtorrent";
 import type {
   DownloadsSettingsDto,
   DownloadsStatsDto,
@@ -32,6 +33,18 @@ const CLIENT_VERSION = "WebTorrent (Kosmos)";
 const DEFAULT_SETTINGS: DownloadsSettingsDto = {
   seedAfterDownload: true,
 };
+
+/** Lazy-load so a missing native addon cannot crash server boot on Fly overlays. */
+const require = createRequire(import.meta.url);
+type WebTorrentCtor = typeof import("webtorrent").default;
+let WebTorrentCtor: WebTorrentCtor | null = null;
+
+function loadWebTorrent(): WebTorrentCtor {
+  if (!WebTorrentCtor) {
+    WebTorrentCtor = require("webtorrent") as WebTorrentCtor;
+  }
+  return WebTorrentCtor;
+}
 
 interface PersistedTorrent {
   source: string;
@@ -246,7 +259,8 @@ function ensureDownloadsFolder(): string {
 function getClient(): WtClient {
   if (!client) {
     fs.mkdirSync(dataDirs.torrents, { recursive: true });
-    client = new WebTorrent();
+    const WT = loadWebTorrent();
+    client = new WT();
     client.on("error", (err: Error | string) => {
       console.warn("[downloads] client error:", err);
     });

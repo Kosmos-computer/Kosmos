@@ -2,14 +2,16 @@ import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
 import { Plus, Search } from "lucide-react";
 import { Input } from "../../components/ui";
-import { NavSidebar, SidebarUserFooter } from "../../components/patterns";
+import { NavSidebar } from "../../components/patterns";
+import { NotesBackendFooter } from "./NotesBackendFooter";
+import { YOUR_NOTES_SECTION_ID } from "./notesMock";
 import type { NavDropPosition } from "./notesNavUtils";
 import { NotesNavTree } from "./NotesNavTree";
 import type { NoteNavSection } from "./types";
 
 export function NotesSidebar({
   sections,
-  userName,
+  activeBackendId,
   searchQuery,
   searchOpen,
   onSearchQueryChange,
@@ -19,9 +21,13 @@ export function NotesSidebar({
   onCreateFolder,
   onMoveNavItem,
   onToggleFolder,
+  onDuplicatePage,
+  onExportPage,
+  onDeletePage,
+  onSwitchBackend,
 }: {
   sections: NoteNavSection[];
-  userName: string;
+  activeBackendId: string;
   searchQuery: string;
   searchOpen: boolean;
   onSearchQueryChange: (query: string) => void;
@@ -31,6 +37,10 @@ export function NotesSidebar({
   onCreateFolder: (sectionId: string, parentFolderId: string | null) => void;
   onMoveNavItem: (draggedId: string, targetId: string, position: NavDropPosition) => void;
   onToggleFolder: (folderId: string) => void;
+  onDuplicatePage: (id: string) => void;
+  onExportPage: (id: string) => void;
+  onDeletePage: (id: string) => void;
+  onSwitchBackend: (backendId: string, backendName?: string) => void;
 }) {
   return (
     <NavSidebar
@@ -48,7 +58,7 @@ export function NotesSidebar({
       primaryAction={{
         label: "New page",
         icon: Plus,
-        onClick: () => onCreatePage("private", null),
+        onClick: () => onCreatePage(YOUR_NOTES_SECTION_ID, null),
       }}
       quickLinks={[
         {
@@ -69,10 +79,15 @@ export function NotesSidebar({
             onCreateFolder={onCreateFolder}
             onMoveItem={onMoveNavItem}
             onToggleFolder={onToggleFolder}
+            onDuplicatePage={onDuplicatePage}
+            onExportPage={onExportPage}
+            onDeletePage={onDeletePage}
           />
         </div>
       }
-      footer={<SidebarUserFooter name={userName} meta="Arco · Notes" />}
+      footer={
+        <NotesBackendFooter activeBackendId={activeBackendId} onSwitchBackend={onSwitchBackend} />
+      }
       className="arco-notes-sidebar"
     />
   );

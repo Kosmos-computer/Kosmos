@@ -1,16 +1,19 @@
 import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
-import { useCallback, useRef, useState, type ReactNode } from "react";
+import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   ChevronRight,
   Folder,
   FolderOpen,
   FolderPlus,
+  MoreVertical,
   Notebook,
   Plus,
 } from "lucide-react";
+import { Menu } from "../../components/Menu";
 import { ListItem } from "../../components/patterns";
 import { NavSidebarSectionHeader } from "../../components/patterns";
+import { buildNoteActionMenuItems } from "./noteActions";
 import { computeNavDropPosition, type NavDropPosition } from "./notesNavUtils";
 import type { NoteNavNode, NoteNavSection } from "./types";
 
@@ -23,6 +26,9 @@ export interface NotesNavTreeProps {
   onCreateFolder: (sectionId: string, parentFolderId: string | null) => void;
   onMoveItem: (draggedId: string, targetId: string, position: NavDropPosition) => void;
   onToggleFolder: (folderId: string) => void;
+  onDuplicatePage: (id: string) => void;
+  onExportPage: (id: string) => void;
+  onDeletePage: (id: string) => void;
 }
 
 export function NotesNavTree({
@@ -32,6 +38,9 @@ export function NotesNavTree({
   onCreateFolder,
   onMoveItem,
   onToggleFolder,
+  onDuplicatePage,
+  onExportPage,
+  onDeletePage,
 }: NotesNavTreeProps) {
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
@@ -57,66 +66,76 @@ export function NotesNavTree({
 
   return (
     <>
-      {sections.map((section) => (
-        <div key={section.id} className="arco-notes-nav__section">
-          <div className="arco-notes-nav__section-header">
-            <NavSidebarSectionHeader title={section.title} />
-            <div className="arco-notes-nav__section-actions">
-              <button
-                type="button"
-                className="arco-btn arco-btn--icon arco-notes-nav__section-btn"
-                aria-label={`New folder in ${section.title}`}
-                title={i18n.t(I18nKey.APPS$NOTES_NEW_FOLDER)}
-                onClick={() => onCreateFolder(section.id, null)}
-              >
-                <FolderPlus size={13} />
-              </button>
-              <button
-                type="button"
-                className="arco-btn arco-btn--icon arco-notes-nav__section-btn"
-                aria-label={`New page in ${section.title}`}
-                title={i18n.t(I18nKey.APPS$NOTES_NEW_PAGE)}
-                onClick={() => onCreatePage(section.id, null)}
-              >
-                <Plus size={13} />
-              </button>
+      {sections.map((section) => {
+        const allowCreate = section.allowCreate !== false;
+        const allowDrag = section.allowDrag !== false;
+        return (
+          <div key={section.id} className="arco-notes-nav__section">
+            <div className="arco-notes-nav__section-header">
+              <NavSidebarSectionHeader title={section.title} />
+              {allowCreate ? (
+                <div className="arco-notes-nav__section-actions">
+                  <button
+                    type="button"
+                    className="arco-btn arco-btn--icon arco-notes-nav__section-btn"
+                    aria-label={`New folder in ${section.title}`}
+                    title={i18n.t(I18nKey.APPS$NOTES_NEW_FOLDER)}
+                    onClick={() => onCreateFolder(section.id, null)}
+                  >
+                    <FolderPlus size={13} />
+                  </button>
+                  <button
+                    type="button"
+                    className="arco-btn arco-btn--icon arco-notes-nav__section-btn"
+                    aria-label={`New page in ${section.title}`}
+                    title={i18n.t(I18nKey.APPS$NOTES_NEW_PAGE)}
+                    onClick={() => onCreatePage(section.id, null)}
+                  >
+                    <Plus size={13} />
+                  </button>
+                </div>
+              ) : null}
+            </div>
+            <div className="arco-notes-nav__items">
+              {section.items.map((node) => (
+                <NavTreeNode
+                  key={node.id}
+                  node={node}
+                  sectionId={section.id}
+                  depth={0}
+                  allowDrag={allowDrag}
+                  draggedId={draggedId}
+                  dropTargetId={dropTargetId}
+                  dropPosition={dropPosition}
+                  onSelectPage={onSelectPage}
+                  onCreatePage={onCreatePage}
+                  onCreateFolder={onCreateFolder}
+                  onToggleFolder={onToggleFolder}
+                  onDuplicatePage={onDuplicatePage}
+                  onExportPage={onExportPage}
+                  onDeletePage={onDeletePage}
+                  onDragStart={setDraggedId}
+                  onDragEnd={resetDrag}
+                  onDragOver={(id, position) => {
+                    setDropTargetId(id);
+                    setDropPosition(position);
+                  }}
+                  onDragLeave={(id) => {
+                    setDropTargetId((current) => {
+                      if (current === id) {
+                        setDropPosition(null);
+                        return null;
+                      }
+                      return current;
+                    });
+                  }}
+                  onDrop={handleDrop}
+                />
+              ))}
             </div>
           </div>
-          <div className="arco-notes-nav__items">
-            {section.items.map((node) => (
-              <NavTreeNode
-                key={node.id}
-                node={node}
-                sectionId={section.id}
-                depth={0}
-                draggedId={draggedId}
-                dropTargetId={dropTargetId}
-                dropPosition={dropPosition}
-                onSelectPage={onSelectPage}
-                onCreatePage={onCreatePage}
-                onCreateFolder={onCreateFolder}
-                onToggleFolder={onToggleFolder}
-                onDragStart={setDraggedId}
-                onDragEnd={resetDrag}
-                onDragOver={(id, position) => {
-                  setDropTargetId(id);
-                  setDropPosition(position);
-                }}
-                onDragLeave={(id) => {
-                  setDropTargetId((current) => {
-                    if (current === id) {
-                      setDropPosition(null);
-                      return null;
-                    }
-                    return current;
-                  });
-                }}
-                onDrop={handleDrop}
-              />
-            ))}
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </>
   );
 }
@@ -125,6 +144,7 @@ function NavTreeNode({
   node,
   sectionId,
   depth,
+  allowDrag,
   draggedId,
   dropTargetId,
   dropPosition,
@@ -132,6 +152,9 @@ function NavTreeNode({
   onCreatePage,
   onCreateFolder,
   onToggleFolder,
+  onDuplicatePage,
+  onExportPage,
+  onDeletePage,
   onDragStart,
   onDragEnd,
   onDragOver,
@@ -141,6 +164,7 @@ function NavTreeNode({
   node: NoteNavNode;
   sectionId: string;
   depth: number;
+  allowDrag: boolean;
   draggedId: string | null;
   dropTargetId: string | null;
   dropPosition: NavDropPosition | null;
@@ -148,6 +172,9 @@ function NavTreeNode({
   onCreatePage: (sectionId: string, parentFolderId: string | null) => void;
   onCreateFolder: (sectionId: string, parentFolderId: string | null) => void;
   onToggleFolder: (folderId: string) => void;
+  onDuplicatePage: (id: string) => void;
+  onExportPage: (id: string) => void;
+  onDeletePage: (id: string) => void;
   onDragStart: (id: string) => void;
   onDragEnd: () => void;
   onDragOver: (id: string, position: NavDropPosition) => void;
@@ -160,6 +187,7 @@ function NavTreeNode({
         nodeId={node.id}
         depth={depth}
         isFolder={false}
+        allowDrag={allowDrag}
         draggedId={draggedId}
         dropTargetId={dropTargetId}
         dropPosition={dropPosition}
@@ -169,20 +197,28 @@ function NavTreeNode({
         onDragLeave={onDragLeave}
         onDrop={onDrop}
       >
-        <PageRow page={node as DecoratedPage} onSelect={() => onSelectPage(node.id)} />
+        <PageRow
+          page={node as DecoratedPage}
+          onSelect={() => onSelectPage(node.id)}
+          onDuplicate={() => onDuplicatePage(node.id)}
+          onExport={() => onExportPage(node.id)}
+          onDelete={() => onDeletePage(node.id)}
+        />
       </DraggableNavRow>
     );
   }
 
   const expanded = node.expanded !== false;
   const FolderIcon = expanded ? FolderOpen : Folder;
-  const isDropInside = dropTargetId === node.id && dropPosition === "inside" && draggedId !== node.id;
+  const isDropInside =
+    allowDrag && dropTargetId === node.id && dropPosition === "inside" && draggedId !== node.id;
 
   return (
     <DraggableNavRow
       nodeId={node.id}
       depth={depth}
       isFolder
+      allowDrag={allowDrag}
       draggedId={draggedId}
       dropTargetId={dropTargetId}
       dropPosition={dropPosition}
@@ -243,6 +279,7 @@ function NavTreeNode({
                 node={child}
                 sectionId={sectionId}
                 depth={depth + 1}
+                allowDrag={allowDrag}
                 draggedId={draggedId}
                 dropTargetId={dropTargetId}
                 dropPosition={dropPosition}
@@ -250,6 +287,9 @@ function NavTreeNode({
                 onCreatePage={onCreatePage}
                 onCreateFolder={onCreateFolder}
                 onToggleFolder={onToggleFolder}
+                onDuplicatePage={onDuplicatePage}
+                onExportPage={onExportPage}
+                onDeletePage={onDeletePage}
                 onDragStart={onDragStart}
                 onDragEnd={onDragEnd}
                 onDragOver={onDragOver}
@@ -264,16 +304,64 @@ function NavTreeNode({
   );
 }
 
-function PageRow({ page, onSelect }: { page: DecoratedPage; onSelect: () => void }) {
+function PageRow({
+  page,
+  onSelect,
+  onDuplicate,
+  onExport,
+  onDelete,
+}: {
+  page: DecoratedPage;
+  onSelect: () => void;
+  onDuplicate: () => void;
+  onExport: () => void;
+  onDelete: () => void;
+}) {
+  const displayTitle = page.label.trim() || "Untitled";
+  const menuItems = useMemo(
+    () =>
+      buildNoteActionMenuItems({
+        displayTitle,
+        onDuplicate,
+        onExport,
+        onDelete,
+      }),
+    [displayTitle, onDelete, onDuplicate, onExport],
+  );
+
   return (
-    <ListItem
-      className="arco-nav-sidebar__nav-item arco-notes-nav__page"
-      leading={<Notebook size={14} strokeWidth={1.75} />}
-      label={page.label}
-      trailing={page.meta}
-      active={page.active}
-      onClick={onSelect}
-    />
+    <div className="arco-notes-nav__page-wrap">
+      <ListItem
+        className="arco-nav-sidebar__nav-item arco-notes-nav__page"
+        leading={<Notebook size={14} strokeWidth={1.75} />}
+        label={page.label}
+        trailing={
+          page.meta ? <span className="arco-notes-nav__meta">{page.meta}</span> : null
+        }
+        active={page.active}
+        onClick={onSelect}
+      />
+      <div className="arco-notes-nav__page-actions">
+        <Menu
+          side="bottom"
+          align="end"
+          portal
+          aria-label={i18n.t(I18nKey.APPS$NOTES_NOTE_ACTIONS)}
+          items={menuItems}
+          trigger={
+            <button
+              type="button"
+              className="arco-btn arco-btn--icon arco-notes-nav__page-menu"
+              aria-label={i18n.t(I18nKey.APPS$NOTES_NOTE_ACTIONS)}
+              onClick={(event) => event.stopPropagation()}
+              onPointerDown={(event) => event.stopPropagation()}
+            >
+              <MoreVertical size={12} />
+            </button>
+          }
+        />
+      </div>
+    </div>
   );
 }
 
@@ -281,6 +369,7 @@ function DraggableNavRow({
   nodeId,
   depth,
   isFolder,
+  allowDrag,
   draggedId,
   dropTargetId,
   dropPosition,
@@ -294,6 +383,7 @@ function DraggableNavRow({
   nodeId: string;
   depth: number;
   isFolder: boolean;
+  allowDrag: boolean;
   draggedId: string | null;
   dropTargetId: string | null;
   dropPosition: NavDropPosition | null;
@@ -305,37 +395,53 @@ function DraggableNavRow({
   children: ReactNode;
 }) {
   const didDragRef = useRef(false);
-  const isDragging = draggedId === nodeId;
-  const showDropBefore = dropTargetId === nodeId && dropPosition === "before" && draggedId !== nodeId;
-  const showDropAfter = dropTargetId === nodeId && dropPosition === "after" && draggedId !== nodeId;
+  const isDragging = allowDrag && draggedId === nodeId;
+  const showDropBefore =
+    allowDrag && dropTargetId === nodeId && dropPosition === "before" && draggedId !== nodeId;
+  const showDropAfter =
+    allowDrag && dropTargetId === nodeId && dropPosition === "after" && draggedId !== nodeId;
 
   return (
     <div
       className={`arco-notes-nav__row ${isDragging ? "arco-notes-nav__row--dragging" : ""}`}
-      style={{ paddingLeft: `calc(var(--arco-space-s) + ${depth} * 12px)` }}
-      draggable
-      onDragStart={(event) => {
-        didDragRef.current = false;
-        event.dataTransfer?.setData("text/plain", nodeId);
-        if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
-        onDragStart(nodeId);
-      }}
-      onDrag={(event) => {
-        if (event.clientX !== 0 || event.clientY !== 0) didDragRef.current = true;
-      }}
-      onDragEnd={() => {
-        onDragEnd();
-      }}
-      onDragOver={(event) => {
-        event.preventDefault();
-        if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
-        onDragOver(nodeId, computeNavDropPosition(event, isFolder));
-      }}
-      onDragLeave={() => onDragLeave(nodeId)}
-      onDrop={(event) => {
-        event.preventDefault();
-        onDrop(nodeId, computeNavDropPosition(event, isFolder));
-      }}
+      style={depth > 0 ? { paddingLeft: `${depth * 12}px` } : undefined}
+      draggable={allowDrag}
+      onDragStart={
+        allowDrag
+          ? (event) => {
+              didDragRef.current = false;
+              event.dataTransfer?.setData("text/plain", nodeId);
+              if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+              onDragStart(nodeId);
+            }
+          : undefined
+      }
+      onDrag={
+        allowDrag
+          ? (event) => {
+              if (event.clientX !== 0 || event.clientY !== 0) didDragRef.current = true;
+            }
+          : undefined
+      }
+      onDragEnd={allowDrag ? () => onDragEnd() : undefined}
+      onDragOver={
+        allowDrag
+          ? (event) => {
+              event.preventDefault();
+              if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+              onDragOver(nodeId, computeNavDropPosition(event, isFolder));
+            }
+          : undefined
+      }
+      onDragLeave={allowDrag ? () => onDragLeave(nodeId) : undefined}
+      onDrop={
+        allowDrag
+          ? (event) => {
+              event.preventDefault();
+              onDrop(nodeId, computeNavDropPosition(event, isFolder));
+            }
+          : undefined
+      }
     >
       {showDropBefore ? <div className="arco-notes-nav__drop arco-notes-nav__drop--before" aria-hidden="true" /> : null}
       {children}

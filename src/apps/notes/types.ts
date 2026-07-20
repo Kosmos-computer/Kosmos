@@ -35,13 +35,6 @@ export interface NotesGraphEdge {
   to: string;
 }
 
-export interface NoteNavPage {
-  id: string;
-  label: string;
-  meta?: string;
-  icon?: "notebook" | "folder";
-}
-
 export interface NoteNavPageNode {
   type: "page";
   id: string;
@@ -63,21 +56,10 @@ export interface NoteNavSection {
   id: string;
   title: string;
   items: NoteNavNode[];
-}
-
-export const SIDEBAR_TO_NOTE_ID: Record<string, string> = {
-  p1: "picnic-planning",
-  p2: "community-forum",
-  p3: "vendor-layout",
-  p4: "getting-started",
-  p5: "one-on-one",
-  p6: "scratchpad",
-  p7: "company-handbook",
-  p8: "volunteer-wiki",
-};
-
-export function resolveNoteId(pageId: string): string {
-  return SIDEBAR_TO_NOTE_ID[pageId] ?? pageId;
+  /** When false, hide new page/folder actions (e.g. Recents). Default true. */
+  allowCreate?: boolean;
+  /** When false, rows are not draggable. Default true. */
+  allowDrag?: boolean;
 }
 
 export type NoteEditorViewMode = "edit" | "preview" | "code";

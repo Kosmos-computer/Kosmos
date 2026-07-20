@@ -6,6 +6,11 @@
   gap: var(--arco-space-m);
 }
 
+.arco-notes-backend-menu__chevron {
+  flex-shrink: 0;
+  color: var(--arco-text-tertiary);
+}
+
 .arco-notes-nav__section-header {
   display: flex;
   align-items: center;
@@ -78,8 +83,67 @@
   bottom: -1px;
 }
 
+.arco-notes-nav__page-wrap {
+  position: relative;
+}
+
 .arco-notes-nav__page {
   width: 100%;
+}
+
+/* Timestamp and ⋮ share one slot — time at rest, menu on hover/focus. */
+.arco-notes-nav__page-actions {
+  position: absolute;
+  right: var(--arco-space-s);
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  grid-template-areas: "slot";
+  align-items: center;
+  justify-items: end;
+  min-width: 28px;
+  min-height: 28px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.arco-notes-nav__page-actions > .arco-menu {
+  grid-area: slot;
+}
+
+.arco-notes-nav__meta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  transition: opacity var(--arco-dur-fast);
+}
+
+.arco-notes-nav__page-menu {
+  width: 22px;
+  height: 22px;
+  color: var(--arco-text-tertiary);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--arco-dur-fast), color var(--arco-dur-fast), background var(--arco-dur-fast);
+}
+
+.arco-notes-nav__page-wrap:hover .arco-list-item__trailing,
+.arco-notes-nav__page-wrap:focus-within .arco-list-item__trailing,
+.arco-notes-nav__page-wrap:has(.arco-notes-nav__page-menu[aria-expanded="true"]) .arco-list-item__trailing {
+  opacity: 0;
+}
+
+.arco-notes-nav__page-wrap:hover .arco-notes-nav__page-menu,
+.arco-notes-nav__page-wrap:focus-within .arco-notes-nav__page-menu,
+.arco-notes-nav__page-menu:focus-visible,
+.arco-notes-nav__page-menu[aria-expanded="true"] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.arco-notes-nav__page-menu:hover {
+  color: var(--arco-text-primary);
 }
 
 .arco-notes-nav__folder {
@@ -180,15 +244,6 @@
   flex-direction: column;
 }
 
-.arco-notes__avatars {
-  display: flex;
-  align-items: center;
-}
-
-.arco-notes__avatars .arco-avatar + .arco-avatar {
-  margin-left: -6px;
-}
-
 .arco-notes__graph-toggle,
 .arco-notes__menu-btn {
   display: inline-flex;
@@ -224,8 +279,25 @@
 }
 
 .arco-notes__editor-pane {
+  position: relative;
   flex: 1;
   min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.arco-notes__editor-root {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.arco-notes__editor-scroll {
+  flex: 1;
+  min-height: 0;
 }
 
 .arco-notes__page {
@@ -269,8 +341,9 @@
   position: sticky;
   top: 0;
   z-index: 2;
-  margin: 0 calc(-1 * var(--arco-space-xl));
-  padding: 0 var(--arco-space-xl) var(--arco-space-s);
+  width: 100%;
+  margin: 0;
+  padding: 0;
   background: color-mix(in srgb, var(--arco-bg-surface-solid) 92%, transparent);
   border-bottom: 1px solid var(--arco-border);
   backdrop-filter: var(--arco-backdrop-blur);
@@ -278,29 +351,32 @@
 }
 
 .arco-notes__editor-chrome .arco-editor-toolbar {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--arco-space-xs);
+  min-height: 2.25rem;
   border-bottom: none;
-  padding-left: 0;
-  padding-right: 0;
-}
-
-.arco-notes__editor-hint {
-  margin: 0;
   padding: 0 var(--arco-space-m);
-  font-size: var(--arco-text-xs);
-  color: var(--arco-text-tertiary);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
-.arco-notes__editor-hint kbd {
-  display: inline-block;
-  min-width: 1.1em;
-  padding: 0 0.35em;
-  border: 1px solid var(--arco-border);
-  border-radius: var(--arco-radius-s);
-  background: var(--arco-bg-raised);
-  font-family: var(--arco-font-mono);
-  font-size: 0.95em;
-  line-height: 1.4;
-  color: var(--arco-text-secondary);
+.arco-notes__editor-chrome .arco-editor-toolbar::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.arco-notes__editor-chrome .arco-editor-toolbar > * {
+  flex-shrink: 0;
+}
+
+.arco-notes__editor-chrome .arco-editor-toolbar__spacer {
+  flex: 1 0 0.75rem;
+  min-width: 0.75rem;
 }
 
 .arco-notes-ai {
@@ -373,16 +449,24 @@
 }
 
 .arco-notes-dictation {
+  position: absolute;
+  left: var(--arco-space-m);
+  right: var(--arco-space-m);
+  bottom: var(--arco-space-m);
+  z-index: 4;
   display: flex;
   align-items: center;
-  gap: var(--arco-space-xs);
-  margin-top: var(--arco-space-s);
-  padding: var(--arco-space-xs) var(--arco-space-s);
+  gap: var(--arco-space-s);
+  margin: 0;
+  padding: var(--arco-space-s) var(--arco-space-m);
   border: 1px solid color-mix(in srgb, var(--arco-accent) 35%, var(--arco-border));
-  border-radius: var(--arco-radius-s);
-  background: var(--arco-accent-soft);
+  border-radius: var(--arco-radius-m);
+  background: color-mix(in srgb, var(--arco-bg-surface-solid) 92%, var(--arco-accent-soft));
   color: var(--arco-text-secondary);
   font-size: var(--arco-text-sm);
+  box-shadow: var(--arco-shadow-soft);
+  backdrop-filter: var(--arco-backdrop-blur);
+  -webkit-backdrop-filter: var(--arco-backdrop-blur);
 }
 
 .arco-notes-dictation__label {
@@ -397,6 +481,11 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--arco-text-secondary);
+}
+
+.arco-notes-dictation__stop {
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .arco-notes__editor-surface {
@@ -538,19 +627,39 @@
 }
 
 .arco-notes__view-toggle {
-  margin-bottom: var(--arco-space-m);
+  display: inline-flex;
+  flex-shrink: 0;
 }
 
-.arco-notes__tags {
-  display: flex;
-  flex-wrap: wrap;
+.arco-notes__view-toggle-trigger {
+  display: inline-flex;
+  align-items: center;
   gap: var(--arco-space-xs);
-  margin-bottom: var(--arco-space-l);
+  height: 28px;
+  padding: 0 var(--arco-space-s);
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-s);
+  background: var(--arco-bg-raised);
+  color: var(--arco-text-secondary);
+  font: inherit;
+  font-size: var(--arco-text-sm);
+  cursor: pointer;
 }
 
-.arco-notes__tag {
-  font-size: var(--arco-text-sm);
-  color: var(--arco-accent);
+.arco-notes__view-toggle-trigger:hover,
+.arco-notes__view-toggle-trigger[aria-expanded="true"] {
+  border-color: var(--arco-border-strong);
+  background: var(--arco-bg-hover);
+  color: var(--arco-text-primary);
+}
+
+.arco-notes__view-toggle-trigger:focus-visible {
+  outline: none;
+  border-color: var(--arco-accent);
+}
+
+.arco-notes__view-toggle .arco-menu__panel {
+  min-width: 8.5rem;
 }
 
 .arco-notes__heading {

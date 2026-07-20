@@ -4,7 +4,6 @@
  */
 import { useCallback, useState } from "react";
 import type { JSONContent } from "@arco/editor-kit";
-import { useAuthStore } from "../../os/auth/authStore";
 import { SidebarPane } from "../../components/patterns";
 import { NoteEditor } from "./NoteEditor";
 import { NotesSidebar } from "./NotesSidebar";
@@ -13,8 +12,6 @@ import { useNotesStub } from "./useNotesStub";
 export function NotesApp() {
   const notes = useNotesStub();
   const [searchOpen, setSearchOpen] = useState(false);
-  const user = useAuthStore((s) => s.user);
-  const userName = user?.displayName ?? user?.username ?? "You";
 
   const toggleSearch = () => {
     setSearchOpen((open) => {
@@ -37,12 +34,19 @@ export function NotesApp() {
     [notes.activeNote.id, notes.updateNoteTitle],
   );
 
+  const handleTitleCommit = useCallback(
+    (title: string) => {
+      notes.commitNoteTitle(notes.activeNote.id, title);
+    },
+    [notes.activeNote.id, notes.commitNoteTitle],
+  );
+
   return (
     <div className="arco-notes">
       <SidebarPane width={notes.sidebarWidth} onWidthChange={notes.setSidebarWidth}>
         <NotesSidebar
           sections={notes.sections}
-          userName={userName}
+          activeBackendId={notes.activeBackendId}
           searchQuery={notes.searchQuery}
           searchOpen={searchOpen}
           onSearchQueryChange={notes.setSearchQuery}
@@ -52,6 +56,10 @@ export function NotesApp() {
           onCreateFolder={notes.createFolder}
           onMoveNavItem={notes.moveNavItem}
           onToggleFolder={notes.toggleFolderExpanded}
+          onDuplicatePage={notes.duplicateNote}
+          onExportPage={notes.exportNote}
+          onDeletePage={notes.deleteNote}
+          onSwitchBackend={notes.switchBackend}
         />
       </SidebarPane>
       <NoteEditor
@@ -63,6 +71,7 @@ export function NotesApp() {
         onToggleCanvas={notes.toggleCanvas}
         onDocChange={handleDocChange}
         onTitleChange={handleTitleChange}
+        onTitleCommit={handleTitleCommit}
         onDuplicate={() => notes.duplicateNote(notes.activeNote.id)}
         onDelete={() => notes.deleteNote(notes.activeNote.id)}
       />

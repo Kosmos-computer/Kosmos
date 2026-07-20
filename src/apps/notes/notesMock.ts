@@ -1,223 +1,132 @@
-import type { DocBlock, NoteNavPage, NoteNavSection, NotePage } from "./types";
+import type { DocBlock, NoteNavSection, NotePage } from "./types";
 
-export const IDEAS_PAGES: NoteNavPage[] = [
-  { id: "writing-telepathy", label: "Writing is telepathy", meta: "now", icon: "notebook" },
-];
+/** Mutable library section — folders and pages live here. */
+export const YOUR_NOTES_SECTION_ID = "your-notes";
 
-export const RECENT_PAGES: NoteNavPage[] = [
-  { id: "p1", label: "Picnic Planning Notes", meta: "2h", icon: "notebook" },
-  { id: "p2", label: "06-26-2026 Community Forum", meta: "1d", icon: "notebook" },
-];
+/** Derived section — recently opened notes, not a writable tree. */
+export const RECENTS_SECTION_ID = "recents";
 
-export const PRIVATE_PAGES: NoteNavPage[] = [
-  { id: "p4", label: "Getting Started", icon: "notebook" },
-  { id: "p5", label: "1:1 notes", icon: "notebook" },
-  { id: "p6", label: "Scratchpad", icon: "notebook" },
-];
+/** Local Arco vault — always available in the backend switcher. */
+export const LOCAL_NOTES_BACKEND_ID = "local";
 
-export const TEAMSPACE_PAGES: NoteNavPage[] = [
-  { id: "p7", label: "Company Handbook", icon: "folder" },
-  { id: "p8", label: "Volunteer Team Wiki", icon: "folder" },
-];
+export const DEFAULT_NAV_SECTION_ID = YOUR_NOTES_SECTION_ID;
+export const DEFAULT_NOTE_ID = "welcome";
 
-/** Sidebar tree — folders nest pages; drag to reorder or drop into folders. */
-export const NOTES_NAV_SECTIONS: NoteNavSection[] = [
+export interface NotesVaultSnapshot {
+  vault: NotePage[];
+  navSections: NoteNavSection[];
+  activePageId: string;
+}
+const WELCOME_BLOCKS: DocBlock[] = [
   {
-    id: "ideas",
-    title: "Ideas",
-    items: [{ type: "page", id: "writing-telepathy", label: "Writing is telepathy", meta: "now" }],
-  },
-  {
-    id: "recents",
-    title: "Recents",
-    items: [
-      { type: "page", id: "p1", label: "Picnic Planning Notes", meta: "2h" },
-      { type: "page", id: "p2", label: "06-26-2026 Community Forum", meta: "1d" },
-    ],
-  },
-  {
-    id: "private",
-    title: "Private",
-    items: [
-      { type: "page", id: "p4", label: "Getting Started" },
-      { type: "page", id: "p5", label: "1:1 notes" },
-      {
-        type: "folder",
-        id: "folder-drafts",
-        label: "Drafts",
-        expanded: true,
-        children: [{ type: "page", id: "p6", label: "Scratchpad" }],
-      },
-    ],
-  },
-  {
-    id: "teamspaces",
-    title: "Teamspaces",
-    items: [
-      {
-        type: "folder",
-        id: "folder-handbook",
-        label: "Company Handbook",
-        expanded: true,
-        children: [{ type: "page", id: "p7", label: "Handbook" }],
-      },
-      {
-        type: "folder",
-        id: "folder-wiki",
-        label: "Volunteer Team Wiki",
-        expanded: false,
-        children: [{ type: "page", id: "p8", label: "Wiki home" }],
-      },
-    ],
-  },
-];
-
-export const DEFAULT_NAV_SECTION_ID = "private";
-
-const WRITING_TELEPATHY_BLOCKS: DocBlock[] = [
-  {
-    id: "wt-p1",
+    id: "w-p1",
     type: "paragraph",
-    text: "From On Writing — ideas can travel through time and space when we write.",
+    text: "Notes is your personal writing space in Arco. Capture ideas, draft docs, and keep everything in one vault.",
   },
-  { id: "wt-h1", type: "heading", level: 2, text: "Ideas can travel through time and space" },
+  { id: "w-h1", type: "heading", level: 2, text: "What you can do" },
   {
-    id: "wt-p2",
-    type: "paragraph",
-    text: "All the hours we spend in the sending place and the receiving place are compressed into a single moment. See also Evergreen notes for how to cultivate these durable ideas.",
-  },
-  {
-    id: "wt-list",
+    id: "w-list",
     type: "bulletList",
     items: [
-      "Writing collapses distance between author and reader.",
-      "Links like this one turn notes into a web: Evergreen notes.",
-      "Reading lists anchor the practice — see Books.",
+      "Write with a rich editor — headings, lists, and callouts.",
+      "Dictate or ask AI to help draft and revise.",
+      "Switch between Edit, Preview, and Code views.",
+      "Organize pages into folders under Your Notes.",
+      "Open Recents to jump back to what you were last working on.",
+      "Use the context canvas for graphs and linked views (coming soon).",
     ],
   },
-  { id: "wt-h2", type: "heading", level: 2, text: "Quote" },
+  { id: "w-h2", type: "heading", level: 2, text: "Get started" },
   {
-    id: "wt-callout",
+    id: "w-p2",
+    type: "paragraph",
+    text: "Edit this page, or create a new one from the sidebar. New pages land in Your Notes and show up in Recents when you open them.",
+  },
+  {
+    id: "w-callout",
     type: "callout",
-    text: "Telepathy, of course. It's amusing when you stop to think about it — but still, pretty neat. Miscommunication only begins when the reader and writer fail to share enough context.",
+    text: "Tip: Use the + button in Your Notes to add a page, or the folder button to start grouping related notes.",
   },
 ];
 
-function stubPage(id: string, title: string, folder?: string, links?: string[], blocks?: DocBlock[]): NotePage {
-  return {
-    id,
-    title,
-    folder,
-    links,
-    blocks: blocks ?? [{ id: `${id}-empty`, type: "paragraph", text: "Start writing…" }],
-  };
-}
+/** Library tree seed — Recents is derived at runtime from open history. */
+export const NOTES_LIBRARY_SECTION: NoteNavSection = {
+  id: YOUR_NOTES_SECTION_ID,
+  title: "Your Notes",
+  allowCreate: true,
+  allowDrag: true,
+  items: [{ type: "page", id: DEFAULT_NOTE_ID, label: "Welcome to Notes" }],
+};
+
+/** Initial library nav state (Recents is composed at runtime). */
+export const NOTES_NAV_SECTIONS: NoteNavSection[] = [NOTES_LIBRARY_SECTION];
 
 /** Seed vault — replaced at runtime by useNotesStub state. */
 export const NOTES_VAULT_SEED: NotePage[] = [
   {
-    id: "writing-telepathy",
-    title: "Writing is telepathy",
-    tags: ["evergreen"],
-    folder: "ideas",
-    links: ["evergreen-notes", "books"],
-    blocks: WRITING_TELEPATHY_BLOCKS,
+    id: DEFAULT_NOTE_ID,
+    title: "Welcome to Notes",
+    folder: YOUR_NOTES_SECTION_ID,
+    blocks: WELCOME_BLOCKS,
   },
-  stubPage("evergreen-notes", "Evergreen notes", "references", ["writing-telepathy", "books"], [
-    {
-      id: "en-p1",
-      type: "paragraph",
-      text: "Evergreen notes are written and refined over time. They should be densely linked — start from Writing is telepathy as an example.",
-    },
-    { id: "en-h1", type: "heading", level: 2, text: "Properties" },
-    {
-      id: "en-list",
-      type: "bulletList",
-      items: [
-        "Atomic — one idea per note.",
-        "Concept-oriented — titles name ideas, not meetings.",
-        "Densely linked — wikilinks to related notes.",
-      ],
-    },
-  ]),
-  stubPage("books", "Books", "references", ["evergreen-notes"], [
-    { id: "bk-h1", type: "heading", level: 2, text: "Currently reading" },
-    {
-      id: "bk-list",
-      type: "bulletList",
-      items: ["On Writing — Stephen King", "How to Take Smart Notes — Sönke Ahrens"],
-    },
-  ]),
-  stubPage("picnic-planning", "Picnic Planning Notes", "projects", ["community-forum", "vendor-layout"], [
-    {
-      id: "pp-p1",
-      type: "paragraph",
-      text: "Open questions for the summer picnic:",
-    },
-    {
-      id: "pp-list",
-      type: "bulletList",
-      items: [
-        "Rain backup location — community center vs. school gym.",
-        "Food stations — one line or two parallel lines.",
-        "Kids area — face painting or craft table.",
-      ],
-    },
-  ]),
-  stubPage("community-forum", "06-26-2026 Community Forum", "projects", ["picnic-planning", "company-handbook"], [
-    { id: "cf-h1", type: "heading", level: 2, text: "Agenda" },
-    {
-      id: "cf-list",
-      type: "bulletList",
-      items: [
-        "Neighborhood welcome session",
-        "Vendor layout walkthrough",
-        "Link to Company Handbook for volunteer onboarding",
-      ],
-    },
-  ]),
-  stubPage("vendor-layout", "Vendor Layout Study", "projects", ["community-forum", "scratchpad"], [
-    {
-      id: "vl-p1",
-      type: "paragraph",
-      text: "Compare booth and signage layouts for the summer picnic. Scratchpad has rough sketches.",
-    },
-  ]),
-  stubPage("getting-started", "Getting Started", "private", ["evergreen-notes", "company-handbook"], [
-    {
-      id: "gs-p1",
-      type: "paragraph",
-      text: "Welcome to the vault. Start with Evergreen notes, then browse the graph to see how ideas connect.",
-    },
-  ]),
-  stubPage("one-on-one", "1:1 notes", "private", ["community-forum"], [
-    {
-      id: "oo-p1",
-      type: "paragraph",
-      text: "Standing topics for coordinator sync. Event prep tracked in Community Forum notes.",
-    },
-  ]),
-  stubPage("scratchpad", "Scratchpad", "private", ["vendor-layout"], [
-    {
-      id: "sc-p1",
-      type: "paragraph",
-      text: "Unstructured capture. Promote durable ideas into evergreen notes when ready.",
-    },
-  ]),
-  stubPage("company-handbook", "Company Handbook", "teamspaces", ["getting-started", "volunteer-wiki"], [
-    {
-      id: "ch-p1",
-      type: "paragraph",
-      text: "Policies and culture doc. Onboarding path starts at Getting Started.",
-    },
-  ]),
-  stubPage("volunteer-wiki", "Volunteer Team Wiki", "teamspaces", ["company-handbook", "vendor-layout"], [
-    {
-      id: "vw-p1",
-      type: "paragraph",
-      text: "Shared notes for event volunteers. See Vendor Layout Study for booth planning.",
-    },
-  ]),
 ];
 
-export const DEFAULT_NOTE_ID = "writing-telepathy";
+export function createLocalVaultSnapshot(): NotesVaultSnapshot {
+  return {
+    vault: structuredClone(NOTES_VAULT_SEED),
+    navSections: structuredClone(NOTES_NAV_SECTIONS),
+    activePageId: DEFAULT_NOTE_ID,
+  };
+}
+
+/** Stub vault for a connected remote backend — distinct content until a sync API exists. */
+export function createRemoteVaultSnapshot(backend: {
+  id: string;
+  name: string;
+}): NotesVaultSnapshot {
+  const noteId = `welcome-${backend.id}`;
+  const title = `Notes on ${backend.name}`;
+  const blocks: DocBlock[] = [
+    {
+      id: `${noteId}-p1`,
+      type: "paragraph",
+      text: `This vault is scoped to ${backend.name}. Switching backends in the sidebar footer swaps the notes you see.`,
+    },
+    { id: `${noteId}-h1`, type: "heading", level: 2, text: "Remote vault" },
+    {
+      id: `${noteId}-list`,
+      type: "bulletList",
+      items: [
+        "Each connected backend keeps its own pages and folders.",
+        "Local notes stay on this machine.",
+        "Sync and conflict handling will land with the vault API.",
+      ],
+    },
+    {
+      id: `${noteId}-callout`,
+      type: "callout",
+      text: `You're viewing stub content for ${backend.name}. Edits stay in this session until a real backend store is wired.`,
+    },
+  ];
+
+  return {
+    vault: [
+      {
+        id: noteId,
+        title,
+        folder: YOUR_NOTES_SECTION_ID,
+        blocks,
+      },
+    ],
+    navSections: [
+      {
+        id: YOUR_NOTES_SECTION_ID,
+        title: "Your Notes",
+        allowCreate: true,
+        allowDrag: true,
+        items: [{ type: "page", id: noteId, label: title }],
+      },
+    ],
+    activePageId: noteId,
+  };
+}

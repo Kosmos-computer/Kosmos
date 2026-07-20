@@ -112,22 +112,31 @@ jobs:
           git add apps/desktop/VERSION package.json apps/desktop/package.json
           git commit -m "chore(desktop): release v${{ steps.version.outputs.version }} [skip desktop]"
 
-      # Draft first so electron-builder can upload without requiring a pre-existing git tag
-      # (published releases hit "Published releases must have a valid tag").
-      - name: Clear stale release for this version
+      # Pre-create a single draft so parallel electron-builder publishers (dmg + zip)
+      # upload into the same release instead of each creating their own.
+      - name: Prepare draft GitHub release
         if: steps.plan.outputs.ship == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          VERSION="${{ steps.version.outputs.version }}"
           TAG="${{ steps.version.outputs.release_tag }}"
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "Deleting stale GitHub release $TAG"
-            gh release delete "$TAG" --yes
-          fi
-          if git rev-parse "$TAG" >/dev/null 2>&1; then
-            git tag -d "$TAG"
-          fi
-          git push origin ":refs/tags/$TAG" 2>/dev/null || true
+
+          # Remove every release object for this tag (published or draft).
+          for id in $(gh api "repos/${{ github.repository }}/releases" --paginate \
+            --jq ".[] | select(.tag_name == \"$TAG\") | .id"); do
+            echo "Deleting stale release id=$id for $TAG"
+            gh api -X DELETE "repos/${{ github.repository }}/releases/$id"
+          done
+
+          git tag -f -a "$TAG" -m "Kosmos ${VERSION}"
+          git push origin "$TAG" --force
+
+          gh release create "$TAG" \
+            --draft \
+            --title "Kosmos ${VERSION}" \
+            --notes "Desktop release ${VERSION}" \
+            --target "$(git rev-parse HEAD)"
 
       - name: Build and publish draft to GitHub Releases
         if: steps.plan.outputs.ship == 'true'
@@ -154,11 +163,26 @@ jobs:
           DESKTOP_TAG="${{ steps.version.outputs.tag }}"
 
           git tag -a "$DESKTOP_TAG" -m "Kosmos ${VERSION}"
-          # electron-builder / gh may already create v* when undrafting — refresh onto this commit.
           git tag -f -a "$RELEASE_TAG" -m "Kosmos ${VERSION}"
 
-          # Point the draft at this commit, then publish so assets become downloadable.
-          gh release edit "$RELEASE_TAG" --draft=false --latest --title "Kosmos ${VERSION}"
+          # Publish the draft that actually received the DMG (guards against orphan drafts).
+          RELEASE_ID="$(gh api "repos/${{ github.repository }}/releases" --paginate \
+            --jq "[.[] | select(.tag_name == \"$RELEASE_TAG\") | select([.assets[].name] | any(endswith(\".dmg\")))] | .[0].id")"
+          if [ -z "$RELEASE_ID" ] || [ "$RELEASE_ID" = "null" ]; then
+            echo "No draft release with a .dmg asset found for $RELEASE_TAG"
+            exit 1
+          fi
+          gh api -X PATCH "repos/${{ github.repository }}/releases/${RELEASE_ID}" \
+            -f draft=false \
+            -f name="Kosmos ${VERSION}" \
+            -f make_latest=true
+
+          # Drop any leftover sibling drafts for the same tag.
+          for id in $(gh api "repos/${{ github.repository }}/releases" --paginate \
+            --jq ".[] | select(.tag_name == \"$RELEASE_TAG\" and .draft == true) | .id"); do
+            echo "Deleting orphan draft release id=$id"
+            gh api -X DELETE "repos/${{ github.repository }}/releases/$id"
+          done
 
           git push origin HEAD:main
           git push origin "$DESKTOP_TAG"

@@ -1,6 +1,6 @@
 /**
  * Sign-in layer backdrop — reads authWallpaper from osStore, which defaults to
- * the space photo and can be changed independently of the desktop wallpaper.
+ * the live starfield and can be changed independently of the desktop wallpaper.
  */
 import { lazy, Suspense } from "react";
 import { useOsStore } from "../osStore";

@@ -153,11 +153,13 @@ jobs:
           RELEASE_TAG="${{ steps.version.outputs.release_tag }}"
           DESKTOP_TAG="${{ steps.version.outputs.tag }}"
 
-          git tag -a "$RELEASE_TAG" -m "Kosmos ${VERSION}"
           git tag -a "$DESKTOP_TAG" -m "Kosmos ${VERSION}"
+          # electron-builder / gh may already create v* when undrafting — refresh onto this commit.
+          git tag -f -a "$RELEASE_TAG" -m "Kosmos ${VERSION}"
 
           # Point the draft at this commit, then publish so assets become downloadable.
           gh release edit "$RELEASE_TAG" --draft=false --latest --title "Kosmos ${VERSION}"
 
           git push origin HEAD:main
-          git push origin "$RELEASE_TAG" "$DESKTOP_TAG"
+          git push origin "$DESKTOP_TAG"
+          git push origin "$RELEASE_TAG" --force

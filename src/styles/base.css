@@ -330,11 +330,50 @@ select {
   padding: 8px 10px 6px;
 }
 
+.arco-menu__user-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
 .arco-menu__user {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+  flex: 1;
+}
+
+.arco-menu__connect-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid var(--arco-border);
+  border-radius: var(--arco-radius-sm, 6px);
+  background: transparent;
+  color: var(--arco-text-secondary);
+  font-size: var(--arco-text-xs);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.arco-menu__connect-btn:hover {
+  color: var(--arco-text-primary);
+  background: var(--arco-bg-hover, color-mix(in srgb, var(--arco-text-primary) 6%, transparent));
+}
+
+.arco-menu__connect-btn--primary {
+  border-color: color-mix(in srgb, var(--arco-accent, #4f7cff) 45%, var(--arco-border));
+  color: var(--arco-accent, #4f7cff);
+}
+
+.arco-menu__connect-btn--primary:hover {
+  background: color-mix(in srgb, var(--arco-accent, #4f7cff) 12%, transparent);
+  color: var(--arco-accent, #4f7cff);
 }
 
 .arco-menu__user-name {

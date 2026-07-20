@@ -55,11 +55,11 @@ export const AUTH_WALLPAPER_IDS = AUTH_WALLPAPER_GROUPS.flatMap((g) =>
 
 const AUTH_WALLPAPER_SET = new Set<string>(AUTH_WALLPAPER_IDS);
 
-/** Coerce persisted values; unknown ids fall back to the space photo. */
+/** Coerce persisted values; unknown ids fall back to the live starfield. */
 export function normalizeAuthWallpaper(value: string | null | undefined): AuthWallpaperId {
   if (value === "galaxy") return "space";
   if (value && AUTH_WALLPAPER_SET.has(value)) return value as AuthWallpaperId;
-  return "space";
+  return "starfield";
 }
 
 export function getAuthWallpaperOption(id: AuthWallpaperId): AuthWallpaperOption | undefined {

@@ -30,7 +30,7 @@ import {
   testServerConnection,
   upsertServerProfile,
 } from "../../os/server/serverProfileStore";
-import { kosmosConnectReturnUrl } from "../../os/server/kosmosConnectReturn";
+import { openKosmosConnect } from "../../os/server/openKosmosConnect";
 import type { ServerProfile } from "../../os/server/serverProfileTypes";
 
 export function KosmosCloudSection() {
@@ -182,14 +182,7 @@ export function KosmosCloudSection() {
                 />
               </SettingsFieldRow>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <Button
-                  onClick={() => {
-                    window.location.href = kosmosConnectReturnUrl(
-                      deployment.controlPlaneUrl ?? "https://kosmos-control-plane.fly.dev",
-                      "existing",
-                    );
-                  }}
-                >
+                <Button onClick={() => openKosmosConnect(deployment.controlPlaneUrl, "existing")}>
                   <Link2 size={14} style={{ marginRight: 6 }} />
                   Connect on web
                 </Button>
@@ -199,12 +192,7 @@ export function KosmosCloudSection() {
                 </Button>
                 <Button
                   variant="ghost"
-                  onClick={() => {
-                    window.location.href = kosmosConnectReturnUrl(
-                      deployment.controlPlaneUrl ?? "https://kosmos-control-plane.fly.dev",
-                      "signup",
-                    );
-                  }}
+                  onClick={() => openKosmosConnect(deployment.controlPlaneUrl, "signup")}
                 >
                   Create cloud account
                 </Button>

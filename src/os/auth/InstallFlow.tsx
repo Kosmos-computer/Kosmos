@@ -19,10 +19,8 @@ import {
   testServerConnection,
   upsertServerProfile,
 } from "../server/serverProfileStore";
-import {
-  consumeKosmosConnectError,
-  kosmosConnectReturnUrl,
-} from "../server/kosmosConnectReturn";
+import { consumeKosmosConnectError } from "../server/kosmosConnectReturn";
+import { openKosmosConnect } from "../server/openKosmosConnect";
 import { useAuthStore } from "./authStore";
 import { AuthWallpaperBackdrop } from "../wallpaper/AuthWallpaperBackdrop";
 import { I18nKey } from "../../i18n/declaration";
@@ -169,7 +167,7 @@ function InstallKosmosConnect({
   const copy = (key: I18nKey) => tWithFallback(key, t, i18n.language);
 
   const openWebConnect = (mode: "existing" | "signup") => {
-    window.location.href = kosmosConnectReturnUrl(controlPlaneUrl, mode);
+    openKosmosConnect(controlPlaneUrl, mode);
   };
 
   return (

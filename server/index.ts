@@ -3956,8 +3956,12 @@ if (serveProductionShell) {
   if (!existsSync(shellDistRoot)) {
     console.error(`[arco] shell dist not found at ${shellDistRoot}`);
   }
+  // Vite copies public/ into dist/ — serve those folders before the SPA catch-all.
+  // Without these, /wallpapers/*.jpg (and similar) return index.html and look "broken".
   app.use("/assets/*", serveStatic({ root: shellDistRoot }));
   app.use("/locales/*", serveStatic({ root: shellDistRoot }));
+  app.use("/wallpapers/*", serveStatic({ root: shellDistRoot }));
+  app.use("/downloads/*", serveStatic({ root: shellDistRoot }));
   app.get("/mobile-install.html", serveStatic({ root: shellDistRoot }));
   app.get("/", serveStatic({ root: shellDistRoot, path: "index.html" }));
   app.get("*", serveStatic({ root: shellDistRoot, path: "index.html" }));

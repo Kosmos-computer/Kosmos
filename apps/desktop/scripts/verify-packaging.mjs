@@ -215,6 +215,14 @@ async function smokeTestRuntime(runtimeRoot, electronBin) {
     const ui = await fetch(`http://127.0.0.1:${port}/`);
     if (!ui.ok) throw new Error(`UI root returned ${ui.status}`);
     ok(`GET / → ${ui.status}`);
+    const wallpaper = await fetch(`http://127.0.0.1:${port}/wallpapers/space.jpg`);
+    const wallpaperType = wallpaper.headers.get("content-type") ?? "";
+    if (!wallpaper.ok || !wallpaperType.startsWith("image/")) {
+      throw new Error(
+        `GET /wallpapers/space.jpg → ${wallpaper.status} ${wallpaperType || "(no content-type)"}`,
+      );
+    }
+    ok(`GET /wallpapers/space.jpg → ${wallpaper.status} (${wallpaperType})`);
   } catch (err) {
     child.kill("SIGTERM");
     fail("Smoke test failed", [

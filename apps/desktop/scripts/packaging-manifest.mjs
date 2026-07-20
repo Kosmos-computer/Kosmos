@@ -16,6 +16,11 @@ export const APP_DIRS = ["calculator", "calendar", "docs", "drive", "menubar-tas
 /** Paths that must exist after staging — relative to the arco runtime root. */
 export const RUNTIME_REQUIRED = [
   { id: "ui", path: "dist/index.html", hint: "Run npm run build from the repo root." },
+  {
+    id: "wallpapers",
+    path: "dist/wallpapers/space.jpg",
+    hint: "Run npm run build so Vite copies public/wallpapers into dist/.",
+  },
   { id: "docs", path: "apps/docs/dist/index.html", hint: "Run npm run build:apps." },
   { id: "server", path: "server/index.ts", hint: "Server sources missing from stage." },
   { id: "app_prompt", path: "server/generated/app-prompt.md", hint: "Run npm run generate." },

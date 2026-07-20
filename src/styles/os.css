@@ -248,6 +248,20 @@
   border-top: 1px solid var(--arco-border-subtle);
 }
 
+.arco-menubar-backends__cloud-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--arco-space-xs);
+  margin-top: var(--arco-space-xs);
+}
+
+.arco-menubar-backends__cloud-btn {
+  flex: 1 1 auto;
+  justify-content: center;
+  min-height: 28px;
+  font-size: var(--arco-text-xs);
+}
+
 .arco-menubar-backends__heading {
   margin: 0 0 var(--arco-space-xs);
   font-size: var(--arco-text-xs);

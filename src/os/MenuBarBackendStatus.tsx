@@ -1,10 +1,19 @@
 import { useRef, useState } from "react";
-import { Plus, Server } from "lucide-react";
+import { Cloud, Plus, Server, Unplug } from "lucide-react";
 import type { AgentBackend } from "@shared/types";
 import { useDismiss } from "../components/useDismiss";
 import { Button, Switch } from "../components/ui";
+import { useDeployment } from "../hooks/useDeployment";
+import { openSettingsApp } from "../apps/settings/settingsStore";
 import { useCan } from "./auth/authStore";
 import { AddAgentBackendWizard } from "./AddAgentBackendWizard";
+import { desktopUsesCloudProfile } from "./server/cloudShellMode";
+import { openKosmosConnect } from "./server/openKosmosConnect";
+import {
+  clearActiveServerProfile,
+  getActiveServerProfile,
+  reloadForServerSwitch,
+} from "./server/serverProfileStore";
 import { backendLinkStatusLabel, useAgentBackendsMenu, type BackendLinkStatus } from "./useAgentBackendsMenu";
 import { backendStatusLabel, useBackendStatus } from "./useBackendStatus";
 
@@ -24,8 +33,12 @@ export function MenuBarBackendStatus() {
   const [wizardOpen, setWizardOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const canManage = useCan("settings:write");
+  const { deployment } = useDeployment();
   const serverStatus = useBackendStatus();
   const serverLabel = backendStatusLabel(serverStatus);
+  const activeProfile = getActiveServerProfile();
+  const cloudProfile = activeProfile?.kind === "cloud" ? activeProfile : null;
+  const cloudConnected = desktopUsesCloudProfile() || cloudProfile !== null;
   const { backends, activeId, statusById, loading, setActive, refresh } = useAgentBackendsMenu(
     open,
     canManage,
@@ -67,10 +80,71 @@ export function MenuBarBackendStatus() {
               <div className="arco-menubar-backends__row arco-menubar-backends__row--static">
                 <span className={triggerDotClass} aria-hidden="true" />
                 <div className="arco-menubar-backends__meta">
-                  <span className="arco-menubar-backends__name">Local backend</span>
-                  <span className="arco-menubar-backends__detail">{serverLabel}</span>
+                  <span className="arco-menubar-backends__name">
+                    {cloudConnected ? "Kosmos Cloud" : "Local backend"}
+                  </span>
+                  <span className="arco-menubar-backends__detail">
+                    {cloudConnected && cloudProfile
+                      ? cloudProfile.url.replace(/^https?:\/\//, "")
+                      : serverLabel}
+                  </span>
                 </div>
               </div>
+              {canManage ? (
+                <div className="arco-menubar-backends__cloud-actions">
+                  {cloudConnected ? (
+                    <>
+                      <Button
+                        variant="ghost"
+                        className="arco-menubar-backends__cloud-btn"
+                        onClick={() => {
+                          setOpen(false);
+                          openSettingsApp("kosmos-cloud");
+                        }}
+                      >
+                        <Cloud size={14} aria-hidden />
+                        Manage
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        className="arco-menubar-backends__cloud-btn"
+                        onClick={() => {
+                          setOpen(false);
+                          clearActiveServerProfile();
+                          reloadForServerSwitch();
+                        }}
+                      >
+                        <Unplug size={14} aria-hidden />
+                        Disconnect
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        variant="primary"
+                        className="arco-menubar-backends__cloud-btn"
+                        onClick={() => {
+                          setOpen(false);
+                          openKosmosConnect(deployment.controlPlaneUrl, "existing");
+                        }}
+                      >
+                        <Cloud size={14} aria-hidden />
+                        Connect
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        className="arco-menubar-backends__cloud-btn"
+                        onClick={() => {
+                          setOpen(false);
+                          openKosmosConnect(deployment.controlPlaneUrl, "signup");
+                        }}
+                      >
+                        Create account
+                      </Button>
+                    </>
+                  )}
+                </div>
+              ) : null}
             </div>
 
             <div className="arco-menubar-backends__section">

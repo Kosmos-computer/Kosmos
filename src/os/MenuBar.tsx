@@ -2,11 +2,29 @@ import { I18nKey } from "../i18n/declaration";
 import i18n from "../i18n/index";
 /** Top chrome: left-nav visibility toggle, search, focused window title, status tray, clock, settings. */
 import { useEffect, useMemo, useState } from "react";
-import { AppWindow, LayoutGrid, Lock, LogOut, Maximize, Minimize, Monitor, Moon, PanelLeft, Search, Settings, Sun } from "lucide-react";
+import {
+  AppWindow,
+  Cloud,
+  LayoutGrid,
+  Lock,
+  LogOut,
+  Maximize,
+  Minimize,
+  Monitor,
+  Moon,
+  PanelLeft,
+  PanelsTopLeft,
+  PictureInPicture2,
+  Search,
+  Settings,
+  Sun,
+} from "lucide-react";
 import { Menu, type MenuItem } from "../components/Menu";
 import { Badge } from "../components/ui/Badge";
 import { openSettingsApp } from "../apps/settings/settingsStore";
 import { visibleSettingsNavGroups } from "../apps/settings/settingsSections";
+import { useDeployment } from "../hooks/useDeployment";
+import { isArcoDesktop } from "../lib/desktopBridge";
 import { useCan, useAuthStore } from "./auth/authStore";
 import { useBentoStore } from "./bento/bentoStore";
 import { useCommandPaletteStore } from "./commandPaletteStore";
@@ -15,6 +33,9 @@ import { MenuBarKeyboardControl } from "./MenuBarKeyboardControl";
 import { MenuBarLanguageSwitcher } from "./MenuBarLanguageSwitcher";
 import { MenuBarToolsStatus } from "./MenuBarToolsStatus";
 import { MenuBarVolumeControl } from "./MenuBarVolumeControl";
+import { desktopUsesCloudProfile } from "./server/cloudShellMode";
+import { openKosmosConnect } from "./server/openKosmosConnect";
+import { getActiveServerProfile } from "./server/serverProfileStore";
 import { useDocumentFullscreen } from "./useDocumentFullscreen";
 import { useOsStore } from "./osStore";
 import { resolveWindowTitle } from "./resolveWindowTitle";
@@ -36,7 +57,16 @@ function useClock(): string {
 }
 
 export function MenuBar() {
-  const { theme, setTheme, shellView, setShellView, navVisible, setNavVisible } = useOsStore();
+  const {
+    theme,
+    setTheme,
+    shellView,
+    setShellView,
+    navVisible,
+    setNavVisible,
+    appWindowHost,
+    setAppWindowHost,
+  } = useOsStore();
   const bentoOpen = useBentoStore((s) => s.open);
   const toggleBento = useBentoStore((s) => s.toggleOpen);
   const user = useAuthStore((s) => s.user);
@@ -47,7 +77,12 @@ export function MenuBar() {
   const windows = useWindowStore((s) => s.windows);
   const openPalette = useCommandPaletteStore((s) => s.openPalette);
   const { fullscreen, toggle: toggleFullscreen } = useDocumentFullscreen();
+  const { deployment } = useDeployment();
+  const cloudConnected =
+    desktopUsesCloudProfile() || getActiveServerProfile()?.kind === "cloud";
   const clock = useClock();
+  const showPopoutToggle = isArcoDesktop() && shellView === "desktop";
+  const popoutsEnabled = appWindowHost === "native";
 
   const settingsMenuItems = useMemo<MenuItem[]>(() => {
     const groups = visibleSettingsNavGroups({ canWriteSettings, canManageUsers });
@@ -150,6 +185,22 @@ export function MenuBar() {
             <AppWindow size={14} />
           </button>
         </div>
+        {showPopoutToggle ? (
+          <button
+            type="button"
+            className={`arco-menubar__icon-btn${popoutsEnabled ? " arco-menubar__icon-btn--active" : ""}`}
+            onClick={() => setAppWindowHost(popoutsEnabled ? "embedded" : "native")}
+            aria-label={popoutsEnabled ? "Turn off separate windows" : "Turn on separate windows"}
+            aria-pressed={popoutsEnabled}
+            title={
+              popoutsEnabled
+                ? "Separate windows on — apps open in their own OS windows"
+                : "Separate windows off — apps stay inside the main window"
+            }
+          >
+            {popoutsEnabled ? <PictureInPicture2 size={14} /> : <PanelsTopLeft size={14} />}
+          </button>
+        ) : null}
         <button
           type="button"
           className="arco-menubar__icon-btn"
@@ -188,9 +239,32 @@ export function MenuBar() {
           items={settingsMenuItems}
           footerHeader={
             user ? (
-              <div className="arco-menu__user" title={`Signed in as ${user.username} (${user.role})`}>
-                <span className="arco-menu__user-name">{user.displayName}</span>
-                <span className="arco-menu__user-meta">{user.role}</span>
+              <div className="arco-menu__user-row">
+                <div className="arco-menu__user" title={`Signed in as ${user.username} (${user.role})`}>
+                  <span className="arco-menu__user-name">{user.displayName}</span>
+                  <span className="arco-menu__user-meta">{user.role}</span>
+                </div>
+                {cloudConnected ? (
+                  <button
+                    type="button"
+                    className="arco-menu__connect-btn"
+                    title="Manage Kosmos Cloud connection"
+                    onClick={() => openSettingsApp("kosmos-cloud")}
+                  >
+                    <Cloud size={12} aria-hidden />
+                    Cloud
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="arco-menu__connect-btn arco-menu__connect-btn--primary"
+                    title="Connect this app to Kosmos Cloud"
+                    onClick={() => openKosmosConnect(deployment.controlPlaneUrl, "existing")}
+                  >
+                    <Cloud size={12} aria-hidden />
+                    Connect
+                  </button>
+                )}
               </div>
             ) : null
           }

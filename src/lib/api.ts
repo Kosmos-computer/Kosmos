@@ -387,6 +387,21 @@ export const api = {
   // Sessions
   listSessions: () => fetch("/api/sessions").then((r) => json<SessionSummary[]>(r)),
   getSession: (id: string) => fetch(`/api/sessions/${id}`).then((r) => json<Session>(r)),
+  /** Eager create — empty “New chat” before the first message (agent-canvas style). */
+  createSession: (opts?: {
+    title?: string;
+    projectId?: string | null;
+    profileId?: string | null;
+    kind?: Session["kind"];
+  }) =>
+    fetch("/api/sessions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(opts ?? {}),
+    }).then((r) => json<Session>(r)),
+  /** Same Voice chat session the /v1 compat path uses for x-arco-conversation: voice. */
+  ensureVoiceSession: () =>
+    fetch("/api/sessions/voice/ensure", { method: "POST" }).then((r) => json<Session>(r)),
   chatTurnStatus: (id: string) =>
     fetch(`/api/chat/${encodeURIComponent(id)}/status`).then((r) => json<{ active: boolean }>(r)),
   cancelChatTurn: (id: string) =>

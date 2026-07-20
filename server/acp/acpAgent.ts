@@ -437,6 +437,15 @@ export async function runAcpTurn(opts: RunTurnOptions): Promise<string> {
   const session = await sessionStore.get(opts.sessionId);
   if (!session) throw new Error(`Session not found: ${opts.sessionId}`);
 
+  const { withSessionWorkspace } = await import("../stores/turnWorkspace.js");
+  return withSessionWorkspace(session.projectId, () => runAcpTurnBody(opts, session, settings));
+}
+
+async function runAcpTurnBody(
+  opts: RunTurnOptions,
+  session: NonNullable<Awaited<ReturnType<typeof sessionStore.get>>>,
+  settings: import("../../shared/types.js").Settings,
+): Promise<string> {
   await sessionStore.appendMessages(session.id, [{ role: "user", content: opts.userMessage }]);
 
   const run = await ensureRun(opts.sessionId, settings, opts.emit, opts.acpCommand);

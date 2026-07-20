@@ -275,6 +275,30 @@ export function AppHost({ appId }: { appId: string }) {
         return;
       }
 
+      // Own-window geometry only — no grant required (cannot affect other windows).
+      if (msg.method === "shell.setWindowGeometry") {
+        const aspectRatio = Number(msg.params.aspectRatio);
+        if (!(aspectRatio > 0) || !Number.isFinite(aspectRatio)) {
+          respond(false, undefined, "aspectRatio must be a positive number (width / height).");
+          return;
+        }
+        const wm = useWindowStore.getState();
+        const win = wm.windows.find((w) => w.id === installedWindowId);
+        if (!win) {
+          respond(false, undefined, "Host window not found.");
+          return;
+        }
+        wm.setAspectRatio(installedWindowId, aspectRatio);
+        const applySize = msg.params.applySize !== false;
+        if (applySize && !win.maximized) {
+          const preferredW = Number(msg.params.w);
+          const w = Number.isFinite(preferredW) && preferredW > 0 ? preferredW : win.w;
+          wm.setRect(installedWindowId, { w, h: Math.round(w / aspectRatio) });
+        }
+        respond(true, { ok: true });
+        return;
+      }
+
       api
         .bridgeInvoke(token, msg.method, msg.params)
         .then((result) => respond(true, result))

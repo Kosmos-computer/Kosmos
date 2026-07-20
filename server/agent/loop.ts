@@ -12,6 +12,7 @@ import { resolveToolsetAllowlist } from "../../shared/toolsets.js";
 import { loadSettings } from "../env.js";
 import { modelStore } from "../stores/modelStore.js";
 import { sessionStore } from "../stores/sessionStore.js";
+import { withSessionWorkspace } from "../stores/turnWorkspace.js";
 import { resolveProfileForTurn } from "../agents/resolveProfile.js";
 import { formatRecallForPrompt, recallForTurn } from "../memory/recall.js";
 import { streamTurn, type LlmMessage } from "./llm.js";
@@ -123,6 +124,16 @@ export async function runAgentTurn(opts: RunTurnOptions): Promise<string> {
   const session = await sessionStore.get(opts.sessionId);
   if (!session) throw new Error(`Session not found: ${opts.sessionId}`);
 
+  // Isolate file/exec cwd to this session's project when tagged — concurrent
+  // turns must not share the UI's active workspace root.
+  return withSessionWorkspace(session.projectId, () => runAgentTurnBody(opts, session, baseSettings));
+}
+
+async function runAgentTurnBody(
+  opts: RunTurnOptions,
+  session: Session,
+  baseSettings: ReturnType<typeof loadSettings>,
+): Promise<string> {
   const profile = resolveProfileForTurn({
     profileId: opts.profileId,
     sessionProfileId: session.profileId,

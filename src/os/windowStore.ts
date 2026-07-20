@@ -75,6 +75,11 @@ export interface OsWindow extends WindowRect {
   minimized: boolean;
   maximized: boolean;
   z: number;
+  /**
+   * Optional width/height lock for widget-style apps (e.g. Calculator skins).
+   * When set, resize and viewport clamping preserve this ratio.
+   */
+  aspectRatio?: number;
 }
 
 /** Stable identity for a specific window (includes instance id when present). */
@@ -288,7 +293,8 @@ const DEFAULT_SIZES: Record<string, { w: number; h: number }> = {
   "system:settings": { w: 560, h: 620 },
   "system:startup": { w: 980, h: 720 },
   // Calculator is a device-sized widget — titlebar sits directly on the pad.
-  "installed:core.calculator": { w: 400, h: 680 },
+  // Default matches the Datamath skin’s tight keypad aspect (see apps/calculator).
+  "installed:core.calculator": { w: 400, h: 633 },
 };
 
 /** Default size lookup — instance windows inherit the app's preferred size. */
@@ -306,6 +312,46 @@ const MIN_H = 220;
 /** Min on-screen strip so a window dragged past the viewport edge stays recoverable. */
 const TITLEBAR_REACH = 48;
 
+/**
+ * Fit a size to an aspect ratio (width / height) inside min/max bounds.
+ * Prefers the requested width, then shrinks to satisfy height limits.
+ */
+export function fitAspectSize(
+  w: number,
+  aspectRatio: number,
+  maxW: number,
+  maxH: number,
+  minW = MIN_W,
+  minH = MIN_H,
+): { w: number; h: number } {
+  if (!(aspectRatio > 0) || !Number.isFinite(aspectRatio)) {
+    return { w: Math.round(w), h: Math.round(w) };
+  }
+  let nextW = Math.min(Math.max(minW, w), maxW);
+  let nextH = nextW / aspectRatio;
+  if (nextH > maxH) {
+    nextH = maxH;
+    nextW = nextH * aspectRatio;
+  }
+  if (nextH < minH) {
+    nextH = minH;
+    nextW = nextH * aspectRatio;
+    if (nextW > maxW) {
+      nextW = maxW;
+      nextH = nextW / aspectRatio;
+    }
+  }
+  if (nextW < minW) {
+    nextW = minW;
+    nextH = nextW / aspectRatio;
+    if (nextH > maxH) {
+      nextH = maxH;
+      nextW = nextH * aspectRatio;
+    }
+  }
+  return { w: Math.round(nextW), h: Math.round(nextH) };
+}
+
 function navWidth(): number {
   if (typeof window === "undefined") return 56;
   const shell = document.querySelector<HTMLElement>(".arco-desktop") ?? document.documentElement;
@@ -320,7 +366,11 @@ function navWidth(): number {
  * When off, windows stay fully inside the desktop work area.
  * Size is always capped so a window cannot exceed the work area.
  */
-function ensureVisibleRect(key: string, rect: WindowRect, index: number): WindowRect {
+function ensureVisibleRect(
+  key: string,
+  rect: WindowRect & { aspectRatio?: number },
+  index: number,
+): WindowRect {
   if (typeof window === "undefined") return rect;
   const vw = window.innerWidth;
   const vh = window.innerHeight;
@@ -329,13 +379,18 @@ function ensureVisibleRect(key: string, rect: WindowRect, index: number): Window
   const maxW = Math.max(MIN_W, vw - leftBound - WINDOW_MARGIN);
   const maxH = Math.max(MIN_H, vh - topBound - WINDOW_MARGIN);
   let { x, y, w, h } = rect;
+  const aspectRatio = rect.aspectRatio;
 
   if (![x, y, w, h].every(Number.isFinite)) {
     return defaultRect(key, index);
   }
 
-  w = Math.min(Math.max(MIN_W, w), maxW);
-  h = Math.min(Math.max(MIN_H, h), maxH);
+  if (aspectRatio && aspectRatio > 0) {
+    ({ w, h } = fitAspectSize(w, aspectRatio, maxW, maxH));
+  } else {
+    w = Math.min(Math.max(MIN_W, w), maxW);
+    h = Math.min(Math.max(MIN_H, h), maxH);
+  }
 
   if (useOsStore.getState().windowsOffscreen) {
     x = Math.max(TITLEBAR_REACH - w, Math.min(x, vw - TITLEBAR_REACH));
@@ -390,6 +445,8 @@ interface WindowStore {
   toggleMinimize: (id: string) => void;
   toggleMaximize: (id: string) => void;
   setRect: (id: string, rect: Partial<WindowRect>) => void;
+  /** Lock (or clear) a window’s width/height ratio for widget-style resizing. */
+  setAspectRatio: (id: string, aspectRatio: number | undefined) => void;
   constrainToViewport: () => void;
   setTitle: (id: string, title: string) => void;
   focusedId: () => string | null;
@@ -550,6 +607,24 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
       const next = {
         ...state,
         windows: state.windows.map((w) => (w.id === id ? { ...w, ...nextRect } : w)),
+      } as WindowStore;
+      persist(next);
+      return next;
+    });
+  },
+
+  setAspectRatio: (id, aspectRatio) => {
+    set((state) => {
+      const current = state.windows.find((w) => w.id === id);
+      if (!current) return state;
+      const nextRatio =
+        typeof aspectRatio === "number" && aspectRatio > 0 && Number.isFinite(aspectRatio)
+          ? aspectRatio
+          : undefined;
+      if (current.aspectRatio === nextRatio) return state;
+      const next = {
+        ...state,
+        windows: state.windows.map((w) => (w.id === id ? { ...w, aspectRatio: nextRatio } : w)),
       } as WindowStore;
       persist(next);
       return next;

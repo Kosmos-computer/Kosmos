@@ -78,13 +78,16 @@ export async function runAutomationNow(id: string): Promise<AutomationRun> {
   run.finishedAt = new Date().toISOString();
   await automationStore.recordRun(id, run);
 
-  broadcastShellEvent({
-    type: "automation_run_finished",
-    automationId: id,
-    automationName: automation.name,
-    status: run.status === "ok" ? "ok" : "error",
-    summary: run.summary,
-  });
+  broadcastShellEvent(
+    {
+      type: "automation_run_finished",
+      automationId: id,
+      automationName: automation.name,
+      status: run.status === "ok" ? "ok" : "error",
+      summary: run.summary,
+    },
+    session.id,
+  );
   bus.emit("automations_changed");
 
   return run;

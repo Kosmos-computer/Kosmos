@@ -120,7 +120,7 @@ export function ChatApp() {
           aria-pressed={showSessions}
         >
           <History size={13} /><T k={I18nKey.APPS$CHAT_HISTORY} /></button>
-        <button className="arco-btn" onClick={chat.newChat}>
+        <button className="arco-btn" onClick={() => void chat.newChat()}>
           <Plus size={13} /><T k={I18nKey.APPS$CHAT_NEW} /></button>
       </div>
 

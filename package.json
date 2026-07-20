@@ -78,7 +78,7 @@
     "sprite-mark:sync": "tsx scripts/sync-sprite-mark-library.mts",
     "check-translation-completeness": "node scripts/check-translation-completeness.cjs",
     "i18n:migrate": "node scripts/i18n-bulk-migrate.cjs --write && node scripts/i18n-migrate-props.cjs && node scripts/i18n-fix-imports.cjs && node scripts/i18n-normalize.cjs && node scripts/i18n-clean-stale-hooks.cjs && npm run make-i18n",
-    "test": "tsx --test server/automations/*.test.ts server/stores/automationStore.test.ts server/openhands/openhandsAgent.test.ts server/kosmos-remote/kosmosRemoteAgent.test.ts server/agentBackends.test.ts server/agent/*.test.ts server/security/*.test.ts server/social/*.test.ts server/github/*.test.ts packages/doc-interop/src/*.test.ts shared/sheetFormula.test.ts shared/agentAppCatalog.test.ts src/os/wallpaper/*.test.ts",
+    "test": "tsx --test server/automations/*.test.ts server/stores/automationStore.test.ts server/stores/turnWorkspace.test.ts server/openhands/openhandsAgent.test.ts server/kosmos-remote/kosmosRemoteAgent.test.ts server/agentBackends.test.ts server/agent/*.test.ts server/security/*.test.ts server/social/*.test.ts server/github/*.test.ts packages/doc-interop/src/*.test.ts shared/sheetFormula.test.ts shared/agentAppCatalog.test.ts shared/shellEvents.test.ts src/apps/chat/sessionFocus.test.ts src/os/wallpaper/*.test.ts",
     "ops:mcp": "node --import tsx/esm scripts/kosmos-ops-mcp.ts",
     "kosmos": "node packages/cli/bin/kosmos.mjs",
     "arco:cli": "node packages/cli/bin/kosmos.mjs"

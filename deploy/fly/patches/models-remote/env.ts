@@ -23,6 +23,8 @@ export const dataDirs = {
   sessions: path.join(ROOT, "sessions"),
   db: path.join(ROOT, "db"),
   workspace: path.join(ROOT, "workspace"),
+  /** BitTorrent download directory (os.downloads@1). */
+  torrents: path.join(ROOT, "torrents"),
 };
 
 export function ensureDataDirs(): void {

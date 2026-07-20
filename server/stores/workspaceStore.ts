@@ -13,6 +13,7 @@ import type {
 } from "../../shared/types.js";
 import { dataDirs } from "../env.js";
 import { projectStore } from "./projectStore.js";
+import { getTurnWorkspaceRoot } from "./turnWorkspace.js";
 
 const WORKSPACE_FILE = path.join(dataDirs.root, "workspace-state.json");
 
@@ -289,6 +290,10 @@ function syncProjectsActive(state: WorkspaceState): void {
 
 /** Absolute cwd for exec/git/default relative paths (respects worktree). */
 export function getPrimaryRoot(): string {
+  // Concurrent turns bind a session's project root via withSessionWorkspace.
+  const turnRoot = getTurnWorkspaceRoot();
+  if (turnRoot) return turnRoot;
+
   const state = workspaceStore.get();
   if (state.backend === "drive") {
     // Drive has no POSIX cwd — fall back to sandbox for any accidental exec.

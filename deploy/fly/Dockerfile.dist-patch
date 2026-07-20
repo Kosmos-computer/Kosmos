@@ -11,13 +11,19 @@ FROM registry.fly.io/kosmos-template:demo
 COPY dist/ /app/dist/
 COPY shared/kosmosCloudModels.ts /app/shared/kosmosCloudModels.ts
 COPY shared/types.ts /app/shared/types.ts
+COPY shared/capabilities/downloads.ts /app/shared/capabilities/downloads.ts
 COPY server/agent/systemPrompt.ts /app/server/agent/systemPrompt.ts
 COPY server/agent/tools.ts /app/server/agent/tools.ts
 COPY server/index.ts /app/server/index.ts
 COPY server/stores/appStore.ts /app/server/stores/appStore.ts
 COPY server/system/installStatus.ts /app/server/system/installStatus.ts
 COPY server/generated/app-prompt.md /app/server/generated/app-prompt.md
+COPY server/services/torrentService.ts /app/server/services/torrentService.ts
 # Models-remote patches stay compatible with older runtime images.
 COPY deploy/fly/patches/models-remote/remoteModels.ts /app/server/llm/remoteModels.ts
 COPY deploy/fly/patches/models-remote/models.ts /app/server/routes/models.ts
 COPY deploy/fly/patches/models-remote/env.ts /app/server/env.ts
+
+# Base demo images may predate WebTorrent; ensure the downloads backend can load.
+WORKDIR /app
+RUN npm install webtorrent@^2.8.5 --no-save --ignore-scripts || true

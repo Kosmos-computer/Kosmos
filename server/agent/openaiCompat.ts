@@ -44,8 +44,8 @@ const SHELL_EVENT_TYPES = new Set<AgentEvent["type"]>([
   "confirm_resolved",
 ]);
 
-function forwardShellEvent(event: AgentEvent): void {
-  if (SHELL_EVENT_TYPES.has(event.type)) broadcastShellEvent(event);
+function forwardShellEvent(event: AgentEvent, sessionId: string): void {
+  if (SHELL_EVENT_TYPES.has(event.type)) broadcastShellEvent(event, sessionId);
 }
 
 /** Spoken-output guidance layered onto the agent prompt for voice turns. */
@@ -82,12 +82,21 @@ function isLoopback(address: string): boolean {
 /** conversation key (x-arco-conversation) → Arco session id, process-lifetime. */
 const conversationSessions = new Map<string, string>();
 
-async function resolveSession(conversationKey: string): Promise<string> {
+/** Resolve (or mint) the Arco session for a voice/OpenAI-compat conversation key. */
+export async function resolveCompatSession(conversationKey: string): Promise<string> {
   const existing = conversationSessions.get(conversationKey);
   if (existing && (await sessionStore.get(existing))) return existing;
-  const session = await sessionStore.create("chat", "Voice chat");
+  const title = conversationKey.startsWith("voice") ? "Voice chat" : "API chat";
+  const session = await sessionStore.create("chat", title);
   conversationSessions.set(conversationKey, session.id);
   return session.id;
+}
+
+/** Default voice conversation key used when the header is omitted. */
+export const DEFAULT_VOICE_CONVERSATION_KEY = "voice";
+
+async function resolveSession(conversationKey: string): Promise<string> {
+  return resolveCompatSession(conversationKey);
 }
 
 function chunkPayload(id: string, model: string, delta: Record<string, unknown>, finish: string | null) {
@@ -213,7 +222,7 @@ openaiCompatRoutes.post("/chat/completions", async (c) => {
     const text = await runAgentTurn({
       sessionId,
       userMessage,
-      emit: forwardShellEvent,
+      emit: (event) => forwardShellEvent(event, sessionId),
       signal: c.req.raw.signal,
       // Interactive when a desktop is connected to the shell-events channel:
       // it renders approval cards and executes cursor commands. With no
@@ -247,7 +256,7 @@ openaiCompatRoutes.post("/chat/completions", async (c) => {
           if (event.type === "text_delta") {
             write(chunkPayload(completionId, model, { content: event.delta }, null));
           } else {
-            forwardShellEvent(event);
+            forwardShellEvent(event, sessionId);
           }
         },
         signal: c.req.raw.signal,

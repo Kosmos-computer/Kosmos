@@ -16,6 +16,7 @@ import type { AgentBackend, AgentEvent, Settings } from "../../shared/types.js";
 import { loadSettings, resolveActiveAgentBackend } from "../env.js";
 import type { RunTurnOptions } from "../agent/loop.js";
 import { sessionStore } from "../stores/sessionStore.js";
+import { withSessionWorkspace } from "../stores/turnWorkspace.js";
 
 // ── Run registry ─────────────────────────────────────────────────────────────
 
@@ -198,33 +199,35 @@ export async function runOpenhandsTurn(opts: RunTurnOptions): Promise<string> {
   const session = await sessionStore.get(opts.sessionId);
   if (!session) throw new Error(`Session not found: ${opts.sessionId}`);
 
-  await sessionStore.appendMessages(session.id, [{ role: "user", content: opts.userMessage }]);
+  return withSessionWorkspace(session.projectId, async () => {
+    await sessionStore.appendMessages(session.id, [{ role: "user", content: opts.userMessage }]);
 
-  const run = await ensureRun(opts.sessionId, backend, opts.emit);
-  run.turnText = "";
+    const run = await ensureRun(opts.sessionId, backend, opts.emit);
+    run.turnText = "";
 
-  const turnPromise = new Promise<string>((resolve, reject) => {
-    run.pending = { resolve, reject };
+    const turnPromise = new Promise<string>((resolve, reject) => {
+      run.pending = { resolve, reject };
+    });
+
+    const onAbort = () => {
+      void run.client.interruptConversation(run.conversationId).catch(() => {});
+    };
+    opts.signal?.addEventListener("abort", onAbort, { once: true });
+
+    try {
+      await run.client.sendEvent(
+        run.conversationId,
+        { role: "user", content: [{ type: "text", text: opts.userMessage }], run: true },
+        { run: true },
+      );
+
+      const finalText = (await turnPromise) || "(no response)";
+      await sessionStore.appendMessages(session.id, [{ role: "assistant", content: finalText }]);
+      return finalText;
+    } finally {
+      opts.signal?.removeEventListener("abort", onAbort);
+    }
   });
-
-  const onAbort = () => {
-    void run.client.interruptConversation(run.conversationId).catch(() => {});
-  };
-  opts.signal?.addEventListener("abort", onAbort, { once: true });
-
-  try {
-    await run.client.sendEvent(
-      run.conversationId,
-      { role: "user", content: [{ type: "text", text: opts.userMessage }], run: true },
-      { run: true },
-    );
-
-    const finalText = (await turnPromise) || "(no response)";
-    await sessionStore.appendMessages(session.id, [{ role: "assistant", content: finalText }]);
-    return finalText;
-  } finally {
-    opts.signal?.removeEventListener("abort", onAbort);
-  }
 }
 
 /** Close all OpenHands websocket/client handles — called when OpenHands settings change. */

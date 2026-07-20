@@ -16,5 +16,9 @@ export const bus = new EventEmitter();
  */
 export function announceAppEvent(topic: string, detail: { appId: string; payload?: unknown }): void {
   bus.emit(`app-event:${topic}`, detail);
-  bus.emit("shell_event", { type: "app_event", topic });
+  // Platform topics are not chat-session-scoped — envelope with null sessionId.
+  bus.emit("shell_event", {
+    sessionId: null,
+    event: { type: "app_event", topic },
+  });
 }

@@ -9,6 +9,70 @@ const os = createAppClient();
 
 const MAX_DISPLAY_LENGTH = 10;
 
+/**
+ * OS titlebar height outside the iframe — must match `.arco-window__titlebar`.
+ * Skin sizes are derived so the square-key grid fills the pad with no letterboxing.
+ */
+const WINDOW_TITLEBAR_H = 38;
+
+/** Preferred content widths per skin (Omron is wider for its 5-column pad). */
+const SKIN_CONTENT_WIDTH = {
+  datamath: 400,
+  omron: 500,
+  scientific: 400,
+};
+
+/**
+ * Outer window size for a skin at a given content width.
+ * Chrome constants mirror `styles.css` (pad padding, brand, display, gaps, keypad).
+ */
+function windowSizeForSkin(skin, contentWidth) {
+  let contentH;
+  if (skin === "omron") {
+    // header 64 + body pad/gap/display ≈ 178 + 4×cell keypad (5 cols, gap 12)
+    const cell = (contentWidth - 88) / 5;
+    contentH = 242 + 4 * cell;
+  } else if (skin === "scientific") {
+    // pad + display chrome ≈ 142 + 7×cell keypad (5 cols, gap 8)
+    const cell = (contentWidth - 56) / 5;
+    contentH = 190 + 7 * cell;
+  } else {
+    // pad/brand/display/keypad chrome ≈ 182 + 5×cell keypad (4 cols, gap 12)
+    const cell = (contentWidth - 108) / 4;
+    contentH = 230 + 5 * cell;
+  }
+  return {
+    w: Math.round(contentWidth),
+    h: Math.round(contentH + WINDOW_TITLEBAR_H),
+  };
+}
+
+/** Content-only aspect (iframe / maximized internals — no OS titlebar). */
+function contentAspectForSkin(skin) {
+  const width = SKIN_CONTENT_WIDTH[skin] ?? SKIN_CONTENT_WIDTH.datamath;
+  const size = windowSizeForSkin(skin, width);
+  const contentH = size.h - WINDOW_TITLEBAR_H;
+  return size.w / contentH;
+}
+
+function syncPadAspect() {
+  const root = document.getElementById("app");
+  root?.style.setProperty("--calc-content-aspect", String(contentAspectForSkin(variant)));
+}
+
+function syncWindowGeometry() {
+  const width = SKIN_CONTENT_WIDTH[variant] ?? SKIN_CONTENT_WIDTH.datamath;
+  const size = windowSizeForSkin(variant, width);
+  // Outer window includes the titlebar; internals use contentAspectForSkin.
+  const aspectRatio = size.w / size.h;
+  syncPadAspect();
+  void os.shell
+    .setWindowGeometry({ aspectRatio, applySize: true, w: size.w })
+    .catch(() => {
+      // Standalone / missing host — ignore.
+    });
+}
+
 const CALCULATOR_KEYS = [
   [
     { label: "CE", value: "ce", variant: "function" },
@@ -811,6 +875,7 @@ function renderPad() {
     calculatorWrap.appendChild(renderDatamath(handleKeyPress));
   }
   syncSkinMenu();
+  syncWindowGeometry();
 }
 
 async function loadHistory() {

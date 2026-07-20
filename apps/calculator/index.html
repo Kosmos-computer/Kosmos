@@ -15,40 +15,43 @@
   <body>
     <div id="app" class="calc-workspace" aria-label="Calculator">
       <div class="calc-stage">
-        <div id="calculator-wrap" class="calc-stage__pad"></div>
-        <div class="calc-menu">
-          <button
-            type="button"
-            id="menu-toggle"
-            class="calc-menu__toggle"
-            aria-label="Calculator options"
-            aria-haspopup="menu"
-            aria-expanded="false"
-            aria-controls="menu-panel"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <circle cx="12" cy="5" r="1.75" />
-              <circle cx="12" cy="12" r="1.75" />
-              <circle cx="12" cy="19" r="1.75" />
-            </svg>
-          </button>
-          <div id="menu-panel" class="calc-menu__panel" role="menu" hidden>
-            <div class="calc-menu__section" role="group" aria-label="Skin">
-              <div class="calc-menu__label">Skin</div>
-              <button type="button" class="calc-menu__item" role="menuitemradio" data-skin="datamath" aria-checked="true">
-                Datamath
-              </button>
-              <button type="button" class="calc-menu__item" role="menuitemradio" data-skin="omron" aria-checked="false">
-                Omron 86
-              </button>
-              <button type="button" class="calc-menu__item" role="menuitemradio" data-skin="scientific" aria-checked="false">
-                Scientific
+        <!-- Frame letterboxes to the skin aspect when the window is larger (e.g. maximized). -->
+        <div class="calc-stage__frame">
+          <div id="calculator-wrap" class="calc-stage__pad"></div>
+          <div class="calc-menu">
+            <button
+              type="button"
+              id="menu-toggle"
+              class="calc-menu__toggle"
+              aria-label="Calculator options"
+              aria-haspopup="menu"
+              aria-expanded="false"
+              aria-controls="menu-panel"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <circle cx="12" cy="5" r="1.75" />
+                <circle cx="12" cy="12" r="1.75" />
+                <circle cx="12" cy="19" r="1.75" />
+              </svg>
+            </button>
+            <div id="menu-panel" class="calc-menu__panel" role="menu" hidden>
+              <div class="calc-menu__section" role="group" aria-label="Skin">
+                <div class="calc-menu__label">Skin</div>
+                <button type="button" class="calc-menu__item" role="menuitemradio" data-skin="datamath" aria-checked="true">
+                  Datamath
+                </button>
+                <button type="button" class="calc-menu__item" role="menuitemradio" data-skin="omron" aria-checked="false">
+                  Omron 86
+                </button>
+                <button type="button" class="calc-menu__item" role="menuitemradio" data-skin="scientific" aria-checked="false">
+                  Scientific
+                </button>
+              </div>
+              <div class="calc-menu__divider" role="separator"></div>
+              <button type="button" id="history-toggle" class="calc-menu__item" role="menuitemcheckbox" aria-checked="false">
+                Show history
               </button>
             </div>
-            <div class="calc-menu__divider" role="separator"></div>
-            <button type="button" id="history-toggle" class="calc-menu__item" role="menuitemcheckbox" aria-checked="false">
-              Show history
-            </button>
           </div>
         </div>
       </div>

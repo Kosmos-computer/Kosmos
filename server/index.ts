@@ -34,6 +34,7 @@ import type {
   AgentEvent,
   AutomationTrigger,
   DirListing,
+  Session,
   Settings,
 } from "../shared/types.js";
 import { requireAuth, requireCap, currentUser, type AuthEnv } from "./auth/middleware.js";
@@ -479,8 +480,8 @@ app.get("/api/shell-events", (c) => {
   c.header("Cache-Control", "no-cache, no-transform");
   c.header("X-Accel-Buffering", "no");
   return streamSSE(c, async (stream) => {
-    const forward = (event: AgentEvent) => {
-      void stream.writeSSE({ data: JSON.stringify(event) });
+    const forward = (payload: unknown) => {
+      void stream.writeSSE({ data: JSON.stringify(payload) });
     };
     bus.on("shell_event", forward);
     const disconnect = shellClientConnected();
@@ -499,6 +500,38 @@ app.get("/api/shell-events", (c) => {
 // ── Sessions ─────────────────────────────────────────────────────────────────
 
 app.get("/api/sessions", async (c) => c.json(await sessionStore.list()));
+
+/** Eager create — agent-canvas style. New chat gets a real id before first send. */
+app.post("/api/sessions", requireCap("chat"), async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as {
+    title?: string;
+    projectId?: string | null;
+    profileId?: string | null;
+    kind?: Session["kind"];
+  };
+  const kind = body.kind === "automation" || body.kind === "channel" ? body.kind : "chat";
+  const title =
+    typeof body.title === "string" && body.title.trim() ? body.title.trim() : "New chat";
+  const session = await sessionStore.create(kind, title, {
+    projectId: body.projectId ?? null,
+    profileId: body.profileId ?? null,
+  });
+  return c.json(session, 201);
+});
+
+/**
+ * Ensure the process-lifetime Voice chat session exists and return it — same
+ * session the /v1 OpenAI-compat path uses for x-arco-conversation: voice.
+ */
+app.post("/api/sessions/voice/ensure", requireCap("chat"), async (c) => {
+  const { resolveCompatSession, DEFAULT_VOICE_CONVERSATION_KEY } = await import(
+    "./agent/openaiCompat.js"
+  );
+  const id = await resolveCompatSession(DEFAULT_VOICE_CONVERSATION_KEY);
+  const session = await sessionStore.get(id);
+  if (!session) return c.json({ error: "Voice session missing" }, 500);
+  return c.json(session);
+});
 
 app.get("/api/sessions/:id", async (c) => {
   const session = await sessionStore.get(c.req.param("id"));
@@ -3962,6 +3995,9 @@ if (serveProductionShell) {
   if (!existsSync(shellDistRoot)) {
     console.error(`[arco] shell dist not found at ${shellDistRoot}`);
   }
+  // Unknown /api/* must never fall through to the SPA — clients parse JSON and
+  // otherwise surface "Invalid JSON … <!doctype html>" for missing routes.
+  app.all("/api/*", (c) => c.json({ error: "Not found", path: c.req.path }, 404));
   // Vite copies public/ into dist/ — serve those folders before the SPA catch-all.
   // Without these, /wallpapers/*.jpg (and similar) return index.html and look "broken".
   app.use("/assets/*", serveStatic({ root: shellDistRoot }));

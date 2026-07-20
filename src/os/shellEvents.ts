@@ -6,11 +6,14 @@
  * same handleShellEvent dispatch the chat stream uses, so "open the tasks
  * app" behaves identically whether typed or spoken.
  *
+ * Payloads are ShellEventEnvelope `{ sessionId, event }` so drawer activity
+ * stays partitioned. Legacy bare AgentEvent payloads still parse.
+ *
  * Connection state is published for the menubar tools tray — voice turns
  * treat an open channel as "interactive" (cursor + confirmations).
  */
 import { useSyncExternalStore } from "react";
-import type { AgentEvent } from "@shared/types";
+import { parseShellEventPayload } from "@shared/shellEvents";
 import { handleShellEvent } from "./osActions";
 import { useOsStore } from "./osStore";
 
@@ -48,12 +51,16 @@ export function connectShellEvents(): () => void {
     setStatus(source.readyState === EventSource.CLOSED ? "disconnected" : "connecting");
   };
   source.onmessage = (message: MessageEvent<string>) => {
-    let event: AgentEvent;
+    let raw: unknown;
     try {
-      event = JSON.parse(message.data) as AgentEvent;
+      raw = JSON.parse(message.data) as unknown;
     } catch {
       return;
     }
+    const parsed = parseShellEventPayload(raw);
+    if (!parsed) return;
+    const { sessionId, event } = parsed;
+
     // Approvals from streamless turns get a desktop-level card (chat turns
     // render theirs inline in the thread and never reach this channel).
     if (event.type === "confirm_required") {
@@ -69,9 +76,8 @@ export function connectShellEvents(): () => void {
       return;
     }
     // Everything else (os_ui, cursor_request, apps_changed, file_changed)
-    // reuses the exact dispatch chat streams go through. Keep-alive pings
-    // fall through to the ignored default case.
-    handleShellEvent(event);
+    // reuses the exact dispatch chat streams go through.
+    handleShellEvent(event, sessionId);
   };
 
   return () => {

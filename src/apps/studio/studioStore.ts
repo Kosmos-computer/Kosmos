@@ -390,6 +390,18 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
     })),
 
   ingestAgentEvent: (event, sessionKey) => {
+    // Activity-mutating events require an explicit session key — never fall
+    // back to the focused chat (shell-events / voice race).
+    const activityEvent =
+      event.type === "tool_start" ||
+      event.type === "tool_end" ||
+      event.type === "file_changed";
+    if (
+      activityEvent &&
+      (sessionKey === undefined || sessionKey === null || sessionKey === "")
+    ) {
+      return;
+    }
     const key = sessionActivityKey(sessionKey ?? get().activeSessionKey);
     const pending = pendingFor(key);
 

@@ -6,8 +6,12 @@
  * confirm_required) and to know whether anyone is listening at all. A turn
  * with no connected desktop must run headless (cursor tools refuse,
  * confirmations deny) rather than parking on an answer that can never come.
+ *
+ * Events are broadcast as ShellEventEnvelope so drawer activity can be
+ * scoped to the originating session instead of the focused chat.
  */
 import type { AgentEvent } from "../shared/types.js";
+import type { ShellEventEnvelope } from "../shared/shellEvents.js";
 import { bus } from "./bus.js";
 
 let clients = 0;
@@ -48,7 +52,14 @@ export async function waitForShellClients(timeoutMs = 2_000): Promise<boolean> {
   return clients > 0;
 }
 
-/** Deliver one event to every connected desktop. */
-export function broadcastShellEvent(event: AgentEvent): void {
-  bus.emit("shell_event", event);
+/** Deliver one event to every connected desktop, optionally session-scoped. */
+export function broadcastShellEvent(
+  event: AgentEvent,
+  sessionId?: string | null,
+): void {
+  const envelope: ShellEventEnvelope = {
+    sessionId: sessionId ?? null,
+    event,
+  };
+  bus.emit("shell_event", envelope);
 }

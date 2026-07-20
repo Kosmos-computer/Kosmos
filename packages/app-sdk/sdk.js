@@ -279,6 +279,11 @@ export function createAppClient() {
        */
       askAgent: (text = "", submit = false) => call("shell.askAgent", { text, submit }),
       /**
+       * Lock this window’s aspect ratio (and optionally reshape it). Only
+       * affects the host window for this iframe — apps cannot resize others.
+       */
+      setWindowGeometry: (params = {}) => call("shell.setWindowGeometry", params),
+      /**
        * Mount controls in the AppHost toolbar (search fields, etc.). The host
        * owns the DOM; apps receive edits through toolbar.onInput.
        */

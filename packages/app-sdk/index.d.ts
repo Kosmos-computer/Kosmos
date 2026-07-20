@@ -31,6 +31,17 @@ export interface AppClient {
   shell: {
     notify: (message: string) => Promise<void>;
     askAgent: (text?: string, submit?: boolean) => Promise<void>;
+    /**
+     * Lock this host window’s aspect ratio. When applySize is true (default),
+     * height is adjusted to match the current (or provided) width.
+     */
+    setWindowGeometry: (params: {
+      aspectRatio: number;
+      /** When true (default), reshape the floating window to the ratio. */
+      applySize?: boolean;
+      /** Preferred width when reshaping; defaults to the window’s current width. */
+      w?: number;
+    }) => Promise<void>;
     toolbar: {
       set: (slots: AppToolbarSlot[]) => void;
       onInput: (id: string, fn: (value: string) => void) => () => void;

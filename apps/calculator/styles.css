@@ -63,6 +63,28 @@ body {
   position: relative;
   flex: 1;
   min-height: 0;
+  display: grid;
+  place-items: center;
+  /* Size container so the frame can letterbox to --calc-content-aspect. */
+  container-type: size;
+  background: var(--os-bg-surface-solid, #1a1a1c);
+}
+
+/*
+ * Frame keeps the active skin’s content aspect in any window size (including
+ * maximized). Fits the stage on the limiting axis and centers the rest so
+ * keys stay grouped instead of spreading across the full work area.
+ */
+.calc-stage__frame {
+  --calc-aspect: var(--calc-content-aspect, 0.672);
+  position: relative;
+  aspect-ratio: var(--calc-aspect);
+  width: min(100cqw, calc(100cqh * var(--calc-aspect)));
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  min-width: 0;
+  min-height: 0;
   display: flex;
 }
 
@@ -76,6 +98,7 @@ body {
 .calc-stage__pad > * {
   flex: 1;
   width: 100%;
+  height: 100%;
   min-height: 0;
   border-radius: 0;
   box-shadow: none;

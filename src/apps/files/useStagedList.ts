@@ -14,7 +14,8 @@ const ENTER_SETTLE_MS = 280;
 
 /**
  * Keeps leaving items in the list long enough to play an exit animation, and
- * marks newly appearing items so they can enter. Bulk folder swaps skip motion.
+ * marks newly appearing items so they can enter. Initial loads and bulk folder
+ * swaps appear instantly (no accordion).
  */
 export function useStagedList<T extends { id: string }>(items: T[]): StagedEntry<T>[] {
   const [entries, setEntries] = useState<StagedEntry<T>[]>(() =>
@@ -32,15 +33,18 @@ export function useStagedList<T extends { id: string }>(items: T[]): StagedEntry
     const prevIds = new Set(prevItems.map((item) => item.id));
     const added = items.filter((item) => !prevIds.has(item.id)).length;
     const removed = prevItems.filter((item) => !nextIds.has(item.id)).length;
+    // Empty → populated is a load (or folder open), not a single-item mutation.
+    const initialPopulate = prevItems.length === 0 && items.length > 0;
     const bulkSwap =
       prevItems.length > 0 &&
       items.length > 0 &&
       added >= Math.min(prevItems.length, items.length) &&
       removed >= Math.min(prevItems.length, items.length) &&
       added + removed >= 4;
+    const skipEnterMotion = initialPopulate || bulkSwap;
 
     setEntries((prevEntries) => {
-      if (bulkSwap) {
+      if (skipEnterMotion) {
         for (const timer of exitTimersRef.current.values()) window.clearTimeout(timer);
         for (const timer of enterTimersRef.current.values()) window.clearTimeout(timer);
         exitTimersRef.current.clear();
@@ -89,6 +93,8 @@ export function useStagedList<T extends { id: string }>(items: T[]): StagedEntry
 
       return nextEntries;
     });
+
+    if (skipEnterMotion) return;
 
     const enterIds = items.filter((item) => !prevIds.has(item.id)).map((item) => item.id);
     for (const id of enterIds) {

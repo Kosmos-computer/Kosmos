@@ -224,7 +224,7 @@ export function StudioApp() {
           setWorkspaceState(next);
         }
         if (launch.startNewChat) {
-          chat.newChat();
+          await chat.newChat();
           armSessionLink(launch.workItemId);
         } else if (launch.sessionId) {
           await chat.loadSession(launch.sessionId).catch(() => {});
@@ -309,13 +309,13 @@ export function StudioApp() {
 
   const handleNewChat = useCallback(() => {
     setMainSurface("chat");
-    chat.newChat();
+    void chat.newChat();
   }, [chat, setMainSurface]);
 
   const newChatInProject = useCallback(
     (projectId: string | null) => {
       setMainSurface("chat");
-      void switchProject(projectId).then(() => chat.newChat());
+      void switchProject(projectId).then(() => chat.newChat({ projectId }));
     },
     [chat, setMainSurface, switchProject],
   );

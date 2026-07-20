@@ -22,6 +22,7 @@ import {
   setConversationStatus,
   useConversationStatusStore,
 } from "../studio/conversationStatusStore";
+import { shouldActivateOnSessionEvent } from "./sessionFocus";
 
 export type ChatItem =
   | { kind: "user"; id: string; text: string; timestamp?: string }
@@ -377,6 +378,8 @@ export function useChat(opts?: { activeProjectId?: string | null; persistedSessi
   const abortControllersRef = useRef<Map<string, AbortController>>(new Map());
   const detachedPollsRef = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());
   const activeKeyRef = useRef<string>(DRAFT_KEY);
+  /** Server Voice chat session — transcripts never land in the focused typed chat. */
+  const voiceSessionIdRef = useRef<string | null>(null);
   const setAgentBusy = useOsStore((s) => s.setAgentBusy);
 
   const activeProjectId = opts?.activeProjectId ?? null;
@@ -455,6 +458,31 @@ export function useChat(opts?: { activeProjectId?: string | null; persistedSessi
     void refreshSessions();
   }, [refreshSessions]);
 
+  // Bind the desktop voice mirror to the same session /v1 uses for "voice".
+  useEffect(() => {
+    let cancelled = false;
+    void api
+      .ensureVoiceSession()
+      .then((session) => {
+        if (cancelled) return;
+        voiceSessionIdRef.current = session.id;
+        if (!buffersRef.current.has(session.id)) {
+          buffersRef.current.set(session.id, {
+            items: sessionToFeed(session),
+            streaming: false,
+            turnMeta: null,
+          });
+        }
+        void refreshSessions();
+      })
+      .catch(() => {
+        // Voice server / API unavailable — applyVoiceEvent falls back carefully.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshSessions]);
+
   const loadSession = useCallback(
     async (id: string) => {
       activeKeyRef.current = id;
@@ -507,20 +535,48 @@ export function useChat(opts?: { activeProjectId?: string | null; persistedSessi
     };
   }, [loadSession, persistedSessionKey, persistActiveSession]);
 
-  const newChat = useCallback(() => {
-    const draft = buffersRef.current.get(DRAFT_KEY);
-    if (draft?.streaming) {
-      abortControllersRef.current.get(DRAFT_KEY)?.abort();
-    }
-    buffersRef.current.set(DRAFT_KEY, emptyBuffer());
-    queuedTurnsRef.current.delete(DRAFT_KEY);
-    activeKeyRef.current = DRAFT_KEY;
-    useStudioStore.getState().setActiveSession(null);
-    persistActiveSession();
-    setPendingRestoreUndo(null);
-    syncActive(DRAFT_KEY);
-    refreshStreamingSessions();
-  }, [persistActiveSession, syncActive, refreshStreamingSessions]);
+  /**
+   * Eager create (agent-canvas): mint a server session immediately so New chat
+   * while another turn is streaming never shares / steals that session's id.
+   * Falls back to a local draft only when create fails (offline).
+   */
+  const newChat = useCallback(
+    async (opts?: { projectId?: string | null; profileId?: string | null }) => {
+      const draft = buffersRef.current.get(DRAFT_KEY);
+      if (draft?.streaming) {
+        abortControllersRef.current.get(DRAFT_KEY)?.abort();
+      }
+      buffersRef.current.set(DRAFT_KEY, emptyBuffer());
+      queuedTurnsRef.current.delete(DRAFT_KEY);
+      setPendingRestoreUndo(null);
+
+      const projectId = opts?.projectId !== undefined ? opts.projectId : activeProjectId;
+      try {
+        const session = await api.createSession({
+          title: "New chat",
+          projectId: projectId ?? null,
+          ...(opts?.profileId !== undefined ? { profileId: opts.profileId } : {}),
+        });
+        buffersRef.current.set(session.id, emptyBuffer());
+        activeKeyRef.current = session.id;
+        useStudioStore.getState().setActiveSession(session.id);
+        persistActiveSession(session.id);
+        syncActive(session.id);
+        void refreshSessions();
+        refreshStreamingSessions();
+        return session;
+      } catch {
+        // Offline / create failed — local draft until first successful send.
+        activeKeyRef.current = DRAFT_KEY;
+        useStudioStore.getState().setActiveSession(null);
+        persistActiveSession();
+        syncActive(DRAFT_KEY);
+        refreshStreamingSessions();
+        return undefined;
+      }
+    },
+    [activeProjectId, persistActiveSession, refreshSessions, refreshStreamingSessions, syncActive],
+  );
 
   const removeSession = useCallback(
     async (id: string) => {
@@ -531,7 +587,7 @@ export function useChat(opts?: { activeProjectId?: string | null; persistedSessi
       useStudioStore.getState().removeSessionActivity(id);
       useConversationStatusStore.getState().clear(id);
       await api.deleteSession(id);
-      if (activeKeyRef.current === id) newChat();
+      if (activeKeyRef.current === id) void newChat();
       refreshStreamingSessions();
       void refreshSessions();
     },
@@ -606,6 +662,8 @@ export function useChat(opts?: { activeProjectId?: string | null; persistedSessi
       let nextTurn: QueuedTurn | undefined = { text: trimmed, opts };
       let appendUser = true;
       let nextKey = streamKey;
+      /** UI key when this turn started — used to refuse focus-steal on late session events. */
+      const streamOwnerKey = streamKey;
 
       while (nextTurn) {
         const currentTurn = nextTurn;
@@ -630,18 +688,29 @@ export function useChat(opts?: { activeProjectId?: string | null; persistedSessi
         const onEvent = (event: AgentEvent) => {
           handleShellEvent(
             event,
-            targetKey === DRAFT_KEY ? null : targetKey,
+            targetKey === DRAFT_KEY ? DRAFT_SESSION_KEY : targetKey,
           );
           if (event.type === "session") {
             resolvedSessionId = event.sessionId;
+            const activeBefore = activeKeyRef.current;
             if (targetKey === DRAFT_KEY) {
+              // Relocate draft buffer even if the user already switched away —
+              // but never yank selection back (cloud latency race).
               migrateBuffer(DRAFT_KEY, event.sessionId);
               useStudioStore.getState().migrateSessionActivity(DRAFT_SESSION_KEY, event.sessionId);
               targetKey = event.sessionId;
             }
             setConversationStatus(event.sessionId, "running");
-            useStudioStore.getState().setActiveSession(event.sessionId);
-            persistActiveSession(event.sessionId);
+            if (
+              shouldActivateOnSessionEvent({
+                streamOwnerKey,
+                activeKey: activeBefore,
+                draftKey: DRAFT_KEY,
+              })
+            ) {
+              useStudioStore.getState().setActiveSession(event.sessionId);
+              persistActiveSession(event.sessionId);
+            }
             return;
           }
           updateBuffer(targetKey, (buf) => applyAgentEvent(buf, event));
@@ -962,10 +1031,14 @@ export function useChat(opts?: { activeProjectId?: string | null; persistedSessi
     abortControllersRef.current.get(key)?.abort();
   }, []);
 
-  /** Mirror a voice conversation into the active thread only. */
+  /**
+   * Mirror voice STT/TTS into the dedicated Voice chat session — never into
+   * whichever typed conversation happens to be focused.
+   */
   const applyVoiceEvent = useCallback(
     (event: VoiceEvent) => {
-      const key = activeKeyRef.current;
+      const key = voiceSessionIdRef.current;
+      if (!key) return;
       switch (event.type) {
         case "userTranscript": {
           const text = event.transcript.text.trim();

@@ -6,7 +6,7 @@
 import { useCallback, useMemo, useRef, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useOsStore } from "./osStore";
-import { useWindowStore, type OsWindow } from "./windowStore";
+import { fitAspectSize, useWindowStore, type OsWindow } from "./windowStore";
 import { focusShellWindow } from "./shellNavigation";
 import { WindowControls } from "./WindowControls";
 import { resolveWindowTitle } from "./resolveWindowTitle";
@@ -14,6 +14,7 @@ import { resolveWindowTitle } from "./resolveWindowTitle";
 const MENUBAR_HEIGHT = 34;
 const MIN_W = 320;
 const MIN_H = 220;
+const WINDOW_MARGIN = 12;
 
 type ResizeEdge = "e" | "s" | "se";
 
@@ -21,6 +22,25 @@ interface Props {
   win: OsWindow;
   focused: boolean;
   children: ReactNode;
+}
+
+function workAreaMax(): { maxW: number; maxH: number } {
+  if (typeof window === "undefined") return { maxW: 4096, maxH: 4096 };
+  const nav =
+    parseInt(
+      getComputedStyle(
+        document.querySelector<HTMLElement>(".arco-desktop") ?? document.documentElement,
+      )
+        .getPropertyValue("--arco-nav-width")
+        .trim(),
+      10,
+    ) || 56;
+  const leftBound = nav + WINDOW_MARGIN;
+  const topBound = MENUBAR_HEIGHT + 2;
+  return {
+    maxW: Math.max(MIN_W, window.innerWidth - leftBound - WINDOW_MARGIN),
+    maxH: Math.max(MIN_H, window.innerHeight - topBound - WINDOW_MARGIN),
+  };
 }
 
 export function WindowFrame({ win, focused, children }: Props) {
@@ -89,12 +109,32 @@ export function WindowFrame({ win, focused, children }: Props) {
       if (!rs) return;
       const dx = e.clientX - rs.startX;
       const dy = e.clientY - rs.startY;
+      const aspect = win.aspectRatio;
+      const { maxW, maxH } = workAreaMax();
+
+      if (aspect && aspect > 0) {
+        let nextW = rs.origW;
+        if (rs.edge === "e") {
+          nextW = rs.origW + dx;
+        } else if (rs.edge === "s") {
+          nextW = (rs.origH + dy) * aspect;
+        } else {
+          // Southeast: follow the axis with the larger motion so the corner tracks the pointer.
+          const fromX = rs.origW + dx;
+          const fromY = (rs.origH + dy) * aspect;
+          nextW = Math.abs(dx) >= Math.abs(dy) ? fromX : fromY;
+        }
+        const fitted = fitAspectSize(nextW, aspect, maxW, maxH);
+        setRect(win.id, fitted);
+        return;
+      }
+
       const patch: { w?: number; h?: number } = {};
       if (rs.edge === "e" || rs.edge === "se") patch.w = Math.max(MIN_W, rs.origW + dx);
       if (rs.edge === "s" || rs.edge === "se") patch.h = Math.max(MIN_H, rs.origH + dy);
       setRect(win.id, patch);
     },
-    [setRect, win.id],
+    [setRect, win.id, win.aspectRatio],
   );
 
   const onResizeUp = useCallback(() => {

@@ -23,10 +23,10 @@ import { DOWNLOADS_CHANGED_TOPIC } from "../../shared/capabilities/downloads.js"
 import { FOLDER_MIME } from "../../shared/capabilities/files.js";
 import { announceAppEvent } from "../bus.js";
 import { dataDirs } from "../env.js";
-import { filesService, MAX_AUDIO_BYTES } from "./filesService.js";
+import { filesService } from "./filesService.js";
 
 /** Auto-import completed files into Drive when at or under this size. */
-const DRIVE_IMPORT_MAX_BYTES = MAX_AUDIO_BYTES;
+const DRIVE_IMPORT_MAX_BYTES = 100 * 1024 * 1024;
 const DOWNLOADS_FOLDER_NAME = "Downloads";
 const CLIENT_VERSION = "WebTorrent (Kosmos)";
 const DEFAULT_SETTINGS: DownloadsSettingsDto = {
@@ -422,6 +422,11 @@ function importIntoDrive(torrent: WtTorrent): string[] {
   const meta = metaById.get(torrent.infoHash);
   if (!meta) return [];
   if (meta.driveFolderId && meta.driveFileIds.length > 0) return meta.driveFileIds;
+  // Older Fly runtime images may lack createFromPath — skip Drive import there.
+  if (typeof filesService.createFromPath !== "function") {
+    console.warn("[downloads] Drive import skipped: filesService.createFromPath unavailable");
+    return [];
+  }
 
   const parentId = ensureDownloadsFolder();
   let torrentFolderId = meta.driveFolderId;

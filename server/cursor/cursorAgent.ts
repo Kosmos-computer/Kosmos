@@ -21,6 +21,7 @@ import type { RunTurnOptions } from "../agent/loop.js";
 import { mcpServerStore, slugify } from "../mcp/serverStore.js";
 import { getActiveRoot } from "../stores/workspaceStore.js";
 import { sessionStore } from "../stores/sessionStore.js";
+import { withSessionWorkspace } from "../stores/turnWorkspace.js";
 
 // ── Run registry ─────────────────────────────────────────────────────────────
 
@@ -271,6 +272,14 @@ export async function runCursorTurn(opts: RunTurnOptions): Promise<string> {
   const session = await sessionStore.get(opts.sessionId);
   if (!session) throw new Error(`Session not found: ${opts.sessionId}`);
 
+  return withSessionWorkspace(session.projectId, () => runCursorTurnBody(opts, session, settings));
+}
+
+async function runCursorTurnBody(
+  opts: RunTurnOptions,
+  session: NonNullable<Awaited<ReturnType<typeof sessionStore.get>>>,
+  settings: Settings,
+): Promise<string> {
   await sessionStore.appendMessages(session.id, [{ role: "user", content: opts.userMessage }]);
 
   const state = await ensureRun(opts.sessionId, settings, opts.emit);

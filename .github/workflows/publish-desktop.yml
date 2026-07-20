@@ -33,9 +33,10 @@ on:
           - minor
           - major
 
+# Never cancel mid-upload — that left orphan releases with only .blockmap files.
 concurrency:
   group: desktop-release
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -84,12 +85,14 @@ jobs:
         run: |
           BUMP="${{ github.event_name == 'workflow_dispatch' && inputs.bump || 'patch' }}"
           VERSION="$(node apps/desktop/scripts/next-desktop-version.mjs --bump="$BUMP")"
-          TAG="desktop-v${VERSION}"
+          DESKTOP_TAG="desktop-v${VERSION}"
+          RELEASE_TAG="v${VERSION}"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "Next release: $TAG"
+          echo "tag=$DESKTOP_TAG" >> "$GITHUB_OUTPUT"
+          echo "release_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          echo "Next release: $DESKTOP_TAG (GitHub release $RELEASE_TAG)"
 
-      - name: Guard against duplicate tag
+      - name: Guard against duplicate desktop tag
         if: steps.plan.outputs.ship == 'true'
         run: |
           if git rev-parse "${{ steps.version.outputs.tag }}" >/dev/null 2>&1; then
@@ -109,7 +112,24 @@ jobs:
           git add apps/desktop/VERSION package.json apps/desktop/package.json
           git commit -m "chore(desktop): release v${{ steps.version.outputs.version }} [skip desktop]"
 
-      - name: Build and publish to GitHub Releases
+      # Draft first so electron-builder can upload without requiring a pre-existing git tag
+      # (published releases hit "Published releases must have a valid tag").
+      - name: Clear stale release for this version
+        if: steps.plan.outputs.ship == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.version.outputs.release_tag }}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Deleting stale GitHub release $TAG"
+            gh release delete "$TAG" --yes
+          fi
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            git tag -d "$TAG"
+          fi
+          git push origin ":refs/tags/$TAG" 2>/dev/null || true
+
+      - name: Build and publish draft to GitHub Releases
         if: steps.plan.outputs.ship == 'true'
         env:
           DESKTOP_VERSION: ${{ steps.version.outputs.version }}
@@ -120,11 +140,24 @@ jobs:
           APPLE_ID: ${{ secrets.DESKTOP_APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.DESKTOP_APPLE_APP_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.DESKTOP_APPLE_TEAM_ID }}
+          # Prefer draft upload path even if package.json is overridden locally.
+          EP_DRAFT: "true"
         run: npm run release:publish -w @arco/desktop
 
-      - name: Push release commit and tag
+      - name: Tag, publish release, and push
         if: steps.plan.outputs.ship == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git tag -a "${{ steps.version.outputs.tag }}" -m "Arco OS ${{ steps.version.outputs.version }}"
+          VERSION="${{ steps.version.outputs.version }}"
+          RELEASE_TAG="${{ steps.version.outputs.release_tag }}"
+          DESKTOP_TAG="${{ steps.version.outputs.tag }}"
+
+          git tag -a "$RELEASE_TAG" -m "Kosmos ${VERSION}"
+          git tag -a "$DESKTOP_TAG" -m "Kosmos ${VERSION}"
+
+          # Point the draft at this commit, then publish so assets become downloadable.
+          gh release edit "$RELEASE_TAG" --draft=false --latest --title "Kosmos ${VERSION}"
+
           git push origin HEAD:main
-          git push origin "${{ steps.version.outputs.tag }}"
+          git push origin "$RELEASE_TAG" "$DESKTOP_TAG"

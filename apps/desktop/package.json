@@ -91,7 +91,7 @@
         "owner": "Kosmos-computer",
         "repo": "Kosmos",
         "private": true,
-        "releaseType": "release"
+        "releaseType": "draft"
       }
     ]
   },

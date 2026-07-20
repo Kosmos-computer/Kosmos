@@ -2,6 +2,9 @@
  * Generated-app persistence — ported from openclaw-os `claw-plugin/src/app-store.ts`.
  * One JSON file per app; append-only version history capped at 25 entries;
  * restore is non-destructive (pushes the current head as a new version).
+ *
+ * Create upserts by normalized title by default so agent retries / "make a
+ * clock again" do not flood the Apps launcher with near-duplicate tiles.
  */
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -12,8 +15,18 @@ import { dataDirs } from "../env.js";
 
 const MAX_VERSIONS = 25;
 
+/** Collapse title noise so "Live Clock" / "live  clock" share one slot. */
+export function normalizeAppTitle(title: string): string {
+  return title.trim().toLowerCase().replace(/[\s_\-]+/g, " ");
+}
+
+export type CreateAppResult = StoredApp & { reused: boolean };
+
 export class AppStore {
-  private dir = dataDirs.apps;
+  /** Resolved on each access so tests can retarget ARCO_DATA_DIR. */
+  private get dir(): string {
+    return dataDirs.apps;
+  }
 
   private filePath(id: string): string {
     return path.join(this.dir, `${id}.json`);
@@ -37,9 +50,35 @@ export class AppStore {
     return updated;
   }
 
+  /**
+   * Most recently updated generated app whose title normalizes to the same key.
+   * Used to collapse agent re-creates into updates.
+   */
+  async findByNormalizedTitle(title: string): Promise<StoredApp | null> {
+    const key = normalizeAppTitle(title);
+    if (!key) return null;
+    const summaries = await this.list();
+    const match = summaries.find((s) => normalizeAppTitle(s.title) === key);
+    if (!match) return null;
+    return this.get(match.id);
+  }
+
   async create(
     data: Pick<StoredApp, "title" | "content" | "sessionId"> & { icon?: string },
-  ): Promise<StoredApp> {
+    opts?: { forceNew?: boolean },
+  ): Promise<CreateAppResult> {
+    if (!opts?.forceNew) {
+      const existing = await this.findByNormalizedTitle(data.title);
+      if (existing) {
+        const updated = await this.update(existing.id, {
+          title: data.title,
+          content: data.content,
+          ...(data.icon !== undefined ? { icon: data.icon } : {}),
+        });
+        return { ...updated, reused: true };
+      }
+    }
+
     await fs.mkdir(this.dir, { recursive: true });
     const now = new Date().toISOString();
     const id = crypto.randomUUID();
@@ -54,7 +93,32 @@ export class AppStore {
       updatedAt: now,
     };
     await fs.writeFile(this.filePath(record.id), JSON.stringify(record, null, 2), "utf-8");
-    return record;
+    return { ...record, reused: false };
+  }
+
+  /**
+   * Keep the newest app per normalized title; delete older siblings.
+   * Returns how many files were removed.
+   */
+  async dedupeByTitle(): Promise<{ kept: number; removed: number; removedIds: string[] }> {
+    const summaries = await this.list(); // already newest-first
+    const seen = new Set<string>();
+    const removedIds: string[] = [];
+    for (const summary of summaries) {
+      const key = normalizeAppTitle(summary.title);
+      if (!key) continue;
+      if (seen.has(key)) {
+        await this.delete(summary.id);
+        removedIds.push(summary.id);
+      } else {
+        seen.add(key);
+      }
+    }
+    return {
+      kept: seen.size,
+      removed: removedIds.length,
+      removedIds,
+    };
   }
 
   async update(

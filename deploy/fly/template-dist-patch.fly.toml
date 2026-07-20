@@ -1,0 +1,11 @@
+# One-shot: layer a new dist/ onto the existing kosmos-template:demo image.
+# Run from repo root after `npm run build`:
+#
+#   fly deploy . --config deploy/fly/template-dist-patch.fly.toml \
+#     --build-only --push --image-label demo --remote-only
+#   fly deploy -a kosmos-kosmos --image registry.fly.io/kosmos-template:demo
+
+app = "kosmos-template"
+
+[build]
+  dockerfile = "Dockerfile.dist-patch"

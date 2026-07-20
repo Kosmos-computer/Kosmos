@@ -4,13 +4,16 @@
 
 FROM node:22-bookworm-slim
 
+# Match Dockerfile.prod / packageManager — npm 10 cannot resolve current overrides.
+RUN npm install --global npm@12.0.1
+
 RUN apt-get update \
   && apt-get install -y --no-install-recommends python3 make g++ git openssh-client ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+COPY package.json package-lock.json .npmrc ./
 COPY model-manager/package.json model-manager/
 COPY packages/app-sdk/package.json packages/app-sdk/
 COPY packages/editor-kit/package.json packages/editor-kit/

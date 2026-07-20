@@ -66,6 +66,23 @@ export function getNavNode(sections: readonly NoteNavSection[], nodeId: string):
   return siblings[location.index] ?? null;
 }
 
+/** Folder labels from vault root to `folderId` (excludes the Drive root, which is not in the nav). */
+export function folderPathLabels(
+  sections: readonly NoteNavSection[],
+  folderId: string | undefined,
+): string[] {
+  if (!folderId) return [];
+  const labels: string[] = [];
+  let currentId: string | null = folderId;
+  while (currentId) {
+    const node = getNavNode(sections, currentId);
+    if (!node || !isFolder(node)) break;
+    labels.unshift(node.label);
+    currentId = findNavNodeLocation(sections, currentId)?.parentId ?? null;
+  }
+  return labels;
+}
+
 function isDescendant(sections: readonly NoteNavSection[], ancestorId: string, nodeId: string): boolean {
   const ancestor = getNavNode(sections, ancestorId);
   if (!ancestor || !isFolder(ancestor)) return false;

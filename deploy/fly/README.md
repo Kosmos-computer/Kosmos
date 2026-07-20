@@ -4,7 +4,8 @@ The usage-based stack from the SaaS plan: one Firecracker microVM + volume per
 tenant (auto-stop when idle), a LiteLLM credits gateway routing to serverless
 per-token inference (OpenRouter), budget-capped virtual keys per tenant.
 
-**Full architecture, live apps, secrets, and gaps:** see [SAAS.md](SAAS.md).
+**Full architecture, live apps, secrets, and gaps:** see [SAAS.md](SAAS.md).  
+**Ops / teardown / audits:** see [OPERATIONS.md](OPERATIONS.md).
 
 ```
 customer ──► https://kosmos-<name>.fly.dev          (tenant microVM, /data volume)
@@ -72,7 +73,15 @@ npx tsx scripts/provision-tenant.ts acme --budget 5
 # → private https://kosmos-acme.fly.dev/entry/<key> URL
 ```
 
-Teardown: `npx tsx scripts/provision-tenant.ts acme --destroy`
+Teardown (Stripe + LiteLLM + Fly — never raw `fly apps destroy` alone):
+
+```bash
+# Prefer control-plane orchestrator
+export ADMIN_TOKEN=...
+npx tsx scripts/provision-tenant.ts acme --destroy
+```
+
+Details: [OPERATIONS.md](OPERATIONS.md).
 
 ## 4. Demo script (~2 min)
 

@@ -8,7 +8,19 @@
 import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
 import { T } from "../../i18n/T";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type MutableRefObject,
+  type ReactNode,
+  type RefObject,
+} from "react";
+import { createPortal } from "react-dom";
 import {
   Check,
   ChevronDown,
@@ -39,6 +51,7 @@ import type {
 } from "@shared/types";
 import type { FileEntry } from "@shared/capabilities/files";
 import { GitHubConnectCard } from "../../components/patterns";
+import { useDismiss } from "../../components/useDismiss";
 import { Input } from "../../components/ui/Input";
 import { api } from "../../lib/api";
 import { useGitHubConnection } from "../../connections/useGitHubConnection";
@@ -57,6 +70,104 @@ const FOLDER_MIME = "inode/directory";
 
 type MenuKind = "backend" | "primary" | "branch" | "worktree" | "add" | null;
 type FolderPanel = "menu" | "browse" | "github" | "drive";
+
+/**
+ * Anchor the panel's bottom edge to the chip. Content grows upward without
+ * shifting items near the chip (Browse / GitHub), so clicks aren't lost when
+ * the panel resizes. Only needs the trigger rect — not a panel measure pass.
+ */
+function chromeMenuStyle(trigger: DOMRect, panelWidth: number): CSSProperties {
+  const pad = 8;
+  const gap = 4;
+  const width = panelWidth > 0 ? panelWidth : 280;
+  const left = Math.min(
+    Math.max(pad, trigger.left),
+    Math.max(pad, window.innerWidth - width - pad),
+  );
+  return {
+    position: "fixed",
+    left,
+    right: "auto",
+    top: "auto",
+    bottom: window.innerHeight - trigger.top + gap,
+    maxHeight: Math.max(160, trigger.top - pad - gap),
+  };
+}
+
+/**
+ * Body-portaled chip menu. The chrome row scrolls horizontally (`overflow-x`),
+ * which would clip absolute panels, and the docked composer card sits above
+ * the status bar in z-order — so menus must leave the rail entirely.
+ */
+function PortaledChromeMenu({
+  anchorRef,
+  panelRef,
+  className,
+  children,
+}: {
+  anchorRef: RefObject<HTMLElement | null>;
+  panelRef: RefObject<HTMLDivElement | null>;
+  className?: string;
+  children: ReactNode;
+}) {
+  const localRef = useRef<HTMLDivElement | null>(null);
+  const [style, setStyle] = useState<CSSProperties | null>(null);
+
+  const setPanelNode = useCallback(
+    (node: HTMLDivElement | null) => {
+      localRef.current = node;
+      // Keep the shared dismiss ref in sync with the mounted portal node.
+      (panelRef as MutableRefObject<HTMLDivElement | null>).current = node;
+    },
+    [panelRef],
+  );
+
+  // Bottom-anchored: trigger position is enough. Do not remeasure on content
+  // changes or scroll — that used to move the panel mid-click and drop events.
+  useLayoutEffect(() => {
+    const place = () => {
+      const anchor = anchorRef.current;
+      const panel = localRef.current;
+      if (!anchor) return;
+      setStyle(chromeMenuStyle(anchor.getBoundingClientRect(), panel?.offsetWidth ?? 0));
+    };
+    place();
+    const raf = window.requestAnimationFrame(place);
+    window.addEventListener("resize", place);
+    return () => {
+      window.cancelAnimationFrame(raf);
+      window.removeEventListener("resize", place);
+    };
+  }, [anchorRef]);
+
+  return createPortal(
+    <div
+      ref={setPanelNode}
+      role="listbox"
+      className={[
+        "arco-projectpicker__menu",
+        "arco-workspacechrome__menu",
+        "arco-workspacechrome__menu--portaled",
+        className,
+      ]
+        .filter(Boolean)
+        .join(" ")}
+      style={
+        style ?? {
+          position: "fixed",
+          left: 0,
+          top: "auto",
+          right: "auto",
+          bottom: 0,
+          visibility: "hidden",
+        }
+      }
+    >
+      {children}
+    </div>,
+    document.body,
+  );
+}
 
 function backendIcon(kind: WorkspaceBackendKind, size: number) {
   if (kind === "drive") return <HardDrive size={size} />;
@@ -82,6 +193,7 @@ export function WorkspaceChrome() {
   const [panel, setPanel] = useState<FolderPanel>("menu");
   const [addMode, setAddMode] = useState(false);
   const [browsing, setBrowsing] = useState<DirListing | null>(null);
+  const [browseLoading, setBrowseLoading] = useState(false);
   const [driveStack, setDriveStack] = useState<{ id: string | null; name: string }[]>([
     { id: null, name: "Drive" },
   ]);
@@ -101,6 +213,12 @@ export function WorkspaceChrome() {
   const [loadingRepos, setLoadingRepos] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const menuPanelRef = useRef<HTMLDivElement>(null);
+  const backendBtnRef = useRef<HTMLButtonElement>(null);
+  const primaryBtnRef = useRef<HTMLButtonElement>(null);
+  const branchBtnRef = useRef<HTMLButtonElement>(null);
+  const worktreeBtnRef = useRef<HTMLButtonElement>(null);
+  const addBtnRef = useRef<HTMLButtonElement>(null);
   const branchSearchRef = useRef<HTMLInputElement>(null);
   const [fadeLeft, setFadeLeft] = useState(false);
   const [fadeRight, setFadeRight] = useState(false);
@@ -155,19 +273,15 @@ export function WorkspaceChrome() {
     workspace.roots.length,
   ]);
 
-  useEffect(() => {
-    if (!menu) return;
-    const onDown = (e: PointerEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
-        setMenu(null);
-        setPanel("menu");
-        setBrowsing(null);
-        setError(null);
-      }
-    };
-    window.addEventListener("pointerdown", onDown);
-    return () => window.removeEventListener("pointerdown", onDown);
-  }, [menu]);
+  const closeMenu = useCallback(() => {
+    setMenu(null);
+    setPanel("menu");
+    setBrowsing(null);
+    setBrowseLoading(false);
+    setError(null);
+  }, []);
+
+  useDismiss(Boolean(menu), closeMenu, rootRef, menuPanelRef);
 
   useEffect(() => {
     if (!showGit) {
@@ -219,6 +333,7 @@ export function WorkspaceChrome() {
     setMenu((m) => (m === kind && !asAdd ? null : kind));
     setPanel(workspace.backend === "drive" ? "drive" : "menu");
     setBrowsing(null);
+    setBrowseLoading(false);
     setError(null);
     if (workspace.backend === "drive") {
       setDriveStack([{ id: null, name: "Drive" }]);
@@ -228,13 +343,17 @@ export function WorkspaceChrome() {
 
   const browse = useCallback(
     async (path?: string) => {
+      setPanel("browse");
+      setBrowseLoading(true);
+      setError(null);
       try {
         const start = path ?? features?.defaultBrowsePath;
         setBrowsing(await api.browseDirs(start));
-        setPanel("browse");
-        setError(null);
       } catch (err) {
+        setBrowsing(null);
         setError(err instanceof Error ? err.message : "Cannot read directory");
+      } finally {
+        setBrowseLoading(false);
       }
     },
     [features?.defaultBrowsePath],
@@ -361,8 +480,8 @@ export function WorkspaceChrome() {
   const showNativePicker = features?.nativeFolderPicker ?? false;
   const showGitHubClone = (features?.githubClone ?? true) && workspace.backend === "local";
 
-  const renderFolderMenu = () => (
-    <div className="arco-projectpicker__menu arco-workspacechrome__menu" role="listbox">
+  const folderMenuBody = (
+    <>
       {panel === "menu" && workspace.backend === "local" && (
         <>
           {!addMode && (
@@ -399,17 +518,22 @@ export function WorkspaceChrome() {
             </button>
           )}
           <button
+            type="button"
             className="arco-projectpicker__item"
-            onClick={() => {
-              setPanel("browse");
-              void browse();
-            }}
+            onClick={() => void browse()}
           >
             <FolderOpen size={13} />
             <T k={I18nKey.APPS$STUDIO_BROWSE} />
           </button>
           {showGitHubClone && !addMode && (
-            <button className="arco-projectpicker__item" onClick={() => setPanel("github")}>
+            <button
+              type="button"
+              className="arco-projectpicker__item"
+              onClick={() => {
+                setPanel("github");
+                setError(null);
+              }}
+            >
               <Github size={13} />
               <T k={I18nKey.APPS$STUDIO_OPEN_FROM_GITHUB} />
             </button>
@@ -417,41 +541,53 @@ export function WorkspaceChrome() {
         </>
       )}
 
-      {panel === "browse" && browsing && (
+      {panel === "browse" && (
         <div className="arco-projectpicker__browser">
           <div className="arco-projectpicker__browserbar">
             <button
+              type="button"
               className="arco-btn arco-btn--icon"
               onClick={() => {
                 setPanel("menu");
                 setBrowsing(null);
+                setBrowseLoading(false);
+                setError(null);
               }}
               aria-label={i18n.t(I18nKey.COMMON$BACK)}
             >
               <ChevronLeft size={12} />
             </button>
             <button
+              type="button"
               className="arco-btn arco-btn--icon"
-              disabled={!browsing.parent}
-              onClick={() => browsing.parent && void browse(browsing.parent)}
+              disabled={!browsing?.parent || browseLoading}
+              onClick={() => browsing?.parent && void browse(browsing.parent)}
               aria-label={i18n.t(I18nKey.APPS$STUDIO_PARENT_DIRECTORY)}
             >
               <CornerLeftUp size={12} />
             </button>
-            <span className="arco-projectpicker__path" title={browsing.path}>
-              {browsing.path}
+            <span className="arco-projectpicker__path" title={browsing?.path}>
+              {browseLoading && !browsing ? "Loading…" : browsing?.path}
             </span>
             <button
+              type="button"
               className="arco-btn arco-btn--primary"
-              onClick={() => void attachLocal(browsing.path)}
+              disabled={!browsing || browseLoading}
+              onClick={() => browsing && void attachLocal(browsing.path)}
             >
               <T k={I18nKey.APPS$STUDIO_OPEN_THIS} />
             </button>
           </div>
           <div className="arco-projectpicker__dirs arco-scroll">
-            {browsing.dirs.map((d) => (
+            {browseLoading && !browsing && (
+              <div className="arco-empty">
+                <Loader2 size={14} className="arco-spin" />
+              </div>
+            )}
+            {browsing?.dirs.map((d) => (
               <button
                 key={d.path}
+                type="button"
                 className="arco-projectpicker__item"
                 onClick={() => void browse(d.path)}
                 onDoubleClick={() => void attachLocal(d.path)}
@@ -610,7 +746,7 @@ export function WorkspaceChrome() {
       )}
 
       {error && <div className="arco-projectpicker__error">{error}</div>}
-    </div>
+    </>
   );
 
   return (
@@ -619,6 +755,7 @@ export function WorkspaceChrome() {
       {/* Backend chip */}
       <div className="arco-workspacechrome__chipwrap">
         <button
+          ref={backendBtnRef}
           type="button"
           className="arco-workspacechrome__chip"
           onClick={() => openMenu(menu === "backend" ? null : "backend")}
@@ -629,8 +766,9 @@ export function WorkspaceChrome() {
           <ChevronDown size={10} />
         </button>
         {menu === "backend" && (
-          <div className="arco-projectpicker__menu arco-workspacechrome__menu" role="listbox">
+          <PortaledChromeMenu anchorRef={backendBtnRef} panelRef={menuPanelRef}>
             <button
+              type="button"
               className="arco-projectpicker__item"
               onClick={() => void setBackend("local")}
             >
@@ -639,6 +777,7 @@ export function WorkspaceChrome() {
               {displayBackend === "local" && <Check size={13} />}
             </button>
             <button
+              type="button"
               className="arco-projectpicker__item"
               onClick={() => void setBackend("drive")}
             >
@@ -652,6 +791,7 @@ export function WorkspaceChrome() {
               profiles.map((p) => (
                 <button
                   key={p.id}
+                  type="button"
                   className="arco-projectpicker__item"
                   onClick={() => void setBackend("remote", p.id)}
                 >
@@ -663,13 +803,14 @@ export function WorkspaceChrome() {
                 </button>
               ))
             )}
-          </div>
+          </PortaledChromeMenu>
         )}
       </div>
 
       {/* Primary folder */}
       <div className="arco-workspacechrome__chipwrap">
         <button
+          ref={primaryBtnRef}
           type="button"
           className="arco-workspacechrome__chip"
           onClick={() => openMenu("primary", false)}
@@ -681,7 +822,11 @@ export function WorkspaceChrome() {
           </span>
           <ChevronDown size={10} />
         </button>
-        {menu === "primary" && !addMode && renderFolderMenu()}
+        {menu === "primary" && !addMode && (
+          <PortaledChromeMenu anchorRef={primaryBtnRef} panelRef={menuPanelRef}>
+            {folderMenuBody}
+          </PortaledChromeMenu>
+        )}
       </div>
 
       {/* Branch + worktree (Local only) */}
@@ -689,6 +834,7 @@ export function WorkspaceChrome() {
         <div className="arco-workspacechrome__chipwrap">
           <div className="arco-workspacechrome__chip arco-workspacechrome__chip--git">
             <button
+              ref={branchBtnRef}
               type="button"
               className="arco-workspacechrome__chipseg"
               onClick={() => openMenu(menu === "branch" ? null : "branch")}
@@ -701,6 +847,7 @@ export function WorkspaceChrome() {
             </button>
             <span className="arco-workspacechrome__sep" aria-hidden="true" />
             <button
+              ref={worktreeBtnRef}
               type="button"
               className="arco-workspacechrome__chipseg"
               onClick={() => openMenu(menu === "worktree" ? null : "worktree")}
@@ -722,7 +869,7 @@ export function WorkspaceChrome() {
             </button>
           </div>
           {menu === "branch" && (
-            <div className="arco-projectpicker__menu arco-workspacechrome__menu" role="listbox">
+            <PortaledChromeMenu anchorRef={branchBtnRef} panelRef={menuPanelRef}>
               <div className="arco-workspacechrome__branchsearch">
                 <Input
                   ref={branchSearchRef}
@@ -753,15 +900,16 @@ export function WorkspaceChrome() {
                 ))}
               </div>
               {error && <div className="arco-projectpicker__error">{error}</div>}
-            </div>
+            </PortaledChromeMenu>
           )}
           {menu === "worktree" && (
-            <div
-              className="arco-projectpicker__menu arco-workspacechrome__menu arco-workspacechrome__menu--worktree"
-              role="listbox"
+            <PortaledChromeMenu
+              anchorRef={worktreeBtnRef}
+              panelRef={menuPanelRef}
+              className="arco-workspacechrome__menu--worktree"
             >
               <WorktreePicker onDone={() => setMenu(null)} />
-            </div>
+            </PortaledChromeMenu>
           )}
         </div>
       )}
@@ -787,6 +935,7 @@ export function WorkspaceChrome() {
       {/* Add folder */}
       <div className="arco-workspacechrome__chipwrap">
         <button
+          ref={addBtnRef}
           type="button"
           className="arco-workspacechrome__chip arco-workspacechrome__chip--icon"
           title="Add another folder"
@@ -795,7 +944,11 @@ export function WorkspaceChrome() {
         >
           <FolderPlus size={12} />
         </button>
-        {menu === "add" && addMode && renderFolderMenu()}
+        {menu === "add" && addMode && (
+          <PortaledChromeMenu anchorRef={addBtnRef} panelRef={menuPanelRef}>
+            {folderMenuBody}
+          </PortaledChromeMenu>
+        )}
       </div>
       </div>
       <div

@@ -98,25 +98,11 @@
     "zh-CN": "Kosmos 应如何运行模型？"
   },
   "INSTALL$MODEL_PATH_SUBTITLE": {
-    "en": "Pick a default for the agent. Mock mode works with no API key.",
-    "es": "Elige un valor predeterminado para el agente. El modo simulado no requiere clave API.",
-    "de": "Wähle einen Standard für den Agenten. Der Mock-Modus funktioniert ohne API-Schlüssel.",
-    "ja": "エージェントのデフォルトを選んでください。モックモードは API キー不要です。",
-    "zh-CN": "为代理选择默认方式。模拟模式无需 API 密钥。"
-  },
-  "INSTALL$MODEL_PATH_MOCK_LABEL": {
-    "en": "Try offline (mock)",
-    "es": "Probar sin conexión (simulado)",
-    "de": "Offline testen (Mock)",
-    "ja": "オフラインで試す（モック）",
-    "zh-CN": "离线试用（模拟）"
-  },
-  "INSTALL$MODEL_PATH_MOCK_HINT": {
-    "en": "Scripted demo — no API key",
-    "es": "Demo guiada — sin clave API",
-    "de": "Skriptierte Demo — kein API-Schlüssel",
-    "ja": "スクリプトデモ — API キー不要",
-    "zh-CN": "脚本演示 — 无需 API 密钥"
+    "en": "Pick a default for the agent.",
+    "es": "Elige un valor predeterminado para el agente.",
+    "de": "Wähle einen Standard für den Agenten.",
+    "ja": "エージェントのデフォルトを選んでください。",
+    "zh-CN": "为代理选择默认方式。"
   },
   "INSTALL$MODEL_PATH_CLOUD_LABEL": {
     "en": "Cloud API",
@@ -195,6 +181,97 @@
     "ja": "Web で接続",
     "zh-CN": "在网页上连接"
   },
+  "INSTALL$KOSMOS_PLAN_NAME": {
+    "en": "Kosmos Hosted",
+    "es": "Kosmos Hosted",
+    "de": "Kosmos Hosted",
+    "ja": "Kosmos Hosted",
+    "zh-CN": "Kosmos Hosted"
+  },
+  "INSTALL$KOSMOS_PLAN_PRICE": {
+    "en": "$25/mo",
+    "es": "25 $/mes",
+    "de": "25 $/Monat",
+    "ja": "月額 $25",
+    "zh-CN": "$25/月"
+  },
+  "INSTALL$KOSMOS_PLAN_DESC": {
+    "en": "Private hosted instance with 512 MB storage and about 3M inference tokens included each month.",
+    "es": "Instancia alojada privada con 512 MB de almacenamiento y unos 3M de tokens de inferencia incluidos cada mes.",
+    "de": "Private gehostete Instanz mit 512 MB Speicher und etwa 3M Inferenz-Tokens inklusive pro Monat.",
+    "ja": "512 MB のストレージと毎月約 300 万推論トークン付きのプライベートホスト型インスタンス。",
+    "zh-CN": "私有托管实例，含 512 MB 存储与约 300 万推理 token／月。"
+  },
+  "INSTALL$KOSMOS_INSTANCE_NAME_LABEL": {
+    "en": "Instance name",
+    "es": "Nombre de instancia",
+    "de": "Instanzname",
+    "ja": "インスタンス名",
+    "zh-CN": "实例名称"
+  },
+  "INSTALL$KOSMOS_INSTANCE_NAME_PLACEHOLDER": {
+    "en": "acme",
+    "es": "acme",
+    "de": "acme",
+    "ja": "acme",
+    "zh-CN": "acme"
+  },
+  "INSTALL$KOSMOS_INSTANCE_NAME_INVALID": {
+    "en": "Name must be 3–30 lowercase letters, digits, or dashes.",
+    "es": "El nombre debe tener 3–30 letras minúsculas, dígitos o guiones.",
+    "de": "Name: 3–30 Kleinbuchstaben, Ziffern oder Bindestriche.",
+    "ja": "名前は 3～30 文字の小文字・数字・ハイフンにしてください。",
+    "zh-CN": "名称须为 3–30 个小写字母、数字或连字符。"
+  },
+  "INSTALL$KOSMOS_INSTANCE_URL_HINT": {
+    "en": "Your URL:",
+    "es": "Tu URL:",
+    "de": "Deine URL:",
+    "ja": "URL:",
+    "zh-CN": "你的 URL："
+  },
+  "INSTALL$KOSMOS_EMAIL_LABEL": {
+    "en": "Email",
+    "es": "Correo",
+    "de": "E-Mail",
+    "ja": "メール",
+    "zh-CN": "邮箱"
+  },
+  "INSTALL$KOSMOS_EMAIL_PLACEHOLDER": {
+    "en": "you@example.com",
+    "es": "tu@ejemplo.com",
+    "de": "du@beispiel.com",
+    "ja": "you@example.com",
+    "zh-CN": "you@example.com"
+  },
+  "INSTALL$KOSMOS_EMAIL_INVALID": {
+    "en": "Enter a valid email.",
+    "es": "Introduce un correo válido.",
+    "de": "Gib eine gültige E-Mail ein.",
+    "ja": "有効なメールアドレスを入力してください。",
+    "zh-CN": "请输入有效邮箱。"
+  },
+  "INSTALL$KOSMOS_OR": {
+    "en": "or",
+    "es": "o",
+    "de": "oder",
+    "ja": "または",
+    "zh-CN": "或"
+  },
+  "INSTALL$KOSMOS_ALREADY_HAVE_ACCOUNT": {
+    "en": "Already have an account?",
+    "es": "¿Ya tienes una cuenta?",
+    "de": "Hast du bereits ein Konto?",
+    "ja": "すでにアカウントをお持ちですか？",
+    "zh-CN": "已有账户？"
+  },
+  "INSTALL$KOSMOS_CONNECT_TO_KOSMOS": {
+    "en": "Connect to Kosmos",
+    "es": "Conectar a Kosmos",
+    "de": "Mit Kosmos verbinden",
+    "ja": "Kosmos に接続",
+    "zh-CN": "连接到 Kosmos"
+  },
   "INSTALL$KOSMOS_MANUAL_URL": {
     "en": "Enter instance URL manually",
     "es": "Introducir URL de instancia manualmente",
@@ -245,11 +322,11 @@
     "zh-CN": "连接到 Kosmos"
   },
   "INSTALL$KOSMOS_CONNECT_SUBTITLE": {
-    "en": "Sign in to your hosted instance or create a new cloud account.",
-    "es": "Inicia sesión en tu instancia alojada o crea una nueva cuenta en la nube.",
-    "de": "Melde dich bei deiner gehosteten Instanz an oder erstelle ein neues Cloud-Konto.",
-    "ja": "ホスト型インスタンスにサインインするか、新しいクラウドアカウントを作成してください。",
-    "zh-CN": "登录托管实例或创建新的云端账户。"
+    "en": "Sign in with the email you used at checkout, or create a new cloud account. When you finish on the web, you will return here connected.",
+    "es": "Inicia sesión con el correo que usaste al pagar o crea una cuenta nueva en la nube. Al terminar en la web, volverás aquí conectado.",
+    "de": "Melde dich mit der E-Mail aus dem Checkout an oder erstelle ein neues Cloud-Konto. Nach Abschluss im Web kehrst du hier verbunden zurück.",
+    "ja": "チェックアウト時のメールでサインインするか、新しいクラウドアカウントを作成してください。Web で完了すると、接続済みでここに戻ります。",
+    "zh-CN": "使用结账时的邮箱登录，或创建新的云端账户。在网页上完成后，你将返回此处并已连接。"
   },
   "INSTALL$PROVIDER_TITLE": {
     "en": "Connect a cloud provider",
@@ -299,6 +376,13 @@
     "de": "Diese Instanz absichern — weitere Benutzer können später hinzugefügt werden.",
     "ja": "このインスタンスを保護します。追加ユーザーは後から登録できます。",
     "zh-CN": "保护此实例 — 可稍后添加其他用户。"
+  },
+  "INSTALL$KOSMOS_OWNER_SUBTITLE": {
+    "en": "Connected to {{instance}}. Create the owner account to finish setup.",
+    "es": "Conectado a {{instance}}. Crea la cuenta de propietario para terminar.",
+    "de": "Verbunden mit {{instance}}. Erstelle das Owner-Konto zum Abschluss.",
+    "ja": "{{instance}} に接続しました。オーナーアカウントを作成して完了してください。",
+    "zh-CN": "已连接到 {{instance}}。创建所有者账户以完成设置。"
   },
   "INSTALL$USERNAME_LABEL": {
     "en": "Username",

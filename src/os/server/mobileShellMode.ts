@@ -43,16 +43,22 @@ export function isMobileLocalShell(): boolean {
   return hostname === "127.0.0.1" && /^460\d$/.test(port) && platform === "android";
 }
 
+/**
+ * Thin-client Capacitor APK (UI in the app, API on a remote Arco server).
+ *
+ * Requires a real native Capacitor shell. The build flag
+ * `VITE_ARCO_MOBILE_BUNDLED` alone must not activate this on plain web — a
+ * mistaken `vite build --mode mobile` would otherwise gate hosted same-origin
+ * tenants behind the "Connect to Kosmos" server picker.
+ */
 export function isMobileBundledShell(): boolean {
   if (isMobileLocalShell()) return false;
-  if (import.meta.env.VITE_ARCO_MOBILE_BUNDLED === "1") return true;
-  return (
-    typeof window !== "undefined" &&
-    (window as CapWindow).Capacitor?.isNativePlatform?.() === true &&
-    !isCapacitorDevProxy()
-  );
+  if (typeof window === "undefined") return false;
+  if ((window as CapWindow).Capacitor?.isNativePlatform?.() !== true) return false;
+  return !isCapacitorDevProxy();
 }
 
+/** First-run server picker — bundled APK only, never hosted/browser. */
 export function mobileShellNeedsServerProfile(): boolean {
   return isMobileBundledShell() && !isCapacitorDevProxy();
 }

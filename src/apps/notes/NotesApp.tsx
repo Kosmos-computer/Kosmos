@@ -7,10 +7,10 @@ import type { JSONContent } from "@arco/editor-kit";
 import { SidebarPane } from "../../components/patterns";
 import { NoteEditor } from "./NoteEditor";
 import { NotesSidebar } from "./NotesSidebar";
-import { useNotesStub } from "./useNotesStub";
+import { useNotesStore } from "./useNotesStore";
 
 export function NotesApp() {
-  const notes = useNotesStub();
+  const notes = useNotesStore();
   const [searchOpen, setSearchOpen] = useState(false);
 
   const toggleSearch = () => {
@@ -65,6 +65,8 @@ export function NotesApp() {
       <NoteEditor
         note={notes.activeNote}
         noteDoc={notes.activeNoteDoc}
+        sourceLabel={notes.sourceLabel}
+        folderPath={notes.activeNoteFolderPath}
         canvasOpen={notes.canvasOpen}
         backlinkCount={notes.activeNoteBacklinks}
         wordCount={notes.activeNoteWordCount}

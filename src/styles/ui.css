@@ -756,6 +756,13 @@
   flex: 1;
 }
 
+.arco-editor-toolbar__trailing {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: var(--arco-space-xs);
+}
+
 .arco-editor-toolbar__tool--pressed {
   background: var(--arco-bg-active);
   color: var(--arco-text-primary);

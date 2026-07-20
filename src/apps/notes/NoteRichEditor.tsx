@@ -1,7 +1,6 @@
 import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
-import { T } from "../../i18n/T";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import {
   RichEditor,
   applyBlockFormat,
@@ -28,11 +27,15 @@ export function NoteRichEditor({
   content,
   viewMode = "edit",
   onChange,
+  beforeContent,
+  afterContent,
 }: {
   noteId: string;
   content: JSONContent;
   viewMode?: NoteEditorViewMode;
   onChange: (doc: JSONContent) => void;
+  beforeContent?: ReactNode;
+  afterContent?: ReactNode;
 }) {
   const [editor, setEditor] = useState<Editor | null>(null);
   const toolbar = useEditorToolbar(editor, viewMode === "edit");
@@ -40,6 +43,7 @@ export function NoteRichEditor({
   const dictation = useNoteDictation(editor);
   const aiAssist = useNoteAiAssist(editor);
   const hasSelection = editor ? hasEditorSelection(editor) : false;
+  const showEditChrome = viewMode === "edit" && editor;
 
   const bubbleMenuActions = useMemo<BubbleMenuExtraAction[]>(
     () => [
@@ -69,10 +73,6 @@ export function NoteRichEditor({
     [aiAssist.open, aiAssist.openComposer, dictation.active, dictation.toggle, readAloud.status, readAloud.toggle],
   );
 
-  if (viewMode === "code") {
-    return <NoteCodeEditor noteId={noteId} content={content} onChange={onChange} />;
-  }
-
   const prosemirrorClass = [
     "arco-notes__prosemirror",
     viewMode === "preview" ? "arco-notes__prosemirror--readonly" : "",
@@ -81,62 +81,80 @@ export function NoteRichEditor({
     .join(" ");
 
   return (
-    <div className="arco-notes__editor-stack">
-      {viewMode === "edit" && editor ? (
-        <div className="arco-notes__editor-chrome">
-          <EditorToolbar
-            blockFormat={toolbar.blockFormat}
-            onBlockFormatChange={(format) => applyBlockFormat(editor, format)}
-            activeMarks={toolbar.marks}
-            onToggleMark={(mark) => toggleTextMark(editor, mark)}
-            align={toolbar.align}
-            onAlignChange={(align) => setTextAlign(editor, align)}
-            canUndo={toolbar.canUndo}
-            canRedo={toolbar.canRedo}
-            onUndo={() => editor.chain().focus().undo().run()}
-            onRedo={() => editor.chain().focus().redo().run()}
-            readAloudStatus={readAloud.status}
-            onReadAloud={readAloud.toggle}
-            dictationActive={dictation.active}
-            dictationAvailable={dictation.available}
-            onDictation={() => void dictation.toggle()}
-            aiOpen={aiAssist.open}
-            onAiAssist={() => (aiAssist.open ? aiAssist.closeComposer() : aiAssist.openComposer())}
-          />
-          <NoteDictationBar status={dictation.status} interim={dictation.interim} engine={dictation.engine} />
-          <NoteAiComposer
-            open={aiAssist.open}
-            prompt={aiAssist.prompt}
-            streaming={aiAssist.streaming}
-            applyMode={aiAssist.applyMode}
-            hasSelection={hasSelection}
-            onPromptChange={aiAssist.setPrompt}
-            onApplyModeChange={aiAssist.setApplyMode}
-            onSubmit={() => void aiAssist.submit()}
-            onStop={aiAssist.stop}
-            onClose={aiAssist.closeComposer}
-          />
-          <p className="arco-notes__editor-hint"><T k={I18nKey.APPS$NOTES_TYPE} /><kbd>/</kbd><T k={I18nKey.APPS$NOTES_FOR_BLOCKS} /><kbd><T k={I18nKey.APPS$NOTES_MIC} /></kbd><T k={I18nKey.APPS$NOTES_TO_DICTATE_SELECT_TEXT_FOR_FORMATTING_AI_OR_READ_ALOUD} /></p>
-        </div>
-      ) : null}
-      <div className="arco-notes__editor-surface">
-        <RichEditor
-          content={content}
-          contentKey={noteId}
-          editable={viewMode === "edit"}
-          widgets
-          slashCommands={viewMode === "edit"}
-          bubbleMenu={viewMode === "edit"}
-          bubbleMenuActions={viewMode === "edit" ? bubbleMenuActions : undefined}
-          placeholder={i18n.t(I18nKey.APPS$NOTES_START_WRITING_OR_TYPE_FOR_BLOCKS)}
-          className="arco-notes__editor-content"
-          contentClassName="arco-notes__editor-content"
-          prosemirrorClassName={prosemirrorClass}
-          ariaLabel={viewMode === "preview" ? "Note preview" : "Note body"}
-          onChange={onChange}
-          onEditorReady={setEditor}
-        />
+    <div className="arco-notes__editor-root">
+      <div className="arco-notes__editor-scroll arco-scroll">
+        {showEditChrome ? (
+          <div className="arco-notes__editor-chrome">
+            <EditorToolbar
+              blockFormat={toolbar.blockFormat}
+              onBlockFormatChange={(format) => applyBlockFormat(editor, format)}
+              activeMarks={toolbar.marks}
+              onToggleMark={(mark) => toggleTextMark(editor, mark)}
+              align={toolbar.align}
+              onAlignChange={(align) => setTextAlign(editor, align)}
+              canUndo={toolbar.canUndo}
+              canRedo={toolbar.canRedo}
+              onUndo={() => editor.chain().focus().undo().run()}
+              onRedo={() => editor.chain().focus().redo().run()}
+              readAloudStatus={readAloud.status}
+              onReadAloud={readAloud.toggle}
+              dictationActive={dictation.active}
+              dictationAvailable={dictation.available}
+              onDictation={() => void dictation.toggle()}
+              aiOpen={aiAssist.open}
+              onAiAssist={() => (aiAssist.open ? aiAssist.closeComposer() : aiAssist.openComposer())}
+            />
+            <NoteAiComposer
+              open={aiAssist.open}
+              prompt={aiAssist.prompt}
+              streaming={aiAssist.streaming}
+              applyMode={aiAssist.applyMode}
+              hasSelection={hasSelection}
+              onPromptChange={aiAssist.setPrompt}
+              onApplyModeChange={aiAssist.setApplyMode}
+              onSubmit={() => void aiAssist.submit()}
+              onStop={aiAssist.stop}
+              onClose={aiAssist.closeComposer}
+            />
+          </div>
+        ) : null}
+        <article className="arco-notes__page">
+          <div className="arco-notes__editor-stack">
+            {beforeContent}
+            {viewMode === "code" ? (
+              <NoteCodeEditor noteId={noteId} content={content} onChange={onChange} />
+            ) : (
+              <div className="arco-notes__editor-surface">
+                <RichEditor
+                  content={content}
+                  contentKey={noteId}
+                  editable={viewMode === "edit"}
+                  widgets
+                  slashCommands={viewMode === "edit"}
+                  bubbleMenu={viewMode === "edit"}
+                  bubbleMenuActions={viewMode === "edit" ? bubbleMenuActions : undefined}
+                  placeholder={i18n.t(I18nKey.APPS$NOTES_START_WRITING_OR_TYPE_FOR_BLOCKS)}
+                  className="arco-notes__editor-content"
+                  contentClassName="arco-notes__editor-content"
+                  prosemirrorClassName={prosemirrorClass}
+                  ariaLabel={viewMode === "preview" ? "Note preview" : "Note body"}
+                  onChange={onChange}
+                  onEditorReady={setEditor}
+                />
+              </div>
+            )}
+          </div>
+          {afterContent}
+        </article>
       </div>
+      {showEditChrome ? (
+        <NoteDictationBar
+          status={dictation.status}
+          interim={dictation.interim}
+          engine={dictation.engine}
+          onStop={dictation.stop}
+        />
+      ) : null}
     </div>
   );
 }

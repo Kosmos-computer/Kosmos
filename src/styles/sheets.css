@@ -101,14 +101,6 @@
   flex-shrink: 0;
 }
 
-.arco-sheets__avatar-stack {
-  display: flex;
-}
-
-.arco-sheets__avatar-stack > * + * {
-  margin-left: -8px;
-}
-
 .arco-sheets__format-toolbar {
   display: flex;
   align-items: center;

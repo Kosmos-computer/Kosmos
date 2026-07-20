@@ -370,7 +370,6 @@
   display: flex;
   flex-direction: column;
   gap: 1px;
-  padding-left: var(--arco-space-s);
 }
 
 /* Conversation row: title fills, timestamp yields to delete on hover. */
@@ -1038,6 +1037,59 @@
   flex-shrink: 0;
 }
 
+/* Conversation status dots — OpenHands agent-canvas ConversationStatusDot. */
+.arco-conversation-status-dot {
+  width: 10px;
+  height: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.arco-conversation-status-dot__check {
+  width: 10px;
+  height: 10px;
+  stroke: var(--arco-success);
+}
+
+.arco-conversation-status-dot__spinner {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid var(--arco-text-tertiary);
+  border-top-color: transparent;
+  animation: arco-conversation-status-spin 0.7s linear infinite;
+}
+
+.arco-conversation-status-dot__blob {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.arco-conversation-status-dot__blob--idle {
+  background: var(--arco-text-tertiary);
+}
+
+.arco-conversation-status-dot__blob--waiting {
+  background: var(--arco-success);
+}
+
+.arco-conversation-status-dot__blob--paused {
+  background: var(--arco-warning);
+}
+
+.arco-conversation-status-dot__blob--error {
+  background: var(--arco-danger);
+}
+
+@keyframes arco-conversation-status-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* ── Terminal tab ─────────────────────────────────────────────────────────── */
 
 .arco-studio__cmdbadge {
@@ -1601,6 +1653,16 @@
   left: 0;
   right: auto;
   min-width: 280px;
+}
+
+/* Portaled over the composer — fixed left/bottom + max-height from inline style. */
+.arco-workspacechrome__menu--portaled {
+  position: fixed;
+  top: auto;
+  left: auto;
+  right: auto;
+  overflow: auto;
+  z-index: calc(var(--arco-z-overlay) + 50);
 }
 
 .arco-workspacechrome__menu--worktree {

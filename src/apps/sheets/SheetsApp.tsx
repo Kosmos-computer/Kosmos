@@ -2,7 +2,7 @@ import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
 import { T } from "../../i18n/T";
 import { Grid3X3, Layers, Plus, Save, Share2, Star } from "lucide-react";
-import { Avatar, Button } from "../../components/ui";
+import { Button } from "../../components/ui";
 import { SidebarPane } from "../../components/patterns";
 import { SheetGridView } from "./SheetGridView";
 import { SheetsSidebar } from "./SheetsSidebar";
@@ -61,10 +61,6 @@ export function SheetsApp() {
           </div>
 
           <div className="arco-sheets__title-actions">
-            <div className="arco-sheets__avatar-stack" aria-hidden="true">
-              <Avatar name="Alex Morgan" size="sm" />
-              <Avatar name="Jordan Lee" size="sm" />
-            </div>
             <Button
               variant="primary"
               disabled={!sheets.dirty || sheets.saving}

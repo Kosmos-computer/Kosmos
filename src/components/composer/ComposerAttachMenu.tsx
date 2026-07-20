@@ -8,7 +8,15 @@ import { T } from "../../i18n/T";
  * directly (rather than <Menu>) because the panel mixes dismiss-on-select
  * rows with non-dismissing switch rows and nested flyouts.
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
+import { createPortal } from "react-dom";
 import {
   Bot,
   Check,
@@ -28,6 +36,24 @@ import {
 import { useDismiss } from "../useDismiss";
 import type { MenuItem } from "../Menu";
 import { TOOLSETS } from "./toolsets";
+
+function attachPanelStyle(trigger: DOMRect): CSSProperties {
+  const pad = 8;
+  const gap = 4;
+  const width = 240;
+  const left = Math.min(
+    Math.max(pad, trigger.left),
+    Math.max(pad, window.innerWidth - width - pad),
+  );
+  return {
+    position: "fixed",
+    left,
+    right: "auto",
+    top: "auto",
+    bottom: window.innerHeight - trigger.top + gap,
+    maxHeight: Math.max(160, trigger.top - pad - gap),
+  };
+}
 
 export interface ComposerConnector {
   id: string;
@@ -93,7 +119,9 @@ export function ComposerAttachMenu({
   const [stubEnabled, setStubEnabled] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(STUB_CONNECTORS.map((c) => [c.id, c.enabled])),
   );
+  const [fixedStyle, setFixedStyle] = useState<CSSProperties | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   const showTools = Boolean(toolsetIds && onToolsetIdsChange);
   const showAgent = Boolean(agentItems?.length);
@@ -104,7 +132,22 @@ export function ComposerAttachMenu({
     setFlyout(null);
   }, []);
 
-  useDismiss(open, close, rootRef);
+  useDismiss(open, close, rootRef, panelRef);
+
+  useLayoutEffect(() => {
+    if (!open) {
+      setFixedStyle(null);
+      return;
+    }
+    const place = () => {
+      const trigger = rootRef.current?.getBoundingClientRect();
+      if (!trigger) return;
+      setFixedStyle(attachPanelStyle(trigger));
+    };
+    place();
+    window.addEventListener("resize", place);
+    return () => window.removeEventListener("resize", place);
+  }, [open]);
 
   useEffect(() => {
     if (!open) setFlyout(null);
@@ -146,27 +189,23 @@ export function ComposerAttachMenu({
     close();
   }
 
-  return (
-    <div className="arco-menu" ref={rootRef}>
-      <button
-        type="button"
-        className="arco-btn arco-btn--ghost arco-btn--icon"
+  const panel =
+    open ? (
+      <div
+        ref={panelRef}
+        role="menu"
         aria-label={i18n.t(I18nKey.COMPONENTS$COMPOSER_ADD_OR_ATTACH)}
-        title={i18n.t(I18nKey.COMPONENTS$COMPOSER_ADD_OR_ATTACH)}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        disabled={disabled}
-        onClick={() => setOpen((v) => !v)}
+        className="arco-menu__panel arco-menu__panel--fixed arco-attach__panel"
+        style={
+          fixedStyle ?? {
+            position: "fixed",
+            left: 0,
+            top: "auto",
+            bottom: 0,
+            visibility: "hidden",
+          }
+        }
       >
-        <Plus size={15} />
-      </button>
-
-      {open && (
-        <div
-          role="menu"
-          aria-label={i18n.t(I18nKey.COMPONENTS$COMPOSER_ADD_OR_ATTACH)}
-          className="arco-menu__panel arco-menu__panel--top arco-menu__panel--start arco-attach__panel"
-        >
           <button
             type="button"
             role="menuitem"
@@ -508,8 +547,24 @@ export function ComposerAttachMenu({
               )}
             </>
           )}
-        </div>
-      )}
+      </div>
+    ) : null;
+
+  return (
+    <div className="arco-menu" ref={rootRef}>
+      <button
+        type="button"
+        className="arco-btn arco-btn--ghost arco-btn--icon"
+        aria-label={i18n.t(I18nKey.COMPONENTS$COMPOSER_ADD_OR_ATTACH)}
+        title={i18n.t(I18nKey.COMPONENTS$COMPOSER_ADD_OR_ATTACH)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        disabled={disabled}
+        onClick={() => setOpen((v) => !v)}
+      >
+        <Plus size={15} />
+      </button>
+      {panel ? createPortal(panel, document.body) : null}
     </div>
   );
 }

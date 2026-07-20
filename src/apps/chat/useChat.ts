@@ -17,6 +17,11 @@ import {
   DRAFT_SESSION_KEY,
   useStudioStore,
 } from "../studio/studioStore";
+import {
+  finishConversationIfRunning,
+  setConversationStatus,
+  useConversationStatusStore,
+} from "../studio/conversationStatusStore";
 
 export type ChatItem =
   | { kind: "user"; id: string; text: string; timestamp?: string }
@@ -428,6 +433,7 @@ export function useChat(opts?: { activeProjectId?: string | null; persistedSessi
         const existing = queuedTurnsRef.current.get(to) ?? [];
         queuedTurnsRef.current.set(to, [...existing, ...queued]);
       }
+      useConversationStatusStore.getState().migrate(from, to);
       if (activeKeyRef.current === from) {
         activeKeyRef.current = to;
         syncActive(to);
@@ -468,6 +474,7 @@ export function useChat(opts?: { activeProjectId?: string | null; persistedSessi
       const status = await api.chatTurnStatus(id).catch(() => ({ active: false }));
       if (status.active && !detachedPollsRef.current.has(id)) {
         updateBuffer(id, (buf) => { buf.streaming = true; });
+        setConversationStatus(id, "running");
         const poll = setInterval(() => {
           void Promise.all([api.getSession(id), api.chatTurnStatus(id)]).then(([next, turn]) => {
             updateBuffer(id, (buf) => {
@@ -477,6 +484,7 @@ export function useChat(opts?: { activeProjectId?: string | null; persistedSessi
             if (!turn.active) {
               clearInterval(poll);
               detachedPollsRef.current.delete(id);
+              finishConversationIfRunning(id);
               void refreshSessions();
             }
           }).catch(() => {});
@@ -521,6 +529,7 @@ export function useChat(opts?: { activeProjectId?: string | null; persistedSessi
       buffersRef.current.delete(id);
       queuedTurnsRef.current.delete(id);
       useStudioStore.getState().removeSessionActivity(id);
+      useConversationStatusStore.getState().clear(id);
       await api.deleteSession(id);
       if (activeKeyRef.current === id) newChat();
       refreshStreamingSessions();
@@ -613,6 +622,7 @@ export function useChat(opts?: { activeProjectId?: string | null; persistedSessi
           buf.streaming = true;
           buf.turnMeta = { startedAt: Date.now(), totalTokens: 0 };
         });
+        if (targetKey !== DRAFT_KEY) setConversationStatus(targetKey, "running");
 
         const abort = new AbortController();
         abortControllersRef.current.set(targetKey, abort);
@@ -629,6 +639,7 @@ export function useChat(opts?: { activeProjectId?: string | null; persistedSessi
               useStudioStore.getState().migrateSessionActivity(DRAFT_SESSION_KEY, event.sessionId);
               targetKey = event.sessionId;
             }
+            setConversationStatus(event.sessionId, "running");
             useStudioStore.getState().setActiveSession(event.sessionId);
             persistActiveSession(event.sessionId);
             return;
@@ -660,6 +671,7 @@ export function useChat(opts?: { activeProjectId?: string | null; persistedSessi
                 },
               ];
             });
+            if (targetKey !== DRAFT_KEY) setConversationStatus(targetKey, "error");
           }
         } finally {
           abortControllersRef.current.delete(targetKey);
@@ -669,6 +681,16 @@ export function useChat(opts?: { activeProjectId?: string | null; persistedSessi
               it.kind === "assistant" && it.streaming ? { ...it, streaming: false } : it,
             );
           });
+          if (targetKey !== DRAFT_KEY) {
+            if (abort.signal.aborted) {
+              const current = useConversationStatusStore.getState().getStatus(targetKey);
+              if (current === "running" || current === "waiting") {
+                setConversationStatus(targetKey, "paused");
+              }
+            } else {
+              finishConversationIfRunning(targetKey);
+            }
+          }
           void refreshSessions();
         }
 

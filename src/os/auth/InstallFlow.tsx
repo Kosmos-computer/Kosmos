@@ -14,11 +14,13 @@ import { PROVIDER_PRESETS } from "@shared/types";
 import { api } from "../../lib/api";
 import { useDeployment } from "../../hooks/useDeployment";
 import {
+  getActiveServerProfile,
   normalizeServerUrl,
   reloadForServerSwitch,
   testServerConnection,
   upsertServerProfile,
 } from "../server/serverProfileStore";
+import { desktopUsesCloudProfile } from "../server/cloudShellMode";
 import { consumeKosmosConnectError } from "../server/kosmosConnectReturn";
 import { openKosmosConnect } from "../server/openKosmosConnect";
 import { useAuthStore } from "./authStore";
@@ -27,7 +29,16 @@ import { I18nKey } from "../../i18n/declaration";
 import { tWithFallback } from "../../i18n/fallbackT";
 
 type InstallStep = "welcome" | "model-path" | "kosmos-connect" | "provider" | "account";
-type ModelPath = "kosmos" | "mock" | "cloud" | "local" | "ollama";
+type ModelPath = "kosmos" | "cloud" | "local" | "ollama";
+
+/**
+ * Same-origin Kosmos Cloud tenant in the browser (e.g. kosmos-acme.fly.dev).
+ * Fallback when install-status hasn't reported hostedCloud yet / older server.
+ */
+function isSameOriginKosmosCloudHost(): boolean {
+  if (typeof window === "undefined") return false;
+  return /^kosmos-.+\.fly\.dev$/i.test(window.location.hostname);
+}
 
 function InstallCard({ children }: { children: React.ReactNode }) {
   return (
@@ -142,11 +153,12 @@ function InstallChecks({ status }: { status: InstallStatus | null }) {
 
 const MODEL_PATH_OPTIONS = [
   { id: "kosmos", labelKey: I18nKey.INSTALL$MODEL_PATH_KOSMOS_LABEL, hintKey: I18nKey.INSTALL$MODEL_PATH_KOSMOS_HINT },
-  { id: "mock", labelKey: I18nKey.INSTALL$MODEL_PATH_MOCK_LABEL, hintKey: I18nKey.INSTALL$MODEL_PATH_MOCK_HINT },
   { id: "cloud", labelKey: I18nKey.INSTALL$MODEL_PATH_CLOUD_LABEL, hintKey: I18nKey.INSTALL$MODEL_PATH_CLOUD_HINT },
   { id: "local", labelKey: I18nKey.INSTALL$MODEL_PATH_LOCAL_LABEL, hintKey: I18nKey.INSTALL$MODEL_PATH_LOCAL_HINT },
   { id: "ollama", labelKey: I18nKey.INSTALL$MODEL_PATH_OLLAMA_LABEL, hintKey: I18nKey.INSTALL$MODEL_PATH_OLLAMA_HINT },
 ] as const satisfies ReadonlyArray<{ id: ModelPath; labelKey: I18nKey; hintKey: I18nKey }>;
+
+const KOSMOS_TENANT_RE = /^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/;
 
 function InstallKosmosConnect({
   controlPlaneUrl,
@@ -165,23 +177,115 @@ function InstallKosmosConnect({
 }) {
   const { t, i18n } = useTranslation();
   const copy = (key: I18nKey) => tWithFallback(key, t, i18n.language);
+  const [tenantName, setTenantName] = useState("");
+  const [email, setEmail] = useState("");
+  const [signupError, setSignupError] = useState<string | null>(null);
 
-  const openWebConnect = (mode: "existing" | "signup") => {
-    openKosmosConnect(controlPlaneUrl, mode);
+  const tenantPreview = tenantName.trim().toLowerCase() || "name";
+
+  const openSignup = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    // Prefer FormData so browser autofill still works if React state lagged.
+    const data = new FormData(e.currentTarget);
+    const name = String(data.get("tenantName") ?? tenantName).trim().toLowerCase();
+    const mail = String(data.get("email") ?? email).trim();
+    if (!KOSMOS_TENANT_RE.test(name)) {
+      setSignupError(copy(I18nKey.INSTALL$KOSMOS_INSTANCE_NAME_INVALID));
+      return;
+    }
+    if (!mail.includes("@")) {
+      setSignupError(copy(I18nKey.INSTALL$KOSMOS_EMAIL_INVALID));
+      return;
+    }
+    setTenantName(name);
+    setEmail(mail);
+    setSignupError(null);
+    openKosmosConnect(controlPlaneUrl, "signup", { email: mail, tenantName: name });
   };
 
   return (
     <div className="arco-install__kosmos-connect">
-      <p className="arco-install__kosmos-connect-lead">{copy(I18nKey.INSTALL$KOSMOS_CONNECT_WEB_LEAD)}</p>
-      <div className="arco-install__kosmos-connect-actions">
-        <Button onClick={() => openWebConnect("existing")} style={{ justifyContent: "center" }}>
-          <Link2 size={14} aria-hidden />
-          {copy(I18nKey.INSTALL$KOSMOS_CONNECT_WEB)}
-        </Button>
-        <Button variant="ghost" onClick={() => openWebConnect("signup")} style={{ justifyContent: "center" }}>
+      <div className="arco-install__kosmos-plan" aria-label={copy(I18nKey.INSTALL$KOSMOS_PLAN_NAME)}>
+        <div className="arco-install__kosmos-plan-row">
+          <span className="arco-install__kosmos-plan-name">{copy(I18nKey.INSTALL$KOSMOS_PLAN_NAME)}</span>
+          <span className="arco-install__kosmos-plan-price">{copy(I18nKey.INSTALL$KOSMOS_PLAN_PRICE)}</span>
+        </div>
+        <p className="arco-install__kosmos-plan-desc">{copy(I18nKey.INSTALL$KOSMOS_PLAN_DESC)}</p>
+      </div>
+      <form className="arco-install__kosmos-connect-form" onSubmit={openSignup}>
+        <div>
+          <label className="arco-label" htmlFor="install-kosmos-tenant">
+            {copy(I18nKey.INSTALL$KOSMOS_INSTANCE_NAME_LABEL)}
+          </label>
+          <Input
+            id="install-kosmos-tenant"
+            name="tenantName"
+            value={tenantName}
+            placeholder={copy(I18nKey.INSTALL$KOSMOS_INSTANCE_NAME_PLACEHOLDER)}
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            autoComplete="off"
+            onChange={(e) => {
+              setTenantName(e.target.value);
+              setSignupError(null);
+            }}
+            required
+          />
+          <p className="arco-install__kosmos-connect-hint">
+            {copy(I18nKey.INSTALL$KOSMOS_INSTANCE_URL_HINT)}{" "}
+            {/* eslint-disable-next-line i18next/no-literal-string -- host preview */}
+            <code>kosmos-{tenantPreview}.fly.dev</code>
+          </p>
+        </div>
+        <div>
+          <label className="arco-label" htmlFor="install-kosmos-email">
+            {copy(I18nKey.INSTALL$KOSMOS_EMAIL_LABEL)}
+          </label>
+          <Input
+            id="install-kosmos-email"
+            name="email"
+            type="email"
+            value={email}
+            placeholder={copy(I18nKey.INSTALL$KOSMOS_EMAIL_PLACEHOLDER)}
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            autoComplete="email"
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setSignupError(null);
+            }}
+            required
+          />
+        </div>
+        {signupError ? (
+          <div className="arco-authscreen__error" role="alert">
+            {signupError}
+          </div>
+        ) : null}
+        <Button type="submit" variant="primary" style={{ justifyContent: "center" }}>
           {copy(I18nKey.INSTALL$KOSMOS_CREATE_ACCOUNT)}
         </Button>
+      </form>
+
+      <div className="arco-install__kosmos-connect-or" role="separator" aria-label={copy(I18nKey.INSTALL$KOSMOS_OR)}>
+        <span>{copy(I18nKey.INSTALL$KOSMOS_OR)}</span>
       </div>
+
+      <div className="arco-install__kosmos-connect-existing">
+        <p className="arco-install__kosmos-connect-existing-lead">
+          {copy(I18nKey.INSTALL$KOSMOS_ALREADY_HAVE_ACCOUNT)}
+        </p>
+        <Button
+          onClick={() => openKosmosConnect(controlPlaneUrl, "existing")}
+          style={{ justifyContent: "center" }}
+        >
+          <Link2 size={14} aria-hidden />
+          {copy(I18nKey.INSTALL$KOSMOS_CONNECT_TO_KOSMOS)}
+        </Button>
+      </div>
+
       <details className="arco-install__kosmos-connect-advanced">
         <summary>{copy(I18nKey.INSTALL$KOSMOS_MANUAL_URL)}</summary>
         <div className="arco-install__kosmos-connect-advanced-body">
@@ -213,7 +317,6 @@ function InstallKosmosConnect({
 }
 
 function settingsForPath(path: ModelPath, cloudProvider: LlmProvider, apiKey: string): Partial<Settings> {
-  if (path === "mock") return { provider: "mock", apiKey: "", baseUrl: "", model: "mock" };
   if (path === "local") {
     const preset = PROVIDER_PRESETS.local;
     return { provider: "local", baseUrl: preset.baseUrl, model: preset.model, apiKey: "" };
@@ -238,6 +341,9 @@ export function InstallFlow() {
   const clearError = useAuthStore((s) => s.clearError);
   const error = useAuthStore((s) => s.error);
   const copy = (key: I18nKey) => tWithFallback(key, t, i18n.language);
+  // Thin-client already pointed at a hosted instance — skip model wizard.
+  const cloudProfile = desktopUsesCloudProfile() ? getActiveServerProfile() : null;
+  const cloudClientSetup = cloudProfile !== null;
 
   const cloudProviders = useMemo(
     () =>
@@ -250,9 +356,9 @@ export function InstallFlow() {
     [],
   );
 
-  const [step, setStep] = useState<InstallStep>("welcome");
+  const [step, setStep] = useState<InstallStep>(cloudClientSetup ? "account" : "welcome");
   const [installStatus, setInstallStatus] = useState<InstallStatus | null>(null);
-  const [modelPath, setModelPath] = useState<ModelPath>("mock");
+  const [modelPath, setModelPath] = useState<ModelPath>("kosmos");
   const [cloudProvider, setCloudProvider] = useState<LlmProvider>("openai");
   const [apiKey, setApiKey] = useState("");
   const [username, setUsername] = useState("");
@@ -267,6 +373,12 @@ export function InstallFlow() {
   const [probeError, setProbeError] = useState<string | null>(null);
   const [probeBusy, setProbeBusy] = useState(false);
 
+  // Already on the cloud tenant (same-origin) — LLM gateway is preconfigured.
+  const hostedCloudSetup =
+    installStatus?.hostedCloud === true || isSameOriginKosmosCloudHost();
+  // Skip model-path / kosmos-connect / provider — only create the owner account.
+  const skipModelWizard = cloudClientSetup || hostedCloudSetup;
+
   useEffect(() => {
     void api.installStatus().then(setInstallStatus).catch(() => setInstallStatus(null));
   }, []);
@@ -277,13 +389,24 @@ export function InstallFlow() {
     if (pending) setKosmosError(pending);
   }, [step]);
 
-  const stepOrder: InstallStep[] =
-    modelPath === "cloud"
+  // Leave model-path / connect / provider if we learn this is a cloud tenant mid-flow.
+  useEffect(() => {
+    if (!hostedCloudSetup) return;
+    if (step === "model-path" || step === "kosmos-connect" || step === "provider") {
+      setStep("account");
+    }
+  }, [hostedCloudSetup, step]);
+
+  const stepOrder: InstallStep[] = skipModelWizard
+    ? cloudClientSetup
+      ? ["account"]
+      : ["welcome", "account"]
+    : modelPath === "cloud"
       ? ["welcome", "model-path", "provider", "account"]
       : modelPath === "kosmos"
         ? ["welcome", "model-path", "kosmos-connect"]
         : ["welcome", "model-path", "account"];
-  const stepNumber = stepOrder.indexOf(step) + 1;
+  const stepNumber = Math.max(1, stepOrder.indexOf(step) + 1);
   const stepTotal = stepOrder.length;
 
   const runProbeAndAdvance = async (next: InstallStep, settings: Partial<Settings>) => {
@@ -317,11 +440,6 @@ export function InstallFlow() {
     if (modelPath === "kosmos") {
       setProbeError(null);
       setStep("kosmos-connect");
-      return;
-    }
-    if (modelPath === "mock") {
-      setProbeError(null);
-      setStep("account");
       return;
     }
     void runProbeAndAdvance(
@@ -373,7 +491,8 @@ export function InstallFlow() {
       username,
       displayName: displayName || undefined,
       password,
-      settings: settingsForPath(modelPath, cloudProvider, apiKey),
+      // Hosted / cloud-connected instances already have gateway LLM config.
+      ...(skipModelWizard ? {} : { settings: settingsForPath(modelPath, cloudProvider, apiKey) }),
     });
     setBusy(false);
   };
@@ -389,7 +508,11 @@ export function InstallFlow() {
             <div className="arco-authscreen__subtitle">{i18n.t(I18nKey.INSTALL$WELCOME_SUBTITLE)}</div>
           </div>
           <InstallChecks status={installStatus} />
-          <Button variant="primary" style={{ justifyContent: "center" }} onClick={() => setStep("model-path")}>
+          <Button
+            variant="primary"
+            style={{ justifyContent: "center" }}
+            onClick={() => setStep(skipModelWizard ? "account" : "model-path")}
+          >
             {i18n.t(I18nKey.INSTALL$GET_STARTED)}
           </Button>
         </>
@@ -539,7 +662,19 @@ export function InstallFlow() {
           <div className="arco-authscreen__header">
             <div className="arco-authscreen__mark" />
             <div className="arco-authscreen__title">{i18n.t(I18nKey.INSTALL$ACCOUNT_TITLE)}</div>
-            <div className="arco-authscreen__subtitle">{i18n.t(I18nKey.INSTALL$ACCOUNT_SUBTITLE)}</div>
+            <div className="arco-authscreen__subtitle">
+              {cloudClientSetup && cloudProfile
+                ? copy(I18nKey.INSTALL$KOSMOS_OWNER_SUBTITLE).replace(
+                    "{{instance}}",
+                    cloudProfile.url.replace(/^https?:\/\//, ""),
+                  )
+                : hostedCloudSetup
+                  ? copy(I18nKey.INSTALL$KOSMOS_OWNER_SUBTITLE).replace(
+                      "{{instance}}",
+                      typeof window !== "undefined" ? window.location.host : "Kosmos Cloud",
+                    )
+                  : i18n.t(I18nKey.INSTALL$ACCOUNT_SUBTITLE)}
+            </div>
           </div>
           <form className="arco-authscreen__form" onSubmit={(e) => void submitAccount(e)}>
             <div>
@@ -603,13 +738,19 @@ export function InstallFlow() {
               </div>
             ) : null}
             <div className="arco-startup-preview__actions">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setStep(modelPath === "cloud" ? "provider" : "model-path")}
-              >
-                {i18n.t(I18nKey.COMMON$BACK)}
-              </Button>
+              {!skipModelWizard ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setStep(modelPath === "cloud" ? "provider" : "model-path")}
+                >
+                  {i18n.t(I18nKey.COMMON$BACK)}
+                </Button>
+              ) : hostedCloudSetup && !cloudClientSetup ? (
+                <Button type="button" variant="ghost" onClick={() => setStep("welcome")}>
+                  {i18n.t(I18nKey.COMMON$BACK)}
+                </Button>
+              ) : null}
               <Button variant="primary" type="submit" disabled={busy}>
                 {busy ? i18n.t(I18nKey.INSTALL$CREATING) : i18n.t(I18nKey.INSTALL$FINISH_SETUP)}
               </Button>

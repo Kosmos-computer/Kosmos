@@ -105,6 +105,24 @@ function createWindow(): void {
     return { action: "deny" };
   });
 
+  // Keep the frameless shell intact — never navigate the main window to an
+  // external host (e.g. Kosmos Cloud signup), or the user loses title-bar controls.
+  mainWindow.webContents.on("will-navigate", (event, url) => {
+    let shellOrigin: string;
+    try {
+      shellOrigin = new URL(shellUrl()).origin;
+    } catch {
+      return;
+    }
+    try {
+      if (new URL(url).origin === shellOrigin) return;
+    } catch {
+      return;
+    }
+    event.preventDefault();
+    void shell.openExternal(url);
+  });
+
   void mainWindow.loadURL(shellUrl());
 
   mainWindow.on("closed", () => {

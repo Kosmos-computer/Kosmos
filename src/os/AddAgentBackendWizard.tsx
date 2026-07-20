@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
-import { Plus, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { Cloud, Plus, Server, X } from "lucide-react";
 import type {
   AgentBackend,
   AgentBackendConnectionStatus,
@@ -7,34 +8,52 @@ import type {
   OpenhandsBackendVariant,
 } from "@shared/types";
 import { api } from "../lib/api";
+import { useDismiss } from "../components/useDismiss";
 import { Button, Chip, Input } from "../components/ui";
 
-const KIND_OPTIONS: { id: AgentBackendKind; label: string; hint: string }[] = [
+const KIND_OPTIONS: {
+  id: AgentBackendKind;
+  label: string;
+  hint: string;
+  icon: typeof Server;
+}[] = [
   {
     id: "openhands",
     label: "OpenHands",
     hint: "Local Agent Server or OpenHands Cloud",
+    icon: Server,
   },
   {
     id: "kosmos",
     label: "Kosmos",
-    hint: "Remote kosmos server with a bearer token",
+    hint: "Remote Kosmos server with a bearer token",
+    icon: Cloud,
   },
 ];
 
 const KIND_COPY: Record<
   AgentBackendKind,
-  { keyPlaceholder: string; connectedLabel: string; hostPlaceholder: string }
+  {
+    keyLabel: string;
+    keyPlaceholder: string;
+    connectedLabel: string;
+    hostPlaceholder: string;
+    hostHint: string;
+  }
 > = {
   openhands: {
     hostPlaceholder: "http://localhost:3000",
+    hostHint: "Agent Server URL or OpenHands Cloud host.",
+    keyLabel: "API key",
     keyPlaceholder: "Session API key",
     connectedLabel: "Connected — OpenHands Agent Server",
   },
   kosmos: {
     hostPlaceholder: "https://kosmos.example.com",
+    hostHint: "Remote Kosmos host. Mint a token under Settings → External Access.",
+    keyLabel: "Bearer token",
     keyPlaceholder: "Bearer token",
-    connectedLabel: "Connected to remote kosmos",
+    connectedLabel: "Connected to remote Kosmos",
   },
 };
 
@@ -45,6 +64,7 @@ export interface AddAgentBackendWizardProps {
 }
 
 export function AddAgentBackendWizard({ open, onClose, onAdded }: AddAgentBackendWizardProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
   const [step, setStep] = useState<"type" | "details">("type");
   const [kind, setKind] = useState<AgentBackendKind>("openhands");
   const [name, setName] = useState("");
@@ -55,6 +75,8 @@ export function AddAgentBackendWizard({ open, onClose, onAdded }: AddAgentBacken
   const [testing, setTesting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useDismiss(open, onClose, dialogRef);
 
   useEffect(() => {
     if (!open) return;
@@ -73,6 +95,7 @@ export function AddAgentBackendWizard({ open, onClose, onAdded }: AddAgentBacken
   if (!open) return null;
 
   const copy = KIND_COPY[kind];
+  const selectedKind = KIND_OPTIONS.find((option) => option.id === kind);
 
   async function testConnection() {
     setTesting(true);
@@ -109,9 +132,10 @@ export function AddAgentBackendWizard({ open, onClose, onAdded }: AddAgentBacken
     }
   }
 
-  return (
+  return createPortal(
     <div className="arco-connect-modal__backdrop" role="presentation" onClick={onClose}>
       <div
+        ref={dialogRef}
         className="arco-connect-modal arco-connect-modal--wizard"
         role="dialog"
         aria-labelledby="add-backend-title"
@@ -134,98 +158,143 @@ export function AddAgentBackendWizard({ open, onClose, onAdded }: AddAgentBacken
         </header>
 
         <div className="arco-connect-modal__body">
+          <p className="arco-connect-modal__step">
+            Step {step === "type" ? "1" : "2"} of 2
+            {step === "details" && selectedKind ? ` · ${selectedKind.label}` : ""}
+          </p>
+
           {step === "type" ? (
             <section className="arco-connect-modal__section">
               <h3 className="arco-connect-modal__label">Backend type</h3>
-              <div className="arco-connect-modal__provider-grid">
-                {KIND_OPTIONS.map((option) => (
-                  <button
-                    key={option.id}
-                    type="button"
-                    className={`arco-connect-modal__provider${kind === option.id ? " arco-connect-modal__provider--active" : ""}`}
-                    onClick={() => setKind(option.id)}
-                  >
-                    <span className="arco-connect-modal__provider-label">{option.label}</span>
-                    <span className="arco-connect-modal__provider-hint">{option.hint}</span>
-                  </button>
-                ))}
+              <div className="arco-connect-modal__option-list" role="listbox" aria-label="Backend type">
+                {KIND_OPTIONS.map((option) => {
+                  const Icon = option.icon;
+                  const active = kind === option.id;
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      role="option"
+                      aria-selected={active}
+                      className={`arco-connect-modal__option${active ? " arco-connect-modal__option--active" : ""}`}
+                      onClick={() => setKind(option.id)}
+                    >
+                      <span className="arco-connect-modal__option-icon" aria-hidden>
+                        <Icon size={18} />
+                      </span>
+                      <span className="arco-connect-modal__option-copy">
+                        <span className="arco-connect-modal__option-label">{option.label}</span>
+                        <span className="arco-connect-modal__option-hint">{option.hint}</span>
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
-              <footer className="arco-menubar-backends__wizard-actions">
-                <Button variant="ghost" onClick={onClose}>
-                  Cancel
-                </Button>
-                <Button variant="primary" onClick={() => setStep("details")}>
-                  Continue
-                </Button>
-              </footer>
             </section>
           ) : (
-            <section className="arco-connect-modal__section">
-              <h3 className="arco-connect-modal__label">Connection details</h3>
-              <div className="arco-menubar-backends__wizard-fields">
+            <>
+              <section className="arco-connect-modal__section">
+                <label className="arco-connect-modal__label" htmlFor="add-backend-name">
+                  Name
+                </label>
                 <Input
                   id="add-backend-name"
-                  width="auto"
-                  placeholder="Name"
+                  placeholder="My OpenHands server"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
+              </section>
+
+              <section className="arco-connect-modal__section">
+                <label className="arco-connect-modal__label" htmlFor="add-backend-host">
+                  Host
+                </label>
                 <Input
                   id="add-backend-host"
-                  width="auto"
                   placeholder={copy.hostPlaceholder}
                   value={host}
+                  spellCheck={false}
                   onChange={(e) => setHost(e.target.value)}
                 />
+                <p className="arco-connect-modal__hint">{copy.hostHint}</p>
+              </section>
+
+              <section className="arco-connect-modal__section">
+                <label className="arco-connect-modal__label" htmlFor="add-backend-key">
+                  {copy.keyLabel}
+                </label>
                 <Input
                   id="add-backend-key"
-                  width="auto"
                   type="password"
                   placeholder={copy.keyPlaceholder}
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
                 />
-                {kind === "openhands" ? (
-                  <div className="arco-settings-chip-row">
-                    {(["local", "cloud"] as const).map((value) => (
-                      <Chip key={value} active={variant === value} onClick={() => setVariant(value)}>
-                        {value}
+              </section>
+
+              {kind === "openhands" ? (
+                <section className="arco-connect-modal__section">
+                  <h3 className="arco-connect-modal__label">Variant</h3>
+                  <div className="arco-connect-modal__chips" role="listbox" aria-label="OpenHands variant">
+                    {([
+                      { id: "local" as const, label: "Local" },
+                      { id: "cloud" as const, label: "Cloud" },
+                    ]).map((option) => (
+                      <Chip
+                        key={option.id}
+                        role="option"
+                        aria-selected={variant === option.id}
+                        active={variant === option.id}
+                        className={variant === option.id ? "arco-connect-modal__chip--selected" : ""}
+                        onClick={() => setVariant(option.id)}
+                      >
+                        {option.label}
                       </Chip>
                     ))}
                   </div>
-                ) : null}
-              </div>
+                </section>
+              ) : null}
 
               {status?.connected ? (
-                <p className="arco-menubar-backends__wizard-success">
+                <p className="arco-connect-modal__success">
                   {copy.connectedLabel}
                   {status.version ? ` ${status.version}` : ""}
                 </p>
               ) : null}
               {status && !status.connected && status.error ? (
-                <p className="arco-menubar-backends__wizard-error">{status.error}</p>
+                <p className="arco-connect-modal__error">{status.error}</p>
               ) : null}
-              {error ? <p className="arco-menubar-backends__wizard-error">{error}</p> : null}
-
-              <footer className="arco-menubar-backends__wizard-actions">
-                <Button variant="ghost" onClick={() => setStep("type")}>
-                  Back
-                </Button>
-                <Button variant="default" disabled={testing || !host.trim()} onClick={() => void testConnection()}>
-                  {testing ? "Testing…" : "Test connection"}
-                </Button>
-                <Button
-                  variant="primary"
-                  disabled={saving || !host.trim()}
-                  onClick={() => void saveBackend()}
-                >
-                  {saving ? "Adding…" : "Add backend"}
-                </Button>
-              </footer>
-            </section>
+              {error ? <p className="arco-connect-modal__error">{error}</p> : null}
+            </>
           )}
         </div>
+
+        <footer className="arco-connect-modal__footer">
+          {step === "type" ? (
+            <>
+              <Button variant="ghost" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button variant="primary" onClick={() => setStep("details")}>
+                Continue
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="ghost" onClick={() => setStep("type")}>
+                Back
+              </Button>
+              <Button variant="default" disabled={testing || !host.trim()} onClick={() => void testConnection()}>
+                {testing ? "Testing…" : "Test connection"}
+              </Button>
+              <Button variant="primary" disabled={saving || !host.trim()} onClick={() => void saveBackend()}>
+                {saving ? "Adding…" : "Add backend"}
+              </Button>
+            </>
+          )}
+        </footer>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

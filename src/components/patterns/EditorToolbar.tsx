@@ -1,6 +1,6 @@
 import { I18nKey } from "../../i18n/declaration";
 import i18n from "../../i18n/index";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import {
   AlignCenter,
   AlignLeft,
@@ -57,6 +57,8 @@ export interface EditorToolbarProps {
   onDictation?: () => void;
   aiOpen?: boolean;
   onAiAssist?: () => void;
+  /** Content pinned to the far right of the toolbar (e.g. view-mode menu). */
+  trailing?: ReactNode;
 }
 
 function ToolButton({
@@ -110,6 +112,7 @@ export function EditorToolbar({
   onDictation,
   aiOpen,
   onAiAssist,
+  trailing,
 }: EditorToolbarProps) {
   const [localBlockFormat, setLocalBlockFormat] = useState<BlockFormat>("paragraph");
   const [localMarks, setLocalMarks] = useState<Set<TextMark>>(() => new Set());
@@ -271,6 +274,8 @@ export function EditorToolbar({
           <Redo2 size={15} strokeWidth={1.75} />
         </ToolButton>
       </div>
+
+      {trailing ? <div className="arco-editor-toolbar__trailing">{trailing}</div> : null}
     </div>
   );
 }

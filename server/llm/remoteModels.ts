@@ -1,14 +1,26 @@
 /**
  * List models from an OpenAI-compatible endpoint (Kosmos Cloud gateway,
  * custom baseUrl, Ollama, …) via GET {baseUrl}/models.
+ *
+ * Kosmos Cloud uses the OpenRouter public catalog (enriched with speed/cost)
+ * because the LiteLLM gateway advertises only a few aliases + an openrouter/*
+ * wildcard — not the full upstream set.
  */
 import { isKosmosCloudLlmEndpoint } from "../../shared/llmProviderLabels.js";
+import {
+  fetchKosmosCloudModels,
+  formatKosmosModelMeta,
+  type KosmosCloudModel,
+} from "../../shared/kosmosCloudModels.js";
 import type { Settings } from "../../shared/types.js";
-import { redactSecretsInText } from "../security/redactSecrets.js";
 
 export interface RemoteLlmModel {
   id: string;
   name: string;
+  /** Secondary picker line, e.g. "Fast · ••oo". */
+  description?: string;
+  speed?: KosmosCloudModel["speed"];
+  cost?: KosmosCloudModel["cost"];
 }
 
 export type RemoteModelsAuthError = {
@@ -53,10 +65,25 @@ export function resolveRemoteListApiKey(
   };
 }
 
+function withKosmosMeta(models: KosmosCloudModel[]): RemoteLlmModel[] {
+  return models.map((m) => ({
+    id: m.id,
+    name: m.name,
+    speed: m.speed,
+    cost: m.cost,
+    description: formatKosmosModelMeta(m.speed, m.cost),
+  }));
+}
+
 export async function listRemoteLlmModels(
   baseUrl: string,
   apiKey = "",
 ): Promise<RemoteLlmModel[]> {
+  // Kosmos Cloud: full OpenRouter catalog + speed/cost meta (gateway is a wildcard proxy).
+  if (isKosmosCloudLlmEndpoint(baseUrl)) {
+    return withKosmosMeta(await fetchKosmosCloudModels());
+  }
+
   const url = modelsUrl(baseUrl);
   if (!url.startsWith("http://") && !url.startsWith("https://")) {
     throw new Error("Invalid base URL");
@@ -71,11 +98,8 @@ export async function listRemoteLlmModels(
   if (!res.ok) {
     // Never forward upstream bodies — LiteLLM echoes "Received API Key = sk-…" in 401s.
     if (res.status === 401 || res.status === 403) {
-      const kosmos = isKosmosCloudLlmEndpoint(baseUrl);
       const err = new Error(
-        kosmos
-          ? "Kosmos Cloud rejected this key. Paste a credits key from your Kosmos subscription."
-          : "This endpoint rejected the API key. Check the key in Settings → Model.",
+        "This endpoint rejected the API key. Check the key in Settings → Model.",
       ) as Error & { code?: string };
       err.code = "auth_required";
       throw err;

@@ -74,7 +74,7 @@ const WHERE_TAB_LABELS: Record<string, string> = {
 };
 
 type RemoteCatalog = {
-  models: { id: string; name: string }[];
+  models: { id: string; name: string; description?: string }[];
   loading: boolean;
   error: string | null;
   /** Gateway / endpoint rejected credentials — show connect UI instead of raw retry. */
@@ -880,6 +880,7 @@ export function useModelSelection(
         endpointModels = catalog.models.map((m) => ({
           id: `${providerId}-${m.id}`,
           label: m.name,
+          description: m.description,
           checked: currentRemoteId === m.id,
           onSelect: () => void selectEndpointModel(m.id, baseUrl, builtinProfileId),
         }));

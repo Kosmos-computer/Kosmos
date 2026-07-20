@@ -696,6 +696,12 @@ app.post("/api/sessions/:id/fork", requireCap("chat"), async (c) => {
 
 app.get("/api/apps", async (c) => c.json(await appStore.list()));
 
+/** Collapse same-title generated apps (keep newest). Fixes agent duplicate floods. */
+app.post("/api/apps/dedupe", requireCap("apps:manage"), async (c) => {
+  const result = await appStore.dedupeByTitle();
+  return c.json(result);
+});
+
 app.get("/api/apps/:id", async (c) => {
   const record = await appStore.get(c.req.param("id"));
   if (!record) return c.json({ error: "Not found" }, 404);

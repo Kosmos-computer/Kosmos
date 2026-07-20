@@ -103,20 +103,38 @@ function triggerAnchoredStyle(
   side: "top" | "bottom" | "right",
   align: "start" | "end",
 ): CSSProperties {
+  const pad = 8;
   const gap = 4;
   let x = trigger.left;
-  let y = trigger.bottom + gap;
 
-  if (side === "top") {
-    y = trigger.top - panel.height - gap;
-  } else if (side === "right") {
+  if (side === "right") {
     x = trigger.right + 8;
-    y = trigger.top + trigger.height / 2 - panel.height / 2;
-  } else if (align === "end") {
+    const y = trigger.top + trigger.height / 2 - panel.height / 2;
+    return clampFixed(x, y, panel.width, panel.height);
+  }
+
+  if (align === "end") {
     x = trigger.right - panel.width;
   }
 
-  return clampFixed(x, y, panel.width, panel.height);
+  // Open upward: pin the bottom edge to the trigger so height changes don't
+  // move option rows out from under the pointer mid-click.
+  if (side === "top") {
+    const left = Math.min(
+      Math.max(pad, x),
+      Math.max(pad, window.innerWidth - panel.width - pad),
+    );
+    return {
+      position: "fixed",
+      left,
+      right: "auto",
+      top: "auto",
+      bottom: window.innerHeight - trigger.top + gap,
+      maxHeight: Math.max(120, trigger.top - pad - gap),
+    };
+  }
+
+  return clampFixed(x, trigger.bottom + gap, panel.width, panel.height);
 }
 
 export function Menu({

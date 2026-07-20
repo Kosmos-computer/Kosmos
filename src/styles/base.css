@@ -121,7 +121,7 @@ select {
   box-shadow: var(--arco-shadow-chrome);
   z-index: var(--arco-z-overlay);
 }
-/* Portaled cursor menus — position comes from inline fixed left/top. */
+/* Portaled cursor menus — position comes from inline fixed left/bottom/top. */
 .arco-menu__panel--fixed {
   position: fixed;
   top: auto;
@@ -129,6 +129,7 @@ select {
   right: auto;
   bottom: auto;
   transform: none;
+  overflow: auto;
   z-index: calc(var(--arco-z-overlay) + 50);
 }
 .arco-menu__panel--bottom { top: calc(100% + 4px); }
@@ -225,6 +226,22 @@ select {
   font-size: var(--arco-text-xs);
   font-weight: 400;
   line-height: 1.35;
+}
+
+/* Kosmos Cloud cost dots (• lit / o dim) in the model picker meta line. */
+.arco-menu__costdots {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  letter-spacing: 0.08em;
+  margin-left: 0.15em;
+}
+
+.arco-menu__costdot--on {
+  color: var(--arco-text-secondary);
+}
+
+.arco-menu__costdot--off {
+  color: var(--arco-text-tertiary);
+  opacity: 0.45;
 }
 
 .arco-menu__heading {

@@ -33,6 +33,12 @@ export function getMobileSessionToken(serverUrl?: string | null): string | null 
   return readMap()[url] ?? null;
 }
 
+/** Read a stored bearer for a server even when the shell is not in remote mode (e.g. Notes vault switch). */
+export function peekSessionTokenForServer(serverUrl: string): string | null {
+  const url = serverUrl.replace(/\/$/, "");
+  return readMap()[url] ?? null;
+}
+
 export function setMobileSessionToken(serverUrl: string, token: string): void {
   if (!usesRemoteSessionStore()) return;
   const map = readMap();

@@ -2,11 +2,7 @@
  * Desktop / dev-shell callback after control-plane /connect or /welcome redirect.
  * Reads ?kosmosInstance=…&kosmosConnected=1, saves a cloud profile, reloads.
  */
-import {
-  normalizeServerUrl,
-  reloadForServerSwitch,
-  upsertServerProfile,
-} from "./serverProfileStore";
+import { normalizeServerUrl, upsertServerProfile } from "./serverProfileStore";
 
 export const KOSMOS_CONNECT_PARAM = {
   connected: "kosmosConnected",
@@ -14,10 +10,25 @@ export const KOSMOS_CONNECT_PARAM = {
   error: "kosmosConnectError",
 } as const;
 
-export function kosmosConnectReturnUrl(controlPlaneUrl: string, mode: "existing" | "signup" = "existing"): string {
+export type KosmosConnectPrefill = {
+  email?: string;
+  tenantName?: string;
+};
+
+export function kosmosConnectReturnUrl(
+  controlPlaneUrl: string,
+  mode: "existing" | "signup" = "existing",
+  prefill: KosmosConnectPrefill = {},
+): string {
   const base = controlPlaneUrl.replace(/\/+$/, "");
   const returnTo = typeof window !== "undefined" ? window.location.origin + window.location.pathname : "";
   const params = new URLSearchParams({ return_to: returnTo, mode });
+  const email = prefill.email?.trim() ?? "";
+  const tenantName = prefill.tenantName?.trim().toLowerCase() ?? "";
+  if (email) params.set("email", email);
+  if (tenantName) params.set("tenantName", tenantName);
+  // Desktop signup handoff: skip the web form and continue straight to Stripe.
+  if (mode === "signup" && email && tenantName) params.set("continue", "1");
   return `${base}/connect?${params.toString()}`;
 }
 
@@ -66,7 +77,10 @@ export function applyKosmosConnectReturn(): boolean {
       url: origin,
       kind: "cloud",
     });
-    reloadForServerSwitch();
+    // Hard navigation so bootstrap picks up the cloud apiBase (reload alone
+    // can race with history.replaceState on some shells).
+    const next = `${window.location.pathname}${window.location.hash || ""}`;
+    window.location.replace(next);
     return true;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

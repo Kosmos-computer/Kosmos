@@ -1,36 +1,37 @@
 import { useMemo, useState } from "react";
-import { ChevronUp, HardDrive, Server } from "lucide-react";
-import type { AgentBackend } from "@shared/types";
+import { ChevronUp, Cloud, HardDrive, Server } from "lucide-react";
 import { Menu, type MenuItem } from "../../components/Menu";
-import { useCan } from "../../os/auth/authStore";
-import { openSettingsApp } from "../settings/settingsStore";
+import { desktopUsesCloudProfile } from "../../os/server/cloudShellMode";
 import {
-  backendLinkStatusLabel,
-  useAgentBackendsMenu,
-  type BackendLinkStatus,
-} from "../../os/useAgentBackendsMenu";
-import { useBackendStatus } from "../../os/useBackendStatus";
-import { LOCAL_NOTES_BACKEND_ID } from "./notesMock";
-
-function kindLabel(kind: AgentBackend["kind"]): string {
-  return kind === "openhands" ? "OpenHands" : "Kosmos";
-}
-
-function isConnected(status: BackendLinkStatus | undefined): boolean {
-  return Boolean(status && status !== "unknown" && status !== "checking" && status.connected);
-}
-
-function initials(label: string): string {
-  return label
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("");
-}
+  getActiveServerProfile,
+  listServerProfiles,
+} from "../../os/server/serverProfileStore";
+import type { ServerProfile } from "../../os/server/serverProfileTypes";
+import {
+  LOCAL_NOTES_BACKEND_ID,
+  notesBackendIdForServerProfile,
+  serverProfileIdFromNotesBackend,
+} from "./notesMock";
 
 function hostLabel(host: string): string {
   return host.replace(/^https?:\/\//, "").replace(/\/$/, "");
+}
+
+function profileDisplayName(profile: ServerProfile): string {
+  if (profile.kind === "cloud") return profile.name?.trim() || "Kosmos Cloud";
+  return profile.name?.trim() || hostLabel(profile.url);
+}
+
+function connectedServerProfiles(): ServerProfile[] {
+  const active = getActiveServerProfile();
+  const profiles = listServerProfiles().filter((profile) => {
+    if (profile.kind === "cloud") return true;
+    return active?.id === profile.id;
+  });
+  if (active && !profiles.some((profile) => profile.id === active.id)) {
+    return [active, ...profiles];
+  }
+  return profiles;
 }
 
 export function NotesBackendFooter({
@@ -41,102 +42,78 @@ export function NotesBackendFooter({
   onSwitchBackend: (backendId: string, backendName?: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const canManage = useCan("settings:write");
-  const localStatus = useBackendStatus();
-  const { backends, statusById, loading } = useAgentBackendsMenu(open, canManage);
+  const serverProfiles = useMemo(() => connectedServerProfiles(), [open]);
+  const cloudConnected = desktopUsesCloudProfile() || getActiveServerProfile()?.kind === "cloud";
 
-  const connectedBackends = useMemo(
-    () => backends.filter((backend) => isConnected(statusById[backend.id])),
-    [backends, statusById],
-  );
+  const activeServerProfileId = serverProfileIdFromNotesBackend(activeBackendId);
+  const activeServerProfile =
+    (activeServerProfileId
+      ? serverProfiles.find((profile) => profile.id === activeServerProfileId) ??
+        listServerProfiles().find((profile) => profile.id === activeServerProfileId)
+      : null) ?? null;
 
-  const activeRemote = backends.find((backend) => backend.id === activeBackendId) ?? null;
   const activeName =
     activeBackendId === LOCAL_NOTES_BACKEND_ID
       ? "Local"
-      : (activeRemote?.name ?? "Backend");
+      : activeServerProfile
+        ? profileDisplayName(activeServerProfile)
+        : "Backend";
+
   const activeMeta =
     activeBackendId === LOCAL_NOTES_BACKEND_ID
-      ? "This machine · Notes"
-      : activeRemote
-        ? `${kindLabel(activeRemote.kind)} · ${hostLabel(activeRemote.host)}`
+      ? "This machine · Synced via Drive"
+      : activeServerProfile
+        ? `${activeServerProfile.kind === "cloud" ? "Kosmos Cloud" : "Server"} · ${hostLabel(activeServerProfile.url)}`
         : "Notes";
-  const activeOnline =
+
+  const ActiveIcon =
     activeBackendId === LOCAL_NOTES_BACKEND_ID
-      ? localStatus === "online"
-      : isConnected(statusById[activeBackendId]);
+      ? HardDrive
+      : activeServerProfile?.kind === "cloud"
+        ? Cloud
+        : Server;
 
   const items = useMemo<MenuItem[]>(() => {
     const localItem: MenuItem = {
       id: LOCAL_NOTES_BACKEND_ID,
       label: "Local",
-      description: localStatus === "online" ? "This machine · Connected" : "This machine",
+      description: "This machine · Drive Notes folder",
       icon: HardDrive,
       checked: activeBackendId === LOCAL_NOTES_BACKEND_ID,
       onSelect: () => onSwitchBackend(LOCAL_NOTES_BACKEND_ID, "Local"),
     };
 
-    const remoteItems: MenuItem[] = connectedBackends.map((backend, index) => ({
-      id: backend.id,
-      label: backend.name,
-      description: `${kindLabel(backend.kind)} · ${hostLabel(backend.host)} · ${backendLinkStatusLabel(statusById[backend.id])}`,
-      icon: Server,
-      checked: activeBackendId === backend.id,
-      separatorAbove: index === 0,
-      onSelect: () => onSwitchBackend(backend.id, backend.name),
-    }));
-
-    if (loading && backends.length === 0) {
-      return [
-        localItem,
-        {
-          id: "loading",
-          label: "Checking backends…",
-          disabled: true,
-          separatorAbove: true,
-        },
-      ];
-    }
-
-    if (connectedBackends.length === 0) {
+    if (serverProfiles.length === 0) {
       return [
         localItem,
         {
           id: "empty",
-          label: "No connected backends",
-          description: canManage ? "Add one in Settings" : "Ask an admin to connect a backend",
+          label: cloudConnected ? "No saved cloud profile" : "No Kosmos Cloud connection",
+          description: "Connect in Settings → Kosmos Cloud",
           disabled: true,
           separatorAbove: true,
         },
       ];
     }
 
-    return [localItem, ...remoteItems];
-  }, [
-    activeBackendId,
-    backends.length,
-    canManage,
-    connectedBackends,
-    loading,
-    localStatus,
-    onSwitchBackend,
-    statusById,
-  ]);
+    const serverItems: MenuItem[] = serverProfiles.map((profile) => {
+      const backendId = notesBackendIdForServerProfile(profile.id);
+      const name = profileDisplayName(profile);
+      return {
+        id: backendId,
+        label: name,
+        description:
+          profile.kind === "cloud"
+            ? `Kosmos Cloud · ${hostLabel(profile.url)} · Drive sync`
+            : `Server · ${hostLabel(profile.url)} · Drive sync`,
+        icon: profile.kind === "cloud" ? Cloud : Server,
+        checked: activeBackendId === backendId,
+        onSelect: () => onSwitchBackend(backendId, name),
+      };
+    });
 
-  const footerItems = useMemo<MenuItem[]>(
-    () =>
-      canManage
-        ? [
-            {
-              id: "manage",
-              label: "Manage backends…",
-              separatorAbove: true,
-              onSelect: () => openSettingsApp("agent"),
-            },
-          ]
-        : [],
-    [canManage],
-  );
+    return [localItem, ...serverItems];
+  }, [activeBackendId, cloudConnected, onSwitchBackend, serverProfiles]);
 
   return (
     <Menu
@@ -149,7 +126,6 @@ export function NotesBackendFooter({
       open={open}
       onOpenChange={setOpen}
       items={items}
-      footerItems={footerItems}
       trigger={
         <button
           type="button"
@@ -157,12 +133,8 @@ export function NotesBackendFooter({
           aria-label={`Notes vault: ${activeName}`}
           aria-haspopup="menu"
         >
-          <span className="arco-avatar arco-avatar--md" role="img" aria-label={activeName}>
-            {initials(activeName) || "N"}
-            <span
-              className={`arco-avatar__status ${activeOnline ? "arco-avatar__status--online" : ""}`}
-              aria-hidden="true"
-            />
+          <span className="arco-notes-backend-menu__icon" aria-hidden="true">
+            <ActiveIcon size={18} strokeWidth={1.75} />
           </span>
           <span className="arco-nav-sidebar__user-body">
             <span className="arco-nav-sidebar__user-name">{activeName}</span>

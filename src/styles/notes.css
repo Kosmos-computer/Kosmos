@@ -6,6 +6,16 @@
   gap: var(--arco-space-m);
 }
 
+.arco-notes-backend-menu__icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  color: var(--arco-text-secondary);
+}
+
 .arco-notes-backend-menu__chevron {
   flex-shrink: 0;
   color: var(--arco-text-tertiary);

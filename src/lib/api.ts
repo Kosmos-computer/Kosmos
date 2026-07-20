@@ -195,18 +195,27 @@ function post<T>(url: string, body?: unknown): Promise<T> {
   }).then((r) => json<T>(r));
 }
 
+/** Bound hung boot probes so AuthGate can leave the splash if the API never answers. */
+const AUTH_BOOT_TIMEOUT_MS = 8_000;
+
+function fetchWithTimeout(url: string, init?: RequestInit, timeoutMs = AUTH_BOOT_TIMEOUT_MS): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, { ...init, signal: controller.signal }).finally(() => clearTimeout(timer));
+}
+
 export const api = {
   // Auth
-  authStatus: () => fetch("/api/auth/status").then((r) => json<AuthStatus>(r)),
+  authStatus: () => fetchWithTimeout("/api/auth/status").then((r) => json<AuthStatus>(r)),
   authSetup: (data: {
     username: string;
     displayName?: string;
     password: string;
     settings?: Partial<Settings>;
   }) => post<AuthSessionResponse>("/api/auth/setup", data),
-  installStatus: () => fetch("/api/system/install-status").then((r) => json<InstallStatus>(r)),
+  installStatus: () => fetchWithTimeout("/api/system/install-status").then((r) => json<InstallStatus>(r)),
   probeInstallLlm: (settings?: Partial<Settings>) =>
-    fetch("/api/install/probe-llm", {
+    fetchWithTimeout("/api/install/probe-llm", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(settings ?? {}),
@@ -1451,7 +1460,10 @@ export const api = {
   getModels: () => fetch("/api/models").then((r) => json<ModelsResponse>(r)),
   /** Models advertised by a remote OpenAI-compatible endpoint (Kosmos Cloud / custom). */
   listRemoteLlmModels: (body?: { baseUrl?: string; apiKey?: string }) =>
-    post<{ models: { id: string; name: string }[]; baseUrl: string }>("/api/models/remote", body ?? {}),
+    post<{
+      models: { id: string; name: string; description?: string; speed?: string; cost?: number }[];
+      baseUrl: string;
+    }>("/api/models/remote", body ?? {}),
   registerModel: (body: { manifest?: unknown; url?: string; apiKey?: string }) =>
     post<RegisteredModel>("/api/models", body),
   setModelEnabled: (id: string, enabled: boolean) =>

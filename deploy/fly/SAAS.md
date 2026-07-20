@@ -4,8 +4,9 @@ Operational reference for the usage-based Fly.io stack: credits gateway, Stripe
 control plane, and per-customer Kosmos instances. This lives in the deploy tree
 (not the in-app Docs application under `apps/docs/`).
 
-For step-by-step first deploy, see [README.md](README.md). For product/strategy
-notes, see the private `docs/saas-plan.md` (gitignored).
+For step-by-step first deploy, see [README.md](README.md). For day-to-day ops
+(teardown, audits, why template is Pending), see [OPERATIONS.md](OPERATIONS.md).
+For product/strategy notes, see the private `docs/saas-plan.md` (gitignored).
 
 ---
 
@@ -53,18 +54,12 @@ commands with server authority — no shared multi-tenancy in a single process.
 | App | Role | URL |
 | --- | --- | --- |
 | `kosmos-gateway` | LiteLLM credits proxy | https://kosmos-gateway.fly.dev |
-| `kosmos-control-plane` | Stripe signup + auto-provision | https://kosmos-control-plane.fly.dev |
-| `kosmos-template` | Image registry only (not serving HTTP) | — |
+| `kosmos-control-plane` | Stripe signup + auto-provision + deactivate | https://kosmos-control-plane.fly.dev |
+| `kosmos-litellm-db` | Fly Postgres for LiteLLM keys/spend | (private `.flycast`) |
+| `kosmos-template` | Image registry only — **Pending / 0 machines is normal** | — |
 | `kosmos-<name>` | Customer instance | https://kosmos-<name>.fly.dev |
 
-Optional/supporting:
-
-| App | Role |
-| --- | --- |
-| `kosmos-litellm-db` | Fly Postgres for LiteLLM (if used instead of Neon) |
-
-Example tenants provisioned during testing: `kosmos-demo` (manual CLI), `kosmos-test`
-(Stripe checkout).
+See [OPERATIONS.md](OPERATIONS.md) for teardown rules and infra hygiene.
 
 ---
 
@@ -73,7 +68,8 @@ Example tenants provisioned during testing: `kosmos-demo` (manual CLI), `kosmos-
 | Path | Purpose |
 | --- | --- |
 | [gateway/](gateway/) | LiteLLM Docker image + `config.yaml` + `fly.toml` |
-| [control-plane/](control-plane/) | Hono app: checkout, webhooks, SQLite orders, flyctl provision |
+| [control-plane/](control-plane/) | Hono app: checkout, webhooks, deactivate, SQLite orders, flyctl |
+| [OPERATIONS.md](OPERATIONS.md) | Ops runbook: teardown, audits, live stack quirks |
 | [tenant/fly.toml.tmpl](tenant/fly.toml.tmpl) | Per-tenant Fly config template |
 | [template.fly.toml](template.fly.toml) | Build/push shared tenant image (`kosmos-template:demo`) |
 | [Dockerfile.runtime](Dockerfile.runtime) | Tenant image: prebuilt `dist/`, no in-Docker Vite build |
@@ -210,7 +206,7 @@ the release (or destroy/reprovision).
 ## Control plane internals
 
 - **Stack:** Hono + `@hono/node-server`, Stripe SDK, `better-sqlite3` on `/data`
-- **Orders DB:** `control_plane_data` volume → `control-plane.db`
+- **Orders DB:** `control_data` volume → `control-plane.db` (or legacy `control.db`)
 - **Provision:** `flyctl` inside container (`FLY_API_TOKEN`) — same steps as
   `scripts/provision-tenant.ts`
 - **Deactivate (single orchestrator):** Stripe cancel → LiteLLM
@@ -296,7 +292,7 @@ Stripe Dashboard → Checkout sessions).
 | **Desktop app → cloud** pairing | Mobile has server profiles; desktop runs local backend only |
 | Custom domains (`*.arco.app`) | Tenants use `*.fly.dev` |
 | Central customer auth | Per-tenant Arco accounts only |
-| Production Stripe / live mode | Test mode configured |
+| Production Stripe / live mode | Control plane uses live key; local secrets may still be test |
 | Automated tenant image updates on release | Manual image push + redeploy |
 
 Recommended next hosting split: **Vercel** for www + public docs, **Fly** for
@@ -335,5 +331,6 @@ cd deploy/fly/control-plane && fly deploy
 ## Related docs
 
 - [README.md](README.md) — first-time deploy runbook
+- [OPERATIONS.md](OPERATIONS.md) — teardown, audits, live stack ops
 - [control-plane/scripts/setup-stripe.sh](control-plane/scripts/setup-stripe.sh) — Stripe product/price helper
 - [gateway/config.yaml](gateway/config.yaml) — model catalog aliases

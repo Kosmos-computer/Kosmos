@@ -9,7 +9,6 @@ import { T } from "../../i18n/T";
 import { useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { Calendar, ChevronRight, Columns3, Download, LayoutGrid, Layers, MoreVertical, PanelLeft, Pin, Plus, Search, Trash2 } from "lucide-react";
 import type { Project, SessionSummary } from "@shared/types";
-import { useAuthStore } from "../../os/auth/authStore";
 import { useWindowStore } from "../../os/windowStore";
 import { systemAppTitle } from "../../os/systemAppTitles";
 import { Menu, type MenuItem } from "../../components/Menu";
@@ -26,6 +25,8 @@ import {
   sortSessions,
 } from "./sidebarGrouping";
 import { useSidebarPreferencesStore } from "./sidebarPreferencesStore";
+import { ConversationStatusDot } from "./ConversationStatusDot";
+import { useConversationStatusStore } from "./conversationStatusStore";
 import { useUnreadSessionsStore } from "./unreadSessionsStore";
 
 /** Interactive targets that keep their own click behavior when the rail is collapsed. */
@@ -78,7 +79,6 @@ export function StudioSidebar({
 }: StudioSidebarProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const user = useAuthStore((s) => s.user);
   const openWindow = useWindowStore((s) => s.open);
 
   const organizeMode = useSidebarPreferencesStore((s) => s.organizeMode);
@@ -329,31 +329,8 @@ export function StudioSidebar({
           </div>
         </>
       ) : null}
-
-      {user && (
-        <div className="arco-sidenav__footer" title={`${user.displayName} · ${user.role}`}>
-          <span className="arco-sidenav__avatar" aria-hidden="true">
-            {initials(user.displayName)}
-          </span>
-          {!collapsed ? (
-            <span className="arco-sidenav__userbody">
-              <span className="arco-sidenav__username">{user.displayName}</span>
-              <span className="arco-sidenav__usermeta">{user.role}</span>
-            </span>
-          ) : null}
-        </div>
-      )}
     </aside>
   );
-}
-
-function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]!.toUpperCase())
-    .join("");
 }
 
 function SessionRow({
@@ -374,6 +351,9 @@ function SessionRow({
   const unread = useUnreadSessionsStore((s) => s.isUnread(session.id));
   const toggleUnread = useUnreadSessionsStore((s) => s.toggleUnread);
   const clearUnread = useUnreadSessionsStore((s) => s.clearUnread);
+  const executionStatus = useConversationStatusStore(
+    (s) => s.byId[session.id] ?? "idle",
+  );
 
   const handleSave = () => {
     void (async () => {
@@ -443,7 +423,7 @@ function SessionRow({
           onSelect(session.id);
         }}
       >
-        {unread ? <span className="arco-studio__unread-dot" aria-label="Unread" /> : null}
+        <ConversationStatusDot status={executionStatus} />
         <span className="arco-sidenav__itemtitle">
           {session.kind === "automation" ? "⚙ " : ""}
           {session.title}

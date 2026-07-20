@@ -26,6 +26,8 @@ const VIEW_MODE_OPTIONS: {
 export function NoteEditor({
   note,
   noteDoc,
+  sourceLabel,
+  folderPath = [],
   canvasOpen,
   backlinkCount,
   wordCount,
@@ -38,6 +40,10 @@ export function NoteEditor({
 }: {
   note: NotePage;
   noteDoc: JSONContent;
+  /** Vault source — Local, Kosmos Cloud, or a connected server name. */
+  sourceLabel: string;
+  /** Nested folder labels above the note (root vault pages omit this). */
+  folderPath?: string[];
   canvasOpen: boolean;
   backlinkCount: number;
   wordCount: number;
@@ -69,14 +75,19 @@ export function NoteEditor({
     [viewMode],
   );
 
+  const breadcrumbItems = useMemo(
+    () => [
+      { label: sourceLabel },
+      ...folderPath.map((label) => ({ label })),
+      { label: note.title.trim() || "Untitled", current: true },
+    ],
+    [folderPath, note.title, sourceLabel],
+  );
+
   return (
     <div className="arco-notes__workspace">
       <Breadcrumb
-        items={[
-          { label: "Arco" },
-          { label: note.folder ?? "Notes" },
-          { label: note.title, current: true },
-        ]}
+        items={breadcrumbItems}
         actions={
           <>
             <Menu

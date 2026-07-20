@@ -20,65 +20,23 @@
   border-bottom: 1px solid var(--arco-border);
 }
 
-.arco-contacts__account-switcher {
+.arco-contacts-backend-menu {
   display: flex;
-  align-items: center;
-  gap: var(--arco-space-s);
   width: 100%;
-  margin-bottom: var(--arco-space-s);
-  padding: var(--arco-space-xs) var(--arco-space-s);
-  border: 1px solid var(--arco-border);
-  border-radius: var(--arco-radius-m);
-  background: var(--arco-bg-raised);
-  color: var(--arco-text-primary);
-  cursor: pointer;
-  text-align: left;
 }
 
-.arco-contacts__account-switcher:hover {
-  border-color: var(--arco-accent);
-  background: var(--arco-accent-soft);
-}
-
-.arco-contacts__account-swatch {
+.arco-contacts-backend-menu__icon {
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--arco-radius-s);
-  color: #fff;
-  font-size: var(--arco-text-xs);
-  font-weight: 600;
+  width: 32px;
+  height: 32px;
+  color: var(--arco-text-secondary);
+}
+
+.arco-contacts-backend-menu__chevron {
   flex-shrink: 0;
-}
-
-.arco-contacts__account-switcher-text {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  flex: 1;
-}
-
-.arco-contacts__account-switcher-text strong {
-  font-size: var(--arco-text-sm);
-  font-weight: 600;
-}
-
-.arco-contacts__account-switcher-text small {
-  font-size: var(--arco-text-xs);
-  color: var(--arco-text-tertiary);
-}
-
-.arco-contacts__account-menu-label {
-  display: flex;
-  align-items: center;
-  gap: var(--arco-space-s);
-}
-
-.arco-contacts__account-menu-label small {
-  display: block;
-  font-size: var(--arco-text-xs);
   color: var(--arco-text-tertiary);
 }
 

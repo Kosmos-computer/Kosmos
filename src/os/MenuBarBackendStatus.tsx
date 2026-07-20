@@ -76,7 +76,7 @@ export function MenuBarBackendStatus() {
             className="arco-menu__panel arco-menu__panel--bottom arco-menu__panel--end arco-menubar-backends__panel"
           >
             <div className="arco-menubar-backends__section">
-              <p className="arco-menubar-backends__heading">Arco server</p>
+              <p className="arco-menubar-backends__heading">Server</p>
               <div className="arco-menubar-backends__row arco-menubar-backends__row--static">
                 <span className={triggerDotClass} aria-hidden="true" />
                 <div className="arco-menubar-backends__meta">

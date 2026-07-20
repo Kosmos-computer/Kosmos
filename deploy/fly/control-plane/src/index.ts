@@ -17,6 +17,7 @@ import {
   handleStripeEvent,
   validateTenantName,
 } from "./stripe-handlers.js";
+import { layout } from "./layout.js";
 
 function tenantUrlForName(config: { tenantPrefix: string }, tenantName: string): string {
   return `https://${config.tenantPrefix}-${tenantName.trim().toLowerCase()}.fly.dev`;
@@ -36,39 +37,12 @@ const stripe = new Stripe(config.stripeSecretKey);
 
 const app = new Hono();
 
-function layout(title: string, body: string): string {
-  return `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${title}</title>
-  <style>
-    :root { color-scheme: dark; font-family: ui-sans-serif, system-ui, sans-serif; }
-    body { margin: 0; min-height: 100vh; background: #0d0d0f; color: #ececee; display: grid; place-items: center; }
-    main { width: min(480px, 92vw); padding: 2rem; border: 1px solid #222836; border-radius: 16px; background: #12151d; }
-    h1 { margin: 0 0 0.5rem; font-size: 1.5rem; }
-    p { color: #9aa6bd; line-height: 1.5; }
-    label { display: block; margin: 1rem 0 0.35rem; font-size: 0.9rem; }
-    input { width: 100%; box-sizing: border-box; padding: 0.7rem 0.8rem; border-radius: 8px; border: 1px solid #2a2a30; background: #0d0d0f; color: inherit; }
-    button { margin-top: 1.25rem; width: 100%; padding: 0.85rem; border: 0; border-radius: 10px; background: #4f7cff; color: white; font-weight: 600; cursor: pointer; }
-    button:hover { background: #3f6aef; }
-    .hint { font-size: 0.85rem; margin-top: 0.35rem; }
-    .error { color: #ff8f8f; margin-top: 1rem; }
-    .ok { color: #7ddea6; }
-    a { color: #8eb4ff; }
-    code { background: #0d0d0f; padding: 0.1rem 0.35rem; border-radius: 4px; }
-  </style>
-</head>
-<body><main>${body}</main></body></html>`;
-}
-
 app.get("/health", (c) => c.json({ ok: true }));
 
 app.get("/", (c) => {
   const canceled = c.req.query("canceled");
   const body = `
-    <h1>Get your Arco instance</h1>
+    <h1>Get your Kosmos Cloud instance</h1>
     <p>Hosted AI OS with $${config.tenantBudgetUsd} included inference credits. After checkout, we provision your private instance on Fly.io.</p>
     ${canceled ? '<p class="error">Checkout canceled — try again when ready.</p>' : ""}
     <form method="post" action="/checkout">
@@ -79,13 +53,13 @@ app.get("/", (c) => {
       <input id="email" name="email" type="email" placeholder="you@example.com" required />
       <button type="submit">Continue to checkout</button>
     </form>
-    <p class="hint" style="margin-top:1.5rem">Already have an instance? <a href="/signin">Sign in</a></p>
+    <p class="hint center" style="margin-top:1.5rem">Already have an instance? <a href="/signin">Sign in</a></p>
     <script>
       const input = document.getElementById('tenantName');
       const preview = document.getElementById('preview');
       input.addEventListener('input', () => { preview.textContent = input.value.trim().toLowerCase() || 'name'; });
     </script>`;
-  return c.html(layout("Arco — Get an instance", body));
+  return c.html(layout("Kosmos — Get an instance", body));
 });
 
 app.post("/checkout", async (c) => {
@@ -129,14 +103,51 @@ app.get("/signup", (c) => {
 });
 
 /** Desktop / www pairing — email or instance name, then return_to with kosmosInstance. */
-app.get("/connect", (c) => {
+app.get("/connect", async (c) => {
   const returnToRaw = c.req.query("return_to") ?? "";
   const mode = parseConnectMode(c.req.query("mode"));
   const error = c.req.query("error");
   const canceled = c.req.query("canceled");
+  const shouldContinue = c.req.query("continue") === "1";
   const returnTo = isAllowedReturnTo(returnToRaw) ? returnToRaw : "";
+  const prefillEmail = String(c.req.query("email") ?? "").trim();
+  const prefillTenant = String(c.req.query("tenantName") ?? "").trim().toLowerCase();
+  const tenantPreview = prefillTenant || "name";
 
   if (mode === "signup") {
+    // Desktop handoff: fields already collected in-app — go straight to Stripe.
+    if (shouldContinue && !canceled && prefillEmail.includes("@") && prefillTenant) {
+      const validationError = validateTenantName(prefillTenant);
+      if (validationError) {
+        const q = new URLSearchParams({
+          mode: "signup",
+          error: validationError,
+          email: prefillEmail,
+          tenantName: prefillTenant,
+        });
+        if (returnTo) q.set("return_to", returnTo);
+        return c.redirect(`/connect?${q.toString()}`, 302);
+      }
+      try {
+        const session = await createCheckoutSession(stripe, config, store, {
+          tenantName: prefillTenant,
+          email: prefillEmail,
+          returnTo: returnTo || null,
+        });
+        if (session.url) return c.redirect(session.url, 303);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        const q = new URLSearchParams({
+          mode: "signup",
+          error: message,
+          email: prefillEmail,
+          tenantName: prefillTenant,
+        });
+        if (returnTo) q.set("return_to", returnTo);
+        return c.redirect(`/connect?${q.toString()}`, 302);
+      }
+    }
+
     const body = `
       <h1>Create your Kosmos Cloud account</h1>
       <p>Checkout provisions a private hosted instance with included inference credits.${
@@ -147,13 +158,13 @@ app.get("/connect", (c) => {
       <form method="post" action="/checkout">
         ${returnTo ? `<input type="hidden" name="return_to" value="${escapeHtml(returnTo)}" />` : ""}
         <label for="tenantName">Instance name</label>
-        <input id="tenantName" name="tenantName" placeholder="acme" required pattern="[a-z0-9][a-z0-9-]{1,28}[a-z0-9]" />
-        <div class="hint">Your URL: <code>${config.tenantPrefix}-<span id="preview">name</span>.fly.dev</code></div>
+        <input id="tenantName" name="tenantName" placeholder="acme" required pattern="[a-z0-9][a-z0-9-]{1,28}[a-z0-9]" value="${escapeHtml(prefillTenant)}" />
+        <div class="hint">Your URL: <code>${config.tenantPrefix}-<span id="preview">${escapeHtml(tenantPreview)}</span>.fly.dev</code></div>
         <label for="email">Email</label>
-        <input id="email" name="email" type="email" placeholder="you@example.com" required />
+        <input id="email" name="email" type="email" placeholder="you@example.com" required value="${escapeHtml(prefillEmail)}" />
         <button type="submit">Continue to checkout</button>
       </form>
-      <p class="hint" style="margin-top:1.5rem">Already have an instance? <a href="/connect?mode=existing${
+      <p class="hint center" style="margin-top:1.5rem">Already have an instance? <a href="/connect?mode=existing${
         returnTo ? `&return_to=${encodeURIComponent(returnTo)}` : ""
       }">Connect instead</a></p>
       <script>
@@ -176,14 +187,14 @@ app.get("/connect", (c) => {
       ${returnTo ? `<input type="hidden" name="return_to" value="${escapeHtml(returnTo)}" />` : ""}
       <input type="hidden" name="mode" value="existing" />
       <label for="email">Email used at checkout</label>
-      <input id="email" name="email" type="email" placeholder="you@example.com" />
-      <p class="hint" style="text-align:center;margin:1rem 0">— or —</p>
+      <input id="email" name="email" type="email" placeholder="you@example.com" value="${escapeHtml(prefillEmail)}" />
+      <p class="hint center" style="margin:1rem 0">— or —</p>
       <label for="tenantName">Instance name</label>
-      <input id="tenantName" name="tenantName" placeholder="acme" pattern="[a-z0-9][a-z0-9-]{1,28}[a-z0-9]" />
-      <div class="hint">Instance: <code>${config.tenantPrefix}-<span id="preview">name</span>.fly.dev</code></div>
+      <input id="tenantName" name="tenantName" placeholder="acme" pattern="[a-z0-9][a-z0-9-]{1,28}[a-z0-9]" value="${escapeHtml(prefillTenant)}" />
+      <div class="hint">Instance: <code>${config.tenantPrefix}-<span id="preview">${escapeHtml(tenantPreview)}</span>.fly.dev</code></div>
       <button type="submit">${returnTo ? "Connect to app" : "Open my instance"}</button>
     </form>
-    <p class="hint" style="margin-top:1.5rem">Need a new instance? <a href="/connect?mode=signup${
+    <p class="hint center" style="margin-top:1.5rem">Need a new instance? <a href="/connect?mode=signup${
       returnTo ? `&return_to=${encodeURIComponent(returnTo)}` : ""
     }">Create account</a></p>
     <script>
@@ -230,24 +241,24 @@ app.get("/signin", (c) => {
   const error = c.req.query("error");
   const body = `
     <h1>Sign in to your instance</h1>
-    <p>Open the Arco instance you provisioned at checkout. Use the email from signup or your instance name.</p>
+    <p>Open the Kosmos instance you provisioned at checkout. Use the email from signup or your instance name.</p>
     ${error ? `<p class="error">${error}</p>` : ""}
     <form method="post" action="/signin">
       <label for="email">Email used at checkout</label>
       <input id="email" name="email" type="email" placeholder="you@example.com" />
-      <p class="hint" style="text-align:center;margin:1rem 0">— or —</p>
+      <p class="hint center" style="margin:1rem 0">— or —</p>
       <label for="tenantName">Instance name</label>
       <input id="tenantName" name="tenantName" placeholder="acme" pattern="[a-z0-9][a-z0-9-]{1,28}[a-z0-9]" />
       <div class="hint">Opens <code>${config.tenantPrefix}-<span id="preview">name</span>.fly.dev</code></div>
       <button type="submit">Open my instance</button>
     </form>
-    <p class="hint" style="margin-top:1.5rem">Need a new instance? <a href="/">Get started</a></p>
+    <p class="hint center" style="margin-top:1.5rem">Need a new instance? <a href="/">Get started</a></p>
     <script>
       const input = document.getElementById('tenantName');
       const preview = document.getElementById('preview');
       input.addEventListener('input', () => { preview.textContent = input.value.trim().toLowerCase() || 'name'; });
     </script>`;
-  return c.html(layout("Arco — Sign in", body));
+  return c.html(layout("Kosmos — Sign in", body));
 });
 
 app.post("/signin", async (c) => {
@@ -280,8 +291,8 @@ app.get("/success", async (c) => {
   if (!sessionId) {
     return c.html(
       layout(
-        "Arco — Missing session",
-        `<p class="error">No checkout session in the URL. If you just paid, return to Stripe's confirmation page and click the link back to Arco, or email support with your receipt.</p><p><a href="/">Start over</a></p>`,
+        "Kosmos — Missing session",
+        `<p class="error">No checkout session in the URL. If you just paid, return to Stripe's confirmation page and click the link back to Kosmos, or email support with your receipt.</p><p><a href="/">Start over</a></p>`,
       ),
       400,
     );
@@ -294,55 +305,79 @@ app.get("/success", async (c) => {
   }
 
   const order = store.getBySession(sessionId);
+
+  // Already ready — send desktop users straight back instead of waiting on the poll UI.
+  if (order?.status === "ready" && order.tenant_url && returnTo) {
+    try {
+      return c.redirect(buildDesktopReturnUrl(returnTo, order.tenant_url), 302);
+    } catch (err) {
+      console.error("desktop return redirect failed:", err);
+    }
+  }
+
   const tenantHint = order
-    ? `<p class="hint">Instance: <code>${order.app_name}.fly.dev</code></p>`
+    ? `<p class="hint">Instance: <code>${escapeHtml(order.app_name)}.fly.dev</code></p>`
     : "";
 
   const body = `
-    <h1>Provisioning your instance</h1>
+    <h1>Payment successful</h1>
     ${tenantHint}
-    <p id="status">Payment received. Spinning up your Arco instance — this usually takes about a minute.</p>
+    <p id="status" class="ok">Thanks — we received your payment.</p>
+    <p id="detail">Spinning up your Kosmos instance. This usually takes about a minute…</p>
     <p id="link" style="display:none"></p>
-    <p class="hint">You can leave this tab open. If Stripe didn't redirect you here, bookmark this page.</p>
+    <p class="hint center">Keep this tab open. We will send you back to the Kosmos app when the instance is ready.</p>
     <script>
       const sessionId = ${JSON.stringify(sessionId)};
       const returnTo = ${JSON.stringify(returnTo)};
+
+      function goToApp(tenantUrl) {
+        if (!returnTo || !tenantUrl) return false;
+        try {
+          const desktop = new URL(returnTo);
+          desktop.searchParams.set('kosmosInstance', new URL(tenantUrl).origin);
+          desktop.searchParams.set('kosmosConnected', '1');
+          window.location.replace(desktop.toString());
+          return true;
+        } catch (_) {
+          return false;
+        }
+      }
+
       async function poll() {
         const res = await fetch('/api/order/' + encodeURIComponent(sessionId));
+        const status = document.getElementById('status');
+        const detail = document.getElementById('detail');
+        const link = document.getElementById('link');
         if (!res.ok) {
-          document.getElementById('status').innerHTML = '<span class="error">Could not load order status (HTTP ' + res.status + '). Retrying…</span>';
-          setTimeout(poll, 4000);
+          detail.innerHTML = '<span class="error">Could not load order status (HTTP ' + res.status + '). Retrying…</span>';
+          setTimeout(poll, 2500);
           return;
         }
         const data = await res.json();
-        const status = document.getElementById('status');
-        const link = document.getElementById('link');
         if (data.status === 'ready' && (data.tenantUrl || data.entryUrl)) {
           status.innerHTML = '<span class="ok">Your instance is ready.</span>';
+          detail.textContent = returnTo ? 'Returning you to the Kosmos app…' : 'Open your instance to create the owner account.';
+          if (goToApp(data.tenantUrl)) return;
           link.style.display = 'block';
-          const tenantOrigin = data.tenantUrl ? new URL(data.tenantUrl).origin : '';
           let html = '';
-          if (returnTo && tenantOrigin) {
-            const desktop = new URL(returnTo);
-            desktop.searchParams.set('kosmosInstance', tenantOrigin);
-            desktop.searchParams.set('kosmosConnected', '1');
-            html += '<p><a href="' + desktop.toString() + '"><strong>Return to Kosmos app</strong></a> to finish connecting.</p>';
+          if (data.tenantUrl) {
+            html += '<p><a href="' + data.tenantUrl + '"><strong>Open your instance</strong></a></p>';
           }
           if (data.entryUrl) {
-            html += '<p>Then open your <a href="' + data.entryUrl + '">private entry link</a> and create your owner account (first visit unlocks the instance).</p>';
+            html += '<p>Or use your <a href="' + data.entryUrl + '">private entry link</a>.</p>';
           }
           link.innerHTML = html || 'Instance ready.';
           return;
         }
         if (data.status === 'failed') {
-          status.innerHTML = '<span class="error">Provisioning failed: ' + (data.error || 'unknown error') + '</span>';
+          detail.innerHTML = '<span class="error">Provisioning failed: ' + (data.error || 'unknown error') + '</span>';
           return;
         }
-        setTimeout(poll, 4000);
+        setTimeout(poll, 2500);
       }
       poll();
     </script>`;
-  return c.html(layout("Arco — Provisioning", body));
+  return c.html(layout("Kosmos — Success", body));
 });
 
 app.get("/api/order/:sessionId", (c) => {

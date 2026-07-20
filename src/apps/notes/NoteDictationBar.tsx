@@ -1,14 +1,20 @@
-import { Loader2, Mic } from "lucide-react";
+import { I18nKey } from "../../i18n/declaration";
+import i18n from "../../i18n/index";
+import { T } from "../../i18n/T";
+import { Loader2, Mic, Square } from "lucide-react";
+import { Button } from "../../components/ui/Button";
 import type { DictationStatus } from "../../voice/dictation";
 
 export function NoteDictationBar({
   status,
   interim,
   engine,
+  onStop,
 }: {
   status: DictationStatus;
   interim: string;
   engine: "webspeech" | "server" | null;
+  onStop: () => void;
 }) {
   if (status === "idle" && !interim) return null;
 
@@ -17,7 +23,7 @@ export function NoteDictationBar({
       ? "Transcribing…"
       : status === "listening"
         ? engine === "server"
-          ? "Recording — click the mic again to transcribe"
+          ? "Recording…"
           : "Listening…"
         : "Dictation";
 
@@ -30,6 +36,16 @@ export function NoteDictationBar({
       ) : interim ? (
         <span className="arco-notes-dictation__interim">{interim}</span>
       ) : null}
+      <Button
+        variant="default"
+        className="arco-notes-dictation__stop"
+        aria-label={i18n.t(I18nKey.APPS$NOTES_STOP)}
+        disabled={status === "processing"}
+        onClick={onStop}
+      >
+        <Square size={12} strokeWidth={1.75} aria-hidden="true" />
+        <T k={I18nKey.APPS$NOTES_STOP} />
+      </Button>
     </div>
   );
 }

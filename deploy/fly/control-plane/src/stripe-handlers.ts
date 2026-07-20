@@ -29,6 +29,11 @@ export function validateTenantName(name: string): string | null {
   return null;
 }
 
+/** Names only block reuse once checkout paid / provisioning started. */
+function tenantNameBlocksCheckout(status: string): boolean {
+  return status === "ready" || status === "provisioning" || status === "suspended";
+}
+
 export async function createCheckoutSession(
   stripe: Stripe,
   config: Config,
@@ -38,14 +43,29 @@ export async function createCheckoutSession(
   const tenantName = input.tenantName.trim().toLowerCase();
   const validationError = validateTenantName(tenantName);
   if (validationError) throw new Error(validationError);
-  if (store.getByTenantName(tenantName)) throw new Error("That instance name is already taken.");
+
+  const existing = store.getByTenantName(tenantName);
+  if (existing) {
+    if (tenantNameBlocksCheckout(existing.status)) {
+      throw new Error("That instance name is already taken.");
+    }
+    // Abandoned / failed checkout — free the name so the user can retry.
+    try {
+      await stripe.checkout.sessions.expire(existing.stripe_session_id);
+    } catch {
+      // Session may already be expired or completed.
+    }
+    store.removeOrder(existing.stripe_session_id);
+  }
 
   const appName = `${config.tenantPrefix}-${tenantName}`;
   const orderId = randomUUID();
   const returnTo = input.returnTo?.trim() || "";
-  const cancelUrl = returnTo
-    ? `${config.publicUrl}/connect?mode=signup&return_to=${encodeURIComponent(returnTo)}&canceled=1`
-    : `${config.publicUrl}/?canceled=1`;
+  const cancelParams = new URLSearchParams({ mode: "signup", canceled: "1" });
+  if (returnTo) cancelParams.set("return_to", returnTo);
+  cancelParams.set("email", input.email.trim());
+  cancelParams.set("tenantName", tenantName);
+  const cancelUrl = `${config.publicUrl}/connect?${cancelParams.toString()}`;
   const successUrl = returnTo
     ? `${config.publicUrl}/success?session_id={CHECKOUT_SESSION_ID}&return_to=${encodeURIComponent(returnTo)}`
     : `${config.publicUrl}/success?session_id={CHECKOUT_SESSION_ID}`;
@@ -94,11 +114,32 @@ export function scheduleProvision(
 ): void {
   const tenantName = session.metadata?.tenant_name;
   const sessionId = session.id;
+  const orderId = session.metadata?.order_id || randomUUID();
   if (!tenantName || !sessionId) return;
   if (!sessionPaid(session)) return;
 
-  const existing = store.getBySession(sessionId);
-  if (!existing || existing.status === "ready" || existing.status === "provisioning") return;
+  let existing = store.getBySession(sessionId);
+  if (existing?.status === "ready" || existing?.status === "provisioning") return;
+
+  // Paid session with no row (e.g. abandoned pending order was deleted) — recreate.
+  if (!existing) {
+    const byName = store.getByTenantName(tenantName);
+    if (byName && tenantNameBlocksCheckout(byName.status)) {
+      console.warn(`skip provision for ${tenantName}: name already ${byName.status}`);
+      return;
+    }
+    if (byName) store.removeOrder(byName.stripe_session_id);
+    const appName = session.metadata?.app_name || `${config.tenantPrefix}-${tenantName}`;
+    store.createOrder({
+      id: orderId,
+      tenantName,
+      appName,
+      customerEmail: session.customer_email ?? null,
+      stripeSessionId: sessionId,
+    });
+    existing = store.getBySession(sessionId);
+  }
+  if (!existing) return;
 
   store.markProvisioning(sessionId, session.customer as string | null, session.subscription as string | null);
 
@@ -181,11 +222,13 @@ export async function ensureProvisionFromSession(
   sessionId: string,
 ): Promise<void> {
   const order = store.getBySession(sessionId);
-  if (!order || order.status === "ready" || order.status === "provisioning") return;
+  if (order?.status === "ready" || order?.status === "provisioning") return;
 
   const session = await stripe.checkout.sessions.retrieve(sessionId);
   if (!sessionPaid(session)) return;
 
-  console.log(`success-page kickoff for ${sessionId} (${order.tenant_name})`);
+  console.log(
+    `success-page kickoff for ${sessionId} (${session.metadata?.tenant_name || order?.tenant_name || "unknown"})`,
+  );
   scheduleProvision(stripe, config, store, session);
 }

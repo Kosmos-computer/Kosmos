@@ -27,6 +27,28 @@ import type { ModelPickerNavAction, ModelPickerProvider } from "./modelPickerTyp
 
 const PROVIDER_TAB_KEY = "arco.modelPicker.providerId";
 
+/** Render "Fast · ••oo" with lit/dim cost dots when the meta line matches. */
+function renderModelDescription(description: string) {
+  const match = /^(Fast|Med|High) · ([•o]{4})$/.exec(description);
+  if (!match) return description;
+  const [, speed, dots] = match;
+  return (
+    <>
+      {speed} ·{" "}
+      <span className="arco-menu__costdots" aria-label={`Cost ${(dots!.match(/•/g) ?? []).length} of 4`}>
+        {[...dots!].map((ch, i) => (
+          <span
+            key={i}
+            className={ch === "•" ? "arco-menu__costdot--on" : "arco-menu__costdot--off"}
+          >
+            {ch === "•" ? "•" : "o"}
+          </span>
+        ))}
+      </span>
+    </>
+  );
+}
+
 export interface ModelPickerMenuProps {
   trigger: ReactElement<Record<string, unknown>>;
   providers: ModelPickerProvider[];
@@ -144,14 +166,27 @@ export function ModelPickerMenu({
       setFixedStyle(null);
       return;
     }
+    const pad = 8;
     const gap = 4;
     const x =
       align === "end" ? triggerRect.right - panelRect.width : triggerRect.left;
-    const y =
-      side === "top"
-        ? triggerRect.top - panelRect.height - gap
-        : triggerRect.bottom + gap;
-    setFixedStyle(clampFixed(x, y, panelRect.width, panelRect.height));
+    // Bottom-anchor when opening upward so content growth doesn't steal clicks.
+    if (side === "top") {
+      const left = Math.min(
+        Math.max(pad, x),
+        Math.max(pad, window.innerWidth - panelRect.width - pad),
+      );
+      setFixedStyle({
+        position: "fixed",
+        left,
+        right: "auto",
+        top: "auto",
+        bottom: window.innerHeight - triggerRect.top + gap,
+        maxHeight: Math.max(160, triggerRect.top - pad - gap),
+      });
+      return;
+    }
+    setFixedStyle(clampFixed(x, triggerRect.bottom + gap, panelRect.width, panelRect.height));
   }, [align, open, portal, side, browseProviderId, visibleModels.length, searchQuery]);
 
   const selectProvider = useCallback(
@@ -390,7 +425,9 @@ export function ModelPickerMenu({
                     <span className="arco-menu__itemlabel">
                       <span className="arco-menu__itemtitle">{model.label}</span>
                       {model.description ? (
-                        <span className="arco-menu__itemdesc">{model.description}</span>
+                        <span className="arco-menu__itemdesc">
+                          {renderModelDescription(model.description)}
+                        </span>
                       ) : null}
                     </span>
                     {model.checked && (

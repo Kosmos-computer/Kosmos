@@ -1,16 +1,6 @@
-export type ContactAccountKind = "local" | "google" | "icloud" | "carddav";
-
-export interface ContactAccount {
-  id: string;
-  label: string;
-  kind: ContactAccountKind;
-  email?: string;
-  initials: string;
-  accent: string;
-}
-
 export interface PhoneContact {
   id: string;
+  /** Backend vault id (Local or server:{profileId}). */
   accountId: string;
   name: string;
   phone: string;
@@ -51,11 +41,4 @@ export const DIAL_PAD_LETTERS: Partial<Record<DialPadKey, string>> = {
   "7": "PQRS",
   "8": "TUV",
   "9": "WXYZ",
-};
-
-export const CONTACT_ACCOUNT_KIND_LABELS: Record<ContactAccountKind, string> = {
-  local: "On device",
-  google: "Google",
-  icloud: "iCloud",
-  carddav: "CardDAV",
 };

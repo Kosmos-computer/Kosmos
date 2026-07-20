@@ -14,6 +14,7 @@ import { ArcoLogo } from "../../components/ArcoLogo";
 import { PasswordInput } from "../../components/ui/PasswordInput";
 import { SpriteWorkingMark } from "../../components/SpriteWorkingMark";
 import { useDeployment } from "../../hooks/useDeployment";
+import { openKosmosConnect } from "../server/openKosmosConnect";
 import { useAuthStore } from "./authStore";
 import { AuthWallpaperBackdrop } from "../wallpaper/AuthWallpaperBackdrop";
 
@@ -220,9 +221,13 @@ export function LoginScreen() {
         </button>
       </form>
       <div className="arco-authscreen__footer">
-        <a className="arco-authscreen__link" href={deployment.signupUrl}>
+        <button
+          type="button"
+          className="arco-authscreen__link"
+          onClick={() => openKosmosConnect(deployment.controlPlaneUrl, "signup")}
+        >
           <T k={I18nKey.INSTALL$KOSMOS_CREATE_ACCOUNT} />
-        </a>
+        </button>
       </div>
     </AuthCard>
   );

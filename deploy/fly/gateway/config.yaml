@@ -1,12 +1,10 @@
-# LiteLLM Proxy config — the Arco credits gateway.
+# LiteLLM Proxy config — the Kosmos credits gateway.
 #
-# Friendly model names on the left are what tenants put in LLM_MODEL; the
-# litellm_params.model on the right is the serverless upstream (OpenRouter
-# for the demo — one provider key covers every catalog model). Verify exact
-# slugs at https://openrouter.ai/models before first deploy.
+# Friendly aliases (qwen3-30b, …) stay for LLM_MODEL defaults. The openrouter/*
+# wildcard exposes every OpenRouter chat model to tenants; the Arco UI loads the
+# full catalog from OpenRouter's public /models API and attaches speed/cost meta.
 #
-# Secrets arrive via `fly secrets set`: OPENROUTER_API_KEY, LITELLM_MASTER_KEY,
-# DATABASE_URL (Postgres — required for virtual keys/budgets; Neon free tier).
+# Secrets: OPENROUTER_API_KEY, LITELLM_MASTER_KEY, DATABASE_URL.
 
 model_list:
   # Bundle default — cheap, tool-calling-capable open model.
@@ -25,6 +23,12 @@ model_list:
   - model_name: claude-sonnet
     litellm_params:
       model: openrouter/anthropic/claude-sonnet-4.5
+      api_key: os.environ/OPENROUTER_API_KEY
+
+  # All other OpenRouter models — client sends openrouter/<provider>/<model>.
+  - model_name: openrouter/*
+    litellm_params:
+      model: openrouter/*
       api_key: os.environ/OPENROUTER_API_KEY
 
 general_settings:

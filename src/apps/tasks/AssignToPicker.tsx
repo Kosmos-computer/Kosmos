@@ -28,14 +28,14 @@ export interface AssignToPickerProps {
 }
 
 export function AssignToPicker({ value, selfName, onChange }: AssignToPickerProps) {
-  const contactsByAccount = useContactsStore((s) => s.contactsByAccount);
+  const contactsByBackend = useContactsStore((s) => s.contactsByBackend);
   const [mode, setMode] = useState<AssignMode>(() => modeFromAssignee(value));
   const [personQuery, setPersonQuery] = useState("");
   const [personOpen, setPersonOpen] = useState(false);
 
   const allContacts = useMemo(
-    () => Object.values(contactsByAccount).flat().sort((a, b) => a.name.localeCompare(b.name)),
-    [contactsByAccount],
+    () => Object.values(contactsByBackend).flat().sort((a, b) => a.name.localeCompare(b.name)),
+    [contactsByBackend],
   );
 
   useEffect(() => {

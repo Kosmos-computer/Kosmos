@@ -124,7 +124,11 @@ function applyLlmEnvOverrides(settings: Settings): Settings {
       settings.provider = "ollama";
     }
   }
-  if (process.env.LLM_MODEL?.trim()) settings.model = process.env.LLM_MODEL.trim();
+  // Model id is a default only — Kosmos Cloud tenants switch models in the picker
+  // (openrouter/* wildcard). Forcing LLM_MODEL on every load would snap them back.
+  if (process.env.LLM_MODEL?.trim() && !settings.model?.trim()) {
+    settings.model = process.env.LLM_MODEL.trim();
+  }
   if (process.env.LLM_API_KEY !== undefined) settings.apiKey = process.env.LLM_API_KEY;
   if (process.env.CURSOR_API_KEY !== undefined) settings.cursorApiKey = process.env.CURSOR_API_KEY;
   if (process.env.CURSOR_MODEL?.trim()) settings.cursorModel = process.env.CURSOR_MODEL.trim();

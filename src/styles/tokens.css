@@ -57,6 +57,7 @@
   --arco-z-windows: 10;
   --arco-z-chrome: 1000;
   --arco-z-overlay: 2000;
+  --arco-z-modal: 2100;
 }
 
 html[data-theme="dark"] {

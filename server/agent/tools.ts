@@ -461,7 +461,7 @@ export const agentTools: AgentTool[] = [
   {
     name: "app_create",
     description:
-      "Create a live interactive app. Pass the complete openui-lang code. The app is stored, appears in the dock, and opens on the user's desktop. Use when the user asks to build a dashboard, app, tracker, or interactive view.",
+      "Create a live interactive app (or replace an existing generated app with the same title). Pass the complete openui-lang code. The app is stored, appears in the dock, and opens on the user's desktop. Prefer list_apps first — if a similar generated app already exists, open it or app_update it instead of minting a new title. Same-title creates upsert (reused:true) unless forceNew is set.",
     parameters: {
       type: "object",
       properties: {
@@ -472,6 +472,11 @@ export const agentTools: AgentTool[] = [
           description:
             "Optional Lucide icon name (kebab-case), e.g. list-todo, cloud-sun, gamepad-2. Omit to auto-pick from the title.",
         },
+        forceNew: {
+          type: "boolean",
+          description:
+            "When true, always mint a new app id even if a same-title app exists. Default false (upsert by title).",
+        },
       },
       required: ["title", "code"],
     },
@@ -480,16 +485,26 @@ export const agentTools: AgentTool[] = [
       const code = String(args.code ?? "");
       const lint = lintOpenUICode(code);
       // Save unconditionally — rejecting outright forces full-rewrite retries,
-      // which is the failure mode the patch loop exists to avoid.
-      const app = await appStore.create({
-        title,
-        content: code,
-        sessionId: ctx.sessionId,
-        ...(typeof args.icon === "string" ? { icon: args.icon } : {}),
-      });
+      // which is the failure mode the patch loop exists to avoid. Same-title
+      // creates upsert so those retries update one app instead of flooding
+      // the launcher with duplicates.
+      const app = await appStore.create(
+        {
+          title,
+          content: code,
+          sessionId: ctx.sessionId,
+          ...(typeof args.icon === "string" ? { icon: args.icon } : {}),
+        },
+        { forceNew: args.forceNew === true },
+      );
       ctx.emit({ type: "apps_changed" });
       ctx.emit({ type: "os_ui", action: { action: "open_app", appId: app.id } });
-      return { id: app.id, title: app.title, ...lintPayload(lint) };
+      return {
+        id: app.id,
+        title: app.title,
+        reused: app.reused,
+        ...lintPayload(lint),
+      };
     },
   },
   {

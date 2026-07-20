@@ -10,11 +10,10 @@ export interface BreadcrumbItem {
 export interface BreadcrumbProps {
   items: BreadcrumbItem[];
   actions?: React.ReactNode;
-  collaborators?: React.ReactNode;
 }
 
 /** Document top bar with breadcrumb trail and optional actions. */
-export function Breadcrumb({ items, actions, collaborators }: BreadcrumbProps) {
+export function Breadcrumb({ items, actions }: BreadcrumbProps) {
   return (
     <div className="arco-breadcrumb-bar">
       <nav className="arco-breadcrumb" aria-label={i18n.t(I18nKey.COMPONENTS$PATTERNS_BREADCRUMB)}>
@@ -36,12 +35,11 @@ export function Breadcrumb({ items, actions, collaborators }: BreadcrumbProps) {
           </span>
         ))}
       </nav>
-      {(collaborators || actions) && (
+      {actions ? (
         <div className="arco-breadcrumb-bar__right">
-          {collaborators}
-          {actions ? <div className="arco-breadcrumb-bar__actions">{actions}</div> : null}
+          <div className="arco-breadcrumb-bar__actions">{actions}</div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

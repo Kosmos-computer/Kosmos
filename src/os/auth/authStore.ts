@@ -59,8 +59,11 @@ function readableError(err: unknown): string {
 }
 
 function isReachabilityError(err: unknown): boolean {
+  if (err instanceof DOMException && err.name === "AbortError") return true;
   const raw = err instanceof Error ? err.message : String(err);
-  return /failed to fetch|networkerror|load failed|cannot reach|connection refused|econnrefused/i.test(raw);
+  return /failed to fetch|networkerror|load failed|cannot reach|connection refused|econnrefused|aborted|timed?\s*out/i.test(
+    raw,
+  );
 }
 
 function persistMobileSession(token?: string): void {

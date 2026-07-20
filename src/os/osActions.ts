@@ -22,6 +22,7 @@ import { executeCursorCommand } from "./cursor/uiDriver";
 import { publishAppEvent } from "./appEventBus";
 import { focusShellWindow, openShellWindow } from "./shellNavigation";
 import { useStudioStore } from "../apps/studio/studioStore";
+import { setConversationStatus } from "../apps/studio/conversationStatusStore";
 import { executeBrowserCommand } from "../apps/studio/browser/browserAutomation";
 import { executeComputerCommand } from "./computerUse";
 import { systemAppTitle } from "./systemAppTitles";
@@ -280,6 +281,31 @@ export function handleShellEvent(event: AgentEvent, sessionKey?: string | null):
   const os = useOsStore.getState();
 
   useStudioStore.getState().ingestAgentEvent(event, sessionKey);
+
+  // Sidebar status dots — keep in sync with agent-canvas execution_status.
+  if (sessionKey) {
+    switch (event.type) {
+      case "confirm_required":
+        setConversationStatus(sessionKey, "waiting");
+        break;
+      case "confirm_resolved":
+        setConversationStatus(sessionKey, "running");
+        break;
+      case "done":
+        setConversationStatus(sessionKey, "finished");
+        break;
+      case "error":
+        setConversationStatus(sessionKey, "error");
+        break;
+      case "text_delta":
+      case "tool_start":
+      case "tool_end":
+        setConversationStatus(sessionKey, "running");
+        break;
+      default:
+        break;
+    }
+  }
 
   // Mark unread when an agent turn ends / needs confirm while another session is active.
   if (

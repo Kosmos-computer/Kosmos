@@ -439,6 +439,7 @@
 
 .arco-attach__panel {
   width: 240px;
+  overflow: auto;
 }
 
 .arco-attach__submenu {
@@ -728,6 +729,9 @@
 /* ── Status bar + usage popover ───────────────────────────────────────────── */
 
 .arco-composer__statusbar {
+  /* Above the docked card so status-bar popovers (usage) aren't covered. */
+  position: relative;
+  z-index: calc(var(--arco-z-overlay) + 50);
   display: flex;
   align-items: center;
   justify-content: flex-end;

@@ -788,6 +788,11 @@ export interface InstallStatus {
   ready: boolean;
   /** True when running inside a packaged Electron build. */
   packaged?: boolean;
+  /**
+   * Same-origin Kosmos Cloud / Fly tenant — LLM is already wired to the
+   * credits gateway. InstallFlow skips model-path and kosmos-connect.
+   */
+  hostedCloud?: boolean;
   checks: InstallCheck[];
   optional: InstallCheck[];
 }

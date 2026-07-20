@@ -434,6 +434,7 @@ export function ComposerControlsRow({
           {showModeMenu && (
             <div ref={setItemRef("mode")} className={controlClass("mode")} aria-hidden={overflowIds.includes("mode") || undefined}>
               <Menu
+                portal
                 side="top"
                 align="start"
                 aria-label={i18n.t(I18nKey.COMPONENTS$COMPOSER_CONVERSATION_MODE)}
@@ -450,6 +451,7 @@ export function ComposerControlsRow({
           {showApprovalMenu && (
             <div ref={setItemRef("approval")} className={controlClass("approval")} aria-hidden={overflowIds.includes("approval") || undefined}>
               <Menu
+                portal
                 side="top"
                 align="start"
                 heading="How should agent actions be approved?"
@@ -469,6 +471,7 @@ export function ComposerControlsRow({
             <div ref={setItemRef("model")} className={controlClass("model")} aria-hidden={overflowIds.includes("model") || undefined}>
               {useSplitPicker ? (
                 <ModelPickerMenu
+                  portal
                   side="top"
                   align="start"
                   aria-label={i18n.t(I18nKey.COMPONENTS$COMPOSER_CHOOSE_MODEL)}
@@ -485,6 +488,7 @@ export function ComposerControlsRow({
                 />
               ) : modelInteractive ? (
                 <Menu
+                  portal
                   side="top"
                   align="start"
                   aria-label={i18n.t(I18nKey.COMPONENTS$COMPOSER_CHOOSE_MODEL)}
@@ -515,6 +519,7 @@ export function ComposerControlsRow({
         {showOverflowDock && (
           <div className="arco-composer__overflowdock">
             <Menu
+              portal
               side="top"
               align="end"
               aria-label={i18n.t(I18nKey.COMPONENTS$COMPOSER_MORE_COMPOSER_ACTIONS)}

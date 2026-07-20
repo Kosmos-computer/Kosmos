@@ -126,7 +126,9 @@ export function ContactImportModal({ open, accountLabel, onClose, onImport }: Co
                     </li>
                   ))}
                   {preview.length > 8 ? (
-                    <li className="arco-contact-import__preview-more">+ {preview.length - 8}<T k={I18nKey.APPS$CONTACTS_MORE} /></li>
+                    <li className="arco-contact-import__preview-more">
+                      + {preview.length - 8} <T k={I18nKey.APPS$CONTACTS_MORE} />
+                    </li>
                   ) : null}
                 </ul>
               </section>
@@ -136,7 +138,11 @@ export function ContactImportModal({ open, accountLabel, onClose, onImport }: Co
 
         <footer className="arco-contact-modal__footer">
           <Button variant="ghost" onClick={handleClose}><T k={I18nKey.COMMON$CANCEL} /></Button>
-          <Button variant="primary" onClick={handleImport} disabled={preview.length === 0}><T k={I18nKey.APPS$CONTACTS_IMPORT} />{preview.length > 0 ? preview.length : ""}<T k={I18nKey.APPS$CONTACTS_CONTACTS} /></Button>
+          <Button variant="primary" onClick={handleImport} disabled={preview.length === 0}>
+            {preview.length > 0
+              ? `${i18n.t(I18nKey.APPS$CONTACTS_IMPORT)} ${preview.length} ${i18n.t(I18nKey.APPS$CONTACTS_CONTACTS)}`
+              : i18n.t(I18nKey.APPS$CONTACTS_IMPORT_CONTACTS)}
+          </Button>
         </footer>
       </div>
     </div>

@@ -6,6 +6,7 @@ import {
   getPlatformBridge,
   installApiBaseInterceptor,
   resolvePlatformBridge,
+  setApiBaseInterceptor,
   setBearerTokenInterceptor,
 } from "@arco/platform-bridge";
 import { getActiveServerUrl, hasActiveServerProfile } from "./server/serverProfileStore";
@@ -30,6 +31,8 @@ export async function bootstrapPlatformShell(): Promise<void> {
   const { config } = bridge;
 
   installApiBaseInterceptor(config);
+  // Ensure cloud/mobile profiles win even if the bridge was cached earlier.
+  if (profileUrl) setApiBaseInterceptor(profileUrl);
   setBearerTokenInterceptor(getMobileSessionToken(profileUrl));
 
   const root = document.documentElement;

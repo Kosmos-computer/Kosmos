@@ -1,19 +1,31 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { listServerProfiles } from "../../os/server/serverProfileStore";
 import { useOsStore } from "../../os/osStore";
+import {
+  LOCAL_CONTACTS_BACKEND_ID,
+  serverProfileIdFromContactsBackend,
+} from "./contactsMock";
 import { useContactsStore } from "./contactsStore";
 import type { ContactImportMode, ContactInput } from "./types";
+
+function backendDisplayLabel(backendId: string): string {
+  if (backendId === LOCAL_CONTACTS_BACKEND_ID) return "Local";
+  const profileId = serverProfileIdFromContactsBackend(backendId);
+  if (!profileId) return "Contacts";
+  const profile = listServerProfiles().find((entry) => entry.id === profileId);
+  if (profile?.kind === "cloud") return profile.name?.trim() || "Kosmos Cloud";
+  if (profile?.name?.trim()) return profile.name.trim();
+  return "Server";
+}
 
 /** STUB: replace with useContactsStore when os.contacts@1 exists. */
 export function useContactsStub() {
   const notify = useOsStore((s) => s.notify);
 
-  const accounts = useContactsStore((s) => s.accounts);
-  const activeAccountId = useContactsStore((s) => s.activeAccountId);
-  const contactsByAccount = useContactsStore((s) => s.contactsByAccount);
-  const setActiveAccountId = useContactsStore((s) => s.setActiveAccountId);
-  const addLocalAccount = useContactsStore((s) => s.addLocalAccount);
-  const connectAccount = useContactsStore((s) => s.connectAccount);
-  const removeAccount = useContactsStore((s) => s.removeAccount);
+  const activeBackendId = useContactsStore((s) => s.activeBackendId);
+  const contactsByBackend = useContactsStore((s) => s.contactsByBackend);
+  const setActiveBackendId = useContactsStore((s) => s.setActiveBackendId);
+  const ensureBackend = useContactsStore((s) => s.ensureBackend);
   const addContact = useContactsStore((s) => s.addContact);
   const updateContact = useContactsStore((s) => s.updateContact);
   const deleteContact = useContactsStore((s) => s.deleteContact);
@@ -27,14 +39,13 @@ export function useContactsStub() {
   const [dialWidth, setDialWidth] = useState(280);
   const [keypadVisible, setKeypadVisible] = useState(false);
 
-  const activeAccount = useMemo(
-    () => accounts.find((account) => account.id === activeAccountId) ?? accounts[0],
-    [accounts, activeAccountId],
-  );
+  useEffect(() => {
+    ensureBackend(activeBackendId);
+  }, [activeBackendId, ensureBackend]);
 
   const accountContacts = useMemo(
-    () => contactsByAccount[activeAccountId] ?? [],
-    [contactsByAccount, activeAccountId],
+    () => contactsByBackend[activeBackendId] ?? [],
+    [contactsByBackend, activeBackendId],
   );
 
   const filteredContacts = useMemo(() => {
@@ -50,22 +61,30 @@ export function useContactsStub() {
   }, [accountContacts, searchQuery]);
 
   const activeContact = useMemo(
-    () => filteredContacts.find((contact) => contact.id === activeContactId) ?? accountContacts.find((c) => c.id === activeContactId),
+    () =>
+      filteredContacts.find((contact) => contact.id === activeContactId) ??
+      accountContacts.find((c) => c.id === activeContactId),
     [filteredContacts, accountContacts, activeContactId],
   );
 
-  const selectContact = useCallback((id: string) => {
-    setActiveContactId(id);
-    const contact = accountContacts.find((entry) => entry.id === id);
-    if (contact) setDialValue(contact.phone);
-  }, [accountContacts]);
+  const selectContact = useCallback(
+    (id: string) => {
+      setActiveContactId(id);
+      const contact = accountContacts.find((entry) => entry.id === id);
+      if (contact) setDialValue(contact.phone);
+    },
+    [accountContacts],
+  );
 
-  const handleAccountChange = useCallback((id: string) => {
-    setActiveAccountId(id);
-    setActiveContactId(null);
-    setDialValue("");
-    setSearchQuery("");
-  }, [setActiveAccountId]);
+  const switchBackend = useCallback(
+    (id: string) => {
+      setActiveBackendId(id);
+      setActiveContactId(null);
+      setDialValue("");
+      setSearchQuery("");
+    },
+    [setActiveBackendId],
+  );
 
   const appendDial = useCallback((key: string) => {
     setDialValue((prev) => prev + key);
@@ -125,14 +144,12 @@ export function useContactsStub() {
     [importContacts, notify],
   );
 
+  const activeBackendLabel = backendDisplayLabel(activeBackendId);
+
   return {
-    accounts,
-    activeAccount,
-    activeAccountId,
-    setActiveAccountId: handleAccountChange,
-    addLocalAccount,
-    connectAccount,
-    removeAccount,
+    activeBackendId,
+    activeBackendLabel,
+    switchBackend,
     contacts: filteredContacts,
     activeContactId,
     setActiveContactId: selectContact,

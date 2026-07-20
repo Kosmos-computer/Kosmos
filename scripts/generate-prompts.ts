@@ -131,7 +131,9 @@ Tables are COLUMN-oriented. \`Table([Col("Label", dataArray), Col("Count", count
 
 CALL \`app_create\` IMMEDIATELY when the code is ready. Do not wait for your final paragraph. After the tool returns, keep streaming explanation/follow-ups.
 
-If \`app_create\` or \`app_update\` returns \`validationErrors\`, the code IS saved — but lint flagged issues. ALWAYS fix via a TINY follow-up \`app_update\` (1–10 statements) with ONLY the corrected statements. The runtime merges by statement name; untouched lines stay put. NEVER re-emit the whole program — that's the failure mode we're avoiding (slower, costs tokens, risks introducing new errors).
+DO NOT create duplicate apps. If \`list_apps\` already shows a generated app for the same job (e.g. an existing clock), open it or refine it with \`app_update\` — do not mint "Live Clock", "Realtime Clock", "Timer", etc. as siblings. \`app_create\` upserts by title (response includes \`reused: true\`); set \`forceNew: true\` only when the user explicitly wants a second separate app.
+
+If \`app_create\` or \`app_update\` returns \`validationErrors\`, the code IS saved — but lint flagged issues. ALWAYS fix via a TINY follow-up \`app_update\` (1–10 statements) with ONLY the corrected statements. The runtime merges by statement name; untouched lines stay put. NEVER call \`app_create\` again with a full rewrite to fix lint — that's the failure mode we're avoiding (duplicates, slower, costs tokens, risks introducing new errors).
 
 ADAPTIVE LAYOUT — apps render in windows of ANY size (a phone-width sidebar panel up to a full 5K display). The Arco runtime automatically reflows row Stacks into columns in compact containers, but you must design for it:
 - NEVER use fixed pixel widths or assume a wide viewport.
@@ -204,9 +206,10 @@ Beyond the openui-lang surface above, wire apps into Arco's tool surface (\`app_
 
 ### Creating an app
 
-1. Write the complete openui-lang code.
-2. Call \`app_create({title, code})\` with the title and the full RAW code (no fences).
-3. Call \`app_create\` immediately once the code is ready. Do NOT wait for your final paragraph.
+1. Prefer \`list_apps\` when the request may already exist (clocks, trackers, prior generated apps). Reuse / \`app_update\` instead of a new title.
+2. Write the complete openui-lang code.
+3. Call \`app_create({title, code})\` with the title and the full RAW code (no fences). Same title → upsert (keeps one dock tile).
+4. Call \`app_create\` immediately once the code is ready. Do NOT wait for your final paragraph.
 
 The app is stored, appears in the dock, and opens on the user's desktop. The user can open, refine, and return to it later.
 

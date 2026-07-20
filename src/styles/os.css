@@ -340,32 +340,6 @@
   gap: var(--arco-space-xs);
 }
 
-.arco-menubar-backends__wizard-fields {
-  display: flex;
-  flex-direction: column;
-  gap: var(--arco-space-s);
-}
-
-.arco-menubar-backends__wizard-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: var(--arco-space-s);
-  margin-top: var(--arco-space-m);
-}
-
-.arco-menubar-backends__wizard-success {
-  margin: var(--arco-space-s) 0 0;
-  font-size: var(--arco-text-sm);
-  color: var(--arco-success);
-}
-
-.arco-menubar-backends__wizard-error {
-  margin: var(--arco-space-s) 0 0;
-  font-size: var(--arco-text-sm);
-  color: var(--arco-danger);
-}
-
 .arco-menubar__volume-panel {
   min-width: 196px;
   padding: var(--arco-space-m);

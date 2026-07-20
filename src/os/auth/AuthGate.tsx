@@ -26,6 +26,34 @@ const XFADE_MS = 600;
 
 type ScreenKey = "boot" | AuthPhase;
 
+/**
+ * Some hosts (embedded browsers, paused DevTools) freeze `document.timeline`
+ * at 0. CSS animations then stay on their from-keyframe forever — for auth
+ * fades that means opacity 0 and a blank page. Finish running animations in
+ * this subtree when the timeline does not advance.
+ */
+function useUnstickCssAnimations(activeKey: ScreenKey) {
+  useEffect(() => {
+    const t0 = document.timeline.currentTime ?? 0;
+    const timer = window.setTimeout(() => {
+      const t1 = document.timeline.currentTime ?? 0;
+      if (t1 !== t0) return;
+      const root = document.querySelector(".arco-authgate");
+      if (!root) return;
+      for (const anim of root.getAnimations({ subtree: true })) {
+        if (anim.playState === "running" || anim.playState === "pending") {
+          try {
+            anim.finish();
+          } catch {
+            // ignore animations that cannot be finished
+          }
+        }
+      }
+    }, 120);
+    return () => clearTimeout(timer);
+  }, [activeKey]);
+}
+
 // ---------------------------------------------------------------------------
 // Cross-fade switcher
 //
@@ -37,6 +65,9 @@ type ScreenKey = "boot" | AuthPhase;
 function FadeSwitch({ screenKey, children }: { screenKey: ScreenKey; children: ReactNode }) {
   const [prev, setPrev] = useState<{ key: ScreenKey; node: ReactNode } | null>(null);
   const lastRef = useRef<{ key: ScreenKey; node: ReactNode }>({ key: screenKey, node: children });
+  // First paint must not depend on CSS animations — a paused document timeline
+  // leaves fill-mode fades stuck at opacity 0 (blank black page).
+  const initialKeyRef = useRef(screenKey);
 
   if (lastRef.current.key !== screenKey) {
     // Key changed this render: snapshot the outgoing screen before replacing.
@@ -52,9 +83,13 @@ function FadeSwitch({ screenKey, children }: { screenKey: ScreenKey; children: R
     return () => clearTimeout(t);
   }, [prev]);
 
+  useUnstickCssAnimations(screenKey);
+
+  const animateIn = screenKey !== initialKeyRef.current || prev !== null;
+
   return (
     <div className="arco-authgate">
-      <div key={screenKey} className="arco-fade arco-fade--in">
+      <div key={screenKey} className={animateIn ? "arco-fade arco-fade--in" : "arco-fade"}>
         {children}
       </div>
       {prev && (
@@ -118,13 +153,13 @@ export function AuthGate({ children, standalone = false }: { children: ReactNode
 
   useIdleLock(phase === "ready");
 
-  // Hold the splash until both the minimum duration and the status fetch
-  // finish — the bar completes, then the real screen cross-fades in.
+  // Always show the boot splash while auth status is unresolved — otherwise
+  // the gate renders an empty layer (black page) when the Appearance toggle
+  // has the optional long splash disabled. With the toggle on, also hold the
+  // splash for MIN_BOOT_MS so the bar can finish before cross-fading.
   // ?boottest=1 keeps the boot splash up for previewing the sprite animation.
-  // When the Appearance toggle is off, skip the splash and wait on a blank
-  // gate until auth resolves to setup / login / locked / ready.
   const screen: ScreenKey =
-    bootTest || (splashEnabled && (!bootElapsed || phase === "booting")) ? "boot" : phase;
+    bootTest || phase === "booting" || (splashEnabled && !bootElapsed) ? "boot" : phase;
 
   return (
     <FadeSwitch screenKey={screen}>

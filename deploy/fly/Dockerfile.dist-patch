@@ -1,0 +1,16 @@
+# Patch an existing tenant runtime image with a freshly built dist/ and
+# minimal server fixes when a full rebuild is blocked.
+#
+#   npm run build
+#   fly deploy . --config deploy/fly/template-dist-patch.fly.toml \
+#     --build-only --push --image-label demo --remote-only
+#   fly deploy -a kosmos-<name> --image registry.fly.io/kosmos-template:demo
+
+FROM registry.fly.io/kosmos-template:demo
+
+COPY dist/ /app/dist/
+COPY shared/kosmosCloudModels.ts /app/shared/kosmosCloudModels.ts
+COPY deploy/fly/patches/models-remote/remoteModels.ts /app/server/llm/remoteModels.ts
+COPY deploy/fly/patches/models-remote/models.ts /app/server/routes/models.ts
+# Compatible with older runtime images (no secureFs / settingsSecrets).
+COPY deploy/fly/patches/models-remote/env.ts /app/server/env.ts

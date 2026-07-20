@@ -130,6 +130,9 @@ export async function provisionTenant(config: Config, tenantName: string): Promi
       "ARCO_SECURE_COOKIES=1",
       `ARCO_ENTRY_MAGIC_KEY=${entryKey}`,
       `ARCO_WORKSPACE_QUOTA_MB=${config.tenantQuotaMb}`,
+      "KOSMOS_BILLING_MANAGED=1",
+      `KOSMOS_TENANT_APP=${app}`,
+      `KOSMOS_CONTROL_PLANE_URL=${config.publicUrl}`,
     ]);
 
     const toml = TENANT_TEMPLATE.replaceAll("__APP__", app).replaceAll("__REGION__", config.tenantRegion);

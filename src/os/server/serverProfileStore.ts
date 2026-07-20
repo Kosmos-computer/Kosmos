@@ -90,22 +90,24 @@ export function upsertServerProfile(input: {
 }): ServerProfile {
   const url = normalizeServerUrl(input.url);
   const snap = readSnapshot();
-  const id = input.id ?? crypto.randomUUID();
+  const byUrl = snap.profiles.find((p) => p.url === url);
+  const id = input.id ?? byUrl?.id ?? crypto.randomUUID();
   const profile: ServerProfile = {
     id,
-    name: input.name.trim() || url,
+    name: input.name.trim() || byUrl?.name || url,
     url,
-    kind: input.kind ?? "custom",
+    kind: input.kind ?? byUrl?.kind ?? "custom",
     lastUsedAt: Date.now(),
   };
-  const idx = snap.profiles.findIndex((p) => p.id === id);
+  const idx = snap.profiles.findIndex((p) => p.id === id || p.url === url);
   const profiles =
     idx >= 0
-      ? snap.profiles.map((p, i) => (i === idx ? { ...p, ...profile } : p))
+      ? snap.profiles.map((p, i) => (i === idx ? { ...p, ...profile, id: p.id } : p))
       : [...snap.profiles, profile];
-  writeSnapshot({ ...snap, profiles, activeId: id, scanSubnet: subnetFromOrigin(url) ?? snap.scanSubnet });
+  const activeId = profiles.find((p) => p.url === url)?.id ?? id;
+  writeSnapshot({ ...snap, profiles, activeId, scanSubnet: subnetFromOrigin(url) ?? snap.scanSubnet });
   rememberScanSubnet(url);
-  return profile;
+  return profiles.find((p) => p.id === activeId) ?? profile;
 }
 
 export function activateServerProfile(id: string): ServerProfile | null {

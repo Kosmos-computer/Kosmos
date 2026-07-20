@@ -8,7 +8,7 @@ import { Avatar, Button, EmptyState, Input } from "../../components/ui";
 import { ContactDetail } from "./ContactDetail";
 import { ContactFormModal } from "./ContactFormModal";
 import { ContactImportModal } from "./ContactImportModal";
-import { ContactsAccountSwitcher } from "./ContactsAccountSwitcher";
+import { ContactsBackendFooter } from "./ContactsBackendFooter";
 import { DialPad } from "./DialPad";
 import { useContactsStub } from "./useContactsStub";
 import type { PhoneContact } from "./types";
@@ -39,15 +39,6 @@ export function ContactsApp() {
       <SidebarPane width={contacts.listWidth} onWidthChange={contacts.setListWidth} minWidth={240} maxWidth={420}>
         <div className="arco-contacts__list-pane">
           <div className="arco-contacts__list-header">
-            <ContactsAccountSwitcher
-              accounts={contacts.accounts}
-              activeAccountId={contacts.activeAccountId}
-              onSelectAccount={contacts.setActiveAccountId}
-              onAddLocalAccount={contacts.addLocalAccount}
-              onConnectAccount={contacts.connectAccount}
-              onRemoveAccount={contacts.removeAccount}
-            />
-
             <div className="arco-contacts__list-title-row">
               <h1><T k={I18nKey.APPS$CONTACTS_CONTACTS_2} /></h1>
               <div className="arco-contacts__header-actions">
@@ -121,6 +112,13 @@ export function ContactsApp() {
               ))
             )}
           </div>
+
+          <div className="arco-nav-sidebar__footer">
+            <ContactsBackendFooter
+              activeBackendId={contacts.activeBackendId}
+              onSwitchBackend={contacts.switchBackend}
+            />
+          </div>
         </div>
       </SidebarPane>
 
@@ -158,7 +156,7 @@ export function ContactsApp() {
 
       <ContactImportModal
         open={importOpen}
-        accountLabel={contacts.activeAccount?.label ?? "this account"}
+        accountLabel={contacts.activeBackendLabel}
         onClose={() => setImportOpen(false)}
         onImport={contacts.runImport}
       />

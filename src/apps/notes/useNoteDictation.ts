@@ -14,8 +14,13 @@ export function useNoteDictation(editor: Editor | null) {
   useEffect(() => () => stopRef.current?.(), []);
 
   const stop = useCallback(() => {
-    stopRef.current?.();
+    const stopFn = stopRef.current;
     stopRef.current = null;
+    if (stopFn) {
+      // Engines report status via onStatus (server goes listening → processing → idle).
+      stopFn();
+      return;
+    }
     setInterim("");
     setStatus("idle");
   }, []);

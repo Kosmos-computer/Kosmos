@@ -1,5 +1,6 @@
 /**
- * Blocks the shell until a server profile is chosen (bundled mobile APK only).
+ * Blocks the shell until a server profile is chosen.
+ * Bundled Capacitor APK only — never same-origin hosted / browser tenants.
  */
 import type { ReactNode } from "react";
 import { hasActiveServerProfile } from "./serverProfileStore";

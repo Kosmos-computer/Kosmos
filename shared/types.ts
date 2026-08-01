@@ -13,6 +13,13 @@ export interface VersionEntry {
 }
 
 /** A durable generated app: openui-lang source + append-only version history. */
+/** Last lint/smoke outcome for a generated OpenUI app (shown as a surface badge). */
+export interface AppHealth {
+  broken: boolean;
+  summary?: string;
+  checkedAt: string;
+}
+
 export interface StoredApp {
   id: string;
   title: string;
@@ -25,6 +32,8 @@ export interface StoredApp {
   versions: VersionEntry[];
   createdAt: string;
   updatedAt: string;
+  /** Populated after app_create / app_update lint + Query smoke. */
+  health?: AppHealth;
 }
 
 /** Listing shape — content omitted to keep the dock/library payload small. */
@@ -154,6 +163,8 @@ export type OsUiAction =
   | { action: "focus_app"; appId: string }
   | { action: "minimize_app"; appId: string }
   | { action: "restore_app"; appId: string }
+  /** Pin a generated/web app to the dock after a successful smoke (not auto on every create). */
+  | { action: "pin_app"; appId: string }
   | { action: "notify"; message: string }
   | { action: "open_workspace_tab"; tab: WorkspaceTab; path?: string };
 

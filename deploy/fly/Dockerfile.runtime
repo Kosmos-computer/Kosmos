@@ -25,7 +25,11 @@ RUN npm ci --ignore-scripts
 
 COPY . .
 
-RUN npm rebuild better-sqlite3
+# better-sqlite3 + WebTorrent's node-datachannel (os.downloads@1).
+# Prefer prebuild-install (napi); fall back to an in-tree rebuild if needed.
+RUN npm rebuild better-sqlite3 \
+  && npm rebuild node-datachannel \
+  && node -e "require('node-datachannel'); console.log('node-datachannel ok')"
 RUN chmod +x scripts/docker-entrypoint.sh
 
 ENV NODE_ENV=production

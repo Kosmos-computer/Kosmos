@@ -1,0 +1,8 @@
+{
+  "id": "python-fastapi",
+  "name": "Python FastAPI",
+  "description": "FastAPI + uvicorn on http://127.0.0.1:8000",
+  "install": "python3 -m venv .venv && .venv/bin/pip install -r requirements.txt",
+  "dev": ".venv/bin/uvicorn main:app --host 127.0.0.1 --port 8000",
+  "url": "http://127.0.0.1:8000"
+}

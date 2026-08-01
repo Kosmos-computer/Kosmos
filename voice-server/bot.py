@@ -70,6 +70,18 @@ SYSTEM_INSTRUCTION = (
 )
 
 
+# Written by the Arco shell when the user switches local ↔ cloud backends.
+# Per-session bot() reloads config, so the next mic connect picks this up.
+BRAIN_OVERRIDE_PATH = SERVER_DIR / "brain.override.json"
+LOCAL_BRAIN = {
+    "baseUrl": "http://localhost:4600/v1",
+    "model": "arco-agent",
+    "apiKey": "",
+    "useArcoSettings": False,
+    "source": "local",
+}
+
+
 def load_config() -> dict[str, Any]:
     config_path = Path(os.environ.get("ARCO_VOICE_CONFIG", SERVER_DIR / "voice.config.json"))
     with open(config_path, "r", encoding="utf-8") as f:
@@ -78,9 +90,63 @@ def load_config() -> dict[str, Any]:
     return config
 
 
+def read_brain_override() -> dict[str, Any] | None:
+    try:
+        raw = json.loads(BRAIN_OVERRIDE_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if not isinstance(raw, dict):
+        return None
+    base_url = str(raw.get("baseUrl") or "").strip()
+    if not base_url:
+        return None
+    return raw
+
+
+def write_brain_override(brain: dict[str, Any]) -> dict[str, Any]:
+    base_url = str(brain.get("baseUrl") or "").strip().rstrip("/")
+    if not base_url:
+        raise ValueError("baseUrl is required")
+    payload = {
+        "baseUrl": base_url,
+        "model": str(brain.get("model") or "arco-agent").strip() or "arco-agent",
+        "apiKey": str(brain.get("apiKey") or ""),
+        "useArcoSettings": bool(brain.get("useArcoSettings", False)),
+        "source": str(brain.get("source") or "custom"),
+    }
+    BRAIN_OVERRIDE_PATH.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    logger.info(f"Brain override ({payload['source']}): {payload['model']} @ {payload['baseUrl']}")
+    return payload
+
+
+def clear_brain_override() -> None:
+    try:
+        BRAIN_OVERRIDE_PATH.unlink()
+        logger.info("Brain override cleared — using voice.config.json / local defaults")
+    except FileNotFoundError:
+        pass
+
+
 def resolve_brain(config: dict[str, Any]) -> dict[str, str]:
     """The brain slot is always just an OpenAI-compatible endpoint: Ollama,
-    Arco Models (llama-server), or the Arco agent's /v1/chat/completions."""
+    Arco Models (llama-server), or the Arco agent's /v1/chat/completions.
+
+    Priority: shell-written brain.override.json (local↔cloud switch) →
+    optional Arco settings.json mirror → voice.config.json defaults."""
+    override = read_brain_override()
+    if override is not None:
+        brain = {
+            "baseUrl": override.get("baseUrl"),
+            "model": override.get("model", "arco-agent"),
+            "apiKey": override.get("apiKey", ""),
+            "useArcoSettings": False,
+        }
+        logger.info(
+            f"Brain from override ({override.get('source', 'custom')}): "
+            f"{brain['model']} @ {brain['baseUrl']}"
+        )
+        return brain
+
     brain = dict(config.get("brain", {}))
     if brain.get("useArcoSettings"):
         try:
@@ -95,6 +161,61 @@ def resolve_brain(config: dict[str, Any]) -> dict[str, str]:
         except (OSError, json.JSONDecodeError) as err:
             logger.warning(f"Could not read Arco settings ({err}); using voice.config.json brain")
     return brain
+
+
+class BrainOverrideBody(BaseModel):
+    baseUrl: str | None = None
+    model: str | None = None
+    apiKey: str | None = None
+    useArcoSettings: bool | None = None
+    source: str | None = None
+    # mode=local clears the override so voice.config.json / localhost wins.
+    mode: str | None = None
+
+
+@voice_app.get("/brain")
+async def get_brain() -> dict[str, Any]:
+    override = read_brain_override()
+    if override is not None:
+        return {
+            "source": override.get("source", "custom"),
+            "baseUrl": override.get("baseUrl"),
+            "model": override.get("model", "arco-agent"),
+            "hasApiKey": bool(override.get("apiKey")),
+        }
+    brain = resolve_brain(load_config())
+    return {
+        "source": "config",
+        "baseUrl": brain.get("baseUrl"),
+        "model": brain.get("model", "arco-agent"),
+        "hasApiKey": bool(brain.get("apiKey")),
+    }
+
+
+@voice_app.post("/brain")
+async def set_brain(body: BrainOverrideBody) -> dict[str, Any]:
+    """Shell sync: point the next voice session at local or cloud /v1."""
+    mode = (body.mode or "").strip().lower()
+    if mode == "local":
+        write_brain_override(LOCAL_BRAIN)
+        return await get_brain()
+    if not (body.baseUrl or "").strip():
+        raise HTTPException(status_code=400, detail="baseUrl is required unless mode=local")
+    try:
+        write_brain_override(
+            {
+                "baseUrl": body.baseUrl,
+                "model": body.model or LOCAL_BRAIN["model"],
+                "apiKey": body.apiKey if body.apiKey is not None else "",
+                "useArcoSettings": bool(body.useArcoSettings)
+                if body.useArcoSettings is not None
+                else False,
+                "source": body.source or mode or "custom",
+            }
+        )
+    except ValueError as err:
+        raise HTTPException(status_code=400, detail=str(err)) from err
+    return await get_brain()
 
 
 def parse_language(code: str) -> Language | None:

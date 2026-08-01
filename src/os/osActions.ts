@@ -27,6 +27,7 @@ import { executeBrowserCommand } from "../apps/studio/browser/browserAutomation"
 import { executeComputerCommand } from "./computerUse";
 import { systemAppTitle } from "./systemAppTitles";
 import { installedLaunchKey, systemLaunchKey, useDocumentLaunchStore } from "./documentLaunchStore";
+import { addPinned } from "./pinnedApps";
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
@@ -264,6 +265,30 @@ async function executeOsUiAction(action: OsUiAction): Promise<OsUiResult> {
     case "notify": {
       os.notify(action.message);
       return { ok: true, windows: windowSummaries() };
+    }
+
+    case "pin_app": {
+      await os.refreshApps();
+      const state = useOsStore.getState();
+      const wanted = action.appId.trim();
+      let pinId: string | null = null;
+      if (state.apps.some((a) => a.id === wanted)) {
+        pinId = `generated:${wanted}`;
+      } else if (state.webApps.some((a) => a.id === wanted)) {
+        pinId = `web:${wanted}`;
+      } else if (wanted.startsWith("generated:") || wanted.startsWith("web:")) {
+        pinId = wanted;
+      }
+      if (!pinId) {
+        return {
+          ok: false,
+          error: `No generated/web app "${action.appId}" to pin.`,
+          windows: windowSummaries(),
+        };
+      }
+      state.setDockPinnedIds((prev) => addPinned(prev, pinId!));
+      state.setNavPinnedIds((prev) => addPinned(prev, pinId!));
+      return { ok: true, note: `Pinned ${pinId}`, windows: windowSummaries() };
     }
 
     case "open_workspace_tab": {

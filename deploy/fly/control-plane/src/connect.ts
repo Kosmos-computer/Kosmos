@@ -24,12 +24,26 @@ export function parseConnectMode(raw: string | null | undefined): "existing" | "
   return raw === "signup" ? "signup" : "existing";
 }
 
-/** Build the desktop callback URL with kosmosInstance + kosmosConnected=1. */
-export function buildDesktopReturnUrl(returnTo: string, instanceUrl: string): string {
+/**
+ * Build the desktop callback URL with kosmosInstance (+ optional kosmosEntry).
+ * kosmosInstance is always the API origin; kosmosEntry unlocks the private gate.
+ */
+export function buildDesktopReturnUrl(
+  returnTo: string,
+  instanceUrl: string,
+  entryUrl?: string | null,
+): string {
   const url = new URL(returnTo);
-  url.searchParams.set("kosmosInstance", instanceUrl);
+  const origin = new URL(instanceUrl).origin;
+  url.searchParams.set("kosmosInstance", origin);
   url.searchParams.set("kosmosConnected", "1");
   url.searchParams.delete("kosmosConnectError");
+  const entry = entryUrl?.trim() ?? "";
+  if (entry) {
+    url.searchParams.set("kosmosEntry", entry);
+  } else {
+    url.searchParams.delete("kosmosEntry");
+  }
   return url.toString();
 }
 
@@ -38,6 +52,7 @@ export function buildDesktopReturnError(returnTo: string, message: string): stri
   url.searchParams.set("kosmosConnectError", message);
   url.searchParams.delete("kosmosConnected");
   url.searchParams.delete("kosmosInstance");
+  url.searchParams.delete("kosmosEntry");
   return url.toString();
 }
 

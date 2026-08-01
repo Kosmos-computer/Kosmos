@@ -11,6 +11,12 @@ import { History, Plus, Trash2, Undo2 } from "lucide-react";
 import type { ApprovalMode } from "@shared/types";
 import { useChat } from "./useChat";
 import { onPrimeComposer } from "./composerBus";
+import {
+  getStickyBuildMode,
+  setStickyBuildMode,
+  type ClientBuildMode,
+} from "./turnContext";
+import { CHAT_STARTERS } from "./chatStarters";
 import { VoiceBar } from "./VoiceBar";
 import { useVoice, voiceClient } from "../../voice";
 import { Composer } from "../../components/composer/Composer";
@@ -43,7 +49,13 @@ export function ChatApp() {
   const [draft, setDraft] = useState("");
   const [approvalMode, setApprovalMode] = useState<ApprovalMode>(DEFAULT_APPROVAL_MODE);
   const [toolsetIds, setToolsetIds] = useState<string[]>(() => [...DEFAULT_TOOLSET_IDS]);
+  const [buildMode, setBuildMode] = useState<ClientBuildMode | undefined>(() => getStickyBuildMode());
   const [showSessions, setShowSessions] = useState(false);
+
+  const selectBuildMode = useCallback((mode: ClientBuildMode | undefined) => {
+    setBuildMode(mode);
+    setStickyBuildMode(mode);
+  }, []);
   const { scrollRef, onScroll, showJump, scrollToLatest, pinToLatest } =
     useThreadScroll(chat.items);
 
@@ -60,9 +72,14 @@ export function ChatApp() {
       if (!value) return;
       setDraft("");
       pinToLatest();
-      void chat.send(value, { approvalMode, profileId, toolsetIds });
+      void chat.send(value, {
+        approvalMode,
+        profileId,
+        toolsetIds,
+        ...(buildMode ? { buildMode } : {}),
+      });
     },
-    [draft, chat, approvalMode, profileId, toolsetIds, pinToLatest],
+    [draft, chat, approvalMode, profileId, toolsetIds, buildMode, pinToLatest],
   );
 
   useEffect(() => voiceClient.subscribe(chat.applyVoiceEvent), [chat.applyVoiceEvent]);
@@ -136,7 +153,26 @@ export function ChatApp() {
               onScroll={onScroll}
             >
               {chat.items.length === 0 && (
-                <EmptyState title={i18n.t(I18nKey.APPS$CHAT_ASK_ARCO_TO_BUILD_SOMETHING)}><T k={I18nKey.APPS$CHAT_BUILD_ME_A_SYSTEM_MONITOR_TRACK_MY_READING_LIST_DASHBOAR} /></EmptyState>
+                <div className="arco-chat__starters">
+                  <EmptyState title={i18n.t(I18nKey.APPS$CHAT_ASK_ARCO_TO_BUILD_SOMETHING)}>
+                    <T k={I18nKey.APPS$CHAT_BUILD_ME_A_SYSTEM_MONITOR_TRACK_MY_READING_LIST_DASHBOAR} />
+                  </EmptyState>
+                  <div className="arco-chat__starter-chips" role="group" aria-label="Starter prompts">
+                    {CHAT_STARTERS.map((starter) => (
+                      <button
+                        key={starter.label}
+                        type="button"
+                        className="arco-btn arco-btn--small"
+                        onClick={() => {
+                          selectBuildMode(starter.buildMode);
+                          setDraft(starter.prompt);
+                        }}
+                      >
+                        {starter.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               )}
               <ChatThread
                 items={chat.items}
@@ -159,6 +195,24 @@ export function ChatApp() {
 
       <div className="arco-composer-dock">
         <ScrollToLatestButton visible={showJump} onClick={scrollToLatest} />
+        <div className="arco-build-mode-chips" role="group" aria-label="Build mode">
+          <button
+            type="button"
+            className={`arco-btn arco-btn--small${buildMode === "openui" ? " arco-btn--primary" : ""}`}
+            aria-pressed={buildMode === "openui"}
+            onClick={() => selectBuildMode(buildMode === "openui" ? undefined : "openui")}
+          >
+            Quick OS app
+          </button>
+          <button
+            type="button"
+            className={`arco-btn arco-btn--small${buildMode === "code" ? " arco-btn--primary" : ""}`}
+            aria-pressed={buildMode === "code"}
+            onClick={() => selectBuildMode(buildMode === "code" ? undefined : "code")}
+          >
+            Code project
+          </button>
+        </div>
         {attach.fileInput}
         {attach.githubModal}
         <Composer

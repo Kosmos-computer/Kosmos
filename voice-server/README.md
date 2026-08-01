@@ -50,6 +50,12 @@ Every stage is a slot in `voice.config.json` — no code changes needed:
 - Set `"useArcoSettings": true` to follow whatever `data/settings.json` says
   (i.e. the model chosen in Arco's Settings app / model manager).
 
+**Local ↔ cloud:** the Arco shell writes `brain.override.json` (gitignored) via
+`POST /brain` whenever the active server profile changes. Cloud mode points the
+brain at `{tenant}/v1` with the user's session Bearer; local mode resets to
+`http://localhost:4600/v1`. STT/TTS stay on this machine either way. Override
+wins over `voice.config.json`; each mic session reloads it.
+
 The whole STT→LLM→TTS cascade can later be replaced by a single
 speech-to-speech realtime service (OpenAI Realtime, Gemini Live, Ultravox…)
 — Pipecat ships those as drop-in pipeline services; the browser client and
@@ -61,3 +67,4 @@ face rig are unaffected.
 |-------|---------|
 | `POST /api/tts` | Read-aloud — JSON `{ "text": "..." }` → WAV |
 | `POST /api/stt` | Transcription — multipart `file` (16 kHz mono WAV) → `{ "text", "language", "segments": [{ "start", "end", "text" }] }` |
+| `GET /brain` / `POST /brain` | Read or set the local↔cloud brain override |

@@ -19,6 +19,7 @@ import {
   clearMobileSessionToken,
   setMobileSessionToken,
 } from "../server/mobileSessionStore";
+import { syncVoiceBrainForActiveProfile } from "../server/voiceBrainSync";
 
 export type AuthPhase = "booting" | "setup" | "login" | "locked" | "ready" | "offline";
 
@@ -72,11 +73,14 @@ function persistMobileSession(token?: string): void {
   if (!serverUrl) return;
   setMobileSessionToken(serverUrl, token);
   setBearerTokenInterceptor(token);
+  // Fresh cloud session → refresh the local voice-server brain Bearer.
+  void syncVoiceBrainForActiveProfile();
 }
 
 function clearMobileSession(): void {
   clearMobileSessionToken();
   setBearerTokenInterceptor(null);
+  void syncVoiceBrainForActiveProfile();
 }
 
 export const useAuthStore = create<AuthStore>((set) => ({

@@ -45,25 +45,44 @@ function parseResult(item: ToolItem): Record<string, unknown> | null {
 
 function describe(item: ToolItem): Visual {
   const result = parseResult(item);
-  const failed = Boolean(result && (result.error || result.validationErrors));
+  const failed = Boolean(
+    result && (result.error || result.broken || result.runtimeFailed || result.validationErrors),
+  );
   const status: Visual["status"] = !item.result ? "running" : failed ? "error" : "ok";
   const str = (v: unknown, fallback = ""): string => (typeof v === "string" ? v : fallback);
 
   switch (item.name) {
-    case "app_create":
+    case "app_create": {
+      const reused = Boolean(result?.reused || result?.rewrittenFromCreate);
+      const broken = Boolean(result?.broken || result?.runtimeFailed);
       return {
         icon: AppWindow,
         headline: item.result
-          ? `Created app “${str(item.args.title, "Untitled")}”`
+          ? reused
+            ? `Updated existing app “${str(item.args.title, "Untitled")}”`
+            : broken
+              ? `Saved broken app “${str(item.args.title, "Untitled")}”`
+              : `Created app “${str(item.args.title, "Untitled")}”`
           : `Creating app “${str(item.args.title, "Untitled")}”…`,
-        detail: result?.validationErrors ? "saved with lint findings — patching" : undefined,
+        detail: result?.validationErrors
+          ? broken
+            ? "lint/runtime failed — use app_update replace"
+            : "saved with lint findings — patching"
+          : undefined,
         status,
       };
+    }
     case "app_update":
       return {
         icon: AppWindow,
-        headline: item.result ? "Updated app" : "Updating app…",
-        detail: result?.validationErrors ? "saved with lint findings — patching" : undefined,
+        headline: item.result
+          ? result?.unchanged
+            ? "App update unchanged"
+            : result?.broken
+              ? "Updated app (still broken)"
+              : "Updated app"
+          : "Updating app…",
+        detail: result?.validationErrors ? "lint findings — keep patching same id" : undefined,
         status,
       };
     case "get_app":

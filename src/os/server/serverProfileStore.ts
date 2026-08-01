@@ -256,5 +256,12 @@ export async function discoverNearbyServers(onProgress?: (msg: string) => void):
 }
 
 export function reloadForServerSwitch(): void {
-  window.location.reload();
+  // Best-effort: point the local voice brain at the backend we're switching
+  // to before the shell reload remounts apiBase / Bearer.
+  void import("./voiceBrainSync")
+    .then(({ syncVoiceBrainForActiveProfile }) => syncVoiceBrainForActiveProfile())
+    .catch(() => {})
+    .finally(() => {
+      window.location.reload();
+    });
 }

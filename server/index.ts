@@ -277,6 +277,13 @@ skillStore.ensureGeneratedSeed(
   ["app_create", "app_update"],
   path.resolve("server/generated/app-prompt.md"),
 );
+skillStore.ensureGeneratedSeed(
+  "code-app-authoring",
+  "Code app authoring",
+  "REQUIRED before create_project, scaffold_template, or register_webapp. Build real folder apps (Vite/React/FastAPI) on the builtin agent.",
+  ["create_project", "scaffold_template", "register_webapp", "list_templates"],
+  path.resolve("server/generated/code-app-prompt.md"),
+);
 
 const app = new Hono<AuthEnv>();
 
@@ -385,6 +392,10 @@ app.post("/api/chat", requireCap("chat"), async (c) => {
     profileId?: string | null;
     /** Composer toolset chips — scopes tools for this turn. */
     toolsetIds?: string[];
+    /** Refine target — generated OpenUI app id to edit in place. */
+    linkedAppId?: string;
+    /** Build-mode lock: openui | code | auto. */
+    buildMode?: "openui" | "code" | "auto";
   };
   const message = (body.message ?? "").trim();
   if (!message) return c.json({ error: "message is required" }, 400);
@@ -435,6 +446,14 @@ app.post("/api/chat", requireCap("chat"), async (c) => {
       });
       const kind = resolveTurnKind(profile);
       const turnRunner = pickTurnRunner(kind);
+      const linkedAppId =
+        typeof body.linkedAppId === "string" && body.linkedAppId.trim()
+          ? body.linkedAppId.trim()
+          : undefined;
+      const buildMode =
+        body.buildMode === "openui" || body.buildMode === "code" || body.buildMode === "auto"
+          ? body.buildMode
+          : undefined;
       await withProfileActivity(profile.id, () =>
         turnRunner({
           sessionId: session.id,
@@ -448,6 +467,8 @@ app.post("/api/chat", requireCap("chat"), async (c) => {
           profileId: profile.id,
           ...(toolsetIds && toolsetIds.length > 0 ? { toolsetIds } : {}),
           ...(kind === "acp" ? { acpCommand: resolveAcpCommand(profile) } : {}),
+          ...(linkedAppId ? { linkedAppId } : {}),
+          ...(buildMode ? { buildMode } : {}),
         }),
       );
       emit({ type: "done" });

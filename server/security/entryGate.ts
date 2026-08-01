@@ -6,8 +6,22 @@ const ENTRY_COOKIE = "kosmos_entry";
 const ENTRY_PATH = "/entry/";
 const COOKIE_CONTEXT = "kosmos-entry-cookie:v1";
 const MIN_KEY_LENGTH = 32;
+const CONTROL_PLANE_FALLBACK = "https://kosmos-control-plane.fly.dev";
 
-const WALL_HTML = `<!doctype html>
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function wallHtml(recoverUrl: string | null): string {
+  const recover = recoverUrl
+    ? `<p class="recover"><a href="${escapeHtml(recoverUrl)}">Recover access</a> — sign in with your checkout email or instance name to open the invitation link.</p>`
+    : `<p class="recover">Ask your admin for the invitation link, or open Kosmos Cloud sign-in if you have an account.</p>`;
+
+  return `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -20,15 +34,24 @@ const WALL_HTML = `<!doctype html>
     main { width: min(32rem, calc(100% - 3rem)); text-align: center; }
     h1 { margin: 0 0 .75rem; font-size: 1.5rem; letter-spacing: 0; }
     p { margin: 0; color: #aeb4bf; line-height: 1.5; }
+    p.recover { margin-top: 1.25rem; }
+    a { color: #9ec1ff; text-decoration: underline; text-underline-offset: 0.15em; }
+    a:hover { color: #c5d9ff; }
   </style>
 </head>
-<body><main><h1>Private Kosmos</h1><p>Use the invitation link for this instance.</p></main></body>
+<body><main><h1>Private Kosmos</h1><p>Use the invitation link for this instance.</p>${recover}</main></body>
 </html>`;
+}
 
 export interface EntryGateOptions {
   /** URL-safe secret placed after /entry/. Defaults to ARCO_ENTRY_MAGIC_KEY. */
   key?: string;
   secureCookies?: boolean;
+  /**
+   * Control-plane sign-in URL for “Recover access”.
+   * Defaults to KOSMOS_CONTROL_PLANE_URL + /signin (or the hosted fallback).
+   */
+  recoverUrl?: string | null;
 }
 
 function equalSecret(actual: string, expected: string): boolean {
@@ -39,6 +62,15 @@ function equalSecret(actual: string, expected: string): boolean {
 
 function cookieValue(key: string): string {
   return createHmac("sha256", key).update(COOKIE_CONTEXT).digest("base64url");
+}
+
+function resolveRecoverUrl(options: EntryGateOptions): string | null {
+  if (options.recoverUrl === null) return null;
+  if (typeof options.recoverUrl === "string" && options.recoverUrl.trim()) {
+    return options.recoverUrl.trim().replace(/\/+$/, "");
+  }
+  const base = (process.env.KOSMOS_CONTROL_PLANE_URL?.trim() || CONTROL_PLANE_FALLBACK).replace(/\/+$/, "");
+  return `${base}/signin`;
 }
 
 /**
@@ -55,6 +87,7 @@ export function createEntryGate(options: EntryGateOptions = {}): MiddlewareHandl
 
   const expectedCookie = cookieValue(key);
   const secure = options.secureCookies ?? process.env.ARCO_SECURE_COOKIES === "1";
+  const html = wallHtml(resolveRecoverUrl(options));
 
   return async (c, next) => {
     // Deployment probes need a stable endpoint but reveal no platform data.
@@ -84,7 +117,7 @@ export function createEntryGate(options: EntryGateOptions = {}): MiddlewareHandl
     const presentedCookie = getCookie(c, ENTRY_COOKIE) ?? "";
     if (equalSecret(presentedCookie, expectedCookie)) return next();
 
-    return c.html(WALL_HTML, 403, {
+    return c.html(html, 403, {
       "Cache-Control": "no-store",
       "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'",
       "Referrer-Policy": "no-referrer",

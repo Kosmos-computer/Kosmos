@@ -187,7 +187,9 @@
     }
   },
   "allowScripts": {
+    "better-sqlite3": true,
     "better-sqlite3@12.11.1": true,
+    "node-datachannel": true,
     "node-datachannel@0.32.3": true
   },
   "packageManager": "npm@12.0.1",

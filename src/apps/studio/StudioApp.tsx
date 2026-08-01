@@ -24,6 +24,7 @@ import type { ApprovalMode, WorkspaceTab } from "@shared/types";
 import { useChat } from "../chat/useChat";
 import { useActiveAgentProfile } from "../chat/useActiveAgentProfile";
 import { onPrimeComposer } from "../chat/composerBus";
+import { setStickyBuildMode } from "../chat/turnContext";
 import { VoiceBar } from "../chat/VoiceBar";
 import { ChatThread } from "../../components/chat/ChatThread";
 import { ScrollToLatestButton } from "../../components/chat/ScrollToLatestButton";
@@ -139,6 +140,15 @@ export function StudioApp() {
     s.gitChangeCount > 0 ? s.gitChangeCount : Object.keys(sessionActivity.changes).length,
   );
 
+  // Studio defaults to code-project mode so "build an app" scaffolds folders,
+  // not OpenUI — user can still switch via Chat chips.
+  useEffect(() => {
+    setStickyBuildMode("code");
+    return () => {
+      /* leave sticky mode for the session; Chat chips can override */
+    };
+  }, []);
+
   // Voice conversations land in the thread like typed ones (same as ChatApp):
   // final transcripts as user items, bot speech as streaming assistant text.
   useEffect(() => voiceClient.subscribe(chat.applyVoiceEvent), [chat.applyVoiceEvent]);
@@ -181,6 +191,7 @@ export function StudioApp() {
         ...(mode === "agent" ? { approvalMode } : {}),
         profileId,
         toolsetIds,
+        buildMode: "code",
       });
     },
     [draft, chat, mode, approvalMode, profileId, toolsetIds, pinToLatest],

@@ -231,7 +231,7 @@ app.post("/connect", async (c) => {
   }
 
   if (returnTo) {
-    return c.redirect(buildDesktopReturnUrl(returnTo, resolved.tenantUrl), 302);
+    return c.redirect(buildDesktopReturnUrl(returnTo, resolved.tenantUrl, resolved.entryUrl), 302);
   }
   // Browser-only connect (www Sign in): prefer private entry link when we have it.
   return c.redirect(resolved.entryUrl || resolved.tenantUrl, 302);
@@ -268,6 +268,7 @@ app.post("/signin", async (c) => {
 
   if (email) {
     const order = store.getByEmail(email);
+    if (order?.entry_url) return c.redirect(order.entry_url, 302);
     if (order?.tenant_url) return c.redirect(order.tenant_url, 302);
     if (order?.tenant_name) return c.redirect(tenantUrlForName(config, order.tenant_name), 302);
     return c.redirect("/signin?error=No+instance+found+for+that+email.+Try+your+instance+name.", 302);
@@ -278,6 +279,9 @@ app.post("/signin", async (c) => {
     if (validationError) {
       return c.redirect(`/signin?error=${encodeURIComponent(validationError)}`, 302);
     }
+    const order = store.getByTenantName(tenantName);
+    if (order?.entry_url) return c.redirect(order.entry_url, 302);
+    if (order?.tenant_url) return c.redirect(order.tenant_url, 302);
     return c.redirect(tenantUrlForName(config, tenantName), 302);
   }
 
@@ -309,7 +313,7 @@ app.get("/success", async (c) => {
   // Already ready — send desktop users straight back instead of waiting on the poll UI.
   if (order?.status === "ready" && order.tenant_url && returnTo) {
     try {
-      return c.redirect(buildDesktopReturnUrl(returnTo, order.tenant_url), 302);
+      return c.redirect(buildDesktopReturnUrl(returnTo, order.tenant_url, order.entry_url), 302);
     } catch (err) {
       console.error("desktop return redirect failed:", err);
     }
@@ -330,12 +334,13 @@ app.get("/success", async (c) => {
       const sessionId = ${JSON.stringify(sessionId)};
       const returnTo = ${JSON.stringify(returnTo)};
 
-      function goToApp(tenantUrl) {
+      function goToApp(tenantUrl, entryUrl) {
         if (!returnTo || !tenantUrl) return false;
         try {
           const desktop = new URL(returnTo);
           desktop.searchParams.set('kosmosInstance', new URL(tenantUrl).origin);
           desktop.searchParams.set('kosmosConnected', '1');
+          if (entryUrl) desktop.searchParams.set('kosmosEntry', entryUrl);
           window.location.replace(desktop.toString());
           return true;
         } catch (_) {
@@ -356,15 +361,18 @@ app.get("/success", async (c) => {
         const data = await res.json();
         if (data.status === 'ready' && (data.tenantUrl || data.entryUrl)) {
           status.innerHTML = '<span class="ok">Your instance is ready.</span>';
-          detail.textContent = returnTo ? 'Returning you to the Kosmos app…' : 'Open your instance to create the owner account.';
-          if (goToApp(data.tenantUrl)) return;
+          detail.textContent = returnTo
+            ? 'Returning you to the Kosmos app…'
+            : 'Open your private invitation link once to unlock the instance.';
+          if (goToApp(data.tenantUrl, data.entryUrl)) return;
           link.style.display = 'block';
           let html = '';
-          if (data.tenantUrl) {
-            html += '<p><a href="' + data.tenantUrl + '"><strong>Open your instance</strong></a></p>';
-          }
           if (data.entryUrl) {
-            html += '<p>Or use your <a href="' + data.entryUrl + '">private entry link</a>.</p>';
+            html += '<p><a href="' + data.entryUrl + '"><strong>Open invitation link</strong></a></p>';
+            html += '<p class="hint">Bookmark this link — the public URL stays locked without it.</p>';
+          }
+          if (data.tenantUrl) {
+            html += '<p class="hint">Public URL: <a href="' + data.tenantUrl + '">' + data.tenantUrl + '</a></p>';
           }
           link.innerHTML = html || 'Instance ready.';
           return;

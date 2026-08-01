@@ -17,8 +17,25 @@ describe("entry gate", () => {
     const response = await testApp().request("/api/private");
 
     assert.equal(response.status, 403);
-    assert.match(await response.text(), /Private Kosmos/);
+    const body = await response.text();
+    assert.match(body, /Private Kosmos/);
+    assert.match(body, /Recover access/);
+    assert.match(body, /\/signin/);
     assert.equal(response.headers.get("cache-control"), "no-store");
+  });
+
+  it("uses an explicit recover URL on the wall page", async () => {
+    const app = new Hono();
+    app.use(
+      "*",
+      createEntryGate({
+        key: KEY,
+        secureCookies: true,
+        recoverUrl: "https://control.example/signin",
+      }),
+    );
+    const response = await app.request("/");
+    assert.match(await response.text(), /https:\/\/control\.example\/signin/);
   });
 
   it("sets an HttpOnly cookie without exposing the URL key", async () => {

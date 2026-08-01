@@ -93,9 +93,15 @@ function ensureAppAfter(pinned: string[], id: string, afterId: string): string[]
   return addPinned(removePinned(pinned, id), id, afterIdx + 1);
 }
 
+/** Generated/web apps pin only after successful smoke (pin_app) or explicit user pin. */
+export function isOptInPinId(id: string): boolean {
+  return id.startsWith("generated:") || id.startsWith("web:");
+}
+
 function defaultPinnedIds(allIds: string[]): string[] {
   const picked = DEFAULT_PINNED_IDS.filter((id) => allIds.includes(id));
   for (const id of allIds) {
+    if (isOptInPinId(id)) continue;
     if (!picked.includes(id)) picked.push(id);
   }
   return picked;
@@ -110,6 +116,8 @@ export function normalizePinned(stored: string[], allIds: string[]): string[] {
       : defaultPinnedIds(allIds);
 
   for (const id of allIds) {
+    // Don't auto-flood the dock with accidental / broken agent creates.
+    if (isOptInPinId(id)) continue;
     if (!normalized.includes(id)) normalized = insertInCanonicalOrder(normalized, id, allIds);
   }
 

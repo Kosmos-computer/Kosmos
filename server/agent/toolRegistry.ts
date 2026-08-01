@@ -49,6 +49,9 @@ export function registerToolContributor(fn: ToolContributor): void {
 const WRITE_SYSTEM_TOOLS = new Set([
   "app_create",
   "app_update",
+  "create_project",
+  "scaffold_template",
+  "register_webapp",
   "exec",
   "write_file",
   "db_execute",
@@ -157,6 +160,41 @@ function applySkillGates(tools: RegisteredTool[], ctx: ToolContext): RegisteredT
   });
 }
 
+const OPENUI_ONLY_TOOLS = new Set(["app_create", "app_update"]);
+const CODE_ONLY_TOOLS = new Set([
+  "create_project",
+  "scaffold_template",
+  "register_webapp",
+  "list_templates",
+  "studio_ui",
+]);
+
+/** Refuse tools that conflict with the turn's buildMode lock. */
+function applyBuildModeGates(tools: RegisteredTool[], ctx: ToolContext): RegisteredTool[] {
+  if (!ctx.buildMode || ctx.buildMode === "auto") return tools;
+  return tools.map((tool) => {
+    if (ctx.buildMode === "code" && OPENUI_ONLY_TOOLS.has(tool.name)) {
+      return {
+        ...tool,
+        execute: async () => ({
+          error:
+            'buildMode is "code" — use create_project / scaffold_template / write_file / exec / register_webapp. Do not call app_create or app_update.',
+        }),
+      };
+    }
+    if (ctx.buildMode === "openui" && CODE_ONLY_TOOLS.has(tool.name)) {
+      return {
+        ...tool,
+        execute: async () => ({
+          error:
+            'buildMode is "openui" — use app_create / app_update (and scripts via Query("exec")). Do not scaffold code projects.',
+        }),
+      };
+    }
+    return tool;
+  });
+}
+
 /** Build the full tool list for one agent turn. */
 export async function assembleTools(ctx: ToolContext): Promise<RegisteredTool[]> {
   const contributed = await Promise.all(
@@ -179,7 +217,7 @@ export async function assembleTools(ctx: ToolContext): Promise<RegisteredTool[]>
     seen.add(t.name);
     return true;
   });
-  return applySkillGates(deduped, ctx);
+  return applyBuildModeGates(applySkillGates(deduped, ctx), ctx);
 }
 
 export function toLlmDefs(tools: RegisteredTool[]): LlmToolDef[] {

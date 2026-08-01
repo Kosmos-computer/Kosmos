@@ -32,6 +32,7 @@ export function AppSurface({ appId }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [showCode, setShowCode] = useState(false);
   const [refreshTick, setRefreshTick] = useState(0);
+  const [renderErrors, setRenderErrors] = useState<string[]>([]);
 
   // The dock/library summary carries updatedAt — when the agent patches this
   // app (app_update → apps_changed → refreshApps), the changed timestamp
@@ -48,6 +49,7 @@ export function AppSurface({ appId }: Props) {
         if (!cancelled) {
           setRecord(app);
           setError(null);
+          setRenderErrors([]);
         }
       })
       .catch((err) => {
@@ -96,6 +98,8 @@ export function AppSurface({ appId }: Props) {
     primeComposer({
       text: `Refine app "${record.title}" (id: ${record.id}): `,
       submit: false,
+      linkedAppId: record.id,
+      buildMode: "openui",
     });
   }, [record, openWindow]);
 
@@ -105,6 +109,13 @@ export function AppSurface({ appId }: Props) {
   if (!record) {
     return <div className="arco-empty"><T k={I18nKey.APPS$APPVIEW_LOADING_APP} /></div>;
   }
+
+  const mayBeBroken =
+    record.health?.broken === true || renderErrors.length > 0;
+  const brokenDetail =
+    record.health?.summary ||
+    (renderErrors[0] ? String(renderErrors[0]) : null) ||
+    "This app may be broken — use Refine to fix it.";
 
   return (
     <div className="arco-appsurface">
@@ -127,6 +138,12 @@ export function AppSurface({ appId }: Props) {
           <Sparkles size={13} /><T k={I18nKey.APPS$APPVIEW_REFINE} /></button>
       </div>
 
+      {mayBeBroken && (
+        <div className="arco-appsurface__badge" role="status">
+          May be broken — {brokenDetail}
+        </div>
+      )}
+
       {showCode ? (
         <pre className="arco-appsurface__code arco-scroll">{record.content}</pre>
       ) : (
@@ -143,6 +160,7 @@ export function AppSurface({ appId }: Props) {
               onError={(errors) => {
                 if (errors.length > 0) {
                   console.warn("[arco:app-render]", { appId: record.id, errors });
+                  setRenderErrors(errors.map((e) => String(e)));
                 }
               }}
             />

@@ -1,0 +1,8 @@
+{
+  "id": "vite-react",
+  "name": "Vite + React + TypeScript",
+  "description": "Client SPA with Vite dev server on http://127.0.0.1:5173",
+  "install": "npm install",
+  "dev": "npm run dev",
+  "url": "http://127.0.0.1:5173"
+}

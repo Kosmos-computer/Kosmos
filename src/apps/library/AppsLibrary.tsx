@@ -191,7 +191,12 @@ export function AppsLibrary() {
   const refine = useCallback(
     (id: string, title: string) => {
       openWindow({ type: "system", app: "chat" }, "Chat");
-      primeComposer({ text: `Refine app "${title}" (id: ${id}): `, submit: false });
+      primeComposer({
+        text: `Refine app "${title}" (id: ${id}): `,
+        submit: false,
+        linkedAppId: id,
+        buildMode: "openui",
+      });
     },
     [openWindow],
   );

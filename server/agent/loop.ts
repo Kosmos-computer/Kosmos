@@ -22,6 +22,7 @@ import { applyPolicy, assembleTools, toLlmDefs } from "./toolRegistry.js";
 import type { ToolContext } from "./tools.js";
 import { scheduleBackgroundReview } from "./backgroundReview.js";
 import { boardService } from "../services/boardService.js";
+import { appStore } from "../stores/appStore.js";
 
 const MAX_ITERATIONS = 12;
 /** Tool results beyond this are truncated for the LLM (full result goes to the UI). */
@@ -105,6 +106,10 @@ export interface RunTurnOptions {
    * Skip the post-turn background learning review (e.g. nested delegate_task).
    */
   skipBackgroundReview?: boolean;
+  /** Generated OpenUI app id to refine in place. */
+  linkedAppId?: string;
+  /** Build-mode lock for this turn. */
+  buildMode?: import("./tools.js").BuildMode;
 }
 
 const ASK_MODE_SYSTEM =
@@ -174,6 +179,8 @@ async function runAgentTurnBody(
     profileId: profile.id,
     principalId: profile.principalId,
     policyLevel,
+    ...(opts.linkedAppId ? { linkedAppId: opts.linkedAppId } : {}),
+    ...(opts.buildMode ? { buildMode: opts.buildMode } : {}),
   };
   let finalText = "";
   const usage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
@@ -231,10 +238,33 @@ When you start substantive work, ensure it is in_progress. When the job is ready
 Read the board-lifecycle skill if you need the full policy.`
     : "";
 
+  let linkedAppContext = "";
+  if (opts.linkedAppId) {
+    const linked = await appStore.get(opts.linkedAppId);
+    if (linked) {
+      linkedAppContext = `## LINKED_APP
+You are refining an existing OpenUI app.
+- id: ${linked.id}
+- title: ${linked.title}
+MUST call get_app then app_update on this id (patch or replace). app_create is FORBIDDEN unless the user explicitly asks for a separate copy (forceNew).`;
+    }
+  }
+
+  const buildModeContext =
+    opts.buildMode === "code"
+      ? `## BUILD_MODE: code
+Build a real project folder (React/Vite/Python/etc.). Use create_project / scaffold_template / write_file / exec / register_webapp. Do NOT call app_create or app_update.`
+      : opts.buildMode === "openui"
+        ? `## BUILD_MODE: openui
+Build an OS-native OpenUI dock app (optional scripts via Query("exec")). Do NOT scaffold Vite/React/Python project trees or call create_project / register_webapp.`
+        : "";
+
   const extraSystem = [
     opts.extraSystem,
     recallText,
     boardContext,
+    linkedAppContext,
+    buildModeContext,
     opts.readOnly ? ASK_MODE_SYSTEM : "",
   ]
     .filter(Boolean)

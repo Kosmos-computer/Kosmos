@@ -11,8 +11,10 @@
 #   fly deploy . --config deploy/fly/template-dist-patch.fly.toml \
 #     --build-only --push --image-label demo --remote-only
 #   fly deploy -a kosmos-<name> --image registry.fly.io/kosmos-template:demo
+#
+# Pin: last known-good rollback digest (2026-07-20). Do not retarget to a
+# :demo digest that includes WebTorrent / HEAD server overlays.
 
-# Pin to the last known-good demo runtime. Refresh after a successful full rebuild.
 FROM registry.fly.io/kosmos-template@sha256:23d28d55418d9906bf7125c11af4157778b44389896f404bce5b7437108062a9
 
 COPY dist/ /app/dist/
@@ -21,3 +23,7 @@ COPY shared/kosmosCloudModels.ts /app/shared/kosmosCloudModels.ts
 COPY deploy/fly/patches/models-remote/remoteModels.ts /app/server/llm/remoteModels.ts
 COPY deploy/fly/patches/models-remote/models.ts /app/server/routes/models.ts
 COPY deploy/fly/patches/models-remote/env.ts /app/server/env.ts
+COPY deploy/fly/patches/models-remote/llmProviderLabels.ts /app/shared/llmProviderLabels.ts
+# Older runtimes omit /wallpapers static mounts — new shell JPGs then SPA-fallback.
+COPY deploy/fly/patches/static-assets/patch-static-routes.mjs /tmp/patch-static-routes.mjs
+RUN node /tmp/patch-static-routes.mjs /app/server/index.ts && rm /tmp/patch-static-routes.mjs

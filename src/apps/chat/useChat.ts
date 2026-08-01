@@ -23,6 +23,8 @@ import {
   useConversationStatusStore,
 } from "../studio/conversationStatusStore";
 import { shouldActivateOnSessionEvent } from "./sessionFocus";
+import { takeTurnContext } from "./turnContext";
+import { useWindowStore } from "../../os/windowStore";
 
 export type ChatItem =
   | { kind: "user"; id: string; text: string; timestamp?: string }
@@ -82,6 +84,8 @@ interface QueuedTurn {
     approvalMode?: "strict" | "smart" | "full";
     profileId?: string | null;
     toolsetIds?: string[];
+    linkedAppId?: string;
+    buildMode?: "openui" | "code" | "auto";
   };
 }
 
@@ -638,6 +642,8 @@ export function useChat(opts?: { activeProjectId?: string | null; persistedSessi
       approvalMode?: "strict" | "smart" | "full";
       profileId?: string | null;
       toolsetIds?: string[];
+      linkedAppId?: string;
+      buildMode?: "openui" | "code" | "auto";
     }) => {
       const trimmed = text.trim();
       const streamKey = activeKeyRef.current;
@@ -717,6 +723,15 @@ export function useChat(opts?: { activeProjectId?: string | null; persistedSessi
         };
 
         try {
+          const turnCtx = takeTurnContext();
+          const focused = useWindowStore.getState().windows.find(
+            (w) => w.id === useWindowStore.getState().focusedId(),
+          );
+          const focusedGeneratedId =
+            focused?.kind.type === "generated" ? focused.kind.appId : undefined;
+          const linkedAppId =
+            currentTurn.opts?.linkedAppId ?? turnCtx.linkedAppId ?? focusedGeneratedId;
+          const buildMode = currentTurn.opts?.buildMode ?? turnCtx.buildMode;
           await streamChat(
             currentTurn.text,
             resolvedSessionId,
@@ -727,6 +742,8 @@ export function useChat(opts?: { activeProjectId?: string | null; persistedSessi
             currentTurn.opts?.approvalMode,
             currentTurn.opts?.profileId,
             currentTurn.opts?.toolsetIds,
+            linkedAppId,
+            buildMode,
           );
         } catch (err) {
           if (!abort.signal.aborted) {

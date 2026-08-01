@@ -252,15 +252,81 @@ function estimateUsage(messages: LlmMessage[], completion: string): TokenUsage {
   return { promptTokens, completionTokens, totalTokens: promptTokens + completionTokens };
 }
 
+/** Voice turns inject "OVER VOICE" into the system prompt — never run the
+ *  demo-app tool script there: TTS would speak the same line forever as the
+ *  mic picks the bot back up. */
+function isVoiceMockTurn(messages: LlmMessage[]): boolean {
+  return messages.some(
+    (m) => m.role === "system" && typeof m.content === "string" && /OVER VOICE/i.test(m.content),
+  );
+}
+
+const MOCK_VOICE_REPLY =
+  "I'm in mock mode with no API key, so I can't really talk yet. Add a cloud or local model in Settings, then try the mic again.";
+
 async function mockTurn(opts: StreamTurnOptions): Promise<LlmTurn> {
+  // Spoken sessions: one short line, no tools — the chat demo loop is not
+  // speakable and barges itself into an endless repeat over the mic.
+  if (isVoiceMockTurn(opts.messages)) {
+    await streamText(MOCK_VOICE_REPLY, opts.onTextDelta);
+    return {
+      text: MOCK_VOICE_REPLY,
+      toolCalls: [],
+      usage: estimateUsage(opts.messages, MOCK_VOICE_REPLY),
+    };
+  }
+
   const last = opts.messages[opts.messages.length - 1];
 
-  // Tool results already in the transcript → close out the run.
-  if (last?.role === "tool") {
+  /** Collect function names from prior assistant tool_calls in this transcript. */
+  const priorToolNames = new Set<string>();
+  for (const m of opts.messages) {
+    if (m.role !== "assistant" || !("tool_calls" in m) || !m.tool_calls) continue;
+    for (const tc of m.tool_calls) {
+      if (tc.type === "function" && tc.function?.name) priorToolNames.add(tc.function.name);
+    }
+  }
+
+  // After create tools ran → close out with the demo summary.
+  if (last?.role === "tool" && priorToolNames.has("app_create")) {
     await streamText(MOCK_FINAL, opts.onTextDelta);
     return { text: MOCK_FINAL, toolCalls: [], usage: estimateUsage(opts.messages, MOCK_FINAL) };
   }
 
+  // After skill gate unlocked → seed DB + create the demo app.
+  if (last?.role === "tool" && priorToolNames.has("read_skill")) {
+    const building = "Building the demo board now…\n\n";
+    await streamText(building, opts.onTextDelta);
+    return {
+      text: building,
+      usage: estimateUsage(opts.messages, building),
+      toolCalls: [
+        {
+          id: "mock_db_schema",
+          name: "db_execute",
+          arguments: JSON.stringify({
+            sql: "CREATE TABLE IF NOT EXISTS todos (id INTEGER PRIMARY KEY, text TEXT NOT NULL, done INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)",
+            namespace: "arco_demo",
+          }),
+        },
+        {
+          id: "mock_db_seed",
+          name: "db_execute",
+          arguments: JSON.stringify({
+            sql: "INSERT INTO todos (text, done) SELECT 'Explore Arco OS', 1 WHERE NOT EXISTS (SELECT 1 FROM todos)",
+            namespace: "arco_demo",
+          }),
+        },
+        {
+          id: "mock_app_create",
+          name: "app_create",
+          arguments: JSON.stringify({ title: "Arco Demo Board", code: MOCK_APP_CODE }),
+        },
+      ],
+    };
+  }
+
+  // First turn: unlock the gated skill before app_create (skill gate requires wasRead).
   const intro =
     "I'm the built-in mock agent (no API key configured). I'll demonstrate the full generative pipeline by building you a live demo app backed by SQLite.\n\n";
   await streamText(intro, opts.onTextDelta);
@@ -270,25 +336,9 @@ async function mockTurn(opts: StreamTurnOptions): Promise<LlmTurn> {
     usage: estimateUsage(opts.messages, intro),
     toolCalls: [
       {
-        id: "mock_db_schema",
-        name: "db_execute",
-        arguments: JSON.stringify({
-          sql: "CREATE TABLE IF NOT EXISTS todos (id INTEGER PRIMARY KEY, text TEXT NOT NULL, done INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)",
-          namespace: "arco_demo",
-        }),
-      },
-      {
-        id: "mock_db_seed",
-        name: "db_execute",
-        arguments: JSON.stringify({
-          sql: "INSERT INTO todos (text, done) SELECT 'Explore Arco OS', 1 WHERE NOT EXISTS (SELECT 1 FROM todos)",
-          namespace: "arco_demo",
-        }),
-      },
-      {
-        id: "mock_app_create",
-        name: "app_create",
-        arguments: JSON.stringify({ title: "Arco Demo Board", code: MOCK_APP_CODE }),
+        id: "mock_read_skill",
+        name: "read_skill",
+        arguments: JSON.stringify({ id: "openui-app-authoring" }),
       },
     ],
   };

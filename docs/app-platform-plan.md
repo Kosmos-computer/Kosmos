@@ -63,9 +63,9 @@ power, trust cost, and review cost scale together along one axis
 | Category | What it is | How the AI makes/changes it | Trust & review | In Arco today |
 | --- | --- | --- | --- | --- |
 | **Inline generated UI** | Ephemeral OpenUI in a chat message | Streams it per turn | Schema validation | Shipped (chat) |
-| **Declarative apps (Tier 1–2)** | Persisted OpenUI/manifest data: blocks, `$state`, SQL bindings, declared **action intents** | `app_create` / `app_update` — small data patches, versioned | Nothing executes (T1); intents capability-scoped (T2); automated review; fully themed | Shipped as Tier 1 (`StoredApp`); Tier 2 = the gap |
+| **Declarative apps (Tier 1–2)** | Persisted OpenUI/manifest data: blocks, `$state`, SQL bindings, declared **action intents** | `app_create` / `app_update` — small data patches, versioned; lint + Query smoke on save | Nothing executes (T1); intents capability-scoped (T2); automated review; fully themed | Shipped as Tier 1 (`StoredApp`) on the builtin agent; Tier 2 = the gap |
 | **Declarative + WASM functions (L3)** | Tier 2 plus small named functions run in a WASM host with manifest-declared capabilities | Agent writes the function; manifest declares its grants | Capability audit, not code audit | Future (post-v1) |
-| **Independent code apps (Tier 3)** | Real codebases: own repo, build, release cycle. Run sandboxed (iframe now; headless process optional) and integrate via the SDK | Human-built, **or** agent-built via Studio (`exec`/`write_file` scaffolds a project and registers it) | Sandboxed + badged; grants at install; heaviest review for sharing | `WebAppSurface` is the embryo |
+| **Independent code apps (Tier 3)** | Real codebases: own repo, build, release cycle. Run sandboxed (iframe now; headless process optional) and integrate via the SDK | Human-built, **or** agent-built via Studio (`create_project` → `scaffold_template` → `exec` → `register_webapp`) — no Cursor/Claude/Codex required | Sandboxed + badged; grants at install; heaviest review for sharing | Builtin code-app factory + `WebAppSurface` dock path |
 
 **Where things land:** the AI-generated long tail (trackers, dashboards,
 utilities) defaults to declarative — cheap to refine, share, review, theme.
@@ -73,6 +73,13 @@ utilities) defaults to declarative — cheap to refine, share, review, theme.
 independent Tier-3 code apps**, first-class citizens, not an escape hatch.
 Calendar can start as a modest code app too; its value lives in the system
 data service either way.
+
+**Build modes (builtin agent):** Chat/Studio send `buildMode` (`openui` |
+`code` | `auto`). OpenUI mode gates `app_create` / `app_update` (+ optional
+scripts via `exec`); code mode uses `create_project` / `scaffold_template` /
+`register_webapp` and refuses OpenUI app tools. Refine passes `linkedAppId` so
+edits update the same UUID. Dock pins opt-in after successful lint/smoke (or
+healthy URL probe), not on every accidental create.
 
 **The honest trade at Tier 3:** the agent refines code in Studio rather than
 patching a manifest, and theming becomes opt-in — the shell forwards its

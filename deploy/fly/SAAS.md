@@ -120,8 +120,18 @@ Set automatically on each tenant Fly app:
 | `LLM_API_KEY` | LiteLLM virtual key (per tenant) |
 | `LLM_MODEL` | `qwen3-30b` (default) |
 | `ARCO_SECURE_COOKIES` | `1` |
+| `ARCO_ENTRY_MAGIC_KEY` | Invitation URL secret (`/entry/<key>`) |
+| `ARCO_SECRETS_KEK` | Vault key-encryption key (Fly Secrets only; not on volume) |
 | `ARCO_WORKSPACE_QUOTA_MB` | `512` |
 | `ARCO_DATA_DIR` | `/data` (mounted volume) |
+
+The bare `https://kosmos-<name>.fly.dev` host shows a private wall until the
+invitation link is opened once (sets a cookie). Control-plane **Sign in** and
+checkout success redirect to that entry URL when stored. Tenants also get a
+**Recover access** link on the wall → `KOSMOS_CONTROL_PLANE_URL/signin`.
+
+Optional: set `RESEND_API_KEY` (and optionally `RESEND_FROM_EMAIL`) on
+`kosmos-control-plane` to email the invitation link after provision.
 
 Inside Arco: **Settings → Usage & credits** reads `/api/usage` → gateway
 `/key/info` for spend vs budget.
@@ -155,6 +165,8 @@ Set via `fly secrets set`:
 | `STRIPE_PRICE_ID` | Subscription price (e.g. `price_…`) |
 | `LITELLM_MASTER_KEY` | Same as gateway master key |
 | `FLY_API_TOKEN` | Org token: `fly tokens create org personal -n kosmos-control-plane` |
+| `RESEND_API_KEY` | Optional — email private entry links after provision |
+| `RESEND_FROM_EMAIL` | Optional — Resend From header (default `Kosmos <onboarding@resend.dev>`) |
 
 Optional overrides (defaults in [control-plane/fly.toml](control-plane/fly.toml)):
 `GATEWAY_URL`, `TENANT_IMAGE`, `TENANT_BUDGET_USD`, `TENANT_MODEL`, etc.
@@ -289,7 +301,7 @@ Stripe Dashboard → Checkout sessions).
 | Marketing **www** site (Vercel) | Not built — control plane landing is minimal |
 | Public **docs** site | Not built — `apps/docs` is in-app editor only |
 | **Sign in** for returning customers | No lookup by email; must know instance URL |
-| **Desktop app → cloud** pairing | Mobile has server profiles; desktop runs local backend only |
+| **Desktop app → cloud** pairing | Shell profiles work; voice STT/TTS stay local, brain follows profile via `/v1` + session Bearer (`voiceBrainSync`, `demo-voice-v1` image) |
 | Custom domains (`*.arco.app`) | Tenants use `*.fly.dev` |
 | Central customer auth | Per-tenant Arco accounts only |
 | Production Stripe / live mode | Control plane uses live key; local secrets may still be test |

@@ -31,7 +31,7 @@ export default defineConfig({
       // Arco writes live runtime state under ./data (sessions, settings,
       // workspace, generated apps). Those writes are app state, not source,
       // and should not trigger a Vite full reload.
-      ignored: ["**/data/**", "**/.codex/**"],
+      ignored: ["**/data/**", "**/.codex/**", "**/voice-server/.venv/**"],
     },
     proxy: {
       "/api": {

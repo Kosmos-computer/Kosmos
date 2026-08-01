@@ -1,0 +1,10 @@
+# Minimal tenant patch for demo-safe: /v1 accepts session Bearer (voice brain).
+# Uses a patch derived from the demo-safe openaiCompat (keeps hasShellClients).
+#
+#   fly deploy . --config deploy/fly/template-voice-v1-patch.fly.toml \
+#     --build-only --push --image-label demo-voice-v1 --remote-only
+#   fly deploy -a kosmos-<name> --image registry.fly.io/kosmos-template:demo-voice-v1
+
+FROM registry.fly.io/kosmos-template:demo-safe
+
+COPY deploy/fly/patches/openaiCompat-voice-v1.ts /app/server/agent/openaiCompat.ts

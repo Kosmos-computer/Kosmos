@@ -17,6 +17,7 @@ import path from "node:path";
 import { mergeStatements } from "@openuidev/lang-core";
 import type {
   AgentEvent,
+  AppHealth,
   ApprovalMode,
   BrowserCommand,
   BrowserResult,
@@ -35,10 +36,23 @@ import {
   type ShellAppCatalogEntry,
 } from "../../shared/agentAppCatalog.js";
 import { lintOpenUICode, type LintReport } from "../lint/lint-openui.js";
+import { hasJsBleed } from "../lint/jsBleed.js";
+import {
+  smokeOpenUIQueries,
+  smokePayload,
+  type RuntimeCheck,
+} from "../lint/openui-smoke.js";
+import {
+  listTemplates,
+  probeUrl,
+  resolveNewProjectDir,
+  scaffoldTemplateInto,
+} from "./codeAppFactory.js";
 import { generatorCatalogStore } from "../stores/generatorCatalogStore.js";
 import { appStore } from "../stores/appStore.js";
 import { installedAppStore } from "../platform/installedAppStore.js";
 import { webAppStore } from "../stores/webAppStore.js";
+import { projectStore } from "../stores/projectStore.js";
 import { automationStore } from "../stores/automationStore.js";
 import { invokeIntent } from "../capabilities/registry.js";
 import { appendAudit } from "../platform/grantStore.js";
@@ -78,6 +92,8 @@ import type { LlmToolDef } from "./llm.js";
 
 const execAsync = promisify(execCb);
 
+export type BuildMode = "openui" | "code" | "auto";
+
 export interface ToolContext {
   sessionId: string;
   emit: (event: AgentEvent) => void;
@@ -104,6 +120,28 @@ export interface ToolContext {
   principalId?: string;
   /** Profile policy posture — overlays stored tool rules when set. */
   policyLevel?: import("../../shared/agents.js").AgentPolicyLevel;
+  /** When set, refine/edit must target this generated app id. */
+  linkedAppId?: string;
+  /** Build-mode lock for this turn (openui vs code project). */
+  buildMode?: BuildMode;
+}
+
+/** Per-session lint failure counts for app ids — steers full replace after N failures. */
+const lintFailCounts = new Map<string, number>();
+
+function lintFailKey(sessionId: string, appId: string): string {
+  return `${sessionId}:${appId}`;
+}
+
+function noteLintOutcome(sessionId: string, appId: string, lint: LintReport): number {
+  const key = lintFailKey(sessionId, appId);
+  if (lint.ok) {
+    lintFailCounts.delete(key);
+    return 0;
+  }
+  const next = (lintFailCounts.get(key) ?? 0) + 1;
+  lintFailCounts.set(key, next);
+  return next;
 }
 
 /**
@@ -120,14 +158,52 @@ export interface AgentTool extends LlmToolDef {
 }
 
 /** Lint findings ride back on the tool result as correction hints. */
-function lintPayload(lint: LintReport): Record<string, unknown> {
-  if (lint.ok) return { validation: "ok" };
+function lintPayload(
+  lint: LintReport,
+  opts?: { failCount?: number; wasSaved?: boolean },
+): Record<string, unknown> {
+  const jsBleed = hasJsBleed(lint.findings);
+  if (lint.ok) return { validation: "ok", broken: false };
+  const failCount = opts?.failCount ?? 0;
+  const preferReplace = failCount >= 3 || jsBleed;
   return {
     validationErrors: lint.findings,
     validationSummary: lint.summary,
     ...(lint.hint ? { validationHint: lint.hint } : {}),
-    note: "The app WAS saved. Fix the issues with a small app_update patch containing ONLY corrected statements.",
+    broken: true,
+    ...(jsBleed ? { jsBleed: true } : {}),
+    note:
+      opts?.wasSaved === false
+        ? "The app was NOT changed. Fix the patch and retry app_update."
+        : preferReplace
+          ? "The app WAS saved but is broken. Prefer app_update with `replace` set to the FULL corrected openui-lang program (same id) — do NOT call app_create."
+          : "The app WAS saved. Fix the issues with a small app_update patch containing ONLY corrected statements — or use `replace` for a full rewrite on the same id.",
   };
+}
+
+function appHealthFrom(lint: LintReport, checks: RuntimeCheck[]): AppHealth {
+  const smokeFail = checks.some((c) => !c.ok && !c.skipped);
+  const broken = !lint.ok || smokeFail;
+  return {
+    broken,
+    ...(broken
+      ? {
+          summary: !lint.ok
+            ? lint.summary || "OpenUI validation failed"
+            : "One or more Query smoke checks failed",
+        }
+      : {}),
+    checkedAt: new Date().toISOString(),
+  };
+}
+
+/** Open the app; pin to dock only when lint + smoke are clean. */
+function emitOpenAndMaybePin(ctx: ToolContext, appId: string, health: AppHealth): void {
+  ctx.emit({ type: "apps_changed" });
+  ctx.emit({ type: "os_ui", action: { action: "open_app", appId } });
+  if (!health.broken) {
+    ctx.emit({ type: "os_ui", action: { action: "pin_app", appId } });
+  }
 }
 
 const EXEC_ENV = {
@@ -461,7 +537,7 @@ export const agentTools: AgentTool[] = [
   {
     name: "app_create",
     description:
-      "Create a live interactive app (or replace an existing generated app with the same title). Pass the complete openui-lang code. The app is stored, appears in the dock, and opens on the user's desktop. Prefer list_apps first — if a similar generated app already exists, open it or app_update it instead of minting a new title. Same-title creates upsert (reused:true) unless forceNew is set.",
+      "Create a live interactive OpenUI app (or replace an existing generated app with the same title). Pass the complete openui-lang code. Prefer list_apps first. Same-title creates upsert (reused:true) unless forceNew is set. When a linked_app is in context, use app_update instead.",
     parameters: {
       type: "object",
       properties: {
@@ -481,13 +557,44 @@ export const agentTools: AgentTool[] = [
       required: ["title", "code"],
     },
     execute: async (args, ctx) => {
+      if (ctx.buildMode === "code") {
+        return {
+          error:
+            'buildMode is "code" this turn — do not use app_create. Use create_project / scaffold_template / write_file / exec / register_webapp instead.',
+        };
+      }
       const title = String(args.title ?? "Untitled app");
       const code = String(args.code ?? "");
+      const forceNew = args.forceNew === true;
+
+      // Refine context: rewrite create → update/replace on the linked app.
+      if (ctx.linkedAppId && !forceNew) {
+        const linked = await appStore.get(ctx.linkedAppId);
+        if (linked) {
+          const lint = lintOpenUICode(code);
+          const checks = await smokeOpenUIQueries(code);
+          const health = appHealthFrom(lint, checks);
+          const updated = await appStore.update(linked.id, {
+            content: code,
+            title,
+            health,
+            ...(typeof args.icon === "string" ? { icon: args.icon } : {}),
+          });
+          const failCount = noteLintOutcome(ctx.sessionId, updated.id, lint);
+          emitOpenAndMaybePin(ctx, updated.id, health);
+          return {
+            id: updated.id,
+            title: updated.title,
+            reused: true,
+            rewrittenFromCreate: true,
+            health,
+            ...lintPayload(lint, { failCount }),
+            ...smokePayload(checks),
+          };
+        }
+      }
+
       const lint = lintOpenUICode(code);
-      // Save unconditionally — rejecting outright forces full-rewrite retries,
-      // which is the failure mode the patch loop exists to avoid. Same-title
-      // creates upsert so those retries update one app instead of flooding
-      // the launcher with duplicates.
       const app = await appStore.create(
         {
           title,
@@ -495,15 +602,24 @@ export const agentTools: AgentTool[] = [
           sessionId: ctx.sessionId,
           ...(typeof args.icon === "string" ? { icon: args.icon } : {}),
         },
-        { forceNew: args.forceNew === true },
+        { forceNew },
       );
-      ctx.emit({ type: "apps_changed" });
-      ctx.emit({ type: "os_ui", action: { action: "open_app", appId: app.id } });
+      const failCount = noteLintOutcome(ctx.sessionId, app.id, lint);
+      const checks = await smokeOpenUIQueries(code);
+      const health = appHealthFrom(lint, checks);
+      await appStore.update(app.id, { health });
+      const dedupe = await appStore.dedupeByTitle();
+      emitOpenAndMaybePin(ctx, app.id, health);
       return {
         id: app.id,
         title: app.title,
         reused: app.reused,
-        ...lintPayload(lint),
+        health,
+        ...(dedupe.removed > 0
+          ? { dedupedRemoved: dedupe.removed, dedupedIds: dedupe.removedIds }
+          : {}),
+        ...lintPayload(lint, { failCount }),
+        ...smokePayload(checks),
       };
     },
   },
@@ -525,33 +641,99 @@ export const agentTools: AgentTool[] = [
   {
     name: "app_update",
     description:
-      "Apply an incremental edit patch to an existing app. Pass ONLY changed/new openui-lang statements — the runtime merges by statement name. Call get_app first to see the current code.",
+      "Edit an existing OpenUI app by id. Prefer a small `patch` of changed statements (merged by name). For broken apps or after repeated lint failures, pass `replace` with the FULL corrected program. Call get_app first.",
     parameters: {
       type: "object",
       properties: {
         id: { type: "string", description: "The app id" },
-        patch: { type: "string", description: "openui-lang statements to merge (changed/new only)" },
+        patch: {
+          type: "string",
+          description: "openui-lang statements to merge (changed/new only). Ignored when replace is set.",
+        },
+        replace: {
+          type: "string",
+          description:
+            "Full openui-lang program that replaces the app content entirely (same id). Use when patches fail or JS-bleed must be rewritten.",
+        },
         title: { type: "string", description: "Optional new title" },
         icon: {
           type: "string",
           description: "Optional Lucide icon name (kebab-case) for the dock and app library",
         },
       },
-      required: ["id", "patch"],
+      required: ["id"],
     },
     execute: async (args, ctx) => {
+      if (ctx.buildMode === "code") {
+        return {
+          error:
+            'buildMode is "code" this turn — do not use app_update. Edit the project with write_file / exec instead.',
+        };
+      }
       const id = String(args.id);
       const existing = await appStore.get(id);
       if (!existing) return { error: "App not found", id };
-      const merged = mergeStatements(existing.content, String(args.patch ?? ""));
-      const lint = lintOpenUICode(merged);
+
+      const replace =
+        typeof args.replace === "string" && args.replace.trim().length > 0
+          ? String(args.replace)
+          : null;
+      const patch = typeof args.patch === "string" ? String(args.patch) : "";
+
+      let nextContent: string;
+      if (replace) {
+        nextContent = replace;
+      } else {
+        if (!patch.trim()) {
+          return {
+            error: "Provide patch (incremental) or replace (full program).",
+            id,
+            unchanged: true,
+          };
+        }
+        const patchLint = lintOpenUICode(patch);
+        // A patch that is pure JS bleed / unparseable should not silently no-op merge.
+        if (
+          hasJsBleed(patchLint.findings) ||
+          patchLint.findings.some((f) => f.code === "parse-exception" || f.code === "empty-code")
+        ) {
+          return {
+            error: "Patch is invalid openui-lang (JS bleed or parse failure). Use replace with a full valid program.",
+            id,
+            unchanged: true,
+            ...lintPayload(patchLint, { wasSaved: false }),
+          };
+        }
+        const merged = mergeStatements(existing.content, patch);
+        if (merged === existing.content) {
+          return {
+            error:
+              "Patch produced no changes (empty/unparseable merge). Fix the patch or pass replace with the full program.",
+            id,
+            unchanged: true,
+          };
+        }
+        nextContent = merged;
+      }
+
+      const lint = lintOpenUICode(nextContent);
+      const checks = await smokeOpenUIQueries(nextContent);
+      const health = appHealthFrom(lint, checks);
       const updated = await appStore.update(id, {
-        content: merged,
+        content: nextContent,
+        health,
         ...(typeof args.title === "string" ? { title: args.title } : {}),
         ...(typeof args.icon === "string" ? { icon: args.icon } : {}),
       });
-      ctx.emit({ type: "apps_changed" });
-      return { id: updated.id, updatedAt: updated.updatedAt, ...lintPayload(lint) };
+      const failCount = noteLintOutcome(ctx.sessionId, updated.id, lint);
+      emitOpenAndMaybePin(ctx, updated.id, health);
+      return {
+        id: updated.id,
+        updatedAt: updated.updatedAt,
+        health,
+        ...lintPayload(lint, { failCount }),
+        ...smokePayload(checks),
+      };
     },
   },
   {
@@ -560,6 +742,222 @@ export const agentTools: AgentTool[] = [
       "List every launchable shell app: system, installed, generated, and web. Each entry includes kind and control mode (cursor = mouse-driveable, tools = use domain tools like calendar_*/mail_*, open_only = window only — cursor cannot drive content).",
     parameters: { type: "object", properties: {} },
     execute: async () => loadShellCatalog(),
+  },
+
+  // ── Code-app factory (builtin Studio projects — no ACP required) ───────────
+  {
+    name: "list_templates",
+    description:
+      "List curated code-app templates (vite-react, python-fastapi, …) for scaffold_template.",
+    parameters: { type: "object", properties: {} },
+    execute: async () => ({ templates: listTemplates() }),
+  },
+  {
+    name: "create_project",
+    description:
+      "Create a new project folder under the workspace, register it in Studio, and bind this session to it. Then call scaffold_template.",
+    parameters: {
+      type: "object",
+      properties: {
+        name: { type: "string", description: "Project display name (used for the folder slug)" },
+      },
+      required: ["name"],
+    },
+    execute: async (args, ctx) => {
+      if (ctx.buildMode === "openui") {
+        return {
+          error:
+            'buildMode is "openui" — use app_create instead of create_project.',
+        };
+      }
+      const name = String(args.name ?? "app").trim() || "app";
+      const dir = resolveNewProjectDir(name);
+      await fs.mkdir(dir, { recursive: true });
+      const project = projectStore.add(dir);
+      const session = await sessionStore.get(ctx.sessionId);
+      if (session) {
+        session.projectId = project.id;
+        await sessionStore.save(session);
+      }
+      ctx.emit({ type: "os_ui", action: { action: "open_system", app: "studio" } });
+      return {
+        id: project.id,
+        name: project.name,
+        path: project.path,
+        next: "Call scaffold_template with template vite-react or python-fastapi.",
+      };
+    },
+  },
+  {
+    name: "scaffold_template",
+    description:
+      "Copy a curated template into the active (or given) project directory. Returns install/dev commands and preview URL.",
+    parameters: {
+      type: "object",
+      properties: {
+        template: {
+          type: "string",
+          description: 'Template id from list_templates, e.g. "vite-react" or "python-fastapi"',
+        },
+        projectPath: {
+          type: "string",
+          description: "Absolute project path. Defaults to the active Studio project.",
+        },
+      },
+      required: ["template"],
+    },
+    execute: async (args, ctx) => {
+      if (ctx.buildMode === "openui") {
+        return { error: 'buildMode is "openui" — scaffolding code templates is blocked.' };
+      }
+      const templateId = String(args.template ?? "");
+      let projectPath =
+        typeof args.projectPath === "string" && args.projectPath.trim()
+          ? path.resolve(args.projectPath.trim())
+          : "";
+      if (!projectPath) {
+        const activeId = projectStore.list().activeId;
+        const active = activeId
+          ? projectStore.list().projects.find((p) => p.id === activeId)
+          : null;
+        if (!active) {
+          return {
+            error: "No active project. Call create_project first, or pass projectPath.",
+          };
+        }
+        projectPath = active.path;
+      }
+      try {
+        const { meta, filesCopied } = await scaffoldTemplateInto(templateId, projectPath);
+        return {
+          template: meta.id,
+          projectPath,
+          filesCopied,
+          install: meta.install,
+          dev: meta.dev,
+          url: meta.url,
+          next: `Run install via exec, then start the server with: ${meta.dev}. Then register_webapp.`,
+        };
+      } catch (err) {
+        return { error: err instanceof Error ? err.message : String(err) };
+      }
+    },
+  },
+  {
+    name: "register_webapp",
+    description:
+      "Register a running local URL as a dock WebApp (same as Studio Browser → Add to dock). Probes the URL first.",
+    parameters: {
+      type: "object",
+      properties: {
+        name: { type: "string", description: "Dock display name" },
+        url: { type: "string", description: "Preview URL, e.g. http://127.0.0.1:5173" },
+        command: {
+          type: "string",
+          description: "Optional command to start the server if it is down",
+        },
+        projectPath: {
+          type: "string",
+          description: "Optional absolute project path for launch cwd",
+        },
+      },
+      required: ["name", "url"],
+    },
+    execute: async (args, ctx) => {
+      if (ctx.buildMode === "openui") {
+        return { error: 'buildMode is "openui" — use app_create for OpenUI apps.' };
+      }
+      const name = String(args.name ?? "Web App");
+      const url = String(args.url ?? "").trim();
+      if (!/^https?:\/\//i.test(url)) {
+        return { error: "url must be an http(s) URL" };
+      }
+      const probe = await probeUrl(url);
+      if (!probe.ok) {
+        return {
+          error: `URL not healthy yet (${probe.error ?? `status ${probe.status}`}). Start the dev server with exec, then retry register_webapp.`,
+          url,
+          probe,
+        };
+      }
+      const app = webAppStore.add({
+        name,
+        url,
+        ...(typeof args.command === "string" ? { command: args.command } : {}),
+        ...(typeof args.projectPath === "string" ? { projectPath: args.projectPath } : {}),
+      });
+      ctx.emit({ type: "apps_changed" });
+      ctx.emit({ type: "os_ui", action: { action: "open_app", appId: app.id } });
+      // URL probe already passed — pin only after healthy register.
+      ctx.emit({ type: "os_ui", action: { action: "pin_app", appId: app.id } });
+      return {
+        id: app.id,
+        name: app.name,
+        url: app.url,
+        probe,
+        note: "Web app registered, opened, and pinned to the dock.",
+      };
+    },
+  },
+  {
+    name: "studio_ui",
+    description:
+      "Drive the Studio right-rail so the user sees Files/Browser/Terminal after you scaffold or run a server. Prefer open_tab browser after register_webapp.",
+    parameters: {
+      type: "object",
+      properties: {
+        command: {
+          type: "string",
+          enum: ["open_tab", "navigate_to_file", "show_browser"],
+          description: "UI command",
+        },
+        tab: {
+          type: "string",
+          enum: ["files", "diffs", "terminal", "browser"],
+          description: "Tab for open_tab",
+        },
+        path: {
+          type: "string",
+          description: "Workspace-relative path for navigate_to_file",
+        },
+      },
+      required: ["command"],
+    },
+    execute: async (args, ctx) => {
+      const command = String(args.command ?? "");
+      if (command === "show_browser") {
+        ctx.emit({
+          type: "os_ui",
+          action: { action: "open_workspace_tab", tab: "browser" },
+        });
+        return { ok: true, tab: "browser" };
+      }
+      if (command === "open_tab") {
+        const tab = String(args.tab ?? "files");
+        if (tab !== "files" && tab !== "diffs" && tab !== "terminal" && tab !== "browser") {
+          return { error: 'tab must be "files" | "diffs" | "terminal" | "browser"' };
+        }
+        ctx.emit({
+          type: "os_ui",
+          action: {
+            action: "open_workspace_tab",
+            tab,
+            ...(typeof args.path === "string" ? { path: args.path } : {}),
+          },
+        });
+        return { ok: true, tab };
+      }
+      if (command === "navigate_to_file") {
+        const filePath = String(args.path ?? "");
+        if (!filePath) return { error: "path is required for navigate_to_file" };
+        ctx.emit({
+          type: "os_ui",
+          action: { action: "open_workspace_tab", tab: "files", path: filePath },
+        });
+        return { ok: true, tab: "files", path: filePath };
+      }
+      return { error: `Unknown studio_ui command "${command}"` };
+    },
   },
 
   // ── Coding capacity (agent-canvas spirit) ──────────────────────────────────

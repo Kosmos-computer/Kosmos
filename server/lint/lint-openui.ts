@@ -18,6 +18,7 @@ import {
   type ParseResult,
   type Parser,
 } from "@openuidev/lang-core";
+import { detectJsBleed } from "./jsBleed.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const schemaJson = JSON.parse(
@@ -459,7 +460,10 @@ export function lintOpenUICode(code: string): LintReport {
     };
   }
 
+  const jsBleed = detectJsBleed(code);
+
   const rawFindings: LintFinding[] = [
+    ...jsBleed,
     ...errors.map(
       (e): LintFinding => ({
         code: e.code,

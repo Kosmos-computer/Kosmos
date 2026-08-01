@@ -3,6 +3,7 @@ import type Stripe from "stripe";
 import type { Config } from "./config.js";
 import { deactivateOrder, deactivateTenant, resolveOrderForDeactivate } from "./deactivate.js";
 import type { Store } from "./db.js";
+import { notifyEntryLink } from "./notifyEntryLink.js";
 import { provisionTenant } from "./provision.js";
 
 const TENANT_RE = /^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/;
@@ -148,6 +149,20 @@ export function scheduleProvision(
       const result = await provisionTenant(config, tenantName);
       store.markReady(sessionId, result.url, result.entryUrl);
       console.log(`provisioned ${result.app} -> ${result.url}`);
+      const email =
+        session.customer_email ??
+        store.getBySession(sessionId)?.customer_email ??
+        null;
+      if (email) {
+        await notifyEntryLink({
+          to: email,
+          tenantName,
+          tenantUrl: result.url,
+          entryUrl: result.entryUrl,
+        }).catch((notifyErr) => {
+          console.error(`entry-link notify failed for ${tenantName}:`, notifyErr);
+        });
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       store.markFailed(sessionId, message);

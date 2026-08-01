@@ -10,9 +10,13 @@ data
 *.apk
 app-local-debug.apk
 reference
-apps/desktop/dist
-apps/desktop/release
+# Desktop/mobile/tauri packaging trees are not needed in the Fly runtime image.
+# Keep package.json files for the early workspace COPY in Dockerfile.runtime.
+apps/desktop/**
+!apps/desktop/package.json
 apps/mobile
+apps/tauri
+apps/menubar-tasks
 model-manager/src-tauri/target
 model-manager/src-tauri/gen
 voice-server/.venv
@@ -22,3 +26,4 @@ public/downloads
 public/**/*.mp3
 public/**/*.wav
 public/**/*.zip
+deploy/fly/patches/downloads/server-index.ts

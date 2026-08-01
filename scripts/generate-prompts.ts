@@ -204,14 +204,23 @@ const CREATOR_WORKFLOW = `
 
 Beyond the openui-lang surface above, wire apps into Arco's tool surface (\`app_create\`, \`app_update\`, \`get_app\`, \`list_apps\`, \`exec\`, \`read_file\`, \`write_file\`, \`db_query\`, \`db_execute\`).
 
-### Creating an app
+### CREATE vs REFINE
 
-1. Prefer \`list_apps\` when the request may already exist (clocks, trackers, prior generated apps). Reuse / \`app_update\` instead of a new title.
-2. Write the complete openui-lang code.
-3. Call \`app_create({title, code})\` with the title and the full RAW code (no fences). Same title → upsert (keeps one dock tile).
-4. Call \`app_create\` immediately once the code is ready. Do NOT wait for your final paragraph.
+**CREATE** (no \`linked_app\` / new OS OpenUI app):
+1. Prefer \`list_apps\` when the request may already exist. Reuse / \`app_update\` instead of a new title.
+2. For live data: discover → write_file script → exec verify JSON → then generate markup (see below). Never skip the exec verify.
+3. Call \`app_create({title, code})\` with RAW openui-lang (no fences). Same title → upsert.
+4. If \`runtimeChecks\` / \`validationErrors\` come back broken, fix with \`app_update\` on that id — never mint a sibling title.
 
-The app is stored, appears in the dock, and opens on the user's desktop. The user can open, refine, and return to it later.
+**REFINE** (context includes \`LINKED_APP\` / \`linked_app\` id):
+1. \`app_create\` is FORBIDDEN unless the user explicitly asks for a separate copy (\`forceNew\`).
+2. Call \`get_app({id})\` then \`app_update({id, patch})\` for tiny edits, or \`app_update({id, replace: fullCode})\` when rewriting / fixing JS-bleed.
+3. Keep the same id. Do not invent a new title.
+
+### Forbidden JS (lint will reject)
+
+Never emit: \`.map(\`, \`=>\`, \`function(\`, \`Query(...).data\`, \`Mutation({ service: ... })\`, \`.length\`, \`= undefined\`.
+Lists: \`@Each(rows, "item", Card([...]))\`. Mutations: \`Mutation("exec", {command: ...})\` or \`Mutation("db_execute", {...})\`.
 
 ### Apps with live data — discover → script → generate
 
@@ -270,20 +279,21 @@ Example app markup:
 - Use the same \`namespace\` across setup, reads, and writes for one app.
 - Prefer SQL parameters over string interpolation for user input.
 
-### Editing apps (refine flow)
+### Golden recipes (copy shapes exactly)
 
-When the user wants to change an existing app (the context may include a \`linked_app\` id):
+**Search form + exec script:**
 
-1. Call \`get_app({id: "..."})\` to see the current code.
-2. Identify what needs to change.
-3. Call \`app_update({id: "...", patch: "chart = LineChart(...)..."})\` with ONLY the changed/new statements.
+    $q = ""
+    $cuisine = "all"
+    results = Query("exec", {command: "node scripts/search.js " + $q + " " + $cuisine}, [], 0)
+    searchBtn = Button("Search", Action([@Run(results)]), "primary")
+    qField = FormControl("Query", Input("q", "Search…", "text", null, $q))
+    list = @Count(results) > 0 ? Stack(@Each(results, "item", Card([TextContent(item.name, "large-heavy")])), "column", "s") : TextContent("No results", "default")
+    root = Stack([Card([qField, searchBtn], "sunk"), list], "column", "m")
 
-The runtime merges by statement name:
-- Same name → replaced.
-- New name → added.
-- Missing from patch → kept unchanged.
+**SQLite CRUD:** see Persistent app state below.
 
-A typical edit is 1-5 statements. NEVER output the entire program as a patch.
+**KPI strip + table:** use the KPI STRIP RECIPE earlier; bind Col data with \`data.rows.field\`.
 
 ### Manual refresh buttons
 
@@ -300,7 +310,8 @@ Use \`create_automation({name, schedule, prompt})\` for recurring work (cron syn
 ### When to use what
 
 - **Inline UI** (fenced \`openui-lang\` in your reply) — quick visualizations, previews, one-off charts.
-- **App** (\`app_create\`) — dashboards, tools, forms the user will return to. Persistent, in the dock.
+- **OpenUI app** (\`app_create\`) — OS-native dock dashboards/trackers/tools; optional Python/Node scripts via \`Query("exec")\`.
+- **Code project** (\`create_project\` / \`scaffold_template\` / \`register_webapp\`) — React/Vite/FastAPI/etc. real folders. Never use \`app_create\` for these.
 - **Automation** (\`create_automation\`) — recurring scheduled work feeding apps or the database.
 - **Plain text** — questions, explanations, conversation.
 `;

@@ -1,0 +1,35 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../Documents/github/kosmos-dashboard"
+		},
+		{
+			"path": "../Documents/github/kosmos-sdk"
+		},
+		{
+			"path": "../Documents/github/kosmos-business-model"
+		},
+		{
+			"path": "../Documents/github/kosmos-alignment"
+		},
+		{
+			"path": "../Documents/github/kosmos-live"
+		},
+		{
+			"path": "../Documents/github/kosmos-steamos"
+		},
+		{
+			"path": "../Documents/github/kosmos-docs"
+		},
+		{
+			"path": "../Documents/github/kosmos-www"
+		},
+		{
+			"path": "../Documents/github/UI Experiments"
+		}
+	],
+	"settings": {}
+}

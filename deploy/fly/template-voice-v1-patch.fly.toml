@@ -1,0 +1,11 @@
+# Minimal openaiCompat /v1 Bearer patch on demo-safe.
+# Run from repo root:
+#
+#   fly deploy . --config deploy/fly/template-voice-v1-patch.fly.toml \
+#     --build-only --push --image-label demo-voice-v1 --remote-only
+#   fly deploy -a kosmos-kosmos --image registry.fly.io/kosmos-template:demo-voice-v1
+
+app = "kosmos-template"
+
+[build]
+  dockerfile = "Dockerfile.voice-v1-patch"

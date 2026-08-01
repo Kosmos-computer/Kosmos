@@ -13,6 +13,7 @@ import { getActiveServerUrl, hasActiveServerProfile } from "./server/serverProfi
 import { getMobileSessionToken } from "./server/mobileSessionStore";
 import { mobileShellNeedsServerProfile } from "./server/mobileShellMode";
 import { desktopUsesCloudProfile, shellUsesRemoteApiBase } from "./server/cloudShellMode";
+import { syncVoiceBrainForActiveProfile } from "./server/voiceBrainSync";
 
 export async function bootstrapPlatformShell(): Promise<void> {
   const needsProfile = mobileShellNeedsServerProfile();
@@ -60,4 +61,7 @@ export async function bootstrapPlatformShell(): Promise<void> {
     root.classList.add("arco-desktop-cloud");
     root.dataset.cloud = profileUrl;
   }
+
+  // Local STT/TTS + brain URL for the active profile (cloud /v1 + Bearer, or local /v1).
+  void syncVoiceBrainForActiveProfile();
 }

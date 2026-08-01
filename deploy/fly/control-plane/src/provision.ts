@@ -89,6 +89,8 @@ export async function provisionTenant(config: Config, tenantName: string): Promi
   const app = `${config.tenantPrefix}-${tenantName}`;
   const url = `https://${app}.fly.dev`;
   const entryKey = randomBytes(32).toString("hex");
+  // Hosted vault KEK must live in Fly Secrets (not on the data volume).
+  const secretsKek = randomBytes(32).toString("hex");
   const workDir = fs.mkdtempSync(path.join(os.tmpdir(), "kosmos-provision-"));
   const tomlPath = path.join(workDir, `${app}.toml`);
 
@@ -129,6 +131,7 @@ export async function provisionTenant(config: Config, tenantName: string): Promi
       `LLM_MODEL=${config.tenantModel}`,
       "ARCO_SECURE_COOKIES=1",
       `ARCO_ENTRY_MAGIC_KEY=${entryKey}`,
+      `ARCO_SECRETS_KEK=${secretsKek}`,
       `ARCO_WORKSPACE_QUOTA_MB=${config.tenantQuotaMb}`,
       "KOSMOS_BILLING_MANAGED=1",
       `KOSMOS_TENANT_APP=${app}`,

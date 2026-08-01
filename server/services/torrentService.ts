@@ -6,7 +6,6 @@
  * completed files under the Drive import size cap are copied into Drive.
  */
 import fs from "node:fs";
-import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
 import type WebTorrent from "webtorrent";
@@ -34,16 +33,26 @@ const DEFAULT_SETTINGS: DownloadsSettingsDto = {
   seedAfterDownload: true,
 };
 
-/** Lazy-load so a missing native addon cannot crash server boot on Fly overlays. */
-const require = createRequire(import.meta.url);
+/**
+ * Lazy-load via dynamic import(). WebTorrent 2 is ESM with top-level await, so
+ * createRequire()/require() fails (ERR_REQUIRE_ASYNC_MODULE / path-export errors
+ * under tsx). A missing native addon then surfaces only when Downloads is used,
+ * not at server boot.
+ */
 type WebTorrentCtor = typeof import("webtorrent").default;
 let WebTorrentCtor: WebTorrentCtor | null = null;
+let WebTorrentLoad: Promise<WebTorrentCtor> | null = null;
 
-function loadWebTorrent(): WebTorrentCtor {
-  if (!WebTorrentCtor) {
-    WebTorrentCtor = require("webtorrent") as WebTorrentCtor;
+async function loadWebTorrent(): Promise<WebTorrentCtor> {
+  if (WebTorrentCtor) return WebTorrentCtor;
+  if (!WebTorrentLoad) {
+    WebTorrentLoad = import("webtorrent").then((mod) => {
+      const ctor = (mod.default ?? mod) as WebTorrentCtor;
+      WebTorrentCtor = ctor;
+      return ctor;
+    });
   }
-  return WebTorrentCtor;
+  return WebTorrentLoad;
 }
 
 interface PersistedTorrent {
@@ -180,7 +189,7 @@ function loadPersisted(): PersistedTorrent[] {
 
 function savePersisted(): void {
   const torrents: PersistedTorrent[] = [];
-  for (const t of getClient().torrents) {
+  for (const t of requireClient().torrents) {
     const meta = metaById.get(t.infoHash);
     if (!meta?.source) continue;
     torrents.push({
@@ -256,10 +265,10 @@ function ensureDownloadsFolder(): string {
   return filesService.create({ name: DOWNLOADS_FOLDER_NAME, parentId: null, kind: "folder" }).id;
 }
 
-function getClient(): WtClient {
+async function getClient(): Promise<WtClient> {
   if (!client) {
     fs.mkdirSync(dataDirs.torrents, { recursive: true });
-    const WT = loadWebTorrent();
+    const WT = await loadWebTorrent();
     client = new WT();
     client.on("error", (err: Error | string) => {
       console.warn("[downloads] client error:", err);
@@ -268,13 +277,20 @@ function getClient(): WtClient {
   return client;
 }
 
+/** Sync accessor after ensureBooted()/getClient() has already initialized. */
+function requireClient(): WtClient {
+  if (!client) throw new Error("Downloads client is not initialized");
+  return client;
+}
+
 async function requireTorrent(id: string): Promise<WtTorrent> {
   const normalized = id.trim().toLowerCase();
   // WebTorrent 2: client.get() is async and returns Promise<Torrent|null>.
   // Never use the Promise in a sync ?? chain — it is always truthy.
-  const fromGet = await getClient().get(normalized);
+  const wt = await getClient();
+  const fromGet = await wt.get(normalized);
   if (fromGet) return fromGet as WtTorrent;
-  const found = getClient().torrents.find((t) => t.infoHash.toLowerCase() === normalized);
+  const found = wt.torrents.find((t) => t.infoHash.toLowerCase() === normalized);
   if (!found) throw new Error(`Torrent not found: ${id}`);
   return found as WtTorrent;
 }
@@ -546,7 +562,8 @@ async function addSourceInner(
     throw new Error("source must be a magnet URI or http(s) .torrent URL");
   }
 
-  const existing = getClient().torrents.find((t) => {
+  const wt = await getClient();
+  const existing = wt.torrents.find((t) => {
     const m = metaById.get(t.infoHash);
     return m?.source === trimmed || t.magnetURI === trimmed;
   });
@@ -565,7 +582,7 @@ async function addSourceInner(
 
   const torrent = await new Promise<WtTorrent>((resolve, reject) => {
     try {
-      const t = getClient().add(trimmed, { path: dataDirs.torrents }, (ready) => {
+      const t = wt.add(trimmed, { path: dataDirs.torrents }, (ready) => {
         resolve(ready as WtTorrent);
       });
       t.on("error", (err: Error | string) => {
@@ -593,7 +610,7 @@ async function ensureBooted(): Promise<void> {
   if (bootPromise) return bootPromise;
   bootPromise = (async () => {
     fs.mkdirSync(dataDirs.torrents, { recursive: true });
-    getClient();
+    await getClient();
     const persisted = loadPersisted();
     for (const entry of persisted) {
       try {
@@ -609,7 +626,10 @@ async function ensureBooted(): Promise<void> {
         console.warn("[downloads] failed to restore torrent:", entry.source, err);
       }
     }
-  })();
+  })().catch((err) => {
+    bootPromise = null;
+    throw err;
+  });
   return bootPromise;
 }
 
@@ -635,7 +655,7 @@ export const torrentService = {
 
   async list(): Promise<TorrentDto[]> {
     await ensureBooted();
-    return getClient().torrents.map((t) => toDto(t as WtTorrent));
+    return (await getClient()).torrents.map((t) => toDto(t as WtTorrent));
   },
 
   async get(id: string): Promise<TorrentDto> {
@@ -645,7 +665,7 @@ export const torrentService = {
 
   async stats(): Promise<DownloadsStatsDto> {
     await ensureBooted();
-    const torrents = getClient().torrents as WtTorrent[];
+    const torrents = (await getClient()).torrents as WtTorrent[];
     let down = 0;
     let up = 0;
     let total = 0;
@@ -684,7 +704,7 @@ export const torrentService = {
 
     // Turning seeding off should stop finished torrents that are still uploading.
     if (!next.seedAfterDownload) {
-      for (const torrent of getClient().torrents as WtTorrent[]) {
+      for (const torrent of (await getClient()).torrents as WtTorrent[]) {
         if (!torrent.done) continue;
         const meta = metaById.get(torrent.infoHash);
         if (meta?.stopped) continue;

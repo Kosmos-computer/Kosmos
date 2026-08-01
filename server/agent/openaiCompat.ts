@@ -13,13 +13,16 @@
  * its own context too, but the agent session is what preserves tool state).
  * Without the header, all calls share one "voice" session.
  *
- * Not under /api (cookie auth is impossible for server-to-server callers),
- * so it is restricted to loopback connections instead.
+ * Access: loopback (local voice / scripts) OR a valid session Bearer token
+ * with the `chat` capability (cloud-connected desktop voice brain). Cookie
+ * auth is not used — the voice server is a separate process.
  */
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { streamSSE } from "hono/streaming";
 import { getConnInfo } from "@hono/node-server/conninfo";
 import type { AgentEvent } from "../../shared/types.js";
+import { authSessionStore } from "../auth/sessionStore.js";
+import { userStore } from "../auth/userStore.js";
 import { broadcastShellEvent, waitForShellClients } from "../shellChannel.js";
 import { modelStore } from "../stores/modelStore.js";
 import { sessionStore } from "../stores/sessionStore.js";
@@ -77,6 +80,53 @@ function contentToText(content: CompatMessage["content"]): string {
 
 function isLoopback(address: string): boolean {
   return address === "127.0.0.1" || address === "::1" || address === "::ffff:127.0.0.1";
+}
+
+function bearerToken(c: Context): string | undefined {
+  const auth = c.req.header("authorization") ?? "";
+  const match = auth.match(/^Bearer\s+(.+)$/i);
+  return match?.[1]?.trim() || undefined;
+}
+
+/**
+ * Local voice/scripts use loopback with no token. Cloud-connected desktops
+ * point the local voice-server brain at this host's /v1 with the user's
+ * session Bearer — same credential the shell already stores for apiBase.
+ */
+function authorizeCompat(
+  c: Context,
+):
+  | { ok: true; userId?: string }
+  | { ok: false; status: 401 | 403; body: { error: { message: string }; code?: string } } {
+  const address = getConnInfo(c).remote.address ?? "";
+  if (isLoopback(address)) return { ok: true };
+
+  const token = bearerToken(c);
+  const session = token ? authSessionStore.get(token) : null;
+  const user = session ? userStore.getAuthUser(session.userId) : null;
+  if (!session || !user) {
+    return {
+      ok: false,
+      status: 403,
+      body: {
+        error: {
+          message:
+            "The Arco /v1 endpoint accepts loopback connections or a session Bearer token with chat permission",
+        },
+      },
+    };
+  }
+  if (session.locked) {
+    return { ok: false, status: 401, body: { error: { message: "Session is locked" }, code: "locked" } };
+  }
+  if (!user.capabilities.includes("chat")) {
+    return {
+      ok: false,
+      status: 403,
+      body: { error: { message: "Missing permission: chat" }, code: "forbidden" },
+    };
+  }
+  return { ok: true, userId: user.id };
 }
 
 /** conversation key (x-arco-conversation) → Arco session id, process-lifetime. */
@@ -178,10 +228,8 @@ async function proxyCompletion(
 export const openaiCompatRoutes = new Hono();
 
 openaiCompatRoutes.post("/chat/completions", async (c) => {
-  const address = getConnInfo(c).remote.address ?? "";
-  if (!isLoopback(address)) {
-    return c.json({ error: { message: "The Arco /v1 endpoint only accepts local connections" } }, 403);
-  }
+  const auth = authorizeCompat(c);
+  if (!auth.ok) return c.json(auth.body, auth.status);
 
   const body = (await c.req.json()) as CompatRequest;
 
@@ -229,6 +277,7 @@ openaiCompatRoutes.post("/chat/completions", async (c) => {
       // desktop the turn runs headless (cursor refuses, confirms deny).
       interactive,
       slot,
+      ...(auth.userId ? { userId: auth.userId } : {}),
       ...(extraSystem ? { extraSystem } : {}),
     });
     return c.json({
@@ -262,6 +311,7 @@ openaiCompatRoutes.post("/chat/completions", async (c) => {
         signal: c.req.raw.signal,
         interactive,
         slot,
+        ...(auth.userId ? { userId: auth.userId } : {}),
         ...(extraSystem ? { extraSystem } : {}),
       });
       write(chunkPayload(completionId, model, {}, "stop"));
@@ -280,10 +330,8 @@ openaiCompatRoutes.post("/chat/completions", async (c) => {
  * model in the registry (those proxy raw, without the agent loop).
  */
 openaiCompatRoutes.get("/models", (c) => {
-  const address = getConnInfo(c).remote.address ?? "";
-  if (!isLoopback(address)) {
-    return c.json({ error: { message: "The Arco /v1 endpoint only accepts local connections" } }, 403);
-  }
+  const auth = authorizeCompat(c);
+  if (!auth.ok) return c.json(auth.body, auth.status);
   const slots = modelStore
     .allSlotDefs()
     .filter((s) => s.requires === "text.chat")

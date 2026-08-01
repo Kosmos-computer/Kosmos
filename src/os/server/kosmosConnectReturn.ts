@@ -1,12 +1,13 @@
 /**
  * Desktop / dev-shell callback after control-plane /connect or /welcome redirect.
- * Reads ?kosmosInstance=…&kosmosConnected=1, saves a cloud profile, reloads.
+ * Reads ?kosmosInstance=…&kosmosConnected=1 (& optional kosmosEntry), saves a cloud profile, reloads.
  */
 import { normalizeServerUrl, upsertServerProfile } from "./serverProfileStore";
 
 export const KOSMOS_CONNECT_PARAM = {
   connected: "kosmosConnected",
   instance: "kosmosInstance",
+  entry: "kosmosEntry",
   error: "kosmosConnectError",
 } as const;
 
@@ -38,10 +39,12 @@ function stripConnectParams(): void {
   const had =
     params.has(KOSMOS_CONNECT_PARAM.connected) ||
     params.has(KOSMOS_CONNECT_PARAM.instance) ||
+    params.has(KOSMOS_CONNECT_PARAM.entry) ||
     params.has(KOSMOS_CONNECT_PARAM.error);
   if (!had) return;
   params.delete(KOSMOS_CONNECT_PARAM.connected);
   params.delete(KOSMOS_CONNECT_PARAM.instance);
+  params.delete(KOSMOS_CONNECT_PARAM.entry);
   params.delete(KOSMOS_CONNECT_PARAM.error);
   const next = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ""}`;
   window.history.replaceState({}, "", next);
@@ -57,6 +60,7 @@ export function applyKosmosConnectReturn(): boolean {
   const params = new URLSearchParams(window.location.search);
   const connectError = params.get(KOSMOS_CONNECT_PARAM.error);
   const instanceRaw = params.get(KOSMOS_CONNECT_PARAM.instance);
+  const entryRaw = params.get(KOSMOS_CONNECT_PARAM.entry);
   const connected = params.has(KOSMOS_CONNECT_PARAM.connected);
 
   if (!connected && !connectError && !instanceRaw) return false;
@@ -77,6 +81,22 @@ export function applyKosmosConnectReturn(): boolean {
       url: origin,
       kind: "cloud",
     });
+
+    // Unlock the private entry gate in a separate tab when control-plane provided it.
+    // Profile stays on the API origin; the entry URL is path-bearing and must not be stored as apiBase.
+    const entryUrl = entryRaw?.trim() ?? "";
+    if (entryUrl) {
+      try {
+        const entry = new URL(entryUrl);
+        if (entry.origin === origin && entry.pathname.startsWith("/entry/")) {
+          sessionStorage.setItem("arco.kosmosEntryUrl", entry.toString());
+          window.open(entry.toString(), "_blank", "noopener,noreferrer");
+        }
+      } catch {
+        // Ignore malformed entry URLs; profile pairing still succeeds.
+      }
+    }
+
     // Hard navigation so bootstrap picks up the cloud apiBase (reload alone
     // can race with history.replaceState on some shells).
     const next = `${window.location.pathname}${window.location.hash || ""}`;
@@ -95,4 +115,13 @@ export function consumeKosmosConnectError(): string | null {
   if (!message) return null;
   sessionStorage.removeItem("arco.kosmosConnectError");
   return message;
+}
+
+/** Invitation URL stashed during desktop connect (open once to unlock the cloud gate). */
+export function consumeKosmosEntryUrl(): string | null {
+  if (typeof window === "undefined") return null;
+  const url = sessionStorage.getItem("arco.kosmosEntryUrl");
+  if (!url) return null;
+  sessionStorage.removeItem("arco.kosmosEntryUrl");
+  return url;
 }

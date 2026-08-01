@@ -129,8 +129,11 @@ function applyLlmEnvOverrides(settings: Settings): Settings {
   if (process.env.LLM_MODEL?.trim() && !settings.model?.trim()) {
     settings.model = process.env.LLM_MODEL.trim();
   }
-  if (process.env.LLM_API_KEY !== undefined) settings.apiKey = process.env.LLM_API_KEY;
-  if (process.env.CURSOR_API_KEY !== undefined) settings.cursorApiKey = process.env.CURSOR_API_KEY;
+  // Only non-empty env values override — an empty LLM_API_KEY= in .env must
+  // not wipe keys stored in the settings vault (common on a fresh local clone
+  // while the UI is cloud-connected to a gateway-backed tenant).
+  if (process.env.LLM_API_KEY?.trim()) settings.apiKey = process.env.LLM_API_KEY.trim();
+  if (process.env.CURSOR_API_KEY?.trim()) settings.cursorApiKey = process.env.CURSOR_API_KEY.trim();
   if (process.env.CURSOR_MODEL?.trim()) settings.cursorModel = process.env.CURSOR_MODEL.trim();
   return settings;
 }

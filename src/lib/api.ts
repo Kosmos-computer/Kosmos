@@ -1708,6 +1708,8 @@ export async function streamChat(
   approvalMode?: "strict" | "smart" | "full",
   profileId?: string | null,
   toolsetIds?: string[],
+  linkedAppId?: string,
+  buildMode?: "openui" | "code" | "auto",
 ): Promise<void> {
   const res = await fetch("/api/chat", {
     method: "POST",
@@ -1720,6 +1722,8 @@ export async function streamChat(
       projectId: projectId ?? null,
       ...(profileId ? { profileId } : {}),
       ...(toolsetIds && toolsetIds.length > 0 ? { toolsetIds } : {}),
+      ...(linkedAppId ? { linkedAppId } : {}),
+      ...(buildMode ? { buildMode } : {}),
     }),
     signal,
   });

@@ -123,7 +123,7 @@ export class AppStore {
 
   async update(
     id: string,
-    patch: Partial<Pick<StoredApp, "title" | "content" | "icon">>,
+    patch: Partial<Pick<StoredApp, "title" | "content" | "icon" | "health">>,
   ): Promise<StoredApp> {
     const existing = await this.get(id);
     if (!existing) throw new Error(`App not found: ${id}`);

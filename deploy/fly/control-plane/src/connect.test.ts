@@ -21,9 +21,21 @@ describe("connect helpers", () => {
     const parsed = new URL(ok);
     assert.equal(parsed.searchParams.get("kosmosInstance"), "https://kosmos-acme.fly.dev");
     assert.equal(parsed.searchParams.get("kosmosConnected"), "1");
+    assert.equal(parsed.searchParams.get("kosmosEntry"), null);
+
+    const withEntry = buildDesktopReturnUrl(
+      "http://127.0.0.1:4610/",
+      "https://kosmos-acme.fly.dev/",
+      "https://kosmos-acme.fly.dev/entry/abc123",
+    );
+    const entryParsed = new URL(withEntry);
+    assert.equal(entryParsed.searchParams.get("kosmosInstance"), "https://kosmos-acme.fly.dev");
+    assert.equal(entryParsed.searchParams.get("kosmosEntry"), "https://kosmos-acme.fly.dev/entry/abc123");
 
     const err = buildDesktopReturnError("http://127.0.0.1:4610/", "Nope");
-    assert.equal(new URL(err).searchParams.get("kosmosConnectError"), "Nope");
+    const errParsed = new URL(err);
+    assert.equal(errParsed.searchParams.get("kosmosConnectError"), "Nope");
+    assert.equal(errParsed.searchParams.get("kosmosEntry"), null);
   });
 
   it("parses connect mode", () => {

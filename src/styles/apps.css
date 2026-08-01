@@ -393,6 +393,20 @@
   color: var(--arco-danger);
 }
 
+.arco-chat__starters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arco-space-m);
+  padding: var(--arco-space-l);
+}
+
+.arco-chat__starter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--arco-space-s);
+  justify-content: center;
+}
+
 .arco-chat__thread {
   flex: 1;
   min-width: 0;
@@ -958,6 +972,15 @@
   padding: var(--arco-space-s) var(--arco-space-m);
   border-bottom: 1px solid var(--arco-border);
   flex-shrink: 0;
+}
+
+.arco-appsurface__badge {
+  flex-shrink: 0;
+  padding: var(--arco-space-s) var(--arco-space-m);
+  font-size: var(--arco-text-sm);
+  color: var(--arco-danger, #b42318);
+  background: color-mix(in srgb, var(--arco-danger, #b42318) 12%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--arco-danger, #b42318) 28%, transparent);
 }
 
 .arco-appsurface__toolbar-search {

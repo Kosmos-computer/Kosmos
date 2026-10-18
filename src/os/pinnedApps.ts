@@ -5,6 +5,7 @@
  * prototype's workspace-config.ts (pinnedWorkspaceIds / trayPinnedIds),
  * collapsed into one generic set since Arco has a single entry type.
  */
+import { KOSMOS_FRAME_APP_ID } from "@shared/kosmosFrame";
 import type { ShellAppEntry } from "./shellApps";
 
 /** Max pinned apps shown as tray icons; the rest appear in "View all apps". */
@@ -93,8 +94,13 @@ function ensureAppAfter(pinned: string[], id: string, afterId: string): string[]
   return addPinned(removePinned(pinned, id), id, afterIdx + 1);
 }
 
-/** Generated/web apps pin only after successful smoke (pin_app) or explicit user pin. */
+/**
+ * Generated and web apps pin only after smoke (`pin_app`) or an explicit pin.
+ * The Kosmos still-frame window is a shell entry, so it joins the dock with
+ * the system apps instead of waiting for that opt-in.
+ */
 export function isOptInPinId(id: string): boolean {
+  if (id === `web:${KOSMOS_FRAME_APP_ID}`) return false;
   return id.startsWith("generated:") || id.startsWith("web:");
 }
 

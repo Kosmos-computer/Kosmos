@@ -99,6 +99,7 @@ import { generateUiFromPrompt } from "./services/generatorService.js";
 import { imageGenStore } from "./stores/imageGenStore.js";
 import { generateImageFromPrompt, getImageGenStatus } from "./services/imageGenService.js";
 import { webAppStore } from "./stores/webAppStore.js";
+import { attachKosmosEngineProxy } from "./kosmosEngineProxy.js";
 import { installedAppStore, APPS_DIR } from "./platform/installedAppStore.js";
 import { grantStore, readAudit } from "./platform/grantStore.js";
 import { parseManifest } from "./platform/manifestSchema.js";
@@ -4032,6 +4033,7 @@ if (serveProductionShell) {
 
 const port = Number(process.env.PORT ?? 4600);
 const listenHost = process.env.ARCO_MOBILE_LOCAL === "1" ? "127.0.0.1" : undefined;
+webAppStore.ensureKosmosFrame();
 seedMcpPresets();
 startScheduler();
 startSelfHeal();
@@ -4047,8 +4049,10 @@ const httpServer = serve({ fetch: app.fetch, port, hostname: listenHost }, () =>
   console.log(`[arco] server listening on http://${host}:${port}`);
   console.log(`[arco] data dir: ${dataDirs.root}`);
 });
+const nodeServer = httpServer as import("node:http").Server;
+attachKosmosEngineProxy(nodeServer);
 void import("./channels/adapters/voiceStream.js").then(({ attachVoiceStreamUpgrade }) =>
-  attachVoiceStreamUpgrade(httpServer as import("node:http").Server).catch((err) =>
+  attachVoiceStreamUpgrade(nodeServer).catch((err) =>
     console.warn("[voicecall] stream upgrade:", err instanceof Error ? err.message : err),
   ),
 );

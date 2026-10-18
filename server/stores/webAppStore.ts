@@ -7,6 +7,11 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import type { WebApp } from "../../shared/types.js";
+import {
+  KOSMOS_FRAME_APP_ID,
+  KOSMOS_FRAME_NAME,
+  KOSMOS_FRAME_PAGE_URL,
+} from "../../shared/kosmosFrame.js";
 import { dataDirs } from "../env.js";
 
 const FILE = path.join(dataDirs.root, "webapps.json");
@@ -49,5 +54,29 @@ export const webAppStore = {
 
   remove(id: string): void {
     save(load().filter((a) => a.id !== id));
+  },
+
+  /**
+   * The Kosmos still-frame window. Inserted once, with a stable id, so the
+   * dock can pin `web:kosmos-engine` without a register_webapp turn.
+   * An entry that is already there is left alone (a renamed app stays renamed).
+   * `KOSMOS_FRAME_URL` overrides the page address when the page server moves.
+   */
+  ensureKosmosFrame(): WebApp {
+    const apps = load();
+    const existing = apps.find((a) => a.id === KOSMOS_FRAME_APP_ID);
+    if (existing) return existing;
+    const url = process.env.KOSMOS_FRAME_URL?.trim() || KOSMOS_FRAME_PAGE_URL;
+    const sameUrl = apps.find((a) => a.url === url);
+    if (sameUrl) return sameUrl;
+    const app: WebApp = {
+      id: KOSMOS_FRAME_APP_ID,
+      name: KOSMOS_FRAME_NAME,
+      url,
+      addedAt: new Date().toISOString(),
+    };
+    apps.push(app);
+    save(apps);
+    return app;
   },
 };

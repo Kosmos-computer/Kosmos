@@ -8,4 +8,9 @@
 export const KOSMOS_FRAME_APP_ID = "kosmos-engine";
 export const KOSMOS_FRAME_NAME = "Kosmos";
 export const KOSMOS_ENGINE_PROXY_PATH = "/api/kosmos";
-export const KOSMOS_FRAME_PAGE_URL = "http://127.0.0.1:5810/";
+/**
+ * Same-origin page. The browser loads it from whatever host serves the
+ * desktop, and the page opens `/api/kosmos` on that host. A loopback URL
+ * would point at the viewer's own machine.
+ */
+export const KOSMOS_FRAME_PAGE_URL = "/kosmos-frame/index.html";

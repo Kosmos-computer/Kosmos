@@ -2506,7 +2506,10 @@ app.post("/api/webapps/:id/launch", async (c) => {
   const webApp = webAppStore.get(c.req.param("id"));
   if (!webApp) return c.json({ error: "Not found" }, 404);
 
-  const running = await fetch(webApp.url, { signal: AbortSignal.timeout(1500) })
+  const probeUrl = webApp.url.startsWith("/")
+    ? `http://127.0.0.1:${process.env.PORT ?? 4600}${webApp.url}`
+    : webApp.url;
+  const running = await fetch(probeUrl, { signal: AbortSignal.timeout(1500) })
     .then(() => true)
     .catch(() => false);
   if (running) {
@@ -4006,6 +4009,21 @@ app.use(
     rewriteRequestPath: (p) => p.replace(/^\/apps/, ""),
   }),
 );
+
+// The still-frame page. Source of truth is kosmos-engine `apps/kosmos-frame`.
+// Served here so the dock iframe is a path on this host, not the viewer's loopback.
+app.get("/kosmos-frame/index.html", async (c) => {
+  const candidates = [
+    path.resolve(process.cwd(), "public/kosmos-frame/index.html"),
+    path.resolve(process.cwd(), "dist/kosmos-frame/index.html"),
+  ];
+  for (const file of candidates) {
+    if (!existsSync(file)) continue;
+    const html = await fs.readFile(file, "utf-8");
+    return c.html(html);
+  }
+  return c.text("Kosmos frame page is missing from this build", 404);
+});
 
 // ── Static shell (production + embedded mobile sidecar) ─────────────────────
 

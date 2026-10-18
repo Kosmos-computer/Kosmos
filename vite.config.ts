@@ -41,6 +41,7 @@ export default defineConfig({
         // Vite proxy — default timeouts and buffered closes mark voice turns
         // headless even when the desktop UI is open.
         timeout: 0,
+        ws: true,
         configure: (proxy) => {
           proxy.on("proxyReq", (proxyReq, _req, res) => {
             res.on("close", () => {

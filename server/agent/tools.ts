@@ -73,6 +73,7 @@ import { requestClientAction } from "./clientRequests.js";
 import { isRiskyCommand, requestConfirmation } from "./confirmations.js";
 import { opsAgentTools } from "./opsTools.js";
 import { engineAgentTools } from "./engineTools.js";
+import { portalAgentTools } from "./portalTools.js";
 import { githubAgentTools } from "./githubTools.js";
 import {
   MemoryAccessError,
@@ -3005,6 +3006,7 @@ export const agentTools: AgentTool[] = [
   // ── Deploy / ops (shared with kosmos-ops MCP) ───────────────────────────────
   ...opsAgentTools,
   ...engineAgentTools,
+  ...portalAgentTools,
   ...githubAgentTools,
 ];
 

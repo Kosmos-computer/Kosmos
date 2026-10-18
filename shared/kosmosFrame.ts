@@ -1,9 +1,10 @@
 /**
- * Identity of the still-frame Kosmos window.
+ * Identity of the Kosmos stream window.
  *
- * The page lives in kosmos-engine (`apps/kosmos-frame`). This shell only
- * names the dock entry and proxies `screenshot` to a loopback `kosmos serve`.
- * The id is stable so the window key (`web:kosmos-engine`) survives restarts.
+ * The page is `public/kosmos-frame/index.html`. This shell names the dock
+ * entry, proxies a screenshot stream to a loopback `kosmos serve`, and lets
+ * the agent aim that iframe at the engine or at an installed app. The id is
+ * stable so the window key (`web:kosmos-engine`) survives restarts.
  */
 export const KOSMOS_FRAME_APP_ID = "kosmos-engine";
 export const KOSMOS_FRAME_NAME = "Kosmos";

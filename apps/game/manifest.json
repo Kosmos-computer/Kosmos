@@ -1,0 +1,15 @@
+{
+  "id": "core.game",
+  "name": "Game",
+  "version": "0.1.0",
+  "description": "Opens the kosmos-engine window and shows whether the chat can drive it.",
+  "icon": "gamepad-2",
+  "tier": "code",
+  "entry": { "kind": "bundle", "path": "game" },
+  "chrome": { "toolbar": false },
+  "implements": ["os.engine@1"],
+  "permissions": [
+    { "kind": "contract", "id": "os.engine@1", "access": "read" },
+    { "kind": "contract", "id": "os.engine@1", "access": "write" }
+  ]
+}

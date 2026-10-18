@@ -72,6 +72,8 @@ import { bus } from "../bus.js";
 import { requestClientAction } from "./clientRequests.js";
 import { isRiskyCommand, requestConfirmation } from "./confirmations.js";
 import { opsAgentTools } from "./opsTools.js";
+import { engineAgentTools } from "./engineTools.js";
+import { githubAgentTools } from "./githubTools.js";
 import {
   MemoryAccessError,
   memoryStore,
@@ -3002,6 +3004,8 @@ export const agentTools: AgentTool[] = [
 
   // ── Deploy / ops (shared with kosmos-ops MCP) ───────────────────────────────
   ...opsAgentTools,
+  ...engineAgentTools,
+  ...githubAgentTools,
 ];
 
 export const toolDefs: LlmToolDef[] = agentTools.map(({ name, description, parameters }) => ({

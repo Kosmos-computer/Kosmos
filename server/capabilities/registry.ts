@@ -25,6 +25,7 @@ import type { ShareCreateInput } from "../../shared/capabilities/shares.js";
 import { TASKS_CONTRACT_ID } from "../../shared/capabilities/tasks.js";
 import type { TaskInput, TaskStatus } from "../../shared/capabilities/tasks.js";
 import { BOARD_CONTRACT_ID } from "../../shared/capabilities/board.js";
+import { ENGINE_CONTRACT_ID } from "../../shared/capabilities/engine.js";
 import type { BoardColumnId, WorkItemInput } from "../../shared/capabilities/board.js";
 import { boardService } from "../services/boardService.js";
 import { intentMeta } from "../../shared/capabilities/index.js";
@@ -55,6 +56,14 @@ import {
   scanMusicLibrary,
 } from "../services/musicLibraryService.js";
 import { dataDirs } from "../env.js";
+import {
+  bridgeStatus,
+  closeEngine,
+  engineCall,
+  engineQuery,
+  engineStatus,
+  openEngine,
+} from "../engine/session.js";
 
 const PROVIDERS_FILE = path.join(dataDirs.root, "capability-providers.json");
 
@@ -72,6 +81,7 @@ const DEFAULT_PROVIDERS: Record<string, string> = {
   [TASKS_CONTRACT_ID]: "system",
   [BOARD_CONTRACT_ID]: "system",
   [SHARES_CONTRACT_ID]: "system",
+  [ENGINE_CONTRACT_ID]: "system",
 };
 
 function ensureArcoName(name: string, suffix: string): string {
@@ -552,6 +562,13 @@ const systemHandlers: Record<string, IntentHandler> = {
   "music.tracks.import": (p) => importMusicTrack(p as unknown as MusicImportInput),
   "music.tracks.scan": (p) => scanMusicLibrary(p as unknown as MusicScanInput),
   "music.tracks.remove": (p) => removeMusicTrack(String(p.id ?? "")),
+
+  "engine.status": () => engineStatus(),
+  "engine.bridge": () => bridgeStatus(),
+  "engine.open": () => openEngine(),
+  "engine.close": () => closeEngine(),
+  "engine.query": (p) => engineQuery(p),
+  "engine.call": (p) => engineCall(p),
 };
 
 /**

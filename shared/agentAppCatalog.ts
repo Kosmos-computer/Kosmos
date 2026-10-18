@@ -32,6 +32,7 @@ const SYSTEM_TOOLS_APPS: Record<string, string> = {
 /** Installed apps that implement contracts the agent already has tools for. */
 const INSTALLED_TOOLS_BY_CONTRACT: Record<string, string> = {
   "os.calendar@1": "calendar_list_events / calendar_create_event / calendar_update_event / calendar_delete_event",
+  "os.engine@1": "engine_status / engine_open / engine_query / engine_call / engine_close / bridge_status",
 };
 
 export function controlForSystemApp(id: string): Pick<ShellAppCatalogEntry, "control" | "toolHint"> {

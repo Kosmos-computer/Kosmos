@@ -17,6 +17,7 @@ import { MEMORY_CONTRACT_ID, MEMORY_INTENTS, MEMORY_INTENT_SCHEMAS } from "./mem
 import { SHARES_CONTRACT_ID, SHARES_INTENTS, SHARES_INTENT_SCHEMAS } from "./shares.js";
 import { TASKS_CONTRACT_ID, TASKS_INTENTS, TASKS_INTENT_SCHEMAS } from "./tasks.js";
 import { BOARD_CONTRACT_ID, BOARD_INTENTS, BOARD_INTENT_SCHEMAS } from "./board.js";
+import { ENGINE_CONTRACT_ID, ENGINE_INTENTS, ENGINE_INTENT_SCHEMAS } from "./engine.js";
 
 export type IntentAccess = "read" | "write";
 
@@ -35,6 +36,7 @@ export const CONTRACTS: Record<string, Record<string, IntentAccess>> = {
   [TASKS_CONTRACT_ID]: TASKS_INTENTS,
   [BOARD_CONTRACT_ID]: BOARD_INTENTS,
   [SHARES_CONTRACT_ID]: SHARES_INTENTS,
+  [ENGINE_CONTRACT_ID]: ENGINE_INTENTS,
 };
 
 /** intentId → JSON Schema for its params (for tool-shaped exposure). */
@@ -52,6 +54,7 @@ export const INTENT_SCHEMAS: Record<string, Record<string, unknown>> = {
   ...TASKS_INTENT_SCHEMAS,
   ...BOARD_INTENT_SCHEMAS,
   ...SHARES_INTENT_SCHEMAS,
+  ...ENGINE_INTENT_SCHEMAS,
 };
 
 export function intentSchema(intentId: string): Record<string, unknown> {

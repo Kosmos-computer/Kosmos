@@ -145,6 +145,43 @@ async function fetchGitHubIssue(
   };
 }
 
+export interface GitHubPullSummary {
+  number: number;
+  title: string;
+  url: string;
+  user: string;
+}
+
+const GH_HEADERS = {
+  Accept: "application/vnd.github+json",
+  "X-GitHub-Api-Version": "2022-11-28",
+};
+
+/** Open pull requests only. The chat reads the queue; it does not merge. */
+async function listGitHubPulls(
+  accessToken: string,
+  owner: string,
+  repo: string,
+): Promise<GitHubPullSummary[]> {
+  const res = await fetch(
+    `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/pulls?state=open&per_page=20`,
+    { headers: { ...GH_HEADERS, Authorization: `Bearer ${accessToken}` } },
+  );
+  if (!res.ok) throw new Error(`GitHub pulls failed (${res.status})`);
+  const body = (await res.json()) as Array<{
+    number?: number;
+    title?: string;
+    html_url?: string;
+    user?: { login?: string };
+  }>;
+  return body.map((pull) => ({
+    number: pull.number ?? 0,
+    title: pull.title ?? "",
+    url: pull.html_url ?? "",
+    user: pull.user?.login ?? "unknown",
+  }));
+}
+
 export const githubGateway = {
   oauthConfigured(): boolean {
     return isGitHubOAuthConfigured();
@@ -171,6 +208,28 @@ export const githubGateway = {
 
   accessTokenFor(userId: string, accountId?: string): string | undefined {
     return githubStore.accessTokenFor(userId, accountId);
+  },
+
+  /** Connected account first, then GITHUB_TOKEN / GH_TOKEN. Never returns the token to the model. */
+  tokenFor(userId?: string): string | undefined {
+    if (userId) {
+      const stored = githubStore.accessTokenFor(userId);
+      if (stored) return stored;
+    }
+    return process.env.GITHUB_TOKEN?.trim() || process.env.GH_TOKEN?.trim() || undefined;
+  },
+
+  listReposWithToken(token: string, query?: string): Promise<GitHubRepoSummary[]> {
+    return listGitHubRepos(token, query);
+  },
+
+  listPullsWithToken(token: string, owner: string, repo: string): Promise<GitHubPullSummary[]> {
+    return listGitHubPulls(token, owner, repo);
+  },
+
+  fetchIssueWithToken(token: string, ref: string): Promise<GitHubIssueDetail> {
+    const { owner, repo, number } = parseGitHubIssueRef(ref);
+    return fetchGitHubIssue(token, owner, repo, number);
   },
 
   async connectWithPat(userId: string, token: string): Promise<GitHubAccountInfo> {

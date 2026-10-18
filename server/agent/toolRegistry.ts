@@ -100,6 +100,7 @@ const WRITE_SYSTEM_TOOLS = new Set([
   "computer_type",
   "engine_close",
   "engine_call",
+  "portal_control",
 ]);
 
 function systemTools(): RegisteredTool[] {

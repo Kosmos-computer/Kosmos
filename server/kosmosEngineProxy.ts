@@ -1,11 +1,18 @@
 /**
- * Door from the desktop to a loopback `kosmos serve`.
+ * Door from the desktop iframe to a loopback `kosmos serve`.
  *
- * The frame page speaks protocol v1. This process opens the engine socket so
- * the engine port never has to be reachable from a browser on another machine.
- * Only `screenshot` is forwarded. `load`, `step`, `command` and `quit` would
- * let a desktop session drive the sim or stop it, and `path` would write a
- * file, so those are dropped here. The upgrade still needs an Arco session.
+ * The frame page speaks protocol v1 and asks for `screenshot` in a loop, so
+ * the window is a stream of stills rather than one shot. This process opens
+ * the engine socket so the engine port never has to be reachable from a
+ * browser on another machine. Only `screenshot` is forwarded. The agent
+ * drives the sim through `portal_control` on the server, not through this
+ * socket: `load`, `step`, `command` and `quit` from the browser are dropped,
+ * and `path` is stripped so the engine does not write a file. The upgrade
+ * still needs an Arco session.
+ *
+ * A closed engine port on this host does not refuse the TCP connect; it
+ * hangs. The upstream attempt gives up after {@link ENGINE_UPSTREAM_TIMEOUT_MS}
+ * so the page can say the engine is down instead of sitting on "Connected".
  */
 import type { IncomingMessage, Server } from "node:http";
 import type { Duplex } from "node:stream";
@@ -16,6 +23,9 @@ import { userStore } from "./auth/userStore.js";
 import { KOSMOS_ENGINE_PROXY_PATH } from "../shared/kosmosFrame.js";
 
 const DEFAULT_ENGINE_WS = "ws://127.0.0.1:5800";
+
+/** How long to wait for `kosmos serve` before telling the iframe it is down. */
+export const ENGINE_UPSTREAM_TIMEOUT_MS = 2000;
 
 /** Pull one cookie value out of a raw `Cookie` header. */
 export function readCookie(header: string | undefined, name: string): string | undefined {
@@ -117,8 +127,12 @@ export function attachKosmosEngineProxy(httpServer: Server): void {
       // Host comes from the URL, which is the bound engine port.
       const upstream = new WebSocket(upstreamUrl, { origin: "http://127.0.0.1" });
       const queued: string[] = [];
+      let gaveUp = false;
 
       const fail = (msg: string) => {
+        if (gaveUp) return;
+        gaveUp = true;
+        clearTimeout(timer);
         if (client.readyState === WebSocket.OPEN) {
           client.send(JSON.stringify({ t: "error", id: null, code: "io_error", msg }));
           client.close();
@@ -126,7 +140,14 @@ export function attachKosmosEngineProxy(httpServer: Server): void {
         upstream.close();
       };
 
+      // Nothing listening on this host drops the SYN instead of refusing it.
+      const timer = setTimeout(
+        () => fail("kosmos serve is not reachable on loopback"),
+        ENGINE_UPSTREAM_TIMEOUT_MS,
+      );
+
       upstream.on("open", () => {
+        clearTimeout(timer);
         for (const line of queued) upstream.send(line);
         queued.length = 0;
       });
@@ -136,6 +157,7 @@ export function attachKosmosEngineProxy(httpServer: Server): void {
       });
       upstream.on("error", () => fail("kosmos serve is not reachable on loopback"));
       upstream.on("close", () => {
+        clearTimeout(timer);
         if (client.readyState === WebSocket.OPEN) client.close();
       });
 
@@ -160,5 +182,5 @@ export function attachKosmosEngineProxy(httpServer: Server): void {
       client.on("error", () => upstream.close());
     });
   });
-  console.log(`[kosmos-frame] screenshot proxy at ${KOSMOS_ENGINE_PROXY_PATH}`);
+  console.log(`[kosmos-frame] stream proxy at ${KOSMOS_ENGINE_PROXY_PATH}`);
 }

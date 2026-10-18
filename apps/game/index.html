@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Game</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="game" aria-label="Kosmos game">
+      <header class="game__header">
+        <h1>Game</h1>
+        <p id="summary">Checking the engine…</p>
+      </header>
+      <section class="game__status" aria-live="polite">
+        <dl>
+          <div><dt>Port</dt><dd id="port">—</dd></div>
+          <div><dt>Listening</dt><dd id="listening">—</dd></div>
+          <div><dt>Window</dt><dd id="window">—</dd></div>
+        </dl>
+        <p id="note" class="game__note"></p>
+      </section>
+      <div class="game__actions">
+        <button type="button" id="open">Open game</button>
+        <button type="button" id="refresh" class="game__secondary">Refresh</button>
+        <button type="button" id="close" class="game__secondary">Close session</button>
+      </div>
+    </main>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

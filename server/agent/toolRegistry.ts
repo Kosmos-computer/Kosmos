@@ -98,6 +98,8 @@ const WRITE_SYSTEM_TOOLS = new Set([
   "browser_fill",
   "computer_click",
   "computer_type",
+  "engine_close",
+  "engine_call",
 ]);
 
 function systemTools(): RegisteredTool[] {

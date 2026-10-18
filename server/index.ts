@@ -99,6 +99,7 @@ import { generateUiFromPrompt } from "./services/generatorService.js";
 import { imageGenStore } from "./stores/imageGenStore.js";
 import { generateImageFromPrompt, getImageGenStatus } from "./services/imageGenService.js";
 import { webAppStore } from "./stores/webAppStore.js";
+import { attachKosmosEngineProxy } from "./kosmosEngineProxy.js";
 import { installedAppStore, APPS_DIR } from "./platform/installedAppStore.js";
 import { grantStore, readAudit } from "./platform/grantStore.js";
 import { parseManifest } from "./platform/manifestSchema.js";
@@ -2505,7 +2506,10 @@ app.post("/api/webapps/:id/launch", async (c) => {
   const webApp = webAppStore.get(c.req.param("id"));
   if (!webApp) return c.json({ error: "Not found" }, 404);
 
-  const running = await fetch(webApp.url, { signal: AbortSignal.timeout(1500) })
+  const probeUrl = webApp.url.startsWith("/")
+    ? `http://127.0.0.1:${process.env.PORT ?? 4600}${webApp.url}`
+    : webApp.url;
+  const running = await fetch(probeUrl, { signal: AbortSignal.timeout(1500) })
     .then(() => true)
     .catch(() => false);
   if (running) {
@@ -4006,6 +4010,21 @@ app.use(
   }),
 );
 
+// The still-frame page. Source of truth is kosmos-engine `apps/kosmos-frame`.
+// Served here so the dock iframe is a path on this host, not the viewer's loopback.
+app.get("/kosmos-frame/index.html", async (c) => {
+  const candidates = [
+    path.resolve(process.cwd(), "public/kosmos-frame/index.html"),
+    path.resolve(process.cwd(), "dist/kosmos-frame/index.html"),
+  ];
+  for (const file of candidates) {
+    if (!existsSync(file)) continue;
+    const html = await fs.readFile(file, "utf-8");
+    return c.html(html);
+  }
+  return c.text("Kosmos frame page is missing from this build", 404);
+});
+
 // ── Static shell (production + embedded mobile sidecar) ─────────────────────
 
 const shellDistRoot = path.resolve(process.cwd(), "dist");
@@ -4032,6 +4051,7 @@ if (serveProductionShell) {
 
 const port = Number(process.env.PORT ?? 4600);
 const listenHost = process.env.ARCO_MOBILE_LOCAL === "1" ? "127.0.0.1" : undefined;
+webAppStore.ensureKosmosFrame();
 seedMcpPresets();
 startScheduler();
 startSelfHeal();
@@ -4047,8 +4067,10 @@ const httpServer = serve({ fetch: app.fetch, port, hostname: listenHost }, () =>
   console.log(`[arco] server listening on http://${host}:${port}`);
   console.log(`[arco] data dir: ${dataDirs.root}`);
 });
+const nodeServer = httpServer as import("node:http").Server;
+attachKosmosEngineProxy(nodeServer);
 void import("./channels/adapters/voiceStream.js").then(({ attachVoiceStreamUpgrade }) =>
-  attachVoiceStreamUpgrade(httpServer as import("node:http").Server).catch((err) =>
+  attachVoiceStreamUpgrade(nodeServer).catch((err) =>
     console.warn("[voicecall] stream upgrade:", err instanceof Error ? err.message : err),
   ),
 );

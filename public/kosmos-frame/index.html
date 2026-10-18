@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<!-- Served copy of kosmos-engine apps/kosmos-frame/index.html. Keep the two in step. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kosmos</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #14120f;
+      --ink: #f4efe6;
+      --muted: #b7aa98;
+      --line: #3a342c;
+      --fill: #2a251f;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 13px/1.4 ui-sans-serif, system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--line);
+    }
+    button {
+      background: var(--fill);
+      color: var(--ink);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font: inherit;
+      cursor: pointer;
+    }
+    button[aria-pressed="true"] { border-color: var(--ink); }
+    #status { margin-left: auto; color: var(--muted); }
+    #frame {
+      display: block;
+      width: 100%;
+      height: auto;
+      flex: 1;
+      object-fit: contain;
+      background: #000;
+    }
+  </style>
+</head>
+<body>
+  <!--
+    Still frame for the Kosmos dock window. The only request this page sends
+    is protocol `screenshot` (rust-engine.md §4.15). The shell proxies the
+    socket to `kosmos serve --render`; the engine port is not the default.
+    Front and side are two camera poses so a refresh can show a different frame.
+  -->
+  <header>
+    <button type="button" id="front" aria-pressed="true">Front</button>
+    <button type="button" id="side" aria-pressed="false">Side</button>
+    <button type="button" id="refresh">Refresh</button>
+    <span id="status">Connecting…</span>
+  </header>
+  <img id="frame" alt="Waiting for an engine frame">
+  <script>
+    const CAMERAS = {
+      front: { p: [0, 2.6, 6], target: [0, 1, 0], fov: 45 },
+      side: { p: [6, 2.6, 0.4], target: [0, 1, 0], fov: 45 },
+    };
+
+    // The standalone page server is port 5810 and talks to the shell proxy on
+    // 4600. When the shell itself serves this file, the socket is same-origin
+    // so a public desktop does not dial the viewer's loopback.
+    const params = new URLSearchParams(location.search);
+    const wsUrl = params.get("ws") || (location.port === "5810"
+      ? "ws://127.0.0.1:4600/api/kosmos"
+      : `${location.protocol === "https:" ? "wss:" : "ws:"}//${location.host}/api/kosmos`);
+    const frame = document.getElementById("frame");
+    const status = document.getElementById("status");
+    const buttons = {
+      front: document.getElementById("front"),
+      side: document.getElementById("side"),
+    };
+
+    let socket = null;
+    let shot = "front";
+    let seq = 0;
+    let pending = 0;
+
+    function setStatus(text) {
+      status.textContent = text;
+    }
+
+    function selectShot(name) {
+      shot = name;
+      for (const [key, button] of Object.entries(buttons)) {
+        button.setAttribute("aria-pressed", key === name ? "true" : "false");
+      }
+    }
+
+    /**
+     * Ask the running engine for one PNG. `inline` puts the bytes in the
+     * JSON reply so the page does not need the binary frame. The shell
+     * forces the same shape and strips `path`.
+     */
+    function shoot() {
+      if (!socket || socket.readyState !== WebSocket.OPEN) {
+        setStatus("Not connected");
+        return;
+      }
+      pending = ++seq;
+      setStatus(shot === "front" ? "Asking for the front frame…" : "Asking for the side frame…");
+      socket.send(JSON.stringify({
+        t: "screenshot",
+        id: pending,
+        w: 640,
+        h: 360,
+        inline: true,
+        camera: CAMERAS[shot],
+      }));
+    }
+
+    function onMessage(event) {
+      if (typeof event.data !== "string") return;
+      let msg;
+      try {
+        msg = JSON.parse(event.data);
+      } catch {
+        return;
+      }
+      if (msg.t === "hello") {
+        setStatus("Engine hello");
+        shoot();
+        return;
+      }
+      if (msg.t === "image" && msg.data && (msg.id == null || msg.id === pending)) {
+        frame.src = "data:image/png;base64," + msg.data;
+        frame.alt = "Engine frame, " + shot + " camera, " + msg.w + " by " + msg.h;
+        setStatus(msg.w + "×" + msg.h + " · " + shot);
+        return;
+      }
+      if (msg.t === "error") {
+        setStatus(msg.msg || msg.code || "Error");
+      }
+    }
+
+    function connect() {
+      setStatus("Connecting…");
+      const ws = new WebSocket(wsUrl);
+      socket = ws;
+      ws.addEventListener("open", () => setStatus("Connected"));
+      ws.addEventListener("message", onMessage);
+      ws.addEventListener("close", () => {
+        if (socket === ws) socket = null;
+        setStatus("Disconnected");
+      });
+      ws.addEventListener("error", () => setStatus("Cannot reach the shell proxy"));
+    }
+
+    buttons.front.addEventListener("click", () => {
+      selectShot("front");
+      shoot();
+    });
+    buttons.side.addEventListener("click", () => {
+      selectShot("side");
+      shoot();
+    });
+    document.getElementById("refresh").addEventListener("click", shoot);
+    connect();
+  </script>
+</body>
+</html>

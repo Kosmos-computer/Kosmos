@@ -99,7 +99,8 @@ import { generateUiFromPrompt } from "./services/generatorService.js";
 import { imageGenStore } from "./stores/imageGenStore.js";
 import { generateImageFromPrompt, getImageGenStatus } from "./services/imageGenService.js";
 import { webAppStore } from "./stores/webAppStore.js";
-import { attachKosmosEngineProxy } from "./kosmosEngineProxy.js";
+import { attachKosmosEngineProxy, upgradeSessionOk } from "./kosmosEngineProxy.js";
+import { connectPortal, currentPortal } from "./kosmosPortal.js";
 import { installedAppStore, APPS_DIR } from "./platform/installedAppStore.js";
 import { grantStore, readAudit } from "./platform/grantStore.js";
 import { parseManifest } from "./platform/manifestSchema.js";
@@ -4052,6 +4053,20 @@ app.use(
 
 // The still-frame page. Source of truth is kosmos-engine `apps/kosmos-frame`.
 // Served here so the dock iframe is a path on this host, not the viewer's loopback.
+app.get("/api/kosmos/portal", (c) => {
+  if (!upgradeSessionOk(c.req.header("cookie"))) return c.json({ error: "Unauthorized" }, 401);
+  return c.json(currentPortal());
+});
+
+app.post("/api/kosmos/portal", async (c) => {
+  if (!upgradeSessionOk(c.req.header("cookie"))) return c.json({ error: "Unauthorized" }, 401);
+  const body = await c.req.json().catch(() => ({} as { target?: unknown }));
+  const id = typeof body.target === "string" ? body.target : "";
+  const next = connectPortal(id);
+  if (!next) return c.json({ error: "Unknown portal target" }, 400);
+  return c.json(next);
+});
+
 app.get("/kosmos-frame/index.html", async (c) => {
   const candidates = [
     path.resolve(process.cwd(), "public/kosmos-frame/index.html"),

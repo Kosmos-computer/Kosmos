@@ -4,7 +4,7 @@
  */
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { engineWsUrl, frameRequest, readCookie } from "./kosmosEngineProxy.js";
+import { ENGINE_UPSTREAM_TIMEOUT_MS, engineWsUrl, frameRequest, readCookie } from "./kosmosEngineProxy.js";
 
 describe("frameRequest", () => {
   it("keeps a screenshot and forces inline delivery", () => {
@@ -46,6 +46,12 @@ describe("engineWsUrl", () => {
     assert.equal(engineWsUrl("ws://localhost:5800"), "ws://localhost:5800/");
     assert.throws(() => engineWsUrl("ws://example.com:5800"), /loopback/);
     assert.throws(() => engineWsUrl("http://127.0.0.1:5800"), /WebSocket/);
+  });
+});
+
+describe("ENGINE_UPSTREAM_TIMEOUT_MS", () => {
+  it("gives up quickly when the engine port hangs", () => {
+    assert.equal(ENGINE_UPSTREAM_TIMEOUT_MS, 2000);
   });
 });
 

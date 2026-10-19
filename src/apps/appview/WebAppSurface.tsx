@@ -7,11 +7,17 @@ import { T } from "../../i18n/T";
  * registered, the server spawns it and we poll until the URL responds, then
  * embed it. The toolbar mirrors the Studio Browser tab's essentials.
  */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ExternalLink, Globe, RotateCw } from "lucide-react";
 import type { WebApp } from "@shared/types";
 import { api } from "../../lib/api";
 import { useOsStore } from "../../os/osStore";
+import {
+  registerIframeUiDriver,
+  unregisterIframeUiDriver,
+  type GuestUiCommand,
+  type GuestUiSnapshot,
+} from "../../os/cursor/iframeUiBridge";
 
 type Phase = "probing" | "starting" | "ready" | "failed";
 
@@ -23,6 +29,9 @@ export function WebAppSurface({ webAppId }: { webAppId: string }) {
   const webApp: WebApp | undefined = useOsStore((s) => s.webApps.find((a) => a.id === webAppId));
   const [phase, setPhase] = useState<Phase>("probing");
   const [frameTick, setFrameTick] = useState(0);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const uiSeq = useRef(0);
+  const uiPending = useRef(new Map<number, { resolve: (v: unknown) => void; reject: (e: Error) => void }>());
 
   const launch = useCallback(async () => {
     setPhase("probing");
@@ -47,6 +56,66 @@ export function WebAppSurface({ webAppId }: { webAppId: string }) {
   useEffect(() => {
     void launch();
   }, [launch]);
+
+  // The Kosmos stream (and any other same-origin web window) answers
+  // ui.command. Without this registration the agent cursor treats the iframe
+  // as opaque and cannot change the target or the camera.
+  useEffect(() => {
+    if (phase !== "ready" || !webApp?.url.startsWith("/")) return;
+    const windowId = `web:${webAppId}`;
+    const origin = window.location.origin;
+    const send = (command: GuestUiCommand) =>
+      new Promise<unknown>((resolve, reject) => {
+        const frame = iframeRef.current?.contentWindow;
+        if (!frame) {
+          reject(new Error("The iframe is not mounted"));
+          return;
+        }
+        const id = ++uiSeq.current;
+        uiPending.current.set(id, { resolve, reject });
+        frame.postMessage({ appBridge: true, type: "ui.command", id, command }, origin);
+        window.setTimeout(() => {
+          if (!uiPending.current.has(id)) return;
+          uiPending.current.delete(id);
+          reject(new Error("App UI bridge timed out"));
+        }, 4_000);
+      });
+    const onMessage = (event: MessageEvent) => {
+      if (event.source !== iframeRef.current?.contentWindow) return;
+      const msg = event.data as { appBridge?: boolean; type?: string; id?: number; ok?: boolean; result?: unknown; error?: string };
+      if (!msg || msg.appBridge !== true || msg.type !== "ui.result" || msg.id == null) return;
+      const pending = uiPending.current.get(msg.id);
+      if (!pending) return;
+      uiPending.current.delete(msg.id);
+      if (msg.ok) pending.resolve(msg.result);
+      else pending.reject(new Error(msg.error || "UI command failed"));
+    };
+    window.addEventListener("message", onMessage);
+    registerIframeUiDriver(windowId, async (command) => {
+      try {
+        const result = await send(command);
+        if (command.kind === "snapshot") {
+          const snap = result as GuestUiSnapshot;
+          const box = iframeRef.current?.getBoundingClientRect();
+          const ox = box?.x ?? 0;
+          const oy = box?.y ?? 0;
+          return {
+            elements: (snap.elements ?? []).map((el) => ({
+              ...el,
+              rect: { ...el.rect, x: Math.round(el.rect.x + ox), y: Math.round(el.rect.y + oy) },
+            })),
+          };
+        }
+        return { ok: true as const };
+      } catch (err) {
+        return { error: err instanceof Error ? err.message : String(err) };
+      }
+    });
+    return () => {
+      window.removeEventListener("message", onMessage);
+      unregisterIframeUiDriver(windowId);
+    };
+  }, [phase, webAppId, webApp?.url, frameTick]);
 
   if (!webApp) return <div className="arco-empty"><T k={I18nKey.APPS$APPVIEW_THIS_APP_WAS_REMOVED_FROM_THE_REGISTRY} /></div>;
 
@@ -76,6 +145,7 @@ export function WebAppSurface({ webAppId }: { webAppId: string }) {
       {phase === "ready" ? (
         <iframe
           key={frameTick}
+          ref={iframeRef}
           className="arco-studio__frame"
           src={webApp.url}
           title={webApp.name}

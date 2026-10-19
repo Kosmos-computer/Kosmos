@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!-- Served copy of kosmos-engine apps/kosmos-frame/index.html. Keep the two in step. -->
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -31,68 +30,182 @@
       padding: 8px 10px;
       border-bottom: 1px solid var(--line);
     }
-    button {
+    button, select, a.button {
       background: var(--fill);
       color: var(--ink);
       border: 1px solid var(--line);
       border-radius: 6px;
       padding: 4px 10px;
       font: inherit;
-      cursor: pointer;
     }
+    a.button { text-decoration: none; }
     button[aria-pressed="true"] { border-color: var(--ink); }
     #status { margin-left: auto; color: var(--muted); }
-    #frame {
-      display: block;
+    #stage { position: relative; flex: 1; min-height: 0; background: #000; }
+    #view, #app, #clip-view {
+      position: absolute;
+      inset: 0;
       width: 100%;
-      height: auto;
-      flex: 1;
-      object-fit: contain;
+      height: 100%;
+      border: 0;
       background: #000;
     }
+    #view, #clip-view { object-fit: contain; }
+    #wait {
+      position: absolute;
+      left: 10px;
+      top: 8px;
+      margin: 0;
+      color: var(--muted);
+    }
+    #wait[hidden], #view[hidden], #app[hidden], #clip-view[hidden], a.button[hidden] { display: none; }
   </style>
 </head>
 <body>
   <!--
-    Still frame for the Kosmos dock window. The only request this page sends
-    is protocol `screenshot` (rust-engine.md §4.15). The shell proxies the
-    socket to `kosmos serve --render`; the engine port is not the default.
-    Front and side are two camera poses so a refresh can show a different frame.
+    Stream inside the Kosmos desktop iframe. The engine target pulls
+    `screenshot` in a loop through /api/kosmos. An app target loads that
+    app's page in the inner frame. The shell tells this page which target
+    is selected; the agent changes it with portal_connect.
   -->
   <header>
+    <label for="target">Show</label>
+    <select id="target"></select>
     <button type="button" id="front" aria-pressed="true">Front</button>
     <button type="button" id="side" aria-pressed="false">Side</button>
     <button type="button" id="refresh">Refresh</button>
+    <button type="button" id="record" aria-pressed="false">Record</button>
+    <a class="button" id="clip-link" hidden download="kosmos-capture.webm">Download</a>
     <span id="status">Connecting…</span>
   </header>
-  <img id="frame" alt="Waiting for an engine frame">
+  <div id="stage">
+    <canvas id="view" hidden></canvas>
+    <video id="clip-view" hidden controls></video>
+    <iframe id="app" title="Connected app" hidden sandbox="allow-scripts allow-same-origin allow-forms allow-modals"></iframe>
+    <p id="wait">Waiting for an engine frame</p>
+  </div>
   <script>
     const CAMERAS = {
       front: { p: [0, 2.6, 6], target: [0, 1, 0], fov: 45 },
       side: { p: [6, 2.6, 0.4], target: [0, 1, 0], fov: 45 },
     };
+    const FRAME_GAP_MS = 150;
+    // One short take of the live canvas. The stills already on screen are not
+    // written out; the recorder keeps a single WebM and the next Record replaces it.
+    const CLIP_MS = 4000;
 
-    // The standalone page server is port 5810 and talks to the shell proxy on
-    // 4600. When the shell itself serves this file, the socket is same-origin
-    // so a public desktop does not dial the viewer's loopback.
     const params = new URLSearchParams(location.search);
     const wsUrl = params.get("ws") || (location.port === "5810"
       ? "ws://127.0.0.1:4600/api/kosmos"
       : `${location.protocol === "https:" ? "wss:" : "ws:"}//${location.host}/api/kosmos`);
-    const frame = document.getElementById("frame");
+
+    const view = document.getElementById("view");
+    const clipView = document.getElementById("clip-view");
+    const clipLink = document.getElementById("clip-link");
+    const recordButton = document.getElementById("record");
+    const appFrame = document.getElementById("app");
+    const wait = document.getElementById("wait");
     const status = document.getElementById("status");
+    const targetSelect = document.getElementById("target");
     const buttons = {
       front: document.getElementById("front"),
       side: document.getElementById("side"),
     };
+    const ctx = view.getContext("2d");
 
     let socket = null;
     let shot = "front";
     let seq = 0;
     let pending = 0;
+    let mode = "engine";
+    let selectedId = "engine";
+    let targets = [];
+    let retry = 0;
+    let streamTimer = 0;
+    let recording = false;
+    let recorder = null;
+    let clipUrl = null;
 
     function setStatus(text) {
       status.textContent = text;
+    }
+
+    /** Pause the clip and show the live canvas again. The movie stays available to download. */
+    function showLive() {
+      clipView.pause();
+      clipView.hidden = true;
+      if (mode === "engine") view.hidden = view.width === 0;
+    }
+
+    function clipMime() {
+      return ["video/webm;codecs=vp8", "video/webm"].find((type) =>
+        typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(type));
+    }
+
+    function rememberClip(blob) {
+      if (clipUrl) URL.revokeObjectURL(clipUrl);
+      clipUrl = URL.createObjectURL(blob);
+      clipView.src = clipUrl;
+      clipLink.href = clipUrl;
+      clipLink.hidden = false;
+      view.hidden = true;
+      clipView.hidden = false;
+      clipView.play().catch(() => {});
+    }
+
+    /**
+     * Record four seconds of the canvas the stream is already painting.
+     * Stops itself. Switching away from the engine discards an unfinished take.
+     */
+    function recordClip() {
+      if (recording || mode !== "engine") return;
+      if (view.width === 0) {
+        setStatus("Waiting for a frame");
+        return;
+      }
+      const mime = clipMime();
+      if (!mime) {
+        setStatus("This browser cannot record a WebM clip");
+        return;
+      }
+      recording = true;
+      recordButton.disabled = true;
+      recordButton.setAttribute("aria-pressed", "true");
+      showLive();
+      const chunks = [];
+      let discard = false;
+      const rec = new MediaRecorder(view.captureStream(8), {
+        mimeType: mime,
+        videoBitsPerSecond: 800000,
+      });
+      recorder = rec;
+      rec.ondataavailable = (event) => { if (event.data.size) chunks.push(event.data); };
+      rec.onstop = () => {
+        recording = false;
+        recorder = null;
+        recordButton.disabled = false;
+        recordButton.setAttribute("aria-pressed", "false");
+        if (discard || !chunks.length) {
+          if (!discard) setStatus("Capture failed");
+          return;
+        }
+        rememberClip(new Blob(chunks, { type: "video/webm" }));
+        setStatus("Clip · 4s");
+      };
+      rec.discard = () => { discard = true; if (rec.state === "recording") rec.stop(); };
+      rec.start();
+      const started = Date.now();
+      const tick = () => {
+        if (!recording || recorder !== rec) return;
+        const left = CLIP_MS - (Date.now() - started);
+        if (left <= 0) {
+          rec.stop();
+          return;
+        }
+        setStatus("Recording " + Math.ceil(left / 1000) + "s");
+        setTimeout(tick, 200);
+      };
+      tick();
     }
 
     function selectShot(name) {
@@ -102,18 +215,22 @@
       }
     }
 
-    /**
-     * Ask the running engine for one PNG. `inline` puts the bytes in the
-     * JSON reply so the page does not need the binary frame. The shell
-     * forces the same shape and strips `path`.
-     */
+    function paint(b64) {
+      const img = new Image();
+      img.onload = () => {
+        view.hidden = false;
+        view.width = img.naturalWidth;
+        view.height = img.naturalHeight;
+        ctx.drawImage(img, 0, 0);
+        wait.hidden = true;
+      };
+      img.src = "data:image/png;base64," + b64;
+    }
+
     function shoot() {
-      if (!socket || socket.readyState !== WebSocket.OPEN) {
-        setStatus("Not connected");
-        return;
-      }
+      if (mode !== "engine" || !socket || socket.readyState !== WebSocket.OPEN) return;
+      if (pending !== 0) return;
       pending = ++seq;
-      setStatus(shot === "front" ? "Asking for the front frame…" : "Asking for the side frame…");
       socket.send(JSON.stringify({
         t: "screenshot",
         id: pending,
@@ -124,53 +241,189 @@
       }));
     }
 
+    function scheduleShot() {
+      clearTimeout(streamTimer);
+      streamTimer = setTimeout(shoot, FRAME_GAP_MS);
+    }
+
+    function stopSocket() {
+      if (recorder && recorder.discard) recorder.discard();
+      clearTimeout(streamTimer);
+      clearTimeout(retry);
+      pending = 0;
+      if (socket) {
+        const ws = socket;
+        socket = null;
+        ws.close();
+      }
+    }
+
     function onMessage(event) {
       if (typeof event.data !== "string") return;
       let msg;
-      try {
-        msg = JSON.parse(event.data);
-      } catch {
-        return;
-      }
+      try { msg = JSON.parse(event.data); } catch { return; }
       if (msg.t === "hello") {
-        setStatus("Engine hello");
+        setStatus("Streaming");
+        pending = 0;
         shoot();
         return;
       }
       if (msg.t === "image" && msg.data && (msg.id == null || msg.id === pending)) {
-        frame.src = "data:image/png;base64," + msg.data;
-        frame.alt = "Engine frame, " + shot + " camera, " + msg.w + " by " + msg.h;
-        setStatus(msg.w + "×" + msg.h + " · " + shot);
+        pending = 0;
+        paint(msg.data);
+        setStatus((msg.w || "") + "×" + (msg.h || "") + " · " + shot);
+        scheduleShot();
         return;
       }
       if (msg.t === "error") {
+        pending = 0;
         setStatus(msg.msg || msg.code || "Error");
+        wait.hidden = false;
+        wait.textContent = msg.msg || "The engine did not return a frame";
       }
     }
 
-    function connect() {
+    function connectEngine() {
+      stopSocket();
+      mode = "engine";
+      appFrame.hidden = true;
+      appFrame.removeAttribute("src");
+      view.hidden = true;
+      wait.hidden = false;
+      wait.textContent = "Waiting for an engine frame";
       setStatus("Connecting…");
       const ws = new WebSocket(wsUrl);
       socket = ws;
-      ws.addEventListener("open", () => setStatus("Connected"));
+      ws.addEventListener("open", () => {
+        if (socket === ws) setStatus("Connected");
+      });
       ws.addEventListener("message", onMessage);
       ws.addEventListener("close", () => {
-        if (socket === ws) socket = null;
+        if (socket !== ws) return;
+        socket = null;
+        pending = 0;
         setStatus("Disconnected");
+        retry = setTimeout(() => { if (mode === "engine") connectEngine(); }, 2000);
       });
       ws.addEventListener("error", () => setStatus("Cannot reach the shell proxy"));
     }
 
-    buttons.front.addEventListener("click", () => {
-      selectShot("front");
-      shoot();
+    function showApp(target) {
+      stopSocket();
+      mode = "app";
+      view.hidden = true;
+      wait.hidden = true;
+      appFrame.hidden = false;
+      if (appFrame.getAttribute("src") !== target.url) appFrame.src = target.url;
+      setStatus(target.label);
+    }
+
+    function applyTarget(target) {
+      if (!target) return;
+      selectedId = target.id;
+      if (targetSelect.value !== target.id) targetSelect.value = target.id;
+      const engineButtons = target.kind === "engine";
+      for (const button of Object.values(buttons)) button.hidden = !engineButtons;
+      document.getElementById("refresh").hidden = !engineButtons;
+      recordButton.hidden = !engineButtons;
+      if (target.kind === "engine") {
+        if (mode !== "engine" || !socket) connectEngine();
+        return;
+      }
+      showApp(target);
+    }
+
+    function fillTargets(list) {
+      targets = list;
+      const current = targetSelect.value;
+      targetSelect.replaceChildren();
+      for (const target of list) {
+        const option = document.createElement("option");
+        option.value = target.id;
+        option.textContent = target.label;
+        targetSelect.appendChild(option);
+      }
+      if (list.some((t) => t.id === current)) targetSelect.value = current;
+    }
+
+    async function pullPortal() {
+      try {
+        const res = await fetch("/api/kosmos/portal");
+        if (!res.ok) return;
+        const body = await res.json();
+        fillTargets(body.targets || []);
+        if (body.target && body.target.id !== selectedId) applyTarget(body.target);
+        else if (body.target && mode === "engine" && !socket) applyTarget(body.target);
+      } catch { /* the next poll retries */ }
+    }
+
+    async function pushTarget(id) {
+      const res = await fetch("/api/kosmos/portal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ target: id }),
+      });
+      if (!res.ok) {
+        setStatus("That target is not on this computer");
+        return;
+      }
+      const body = await res.json();
+      fillTargets(body.targets || []);
+      applyTarget(body.target);
+    }
+
+    function elementBox(el) {
+      const rect = el.getBoundingClientRect();
+      return { x: Math.round(rect.x), y: Math.round(rect.y), w: Math.round(rect.width), h: Math.round(rect.height) };
+    }
+
+    function snapshot() {
+      const elements = [
+        { id: "target", role: "combobox", label: "Show", rect: elementBox(targetSelect), value: targetSelect.value },
+      ];
+      if (mode === "engine") {
+        elements.push(
+          { id: "front", role: "button", label: "Front", rect: elementBox(buttons.front) },
+          { id: "side", role: "button", label: "Side", rect: elementBox(buttons.side) },
+          { id: "refresh", role: "button", label: "Refresh", rect: elementBox(document.getElementById("refresh")) },
+          { id: "record", role: "button", label: "Record", rect: elementBox(recordButton) },
+        );
+      }
+      return { elements };
+    }
+
+    function runCommand(command) {
+      if (command.kind === "snapshot") return snapshot();
+      if (command.kind === "select" && command.targetId === "target") {
+        void pushTarget(command.value);
+        return { ok: true };
+      }
+      if (command.kind === "click" && command.targetId === "front") { selectShot("front"); shoot(); return { ok: true }; }
+      if (command.kind === "click" && command.targetId === "side") { selectShot("side"); shoot(); return { ok: true }; }
+      if (command.kind === "click" && command.targetId === "refresh") { showLive(); shoot(); return { ok: true }; }
+      if (command.kind === "click" && command.targetId === "record") { recordClip(); return { ok: true }; }
+      return { error: "Nothing in the stream handles " + (command.targetId || command.kind) };
+    }
+
+    window.addEventListener("message", (event) => {
+      const msg = event.data;
+      if (!msg || msg.appBridge !== true || msg.type !== "ui.command") return;
+      if (event.source !== window.parent) return;
+      const result = runCommand(msg.command || {});
+      const ok = !result.error;
+      window.parent.postMessage({ appBridge: true, type: "ui.result", id: msg.id, ok, result: ok ? result : undefined, error: result.error }, event.origin);
     });
-    buttons.side.addEventListener("click", () => {
-      selectShot("side");
-      shoot();
-    });
-    document.getElementById("refresh").addEventListener("click", shoot);
-    connect();
+
+    buttons.front.addEventListener("click", () => { showLive(); selectShot("front"); shoot(); });
+    buttons.side.addEventListener("click", () => { showLive(); selectShot("side"); shoot(); });
+    document.getElementById("refresh").addEventListener("click", () => { showLive(); shoot(); });
+    recordButton.addEventListener("click", recordClip);
+    targetSelect.addEventListener("change", () => { void pushTarget(targetSelect.value); });
+
+    fillTargets([{ id: "engine", kind: "engine", label: "Engine" }]);
+    applyTarget({ id: "engine", kind: "engine", label: "Engine" });
+    void pullPortal();
+    setInterval(pullPortal, 1000);
   </script>
 </body>
 </html>

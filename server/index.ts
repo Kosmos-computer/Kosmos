@@ -4107,6 +4107,7 @@ if (serveProductionShell) {
 const port = Number(process.env.PORT ?? 4600);
 const listenHost = process.env.ARCO_MOBILE_LOCAL === "1" ? "127.0.0.1" : undefined;
 webAppStore.ensureKosmosFrame();
+webAppStore.ensureKosmosPlay();
 seedMcpPresets();
 if (process.env.KOSMOS_ENGINE_DIR?.trim()) {
   void ensureEngineProject().catch((err) =>

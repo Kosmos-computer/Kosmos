@@ -24,6 +24,7 @@ services:
       ARCO_SECRETS_KEK: ${ARCO_SECRETS_KEK:?set ARCO_SECRETS_KEK}
       ARCO_ENTRY_MAGIC_KEY: ${ARCO_ENTRY_MAGIC_KEY:?set ARCO_ENTRY_MAGIC_KEY}
       KOSMOS_ENGINE_SPAWN: "0"
+      KOSMOS_ENGINE_WS: ws://127.0.0.1:5801
     volumes:
       - kosmos-preview-data:/data
     labels:

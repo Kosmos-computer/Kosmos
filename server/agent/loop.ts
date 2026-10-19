@@ -21,6 +21,7 @@ import { buildSystemPrompt } from "./systemPrompt.js";
 import { applyPolicy, assembleTools, toLlmDefs } from "./toolRegistry.js";
 import type { ToolContext } from "./tools.js";
 import { scheduleBackgroundReview } from "./backgroundReview.js";
+import { planeIssueNote } from "../plane/planeIssue.js";
 import { boardService } from "../services/boardService.js";
 import { appStore } from "../stores/appStore.js";
 
@@ -262,6 +263,7 @@ Build an OS-native OpenUI dock app (optional scripts via Query("exec")). Do NOT 
   const extraSystem = [
     opts.extraSystem,
     recallText,
+    planeIssueNote(session),
     boardContext,
     linkedAppContext,
     buildModeContext,

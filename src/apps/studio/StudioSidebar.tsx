@@ -7,7 +7,7 @@ import { T } from "../../i18n/T";
  * on each group to start a chat in that folder/repo.
  */
 import { useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent } from "react";
-import { Calendar, ChevronRight, Columns3, Download, LayoutGrid, Layers, MoreVertical, PanelLeft, Pin, Plus, Search, Trash2 } from "lucide-react";
+import { Calendar, ChevronRight, ClipboardList, Columns3, Download, LayoutGrid, Layers, MoreVertical, PanelLeft, Pin, Plus, Search, Trash2 } from "lucide-react";
 import type { Project, SessionSummary } from "@shared/types";
 import { useWindowStore } from "../../os/windowStore";
 import { systemAppTitle } from "../../os/systemAppTitles";
@@ -53,7 +53,7 @@ export interface StudioSidebarProps {
   projects: Project[];
   activeSessionId?: string;
   /** Center pane: chat vs Board. Board press shows selected in the rail. */
-  mainSurface?: "chat" | "board";
+  mainSurface?: "chat" | "board" | "plane";
   /** OpenHands-style icon rail when true — quick actions stay, list hides. */
   collapsed?: boolean;
   onSelect: (id: string) => void;
@@ -61,6 +61,7 @@ export interface StudioSidebarProps {
   onNewChat: () => void;
   onNewChatInProject: (projectId: string | null) => void;
   onSelectBoard?: () => void;
+  onSelectPlane?: () => void;
   onToggleCollapsed?: () => void;
 }
 
@@ -75,6 +76,7 @@ export function StudioSidebar({
   onNewChat,
   onNewChatInProject,
   onSelectBoard,
+  onSelectPlane,
   onToggleCollapsed,
 }: StudioSidebarProps) {
   const [searchOpen, setSearchOpen] = useState(false);
@@ -210,6 +212,17 @@ export function StudioSidebar({
           >
             <Columns3 size={14} />
             {!collapsed ? <T k={I18nKey.OS$APP_BOARD} /> : null}
+          </button>
+          <button
+            type="button"
+            className="arco-sidenav__quicklink"
+            aria-pressed={mainSurface === "plane"}
+            aria-label="Plane"
+            title="Plane"
+            onClick={() => onSelectPlane?.()}
+          >
+            <ClipboardList size={14} />
+            {!collapsed ? "Plane" : null}
           </button>
           <button
             type="button"

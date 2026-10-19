@@ -53,6 +53,7 @@ import { requestConfirmation } from "../agent/confirmations.js";
 import type { RunTurnOptions } from "../agent/loop.js";
 import { mcpServerStore } from "../mcp/serverStore.js";
 import { getActiveRoot } from "../stores/workspaceStore.js";
+import { messageForAgent } from "../plane/planeIssue.js";
 import { sessionStore } from "../stores/sessionStore.js";
 
 // ── Run registry ─────────────────────────────────────────────────────────────
@@ -463,7 +464,7 @@ async function runAcpTurnBody(
     const response = await Promise.race([
       run.conn.prompt({
         sessionId: run.acpSessionId,
-        prompt: [{ type: "text", text: opts.userMessage }],
+        prompt: [{ type: "text", text: messageForAgent(session, opts.userMessage) }],
       }),
       run.exited,
     ]);

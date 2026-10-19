@@ -218,6 +218,8 @@ import { mailStore } from "./mail/mailStore.js";
 import { getInstallStatus } from "./system/installStatus.js";
 import { getWorkspaceFeatures } from "./system/workspaceFeatures.js";
 import { cloneGitRepo } from "./gitClone.js";
+import { listPlaneIssues } from "./plane/planeClient.js";
+import { ensureEngineProject, openPlaneSession } from "./plane/planeSessions.js";
 import {
   buildGitHubAuthUrl,
   consumeOAuthState as consumeGitHubOAuthState,
@@ -2195,6 +2197,44 @@ app.delete("/api/board/items/:id", (c) => {
   }
 });
 
+// ── Plane issues (Techno Studio conversations) ───────────────────────────────
+
+app.get("/api/plane/issues", requireCap("chat"), async (c) => {
+  try {
+    const [issues, sessions] = await Promise.all([
+      listPlaneIssues(),
+      sessionStore.planeSessionIds(),
+    ]);
+    return c.json(
+      issues.map((issue) => ({
+        ...issue,
+        sessionId: sessions.get(issue.id) ?? null,
+      })),
+    );
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Plane list failed" }, 400);
+  }
+});
+
+/** Open the one Studio session for this Plane issue, creating it the first time. */
+app.post("/api/plane/issues/:id/session", requireCap("chat"), async (c) => {
+  try {
+    return c.json(await openPlaneSession(c.req.param("id")));
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Could not open the session" }, 400);
+  }
+});
+
+/** Shallow-clone kosmos-engine into Studio projects, or focus the clone that is already there. */
+app.post("/api/plane/engine-repo", requireCap("files:write"), async (c) => {
+  try {
+    const token = githubGateway.tokenFor(currentUser(c).id);
+    return c.json(await ensureEngineProject(token));
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Clone failed" }, 400);
+  }
+});
+
 // ── Projects (open folders) ──────────────────────────────────────────────────
 
 app.get("/api/projects", (c) => c.json(projectStore.list()));
@@ -4053,6 +4093,11 @@ const port = Number(process.env.PORT ?? 4600);
 const listenHost = process.env.ARCO_MOBILE_LOCAL === "1" ? "127.0.0.1" : undefined;
 webAppStore.ensureKosmosFrame();
 seedMcpPresets();
+if (process.env.KOSMOS_ENGINE_DIR?.trim()) {
+  void ensureEngineProject().catch((err) =>
+    console.warn("[arco] engine project:", err instanceof Error ? err.message : err),
+  );
+}
 startScheduler();
 startSelfHeal();
 // Connect enabled MCP servers in the background — a slow or dead server

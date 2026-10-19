@@ -82,7 +82,7 @@ function patchActivity(
 const LAYOUT_KEY = "arco:studio:v1";
 
 /** Center pane in Studio — chat thread or the Board ops surface. */
-export type StudioMainSurface = "chat" | "board";
+export type StudioMainSurface = "chat" | "board" | "plane";
 
 interface PersistedStudioLayout {
   chatWidthPct: number;
@@ -115,7 +115,7 @@ function loadLayout(): PersistedStudioLayout {
   return DEFAULT_LAYOUT;
 }
 
-const MAIN_SURFACES: StudioMainSurface[] = ["chat", "board"];
+const MAIN_SURFACES: StudioMainSurface[] = ["chat", "board", "plane"];
 
 const DEFAULT_LAYOUT: PersistedStudioLayout = {
   chatWidthPct: 45,

@@ -30,7 +30,7 @@
       padding: 8px 10px;
       border-bottom: 1px solid var(--line);
     }
-    button, select {
+    button, select, a.button {
       background: var(--fill);
       color: var(--ink);
       border: 1px solid var(--line);
@@ -38,17 +38,19 @@
       padding: 4px 10px;
       font: inherit;
     }
+    a.button { text-decoration: none; }
     button[aria-pressed="true"] { border-color: var(--ink); }
     #status { margin-left: auto; color: var(--muted); }
     #stage { position: relative; flex: 1; min-height: 0; background: #000; }
-    #view, #app {
+    #view, #app, #clip-view {
       position: absolute;
       inset: 0;
       width: 100%;
       height: 100%;
       border: 0;
+      background: #000;
     }
-    #view { object-fit: contain; }
+    #view, #clip-view { object-fit: contain; }
     #wait {
       position: absolute;
       left: 10px;
@@ -56,7 +58,7 @@
       margin: 0;
       color: var(--muted);
     }
-    #wait[hidden], #view[hidden], #app[hidden] { display: none; }
+    #wait[hidden], #view[hidden], #app[hidden], #clip-view[hidden], a.button[hidden] { display: none; }
   </style>
 </head>
 <body>
@@ -72,10 +74,13 @@
     <button type="button" id="front" aria-pressed="true">Front</button>
     <button type="button" id="side" aria-pressed="false">Side</button>
     <button type="button" id="refresh">Refresh</button>
+    <button type="button" id="record" aria-pressed="false">Record</button>
+    <a class="button" id="clip-link" hidden download="kosmos-capture.webm">Download</a>
     <span id="status">Connecting…</span>
   </header>
   <div id="stage">
     <canvas id="view" hidden></canvas>
+    <video id="clip-view" hidden controls></video>
     <iframe id="app" title="Connected app" hidden sandbox="allow-scripts allow-same-origin allow-forms allow-modals"></iframe>
     <p id="wait">Waiting for an engine frame</p>
   </div>
@@ -85,6 +90,9 @@
       side: { p: [6, 2.6, 0.4], target: [0, 1, 0], fov: 45 },
     };
     const FRAME_GAP_MS = 150;
+    // One short take of the live canvas. The stills already on screen are not
+    // written out; the recorder keeps a single WebM and the next Record replaces it.
+    const CLIP_MS = 4000;
 
     const params = new URLSearchParams(location.search);
     const wsUrl = params.get("ws") || (location.port === "5810"
@@ -92,6 +100,9 @@
       : `${location.protocol === "https:" ? "wss:" : "ws:"}//${location.host}/api/kosmos`);
 
     const view = document.getElementById("view");
+    const clipView = document.getElementById("clip-view");
+    const clipLink = document.getElementById("clip-link");
+    const recordButton = document.getElementById("record");
     const appFrame = document.getElementById("app");
     const wait = document.getElementById("wait");
     const status = document.getElementById("status");
@@ -111,9 +122,90 @@
     let targets = [];
     let retry = 0;
     let streamTimer = 0;
+    let recording = false;
+    let recorder = null;
+    let clipUrl = null;
 
     function setStatus(text) {
       status.textContent = text;
+    }
+
+    /** Pause the clip and show the live canvas again. The movie stays available to download. */
+    function showLive() {
+      clipView.pause();
+      clipView.hidden = true;
+      if (mode === "engine") view.hidden = view.width === 0;
+    }
+
+    function clipMime() {
+      return ["video/webm;codecs=vp8", "video/webm"].find((type) =>
+        typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(type));
+    }
+
+    function rememberClip(blob) {
+      if (clipUrl) URL.revokeObjectURL(clipUrl);
+      clipUrl = URL.createObjectURL(blob);
+      clipView.src = clipUrl;
+      clipLink.href = clipUrl;
+      clipLink.hidden = false;
+      view.hidden = true;
+      clipView.hidden = false;
+      clipView.play().catch(() => {});
+    }
+
+    /**
+     * Record four seconds of the canvas the stream is already painting.
+     * Stops itself. Switching away from the engine discards an unfinished take.
+     */
+    function recordClip() {
+      if (recording || mode !== "engine") return;
+      if (view.width === 0) {
+        setStatus("Waiting for a frame");
+        return;
+      }
+      const mime = clipMime();
+      if (!mime) {
+        setStatus("This browser cannot record a WebM clip");
+        return;
+      }
+      recording = true;
+      recordButton.disabled = true;
+      recordButton.setAttribute("aria-pressed", "true");
+      showLive();
+      const chunks = [];
+      let discard = false;
+      const rec = new MediaRecorder(view.captureStream(8), {
+        mimeType: mime,
+        videoBitsPerSecond: 800000,
+      });
+      recorder = rec;
+      rec.ondataavailable = (event) => { if (event.data.size) chunks.push(event.data); };
+      rec.onstop = () => {
+        recording = false;
+        recorder = null;
+        recordButton.disabled = false;
+        recordButton.setAttribute("aria-pressed", "false");
+        if (discard || !chunks.length) {
+          if (!discard) setStatus("Capture failed");
+          return;
+        }
+        rememberClip(new Blob(chunks, { type: "video/webm" }));
+        setStatus("Clip · 4s");
+      };
+      rec.discard = () => { discard = true; if (rec.state === "recording") rec.stop(); };
+      rec.start();
+      const started = Date.now();
+      const tick = () => {
+        if (!recording || recorder !== rec) return;
+        const left = CLIP_MS - (Date.now() - started);
+        if (left <= 0) {
+          rec.stop();
+          return;
+        }
+        setStatus("Recording " + Math.ceil(left / 1000) + "s");
+        setTimeout(tick, 200);
+      };
+      tick();
     }
 
     function selectShot(name) {
@@ -155,6 +247,7 @@
     }
 
     function stopSocket() {
+      if (recorder && recorder.discard) recorder.discard();
       clearTimeout(streamTimer);
       clearTimeout(retry);
       pending = 0;
@@ -232,6 +325,7 @@
       const engineButtons = target.kind === "engine";
       for (const button of Object.values(buttons)) button.hidden = !engineButtons;
       document.getElementById("refresh").hidden = !engineButtons;
+      recordButton.hidden = !engineButtons;
       if (target.kind === "engine") {
         if (mode !== "engine" || !socket) connectEngine();
         return;
@@ -292,6 +386,7 @@
           { id: "front", role: "button", label: "Front", rect: elementBox(buttons.front) },
           { id: "side", role: "button", label: "Side", rect: elementBox(buttons.side) },
           { id: "refresh", role: "button", label: "Refresh", rect: elementBox(document.getElementById("refresh")) },
+          { id: "record", role: "button", label: "Record", rect: elementBox(recordButton) },
         );
       }
       return { elements };
@@ -305,7 +400,8 @@
       }
       if (command.kind === "click" && command.targetId === "front") { selectShot("front"); shoot(); return { ok: true }; }
       if (command.kind === "click" && command.targetId === "side") { selectShot("side"); shoot(); return { ok: true }; }
-      if (command.kind === "click" && command.targetId === "refresh") { shoot(); return { ok: true }; }
+      if (command.kind === "click" && command.targetId === "refresh") { showLive(); shoot(); return { ok: true }; }
+      if (command.kind === "click" && command.targetId === "record") { recordClip(); return { ok: true }; }
       return { error: "Nothing in the stream handles " + (command.targetId || command.kind) };
     }
 
@@ -318,9 +414,10 @@
       window.parent.postMessage({ appBridge: true, type: "ui.result", id: msg.id, ok, result: ok ? result : undefined, error: result.error }, event.origin);
     });
 
-    buttons.front.addEventListener("click", () => { selectShot("front"); shoot(); });
-    buttons.side.addEventListener("click", () => { selectShot("side"); shoot(); });
-    document.getElementById("refresh").addEventListener("click", shoot);
+    buttons.front.addEventListener("click", () => { showLive(); selectShot("front"); shoot(); });
+    buttons.side.addEventListener("click", () => { showLive(); selectShot("side"); shoot(); });
+    document.getElementById("refresh").addEventListener("click", () => { showLive(); shoot(); });
+    recordButton.addEventListener("click", recordClip);
     targetSelect.addEventListener("change", () => { void pushTarget(targetSelect.value); });
 
     fillTargets([{ id: "engine", kind: "engine", label: "Engine" }]);

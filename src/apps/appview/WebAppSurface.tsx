@@ -149,7 +149,8 @@ export function WebAppSurface({ webAppId }: { webAppId: string }) {
           className="arco-studio__frame"
           src={webApp.url}
           title={webApp.name}
-          sandbox="allow-scripts allow-same-origin allow-forms allow-modals"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox"
+          allow="fullscreen; pointer-lock"
         />
       ) : (
         <div className="arco-empty">

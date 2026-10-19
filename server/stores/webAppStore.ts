@@ -12,6 +12,11 @@ import {
   KOSMOS_FRAME_NAME,
   KOSMOS_FRAME_PAGE_URL,
 } from "../../shared/kosmosFrame.js";
+import {
+  KOSMOS_PLAY_APP_ID,
+  KOSMOS_PLAY_NAME,
+  KOSMOS_PLAY_PAGE_URL,
+} from "../../shared/kosmosPlay.js";
 import { dataDirs } from "../env.js";
 
 const FILE = path.join(dataDirs.root, "webapps.json");
@@ -73,6 +78,28 @@ export const webAppStore = {
       id: KOSMOS_FRAME_APP_ID,
       name: KOSMOS_FRAME_NAME,
       url,
+      addedAt: new Date().toISOString(),
+    };
+    apps.push(app);
+    save(apps);
+    return app;
+  },
+
+  /**
+   * The public player. Inserted once, with a stable id, so the dock can pin
+   * `web:kosmos-play`. An entry that is already there is left alone.
+   * The still-frame window stays `web:kosmos-engine`.
+   */
+  ensureKosmosPlay(): WebApp {
+    const apps = load();
+    const existing = apps.find((a) => a.id === KOSMOS_PLAY_APP_ID);
+    if (existing) return existing;
+    const sameUrl = apps.find((a) => a.url === KOSMOS_PLAY_PAGE_URL);
+    if (sameUrl) return sameUrl;
+    const app: WebApp = {
+      id: KOSMOS_PLAY_APP_ID,
+      name: KOSMOS_PLAY_NAME,
+      url: KOSMOS_PLAY_PAGE_URL,
       addedAt: new Date().toISOString(),
     };
     apps.push(app);

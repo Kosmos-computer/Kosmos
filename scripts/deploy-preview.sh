@@ -64,7 +64,10 @@ path, image, host = sys.argv[1:]
 text = pathlib.Path(path).read_text()
 text = text.replace("ghcr.io/kosmos-computer/kosmos:PREVIEW_TAG", image)
 text = text.replace("PREVIEW_HOST", host)
-if "kosmos-os-data" in text or "kosmos-os-4600" in text or "kosmos.tiru.fm" in text:
+if "kosmos-os-data" in text or "kosmos-os-4600" in text:
+    raise SystemExit("preview compose still points at production")
+bare = text.replace("preview.kosmos.tiru.fm", "")
+if "kosmos.tiru.fm" in bare:
     raise SystemExit("preview compose still points at production")
 pathlib.Path(path).write_text(text)
 PY

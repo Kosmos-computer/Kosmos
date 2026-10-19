@@ -92,6 +92,28 @@ GITHUB_TOKEN=ghp_…
 
    Requires a GitHub token with `read:packages` for private GHCR pulls when run locally.
 
+## Preview
+
+`main` deploys only to `kosmos.tiru.fm`. Agent work that should be visible on a public URL lands on the `preview` branch, which `.github/workflows/publish-preview.yml` deploys to its own container.
+
+| | Production | Preview |
+| --- | --- | --- |
+| Branch | `main` | `preview` |
+| Host | `kosmos.tiru.fm` | `preview.kosmos.tiru.fm` |
+| Compose dir | `/data/coolify/applications/kosmos-os` | `/data/coolify/applications/kosmos-preview` |
+| Container | `kosmos-os-4600` | `kosmos-preview` |
+| Volume | `kosmos-os-data` | `kosmos-preview-data` |
+
+The preview container has its own entry key and vault key, no production secrets, and no host Docker socket. `KOSMOS_ENGINE_SPAWN=0`, so it does not start an engine. The entry link is written on the server at `/data/coolify/applications/kosmos-preview/entry-url` (mode 600).
+
+Workers push `task/<id>` and open a pull request. When the desktop version check is green, `.github/workflows/promote-preview.yml` merges that branch into `preview` and the preview workflow deploys it. To undo one, revert that merge on `preview`. Do not reset `preview` onto `main`: this branch carries the preview workflow, and a reset would drop it. `main` only accepts pushes from the repository owner, so a worker token cannot merge there or change that rule. Production is unchanged either way.
+
+Manual redeploy of the preview host:
+
+```bash
+GHCR_TOKEN=$(gh auth token) GHCR_USER=$(gh api user -q .login) ./scripts/deploy-preview.sh
+```
+
 ### Verify persistence
 
 On the host:

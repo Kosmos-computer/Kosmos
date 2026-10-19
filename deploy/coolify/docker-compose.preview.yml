@@ -1,0 +1,85 @@
+# Preview shell. Separate container, volume, and hostname from production.
+# scripts/deploy-preview.sh substitutes the image tag and the Host rule.
+# Do not mount the production volume or the host Docker socket.
+
+services:
+  kosmos-preview:
+    image: ghcr.io/kosmos-computer/kosmos:PREVIEW_TAG
+    container_name: kosmos-preview
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    expose:
+      - "4600"
+    networks:
+      - coolify
+    environment:
+      NODE_ENV: production
+      PORT: "4600"
+      ARCO_DATA_DIR: /data
+      ARCO_SECURE_COOKIES: "1"
+      ARCO_SECRETS_KEK: ${ARCO_SECRETS_KEK:?set ARCO_SECRETS_KEK}
+      ARCO_ENTRY_MAGIC_KEY: ${ARCO_ENTRY_MAGIC_KEY:?set ARCO_ENTRY_MAGIC_KEY}
+      KOSMOS_ENGINE_SPAWN: "0"
+      KOSMOS_ENGINE_WS: ws://127.0.0.1:5801
+    volumes:
+      - kosmos-preview-data:/data
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=coolify
+      - traefik.http.middlewares.gzip.compress=true
+      - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
+      - traefik.http.routers.http-0-kosmos-preview.entryPoints=http
+      - traefik.http.routers.http-0-kosmos-preview.middlewares=redirect-to-https
+      - traefik.http.routers.http-0-kosmos-preview.rule=Host(`PREVIEW_HOST`) && PathPrefix(`/`)
+      - traefik.http.routers.http-0-kosmos-preview.service=http-0-kosmos-preview
+      - traefik.http.routers.https-0-kosmos-preview.entryPoints=https
+      - traefik.http.routers.https-0-kosmos-preview.middlewares=gzip
+      - traefik.http.routers.https-0-kosmos-preview.rule=Host(`PREVIEW_HOST`) && PathPrefix(`/`)
+      - traefik.http.routers.https-0-kosmos-preview.service=https-0-kosmos-preview
+      - traefik.http.routers.https-0-kosmos-preview.tls.certresolver=letsencrypt
+      - traefik.http.routers.https-0-kosmos-preview.tls=true
+      - traefik.http.routers.http-1-kosmos-preview.entryPoints=http
+      - traefik.http.routers.http-1-kosmos-preview.middlewares=redirect-to-https
+      - traefik.http.routers.http-1-kosmos-preview.rule=Host(`preview.kosmos.tiru.fm`) && PathPrefix(`/`)
+      - traefik.http.routers.http-1-kosmos-preview.service=http-1-kosmos-preview
+      - traefik.http.routers.https-1-kosmos-preview.entryPoints=https
+      - traefik.http.routers.https-1-kosmos-preview.middlewares=gzip
+      - traefik.http.routers.https-1-kosmos-preview.rule=Host(`preview.kosmos.tiru.fm`) && PathPrefix(`/`)
+      - traefik.http.routers.https-1-kosmos-preview.service=https-1-kosmos-preview
+      - traefik.http.routers.https-1-kosmos-preview.tls.certresolver=letsencrypt
+      - traefik.http.routers.https-1-kosmos-preview.tls=true
+      - traefik.http.services.http-0-kosmos-preview.loadbalancer.server.port=4600
+      - traefik.http.services.https-0-kosmos-preview.loadbalancer.server.port=4600
+      - traefik.http.services.http-1-kosmos-preview.loadbalancer.server.port=4600
+      - traefik.http.services.https-1-kosmos-preview.loadbalancer.server.port=4600
+      - caddy_0=https://PREVIEW_HOST
+      - caddy_1=https://preview.kosmos.tiru.fm
+      - coolify.managed=false
+      - coolify.name=kosmos-preview
+      - coolify.projectName=Kosmos
+      - coolify.serviceName=kosmos-preview
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:4600/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+networks:
+  coolify:
+    external: true
+    name: coolify
+
+volumes:
+  kosmos-preview-data:
+    name: kosmos-preview-data

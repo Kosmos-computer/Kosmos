@@ -1,0 +1,34 @@
+name: Promote task branch to preview
+
+on:
+  workflow_run:
+    workflows: ["Check desktop version"]
+    types: [completed]
+
+permissions:
+  contents: write
+
+jobs:
+  promote:
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      startsWith(github.event.workflow_run.head_branch, 'task/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout preview
+        uses: actions/checkout@v4
+        with:
+          ref: preview
+          fetch-depth: 0
+
+      - name: Merge the task branch into preview
+        env:
+          HEAD: ${{ github.event.workflow_run.head_sha }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          git config user.name "kosmos-preview"
+          git config user.email "preview@kosmos.tiru.fm"
+          git fetch origin "$HEAD"
+          git merge --no-ff "$HEAD" -m "Promote ${BRANCH} to preview."
+          git push origin preview

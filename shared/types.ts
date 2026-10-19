@@ -137,6 +137,14 @@ export interface Session {
    * When set, the agent may call board.move on this card as the job advances.
    */
   workItemId?: string | null;
+  /**
+   * Plane issue this conversation is working. One issue has one Studio
+   * session. The agent updates the issue through Plane's tools; the
+   * transcript stays in this session.
+   */
+  planeIssueId?: string | null;
+  /** Display key, for example ENGINE-4. */
+  planeIssueKey?: string | null;
   messages: ChatMessage[];
   createdAt: string;
   updatedAt: string;

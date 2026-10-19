@@ -385,6 +385,16 @@ export const api = {
     }),
 
   // Sessions
+  listPlaneIssues: () =>
+    fetch("/api/plane/issues").then((r) =>
+      json<{ id: string; key: string; name: string; sequenceId: number; sessionId: string | null }[]>(r),
+    ),
+  openPlaneSession: (issueId: string) =>
+    fetch(`/api/plane/issues/${encodeURIComponent(issueId)}/session`, { method: "POST" }).then((r) =>
+      json<Session>(r),
+    ),
+  cloneEngineRepo: () =>
+    fetch("/api/plane/engine-repo", { method: "POST" }).then((r) => json<{ id: string; name: string; path: string }>(r)),
   listSessions: () => fetch("/api/sessions").then((r) => json<SessionSummary[]>(r)),
   getSession: (id: string) => fetch(`/api/sessions/${id}`).then((r) => json<Session>(r)),
   /** Eager create — empty “New chat” before the first message (agent-canvas style). */

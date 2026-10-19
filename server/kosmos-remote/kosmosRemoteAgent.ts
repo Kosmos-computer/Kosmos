@@ -12,6 +12,7 @@
 import type { AgentBackend, AgentEvent, Settings } from "../../shared/types.js";
 import { loadSettings, resolveActiveAgentBackend } from "../env.js";
 import type { RunTurnOptions } from "../agent/loop.js";
+import { messageForAgent } from "../plane/planeIssue.js";
 import { sessionStore } from "../stores/sessionStore.js";
 
 // ── Run registry ─────────────────────────────────────────────────────────────
@@ -63,7 +64,7 @@ export async function runKosmosRemoteTurn(opts: RunTurnOptions): Promise<string>
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${backend.apiKey}` },
     body: JSON.stringify({
-      message: opts.userMessage,
+      message: messageForAgent(session, opts.userMessage),
       sessionId: remoteSessionIds.get(opts.sessionId),
       mode: opts.readOnly ? "ask" : "agent",
     }),

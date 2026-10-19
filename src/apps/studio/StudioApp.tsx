@@ -43,6 +43,7 @@ import { WorkspaceChrome } from "./WorkspaceChrome";
 import { StudioSidebar } from "./StudioSidebar";
 import { StudioConversationHeader } from "./StudioConversationHeader";
 import { StudioBoardPanel } from "./StudioBoardPanel";
+import { StudioPlanePanel } from "./StudioPlanePanel";
 import { FilesTab } from "./tabs/FilesTab";
 import { GitTab } from "./tabs/GitTab";
 import { TerminalTab } from "./tabs/TerminalTab";
@@ -413,6 +414,7 @@ export function StudioApp() {
           onNewChat={handleNewChat}
           onNewChatInProject={newChatInProject}
           onSelectBoard={() => setMainSurface("board")}
+          onSelectPlane={() => setMainSurface("plane")}
           onToggleCollapsed={() => setNavOpen(!navOpen)}
         />
 
@@ -422,13 +424,15 @@ export function StudioApp() {
           <section
             className="arco-studio__chat"
             style={
-              mainSurface !== "board" && drawerOpen
+              mainSurface === "chat" && drawerOpen
                 ? { width: `${chatWidthPct}%`, flex: "none" }
                 : undefined
             }
           >
             {mainSurface === "board" ? (
               <StudioBoardPanel />
+            ) : mainSurface === "plane" ? (
+              <StudioPlanePanel onOpenSession={selectSession} />
             ) : isEmpty ? (
               <div className="arco-studio__empty">
                 {voice.active ? (
@@ -493,7 +497,7 @@ export function StudioApp() {
           </section>
 
           {/* Workspace drawer is chat-only — Board uses the full main pane. */}
-          {mainSurface !== "board" &&
+          {mainSurface === "chat" &&
             (drawerOpen ? (
               <>
                 <div

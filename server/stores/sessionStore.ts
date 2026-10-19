@@ -55,7 +55,13 @@ export class SessionStore {
   async create(
     kind: Session["kind"],
     title: string,
-    opts?: { projectId?: string | null; profileId?: string | null; workItemId?: string | null },
+    opts?: {
+      projectId?: string | null;
+      profileId?: string | null;
+      workItemId?: string | null;
+      planeIssueId?: string | null;
+      planeIssueKey?: string | null;
+    },
   ): Promise<Session> {
     await fs.mkdir(this.dir, { recursive: true });
     const now = new Date().toISOString();
@@ -66,6 +72,8 @@ export class SessionStore {
       projectId: opts?.projectId ?? null,
       profileId: opts?.profileId ?? null,
       workItemId: opts?.workItemId ?? null,
+      planeIssueId: opts?.planeIssueId ?? null,
+      planeIssueKey: opts?.planeIssueKey ?? null,
       messages: [],
       createdAt: now,
       updatedAt: now,
@@ -98,6 +106,52 @@ export class SessionStore {
     session.profileId = profileId;
     await this.save(session);
     return session;
+  }
+
+  /**
+   * First session already bound to this Plane issue, if one exists.
+   * Reads the files directly so a lookup does not rewrite project ids.
+   */
+  async findByPlaneIssueId(planeIssueId: string): Promise<Session | null> {
+    let entries: string[];
+    try {
+      entries = await fs.readdir(this.dir);
+    } catch {
+      return null;
+    }
+    for (const file of entries) {
+      if (!file.endsWith(".json")) continue;
+      try {
+        const raw = await fs.readFile(path.join(this.dir, file), "utf-8");
+        const session = JSON.parse(raw) as Session;
+        if (session.planeIssueId === planeIssueId) return session;
+      } catch {
+        // A damaged session file is skipped; the rest of the list still loads.
+      }
+    }
+    return null;
+  }
+
+  /** plane issue id → Studio session id, for the issue list badges. */
+  async planeSessionIds(): Promise<Map<string, string>> {
+    const index = new Map<string, string>();
+    let entries: string[];
+    try {
+      entries = await fs.readdir(this.dir);
+    } catch {
+      return index;
+    }
+    for (const file of entries) {
+      if (!file.endsWith(".json")) continue;
+      try {
+        const raw = await fs.readFile(path.join(this.dir, file), "utf-8");
+        const session = JSON.parse(raw) as Session;
+        if (session.planeIssueId) index.set(session.planeIssueId, session.id);
+      } catch {
+        // Skip unreadable files.
+      }
+    }
+    return index;
   }
 
   /** Bind or clear the board work item for a session. */
@@ -184,6 +238,8 @@ export class SessionStore {
               title: s.title,
               kind: s.kind,
               projectId: s.projectId ?? null,
+              planeIssueId: s.planeIssueId ?? null,
+              planeIssueKey: s.planeIssueKey ?? null,
               createdAt: s.createdAt,
               updatedAt: s.updatedAt,
               messageCount: s.messages.length,

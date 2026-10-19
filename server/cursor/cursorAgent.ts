@@ -20,6 +20,7 @@ import { loadSettings, resolveCursorApiKey } from "../env.js";
 import type { RunTurnOptions } from "../agent/loop.js";
 import { mcpServerStore, slugify } from "../mcp/serverStore.js";
 import { getActiveRoot } from "../stores/workspaceStore.js";
+import { messageForAgent } from "../plane/planeIssue.js";
 import { sessionStore } from "../stores/sessionStore.js";
 import { withSessionWorkspace } from "../stores/turnWorkspace.js";
 
@@ -298,10 +299,11 @@ async function runCursorTurnBody(
 
   let run: Awaited<ReturnType<SDKAgent["send"]>>;
   try {
-    run = await state.agent.send(opts.userMessage, sendOptions);
+    const agentMessage = messageForAgent(session, opts.userMessage);
+    run = await state.agent.send(agentMessage, sendOptions);
   } catch (err) {
     if (err instanceof CursorAgentError && /busy/i.test(err.message) && settings.cursorRuntime === "local") {
-      run = await state.agent.send(opts.userMessage, {
+      run = await state.agent.send(messageForAgent(session, opts.userMessage), {
         ...sendOptions,
         local: { force: true },
       });

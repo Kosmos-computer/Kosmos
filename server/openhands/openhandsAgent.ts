@@ -15,6 +15,7 @@ import type { Event as OpenhandsEvent } from "@openhands/typescript-client";
 import type { AgentBackend, AgentEvent, Settings } from "../../shared/types.js";
 import { loadSettings, resolveActiveAgentBackend } from "../env.js";
 import type { RunTurnOptions } from "../agent/loop.js";
+import { messageForAgent } from "../plane/planeIssue.js";
 import { sessionStore } from "../stores/sessionStore.js";
 import { withSessionWorkspace } from "../stores/turnWorkspace.js";
 
@@ -217,7 +218,7 @@ export async function runOpenhandsTurn(opts: RunTurnOptions): Promise<string> {
     try {
       await run.client.sendEvent(
         run.conversationId,
-        { role: "user", content: [{ type: "text", text: opts.userMessage }], run: true },
+        { role: "user", content: [{ type: "text", text: messageForAgent(session, opts.userMessage) }], run: true },
         { run: true },
       );
 
